@@ -5,15 +5,4 @@ venv/
 .idea/
 .cursor/
 
-experiments/*/input.txt
-experiments/*/shared/
-experiments/*/rnn/model.npz
-experiments/*/rnn/plots/
-experiments/*/rnn/learning_dynamics/
-experiments/*/transformer/model.pt
-experiments/*/transformer/model_config.json
-experiments/*/transformer/training_meta.json
-experiments/*/transformer/plots/
-experiments/*/transformer/learning_dynamics/
 
-NUL.npz

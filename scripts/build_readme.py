@@ -10,9 +10,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from readme_figures import README_FIGURES, ReadmeFigure
+from readme_figures import README_FIGURES, ReadmeFigure, SHARED_FIGURE_NUMBERS
+from experiment import shared_dir
+
 EXP = ROOT / "experiments" / "ten_word_overlap_s"
 SRC_PLOTS = EXP / "rnn" / "plots"
+SRC_SHARED = shared_dir("ten_word_overlap_s")
 FIGURES = ROOT / "docs" / "figures"
 
 
@@ -31,7 +34,10 @@ def sync_figures() -> None:
             old.unlink()
 
     for fig in README_FIGURES:
-        src = SRC_PLOTS / fig.filename()
+        if fig.number in SHARED_FIGURE_NUMBERS:
+            src = SRC_SHARED / fig.filename()
+        else:
+            src = SRC_PLOTS / fig.filename()
         dest = FIGURES / fig.filename()
         if not src.is_file():
             raise FileNotFoundError(f"missing plot for README figure {fig.number}: {src}")
@@ -88,8 +94,9 @@ python run_experiments.py --only ten_word_overlap_s
 
 | Path | Contents |
 |------|----------|
-| `experiments/<name>/plots/` | Numbered README figures (`N_slug.png`) plus auxiliary plots |
-| `experiments/<name>/learning_dynamics/` | Supplementary training-time videos (not numbered figures) |
+| `experiments/<name>/shared/` | Vocabulary trie + DFA (figures 1–2; shared by RNN and transformer) |
+| `experiments/<name>/rnn/plots/` | RNN analysis figures (figures 3–19) plus auxiliary plots |
+| `experiments/<name>/rnn/learning_dynamics/` | Supplementary training-time videos (not numbered figures) |
 | `docs/figures/` | Copies of numbered README figures |
 
 ---
@@ -105,7 +112,7 @@ vocab_diagrams.py    # Trie + minimal DFA construction
 experiment.py        # Per-regime hyperparameters
 run_experiments.py   # Batch train + visualize
 docs/figures/        # README figure copies (1_vocabulary_trie.png, ...)
-experiments/<name>/  # input.txt, model.npz, plots/, learning_dynamics/
+experiments/<name>/  # input.txt, shared/, rnn/, transformer/
 ```
 
 ---
@@ -129,7 +136,7 @@ Default training for main overlap tasks: **50k characters**, **15k steps**, **$h
 
 ## Paper: Learning words with an RNN
 
-The walkthrough below uses **`ten_word_overlap_s`** from the most recent full train + visualize run. Numbered figures live in `experiments/ten_word_overlap_s/plots/` and `docs/figures/` as `N_descriptive_name.png` in narrative order.
+The walkthrough below uses **`ten_word_overlap_s`** from the most recent full train + visualize run. Figures 1–2 live in `experiments/ten_word_overlap_s/shared/`; figures 3–19 in `experiments/ten_word_overlap_s/rnn/plots/`; copies in `docs/figures/` as `N_descriptive_name.png` in narrative order.
 
 > **Abstract.** Infants appear to segment fluent speech into words using only distributional statistics - transitional probabilities between syllables - without explicit boundaries (Saffran, Aslin, & Newport, 1996). We train a 32-unit $\\tanh$ RNN on a ten-word corpus with overlapping trigrams and visualize hidden activations, next-character predictions, PCA embeddings, correlation structure, and recurrent vector fields. Two organizing principles emerge in hidden space: timesteps cluster by **in-word prefix** (distance from the last space), and orthogonally by **minimized DFA state** after that prefix. Pairwise distances are substantially smaller within DFA state than between states, even when the current input character matches. The framework links infant statistical-learning theory to mechanistic RNN interpretability.
 
@@ -250,7 +257,7 @@ Projecting $\\mathbf{h}_t \\in \\mathbb{R}^{32}$ to the plane exposes the two or
     parts.append(figure_blocks(11, 12))
 
     parts.append("""
-Supplementary media (not a numbered figure): [PCA learning dynamics video](experiments/ten_word_overlap_s/learning_dynamics/hidden_state_pca.mp4) — hidden states on the 50-character window during early training, projected into the **fixed final-model PCA** basis, with playback paced by cumulative displacement. Static Figure 12 shows the endpoint; the video shows how that geometry forms.""")
+Supplementary media (not a numbered figure): [PCA learning dynamics video](experiments/ten_word_overlap_s/rnn/learning_dynamics/hidden_state_pca.mp4) — hidden states on the 50-character window during early training, projected into the **fixed final-model PCA** basis, with playback paced by cumulative displacement. Static Figure 12 shows the endpoint; the video shows how that geometry forms.""")
 
     parts.append(figure_blocks(13, 16))
 
@@ -298,7 +305,7 @@ The DFA axis goes further: the RNN tracks **which branch of the lexical tree** i
 python run_experiments.py --only ten_word_overlap_s
 ```
 
-This generates the corpus, trains the RNN, writes numbered plots under `experiments/ten_word_overlap_s/plots/`, writes `experiments/ten_word_overlap_s/learning_dynamics/hidden_state_pca.mp4`, and runs `scripts/build_readme.py` to refresh `docs/figures/` and this README.
+This generates the corpus, trains the RNN, writes trie/DFA under `experiments/ten_word_overlap_s/shared/`, numbered RNN plots under `experiments/ten_word_overlap_s/rnn/plots/`, writes `experiments/ten_word_overlap_s/rnn/learning_dynamics/hidden_state_pca.mp4`, and runs `scripts/build_readme.py` to refresh `docs/figures/` and this README.
 
 ---
 

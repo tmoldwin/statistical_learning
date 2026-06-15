@@ -86,10 +86,16 @@ from experiment import (
     learning_dynamics_dir,
     model_path,
     plots_dir,
+    shared_dir,
 )
 from transformer.adapter import forward_pass as transformer_forward_pass
 from transformer.adapter import load_model as load_transformer_model
-from readme_figures import numbered_plot_path, remove_legacy_readme_plot_names
+from transformer.viz_repr import run_transformer_visualization
+from readme_figures import (
+    numbered_plot_path,
+    remove_legacy_readme_plot_names,
+    remove_shared_figures_from_model_plots,
+)
 from task import REGIMES
 from rnn.rnn_dyn import activation_label, no_input_hidden_step, rnn_hidden_step
 from vocab_diagrams import (
@@ -275,13 +281,16 @@ def plot_hidden_states_heatmap(
     save_path,
     *,
     act_label: str = "tanh",
+    y_label: str = "hidden unit",
+    title: str | None = None,
+    colorbar_label: str | None = None,
     condensed: CondensedView | None = None,
     exp_name: str | None = None,
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
     words: list[str] | None = None,
 ):
-    """Heatmap of every hidden unit's activation over the sequence."""
+    """Heatmap of a per-timestep vector representation over the sequence."""
     prefix_keys: list[str] | None = None
     if condensed is not None:
         hidden_states = condensed.hidden_states
@@ -297,9 +306,15 @@ def plot_hidden_states_heatmap(
         x_axis = "timestep / input character"
     length, hidden_size = hidden_states.shape
     use_relu = act_label == "relu"
+    use_raw = act_label == "raw"
     cmap = "magma" if use_relu else "RdBu_r"
-    vmin = 0.0 if use_relu else -1.0
-    vmax = None if use_relu else 1.0
+    if use_raw:
+        cmap = "RdBu_r"
+        vmin = None
+        vmax = None
+    else:
+        vmin = 0.0 if use_relu else -1.0
+        vmax = None if use_relu else 1.0
 
     fig, ax = plt.subplots(figsize=(max(12, length * 0.15),
                                     max(2.5, hidden_size * 0.35)))
@@ -310,7 +325,8 @@ def plot_hidden_states_heatmap(
     )
 
     ax.set_yticks(range(hidden_size))
-    ax.set_yticklabels([f"h{i}" for i in range(hidden_size)])
+    ax.set_yticklabels([f"h{i}" for i in range(hidden_size)] if y_label == "hidden unit"
+                       else [f"{y_label}{i}" for i in range(hidden_size)])
     ax.set_xticks(range(length))
     ax.set_xticklabels(x_labels, fontsize=7)
     if automaton is not None:
@@ -325,15 +341,18 @@ def plot_hidden_states_heatmap(
         _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
         x_axis += " · tick color = min DFA state"
     ax.set_xlabel(x_axis)
-    ax.set_ylabel("hidden unit")
+    ax.set_ylabel(y_label)
+    default_title = (
+        f"Hidden state activations ({act_label} output) over the input sequence"
+        if y_label == "hidden unit"
+        else f"{y_label} over the input sequence"
+    )
     ax.set_title(
-        _condensed_plot_title(
-            f"Hidden state activations ({act_label} output) over the input sequence",
-            condensed,
-        )
+        _condensed_plot_title(title or default_title, condensed)
     )
 
-    fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01, label=f"activation ({act_label})")
+    cb_label = colorbar_label or (f"activation ({act_label})" if not use_raw else "value")
+    fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01, label=cb_label)
     fig.tight_layout()
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
@@ -409,7 +428,7 @@ def display_char(char):
     if char == "\t":
         return "\\t"
     if char == " ":
-        return "space"
+        return "␣"
     return char
 
 
@@ -1542,6 +1561,15 @@ def prediction_entropy(probs):
     return -np.sum(p * np.log(p), axis=1)
 
 
+def representation_label(model, *, prob_grid: bool = False) -> str:
+    """Human-readable name for the vector being PCA'd / read out."""
+    if model.get("model_type") == "transformer":
+        if prob_grid:
+            return "block output (lm_head on 2D PCA reconstruction; not full forward pass)"
+        return "final block output (pre-lm_head, query position)"
+    return "hidden state h"
+
+
 def build_pca_plane_grid(
     text,
     hidden_states,
@@ -1620,8 +1648,16 @@ def plot_learning_curve(model, save_path):
     ax.grid(True, linestyle=":", alpha=0.4)
     finite = ce_plot[np.isfinite(ce_plot)]
     if finite.size:
-        hi = float(np.percentile(finite, 99.5))
-        ax.set_ylim(0, max(hi * 1.05, 1.0))
+        # Zoom the CE axis to the bulk of training; anchoring at 0 hides the
+        # post-warmup curve when loss lives on a narrow plateau (e.g. ~23–24).
+        warmup_idx = min(len(ce_plot) - 1, max(250, int(0.05 * len(ce_plot))))
+        steady = ce_plot[warmup_idx:]
+        steady_finite = steady[np.isfinite(steady)]
+        y_src = steady_finite if steady_finite.size else finite
+        lo = float(np.percentile(y_src, 1))
+        hi = float(np.percentile(y_src, 99))
+        pad = max(0.08 * (hi - lo), 0.15)
+        ax.set_ylim(lo - pad, hi + pad)
 
     if "metric_iterations" in model and "metric_word_error_frac" in model:
         ax2 = ax.twinx()
@@ -1660,6 +1696,7 @@ def _token_letter_valid_mask(text: str, vocab: set[str]) -> list[bool]:
     n = len(text)
     while i < n:
         if text[i] == " ":
+            mask[i] = True
             i += 1
             continue
         j = i
@@ -2091,7 +2128,7 @@ def add_trigram_annotations(
     labels, sequence_color, by_sequence, label_positions = layout_trigram_labels(
         text, projected, spaced=spaced, prefix_labels=prefix_labels,
     )
-    label_text = {"␣" if label == " " else label for label in by_sequence}
+    label_text = {label: ("␣" if label == " " else label) for label in by_sequence}
     point_colors = [sequence_color[label] for label in labels]
     return _draw_annotation_groups(
         ax, projected, by_sequence, label_positions, point_colors, label_text
@@ -3005,6 +3042,7 @@ def plot_pca_dfa_analysis(
     save_path,
     automaton: MinimizedVocabAutomaton,
     *,
+    model=None,
     spaced: bool = False,
     annot_style: str = "leaders",
     embedding: str = "pca",
@@ -3082,7 +3120,10 @@ def plot_pca_dfa_analysis(
     ax_embed.set_ylabel(ylabel)
     ctx = prefix_axis_label(spaced=spaced, text=text)
     subtitle = f"\n{embed_subtitle}" if embed_subtitle else ""
-    ax_embed.set_title(f"{embed_title} (min DFA state · {ctx}){subtitle}")
+    rep = representation_label(model) if model is not None else "hidden state h"
+    ax_embed.set_title(
+        f"{embed_title} of {rep} (min DFA state · {ctx}){subtitle}"
+    )
     ax_embed.grid(True, linestyle=":", alpha=0.35)
     ax_embed.spines["top"].set_visible(False)
     ax_embed.spines["right"].set_visible(False)
@@ -3152,7 +3193,8 @@ def plot_pca_prediction_regions(
                 vmin=None,
                 vmax=None,
             ),
-            "Argmax next-char (2D-reconstructed h)",
+            "Argmax next-char (2D-reconstructed "
+            f"{representation_label(model, prob_grid=True)})",
         ),
         (
             axes[1],
@@ -3198,7 +3240,8 @@ def plot_pca_prediction_regions(
         pca_ctx = "prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
     fig.suptitle(
         _condensed_plot_title(
-            f"PCA plane ({pca_ctx}) · {original_vocabulary_title(chars, text)}",
+            f"PCA of {representation_label(model)} · {pca_ctx} · "
+            f"{original_vocabulary_title(chars, text)}",
             condensed,
         ),
         fontsize=12, y=1.01,
@@ -3280,7 +3323,8 @@ def plot_pca_next_char_probability_panels(
     fig.colorbar(last_im, ax=axes[:vocab_size], label="probability", shrink=0.92)
     fig.suptitle(
         _condensed_plot_title(
-            f"P(next char | 2D-reconstructed h) over PCA · {original_vocabulary_title(chars, text)}",
+            f"P(next char | {representation_label(model, prob_grid=True)}) · "
+            f"{original_vocabulary_title(chars, text)}",
             condensed,
         ),
         fontsize=11, y=1.02,
@@ -3812,7 +3856,7 @@ def main() -> None:
     parser.add_argument("--length", type=int, default=50,
                         help="how many characters of the corpus to visualize (default: 50)")
     parser.add_argument("--out-dir", default=None,
-                        help="plot output directory (default: experiments/<exp>/plots or plots)")
+                        help="plot output directory (default: experiments/<exp>/<model>/plots or plots)")
     parser.add_argument("--no-cluster-per-char", action="store_true",
                         help="keep per-character heatmap rows in sequence order")
     parser.add_argument(
@@ -3876,102 +3920,119 @@ def main() -> None:
     elif words:
         print("annotation mode: in-word prefix via vocabulary word boundaries")
 
-    hidden_states, output_probs = run_forward_pass(model, text, model_type)
     targets = list(text[1:]) + [text[0]]
-    act_label = activation_label(use_relu=bool(model.get("use_relu", False)))
 
-    condensed_view = None
-    if args.condensed:
-        condensed_view = condense_hidden_states_by_prefix(
-            text, hidden_states, output_probs, spaced=spaced, words=words,
-        )
+    if is_transformer:
         print(
-            f"condensed view: {len(condensed_view.labels)} unique prefixes "
-            f"(avg over {sum(condensed_view.counts)} timesteps)"
+            "transformer mode: analyzing token/position embeddings, Q/K/V, "
+            "attention weights, and block output separately (not RNN hidden states)"
         )
-
-    def plot_path(name: str) -> str:
-        path = str(numbered_plot_path(out_dir, name))
-        return _condensed_save_path(path) if args.condensed else path
-
-    cv = condensed_view
-
-    plot_hidden_states_heatmap(
-        text, hidden_states,
-        save_path=plot_path("activation_heatmap.png"),
-        act_label=act_label,
-        condensed=cv,
-        exp_name=args.exp,
-        automaton=automaton,
-        spaced=spaced,
-        words=words,
-    )
-
-    plot_output_probs(
-        text, output_probs, model["chars"],
-        save_path=plot_path("next_char_prob_sequence_heatmap.png"),
-        condensed=cv,
-        exp_name=args.exp,
-        automaton=automaton,
-        spaced=spaced,
-        words=words,
-    )
-
-    plot_per_char_hidden_state_heatmaps(
-        text, hidden_states, model["chars"],
-        save_path=plot_path("activation_by_input_char.png"),
-        cluster_rows=not args.no_cluster_per_char,
-        spaced=spaced,
-        condensed=cv,
-        automaton=automaton,
-    )
-
-    plot_pca_context_labels(
-        text, hidden_states, model["chars"],
-        save_path=plot_path("embedding_panels_context.png"),
-        spaced=spaced,
-        automaton=automaton,
-        condensed=cv,
-    )
-
-    plot_pca_prediction_regions(
-        model, text, hidden_states, model["chars"],
-        save_path=plot_path("next_char_regions_pca.png"),
-        spaced=spaced,
-        automaton=automaton,
-        condensed=cv,
-    )
-
-    if automaton is not None and words:
-        plot_pca_dfa_analysis(
-            text, hidden_states, model["chars"], words,
-            save_path=plot_path("dfa_and_embedding_pca.png"),
-            automaton=automaton,
+        acts = run_transformer_visualization(
+            model,
+            text,
+            out_dir,
             spaced=spaced,
-            annot_style=args.dfa_annot_style,
-            condensed=cv,
+            automaton=automaton,
+            words=words,
+            condensed=args.condensed,
         )
+        output_probs = acts.output_probs
+    else:
+        hidden_states, output_probs = run_forward_pass(model, text, model_type)
+        act_label = activation_label(use_relu=bool(model.get("use_relu", False)))
 
-    if words:
-        plot_space_to_space_trajectories(
+        condensed_view = None
+        if args.condensed:
+            condensed_view = condense_hidden_states_by_prefix(
+                text, hidden_states, output_probs, spaced=spaced, words=words,
+            )
+            print(
+                f"condensed view: {len(condensed_view.labels)} unique prefixes "
+                f"(avg over {sum(condensed_view.counts)} timesteps)"
+            )
+
+        def plot_path(name: str) -> str:
+            path = str(numbered_plot_path(out_dir, name))
+            return _condensed_save_path(path) if args.condensed else path
+
+        cv = condensed_view
+
+        plot_hidden_states_heatmap(
             text, hidden_states,
-            save_path=plot_path("word_trajectories_pca.png"),
-            model=None if is_transformer else model,
+            save_path=plot_path("activation_heatmap.png"),
+            act_label=act_label,
+            condensed=cv,
+            exp_name=args.exp,
+            automaton=automaton,
+            spaced=spaced,
+            words=words,
+        )
+
+        plot_output_probs(
+            text, output_probs, model["chars"],
+            save_path=plot_path("next_char_prob_sequence_heatmap.png"),
+            condensed=cv,
+            exp_name=args.exp,
+            automaton=automaton,
+            spaced=spaced,
+            words=words,
+        )
+
+        plot_per_char_hidden_state_heatmaps(
+            text, hidden_states, model["chars"],
+            save_path=plot_path("activation_by_input_char.png"),
+            cluster_rows=not args.no_cluster_per_char,
+            spaced=spaced,
+            condensed=cv,
+            automaton=automaton,
+        )
+
+        plot_pca_context_labels(
+            text, hidden_states, model["chars"],
+            save_path=plot_path("embedding_panels_context.png"),
             spaced=spaced,
             automaton=automaton,
-            annot_style=args.dfa_annot_style,
             condensed=cv,
         )
 
-    plot_pca_next_char_probability_panels(
-        model, text, hidden_states, model["chars"],
-        save_path=plot_path("next_char_prob_panels_pca.png"),
-        spaced=spaced,
-        automaton=automaton,
-        condensed=cv,
-    )
+        plot_pca_prediction_regions(
+            model, text, hidden_states, model["chars"],
+            save_path=plot_path("next_char_regions_pca.png"),
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+        )
 
-    if not is_transformer:
+        if automaton is not None and words:
+            plot_pca_dfa_analysis(
+                text, hidden_states, model["chars"], words,
+                save_path=plot_path("dfa_and_embedding_pca.png"),
+                automaton=automaton,
+                model=model,
+                spaced=spaced,
+                annot_style=args.dfa_annot_style,
+                condensed=cv,
+            )
+
+        if words:
+            plot_space_to_space_trajectories(
+                text, hidden_states,
+                save_path=plot_path("word_trajectories_pca.png"),
+                model=model,
+                spaced=spaced,
+                automaton=automaton,
+                annot_style=args.dfa_annot_style,
+                condensed=cv,
+            )
+
+        plot_pca_next_char_probability_panels(
+            model, text, hidden_states, model["chars"],
+            save_path=plot_path("next_char_prob_panels_pca.png"),
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+        )
+
         plot_pca_vector_field(
             text,
             hidden_states,
@@ -3980,65 +4041,67 @@ def main() -> None:
             condensed=cv,
         )
 
-    plot_hidden_states_clustermap(
-        text, hidden_states, model["chars"],
-        save_path=plot_path("activation_clustered_heatmap.png"),
-        exp_name=args.exp,
-        condensed=cv,
-        automaton=automaton,
-        spaced=spaced,
-    )
+        plot_hidden_states_clustermap(
+            text, hidden_states, model["chars"],
+            save_path=plot_path("activation_clustered_heatmap.png"),
+            exp_name=args.exp,
+            condensed=cv,
+            automaton=automaton,
+            spaced=spaced,
+        )
 
-    plot_hidden_states_correlation_clustermap(
-        text, hidden_states, model["chars"],
-        save_path=plot_path("state_correlation_clustered_heatmap.png"),
-        spaced=spaced,
-        automaton=automaton,
-        words=words,
-        condensed=cv,
-    )
-
-    if automaton is not None:
-        plot_dfa_grouped_state_correlation(
-            text,
-            hidden_states,
-            save_path=plot_path("state_correlation_by_dfa_state.png"),
+        plot_hidden_states_correlation_clustermap(
+            text, hidden_states, model["chars"],
+            save_path=plot_path("state_correlation_clustered_heatmap.png"),
             spaced=spaced,
             automaton=automaton,
-            condensed=cv,
-        )
-        plot_dfa_state_distance_comparison(
-            text, hidden_states, automaton,
-            save_path=plot_path("dfa_state_distance_comparison.png"),
-            spaced=spaced,
+            words=words,
             condensed=cv,
         )
 
-    if model["hidden_size"] == 2:
-        plot_state_trajectory(
-            hidden_states,
-            color_by_chars=list(text) if cv is None else cv.input_chars,
-            chars=model["chars"],
-            title=f"Hidden state trajectory over {len(text)} chars (colored by INPUT char)",
-            save_path=plot_path("state_trajectory_by_input.png"),
-            condensed=cv,
-        )
-        plot_state_trajectory(
-            hidden_states,
-            color_by_chars=targets if cv is None else cv.next_chars,
-            chars=model["chars"],
-            title=f"Hidden state trajectory over {len(text)} chars (colored by TARGET / next char)",
-            save_path=plot_path("state_trajectory_by_target.png"),
-            condensed=cv,
-        )
+        if automaton is not None:
+            plot_dfa_grouped_state_correlation(
+                text,
+                hidden_states,
+                save_path=plot_path("state_correlation_by_dfa_state.png"),
+                spaced=spaced,
+                automaton=automaton,
+                condensed=cv,
+            )
+            plot_dfa_state_distance_comparison(
+                text, hidden_states, automaton,
+                save_path=plot_path("dfa_state_distance_comparison.png"),
+                spaced=spaced,
+                condensed=cv,
+            )
+
+        if model["hidden_size"] == 2:
+            plot_state_trajectory(
+                hidden_states,
+                color_by_chars=list(text) if cv is None else cv.input_chars,
+                chars=model["chars"],
+                title=f"Hidden state trajectory over {len(text)} chars (colored by INPUT char)",
+                save_path=plot_path("state_trajectory_by_input.png"),
+                condensed=cv,
+            )
+            plot_state_trajectory(
+                hidden_states,
+                color_by_chars=targets if cv is None else cv.next_chars,
+                chars=model["chars"],
+                title=f"Hidden state trajectory over {len(text)} chars (colored by TARGET / next char)",
+                save_path=plot_path("state_trajectory_by_target.png"),
+                condensed=cv,
+            )
 
     correct = np.sum(np.argmax(output_probs, axis=1) ==
                      np.array([model["chars"].index(c) for c in targets]))
     print(f"top-1 next-char accuracy over the {len(text)}-char window: "
           f"{correct}/{len(text)} = {100*correct/len(text):.1f}%")
 
-    if words:
-        trie_path, dfa_path = write_vocabulary_diagrams(words, Path(out_dir))
+    if words and args.exp:
+        shared = shared_dir(args.exp)
+        shared.mkdir(parents=True, exist_ok=True)
+        trie_path, dfa_path = write_vocabulary_diagrams(words, shared)
         print(f"wrote {trie_path}")
         print(f"wrote {dfa_path}")
 
@@ -4055,6 +4118,7 @@ def main() -> None:
 
     if args.exp:
         remove_legacy_readme_plot_names(out_dir)
+        remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))
 
 
 if __name__ == "__main__":

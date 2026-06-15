@@ -16,17 +16,21 @@ class Head(nn.Module):
         self.register_buffer("tril", torch.tril(torch.ones(block_size, block_size)))
 
     def forward(self, x):
+        out, weight, _, _, _ = self.forward_with_qkv(x)
+        return out, weight
+
+    def forward_with_qkv(self, x):
+        """Return attention output, weights, and per-position Q/K/V vectors."""
         B, T, C = x.shape
         k = self.key(x)
         q = self.query(x)
+        v = self.value(x)
         weight = q @ k.transpose(-2, -1)
-        # Scale by sqrt(d_k) to prevent attention from becoming too peaked
         weight = weight / (self.head_size ** 0.5)
         weight = weight.masked_fill(self.tril[:T, :T].to(x.device) == 0, float("-inf"))
         weight = F.softmax(weight, dim=-1)
-        v = self.value(x)
         out = weight @ v
-        return out, weight
+        return out, weight, q, k, v
 
 
 class MultiHeadAttention(nn.Module):
@@ -39,6 +43,10 @@ class MultiHeadAttention(nn.Module):
     def forward(self, x):
         outs, weights = zip(*[h(x) for h in self.heads])
         return torch.cat(outs, dim=-1), weights
+
+    def forward_with_qkv(self, x):
+        outs, weights, qs, ks, vs = zip(*(h.forward_with_qkv(x) for h in self.heads))
+        return torch.cat(outs, dim=-1), weights, list(qs), list(ks), list(vs)
 
 
 class FeedForward(nn.Module):
@@ -66,11 +74,17 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd) if use_layernorm else nn.Identity()
 
     def forward(self, x):
-        attn_out, wei = self.sa(self.ln1(x))
-        x = x + attn_out if self.use_residual else attn_out
-        ffwd_out = self.ffwd(self.ln2(x))
-        x = x + ffwd_out if self.use_residual else ffwd_out
-        return x, wei
+        post_ffwd, wei, _, _, _, _, _ = self.forward_with_activations(x)
+        return post_ffwd, wei
+
+    def forward_with_activations(self, x):
+        """Run one block and expose Q/K/V, attention, and intermediate states."""
+        ln1_x = self.ln1(x)
+        attn_out, wei, qs, ks, vs = self.sa.forward_with_qkv(ln1_x)
+        post_attn = x + attn_out if self.use_residual else attn_out
+        ffwd_out = self.ffwd(self.ln2(post_attn))
+        post_ffwd = post_attn + ffwd_out if self.use_residual else ffwd_out
+        return post_ffwd, wei, qs, ks, vs, ln1_x, post_attn
 
 
 class BigramLanguageModel(nn.Module):
@@ -136,36 +150,81 @@ class BigramLanguageModel(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def features(self, idx: torch.Tensor):
-        """Run a forward pass and expose internal activations for analysis.
+    def forward_with_activations(self, idx: torch.Tensor):
+        """Expose every representation used in the causal forward pass.
 
-        Returns (logits, hidden, attn) where:
-          - hidden: (B, T, n_embd) final representation fed to lm_head
-          - attn:   tuple of per-head attention matrices (B, T, T) from the last
-                    attention layer, or None if unavailable.
+        Returns a dict with:
+          token_emb, pos_emb, block_input: (B, T, n_embd)
+          layers: list of per-layer dicts with keys queries, keys, values (per-head
+                  lists of (B,T,head_size)), attention (per-head (B,T,T)), attn_input
+                  (ln1 input), post_attn, post_ffwd
+          block_output: (B, T, n_embd) after final LayerNorm, fed to lm_head
+          logits: (B, T, vocab)
         """
         B, T = idx.shape
         token_emb = self.token_embedding(idx)
         positions = torch.arange(T, device=idx.device) % self.block_size
-        pos_emb = self.position_embedding_table(positions)
+        pos_emb = self.position_embedding_table(positions).unsqueeze(0).expand(B, -1, -1)
         x = token_emb + pos_emb
 
+        layers = []
         if self._legacy:
-            attn_out, attn = self.sa_heads(x)
-            if self.use_residual:
-                x = x + attn_out
-                x = x + self.ffwd(x)
-            else:
-                x = attn_out
-                x = self.ffwd(x)
+            ln1_x = x
+            attn_out, attn, qs, ks, vs = self.sa_heads.forward_with_qkv(ln1_x)
+            post_attn = x + attn_out if self.use_residual else attn_out
+            ffwd_out = self.ffwd(post_attn)
+            post_ffwd = post_attn + ffwd_out if self.use_residual else ffwd_out
+            layers.append({
+                "attn_input": ln1_x,
+                "queries": qs,
+                "keys": ks,
+                "values": vs,
+                "attention": list(attn),
+                "post_attn": post_attn,
+                "post_ffwd": post_ffwd,
+            })
+            x = post_ffwd
         else:
-            attn = None
             for block in self.blocks:
-                x, attn = block(x)
+                post_ffwd, attn, qs, ks, vs, ln1_x, post_attn = block.forward_with_activations(x)
+                layers.append({
+                    "attn_input": ln1_x,
+                    "queries": qs,
+                    "keys": ks,
+                    "values": vs,
+                    "attention": list(attn),
+                    "post_attn": post_attn,
+                    "post_ffwd": post_ffwd,
+                })
+                x = post_ffwd
+
+        if not self._legacy:
             x = self.ln_f(x)
 
         logits = self.lm_head(x)
-        return logits, x, attn
+        return {
+            "token_emb": token_emb,
+            "pos_emb": pos_emb,
+            "block_input": token_emb + pos_emb,
+            "layers": layers,
+            "block_output": x,
+            "logits": logits,
+        }
+
+    @torch.no_grad()
+    def features(self, idx: torch.Tensor):
+        """Run a forward pass and expose internal activations for analysis.
+
+        Returns (logits, block_output, attn) where:
+          - block_output: (B, T, n_embd) final representation fed to lm_head
+          - attn: tuple of per-head attention matrices (B, T, T) from the last
+                  attention layer, or None if unavailable.
+        """
+        acts = self.forward_with_activations(idx)
+        attn = None
+        if acts["layers"]:
+            attn = tuple(acts["layers"][-1]["attention"])
+        return acts["logits"], acts["block_output"], attn
 
     @torch.no_grad()
     def generate(self, idx: torch.Tensor, max_new_tokens: int):

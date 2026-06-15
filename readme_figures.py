@@ -202,6 +202,14 @@ PLOT_BASENAME_TO_FIGURE: dict[str, ReadmeFigure] = {
     fig.plot_basename: fig for fig in README_FIGURES
 }
 
+# Vocabulary structure figures depend only on the word list, not the model.
+SHARED_FIGURE_NUMBERS: frozenset[int] = frozenset({1, 2})
+
+
+def is_shared_figure(plot_basename: str) -> bool:
+    fig = PLOT_BASENAME_TO_FIGURE.get(plot_basename)
+    return fig is not None and fig.number in SHARED_FIGURE_NUMBERS
+
 
 def numbered_plot_path(out_dir: str | Path, plot_basename: str) -> Path:
     """Path for a README figure inside an experiment plots directory."""
@@ -219,3 +227,28 @@ def remove_legacy_readme_plot_names(plots_dir: str | Path) -> None:
         numbered = root / fig.filename()
         if numbered.is_file() and legacy.is_file() and legacy != numbered:
             legacy.unlink()
+
+
+def remove_shared_figures_from_model_plots(
+    model_plots_dir: str | Path,
+    experiment_shared_dir: str | Path,
+) -> None:
+    """Remove trie/DFA copies from model plots when they live under shared/."""
+    plots_root = Path(model_plots_dir)
+    shared_root = Path(experiment_shared_dir)
+    if not shared_root.is_dir():
+        return
+
+    for fig in README_FIGURES:
+        if fig.number not in SHARED_FIGURE_NUMBERS:
+            continue
+        for name in (fig.plot_basename, fig.filename()):
+            duplicate = plots_root / name
+            shared_copy = shared_root / name
+            if shared_copy.is_file() and duplicate.is_file():
+                duplicate.unlink()
+
+    for svg_name in ("vocabulary_trie.svg", "vocabulary_min_dfa.svg"):
+        duplicate = plots_root / svg_name
+        if (shared_root / svg_name).is_file() and duplicate.is_file():
+            duplicate.unlink()

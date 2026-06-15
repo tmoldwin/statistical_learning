@@ -13,7 +13,7 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from experiment import plots_dir as experiment_plots_dir
+from experiment import shared_dir as experiment_shared_dir
 from task import REGIMES
 
 
@@ -1097,10 +1097,10 @@ def vocabulary_for_experiment(exp_name: str) -> list[str]:
 
 
 def write_vocabulary_diagrams_for_experiment(exp_name: str) -> tuple[Path, Path]:
-    """Write trie + min-DFA SVGs under experiments/<exp_name>/plots/."""
+    """Write trie + min-DFA SVGs under experiments/<exp_name>/shared/."""
     return write_vocabulary_diagrams(
         vocabulary_for_experiment(exp_name),
-        experiment_plots_dir(exp_name),
+        experiment_shared_dir(exp_name),
     )
 
 
@@ -1140,7 +1140,7 @@ def main() -> None:
     parser.add_argument("--words", nargs="+", default=None,
                         help="explicit word list (overrides regime)")
     parser.add_argument("--exp", default=None,
-                        help="write to experiments/<exp>/plots/ (default: regime name)")
+                        help="write to experiments/<exp>/shared/ (default: regime name)")
     parser.add_argument("--out-dir", default=None,
                         help="output directory (default: plots/ or experiment plots/)")
     args = parser.parse_args()
@@ -1155,7 +1155,7 @@ def main() -> None:
     if args.out_dir:
         out_dir = Path(args.out_dir)
     elif args.exp or args.regime:
-        out_dir = experiment_plots_dir(args.exp or args.regime)
+        out_dir = experiment_shared_dir(args.exp or args.regime)
     else:
         out_dir = Path("plots")
 

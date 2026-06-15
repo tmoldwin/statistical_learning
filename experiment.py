@@ -2,15 +2,16 @@
 
 experiments/<name>/
     input.txt                 # shared training corpus
+    shared/                   # vocabulary trie + DFA (model-agnostic)
     rnn/
         model.npz
-        plots/
+        plots/                # RNN-specific analysis figures
         learning_dynamics/
     transformer/
         model.pt
         model_config.json
         training_meta.json
-        plots/
+        plots/                # transformer-specific analysis figures
         learning_dynamics/
 """
 
@@ -148,6 +149,10 @@ def training_meta_path(name: str) -> Path:
     return model_dir(name, "transformer") / "training_meta.json"
 
 
+def shared_dir(name: str) -> Path:
+    return experiment_dir(name) / "shared"
+
+
 def plots_dir(name: str, model_type: str = "rnn") -> Path:
     return model_dir(name, model_type) / "plots"
 
@@ -162,5 +167,6 @@ def plot_path(name: str, plot_name: str, model_type: str = "rnn") -> Path:
 
 def ensure_experiment_dirs(name: str, model_type: str = "rnn") -> None:
     experiment_dir(name).mkdir(parents=True, exist_ok=True)
+    shared_dir(name).mkdir(parents=True, exist_ok=True)
     plots_dir(name, model_type).mkdir(parents=True, exist_ok=True)
     learning_dynamics_dir(name, model_type).mkdir(parents=True, exist_ok=True)

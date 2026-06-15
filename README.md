@@ -11,6 +11,7 @@ Outputs are organized for side-by-side comparison:
 ```
 experiments/<regime>/
   input.txt              # shared training corpus
+  shared/                # trie + DFA (same for RNN and transformer)
   rnn/
     model.npz
     plots/
@@ -51,15 +52,18 @@ Same word vocabularies as the original RNN repo (`task.py`):
 
 ## Visualization
 
-Both models use the **same RNN visualization pipeline** (`visualize.py`):
-hidden-state geometry, DFA alignment, PCA panels, correlation structure, etc.
+The RNN uses hidden-state geometry plots (`visualize.py --model-type rnn`).
 
-RNN-specific plots (weight matrices, recurrent vector field) are skipped for the transformer.
+The transformer uses **representation-specific** analysis: token embeddings, position
+embeddings, block input, per-layer Q/K/V, attention weights, and block output (pre-`lm_head`)
+are plotted separately — not as a single “hidden state.”
 
 ```bash
 python visualize.py --exp ten_word_overlap_s --model-type rnn
 python visualize.py --exp ten_word_overlap_s --model-type transformer
 ```
+
+RNN-only plots (weight matrices, recurrent vector field) are skipped for the transformer.
 
 ## Repository layout
 
@@ -78,7 +82,8 @@ rnn/
 transformer/
   model.py           # Minimal causal transformer
   train.py           # Character-level training
-  adapter.py         # Bridge transformer → visualize.py
+  adapter.py         # Extract Q/K/V, embeddings, attention for analysis
+  viz_repr.py        # Representation-specific transformer plots
   data_char.py       # Char encoding / batching
 ```
 

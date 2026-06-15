@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyArrowPatch
 from matplotlib.path import Path as MplPath
 
-from readme_figures import numbered_plot_path
+from experiment import shared_dir
+from readme_figures import SHARED_FIGURE_NUMBERS, numbered_plot_path
 from task import REGIMES
 from vocab_diagrams import (
     BG_COLOR,
@@ -123,8 +124,9 @@ def export_dfa_png(words: list[str], out_path: Path) -> None:
 
 
 def main() -> None:
+    exp_name = "ten_word_overlap_s"
     words = REGIMES["ten_word_overlap"]
-    plots = Path("experiments/ten_word_overlap_s/rnn/plots")
+    plots = shared_dir(exp_name)
     trie_path = numbered_plot_path(plots, "vocabulary_trie.png")
     dfa_path = numbered_plot_path(plots, "vocabulary_min_dfa.png")
     export_trie_png(words, trie_path)

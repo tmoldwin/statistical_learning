@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from experiment import EXPERIMENT_CONFIG, experiment_regime, input_path, model_path
+from vocab_diagrams import write_vocabulary_diagrams_for_experiment
 
 
 def run(cmd: list[str]) -> None:
@@ -94,6 +95,8 @@ def main() -> None:
                     tf_cmd.extend(["--steps", "500"])
                 run(tf_cmd)
 
+        write_vocabulary_diagrams_for_experiment(name)
+
         for model_type in args.models:
             run([
                 sys.executable, "visualize.py",
@@ -105,7 +108,7 @@ def main() -> None:
         if name == "ten_word_overlap_s" and "rnn" in args.models:
             run([sys.executable, "scripts/build_readme.py"])
 
-    print("\nDone. Outputs under experiments/<name>/{rnn,transformer}/")
+    print("\nDone. Outputs under experiments/<name>/{shared,rnn,transformer}/")
 
 
 if __name__ == "__main__":

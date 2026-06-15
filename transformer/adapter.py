@@ -1,8 +1,9 @@
-"""Adapter: expose transformer checkpoints through the RNN visualization interface."""
+"""Adapter: expose transformer checkpoints for representation-level analysis."""
 
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +36,7 @@ def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, d
 
 
 def load_model(path: str) -> dict:
-    """Return a model dict compatible with visualize.py (transformer backend)."""
+    """Return a model dict for visualize.py (transformer backend)."""
     exp_dir = Path(path).parent
     model, cfg, meta = load_transformer_bundle(exp_dir)
 
@@ -48,6 +49,9 @@ def load_model(path: str) -> dict:
         "hidden_size": int(cfg["n_embd"]),
         "vocab_size": int(cfg["vocab_size"]),
         "block_size": int(cfg["block_size"]),
+        "num_heads": int(cfg["num_heads"]),
+        "head_size": int(cfg["head_size"]),
+        "n_layer": int(cfg.get("n_layer", 2)),
         "use_relu": False,
         "dale_law": False,
     }
@@ -75,29 +79,116 @@ def load_model(path: str) -> dict:
     return model_dict
 
 
+@dataclass
+class LayerActivations:
+    """Per-layer Q/K/V and attention extracted at each corpus timestep."""
+
+    attn_input: np.ndarray
+    queries: list[np.ndarray]
+    keys: list[np.ndarray]
+    values: list[np.ndarray]
+    attention_lags: list[np.ndarray]
+    post_attn: np.ndarray
+    post_ffwd: np.ndarray
+
+
+@dataclass
+class TransformerActivations:
+    """All transformer representations aligned to corpus timesteps (T rows each)."""
+
+    token_emb: np.ndarray
+    pos_emb: np.ndarray
+    block_input: np.ndarray
+    block_output: np.ndarray
+    output_probs: np.ndarray
+    layers: list[LayerActivations] = field(default_factory=list)
+    num_heads: int = 0
+    head_size: int = 0
+    n_embd: int = 0
+    block_size: int = 0
+
+
 @torch.no_grad()
-def forward_pass(model_dict: dict, text: str) -> tuple[np.ndarray, np.ndarray]:
-    """Run transformer over text; return (hidden_states, output_probs) like the RNN."""
+def extract_transformer_activations(model_dict: dict, text: str) -> TransformerActivations:
+    """Run the causal transformer and collect each representation independently.
+
+    Unlike an RNN hidden state, a transformer has separate token embeddings,
+    position embeddings, per-head Q/K/V vectors, attention weights, and a final
+    block output fed to lm_head. Each is stored here as (T, ...) arrays aligned
+    to corpus timesteps (the vector at the current query position in the causal window).
+    """
     torch_model: BigramLanguageModel = model_dict["_torch_model"]
     chars = model_dict["chars"]
     char_to_index = {c: i for i, c in enumerate(chars)}
     block_size = model_dict["block_size"]
+    n_embd = model_dict["hidden_size"]
+    num_heads = model_dict["num_heads"]
+    head_size = model_dict["head_size"]
+    n_layer = len(torch_model.blocks) if not torch_model._legacy else 1
     T = len(text)
-    hidden_size = model_dict["hidden_size"]
-    vocab_size = model_dict["vocab_size"]
 
-    hidden_states = np.zeros((T, hidden_size), dtype=np.float64)
-    output_probs = np.zeros((T, vocab_size), dtype=np.float64)
+    token_emb = np.zeros((T, n_embd), dtype=np.float64)
+    pos_emb = np.zeros((T, n_embd), dtype=np.float64)
+    block_input = np.zeros((T, n_embd), dtype=np.float64)
+    block_output = np.zeros((T, n_embd), dtype=np.float64)
+    output_probs = np.zeros((T, model_dict["vocab_size"]), dtype=np.float64)
+
+    layers: list[LayerActivations] = []
+    for _ in range(n_layer):
+        layers.append(LayerActivations(
+            attn_input=np.zeros((T, n_embd), dtype=np.float64),
+            queries=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
+            keys=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
+            values=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
+            attention_lags=[np.full((T, block_size), np.nan, dtype=np.float64) for _ in range(num_heads)],
+            post_attn=np.zeros((T, n_embd), dtype=np.float64),
+            post_ffwd=np.zeros((T, n_embd), dtype=np.float64),
+        ))
 
     ids = [char_to_index[ch] for ch in text]
     for t in range(T):
         start = max(0, t - block_size + 1)
         window = ids[start : t + 1]
+        W = len(window)
         X = torch.tensor([window], dtype=torch.long)
-        logits, hidden, _ = torch_model.features(X)
-        h = hidden[0, -1, :].cpu().numpy()
-        p = torch.softmax(logits[0, -1, :], dim=-1).cpu().numpy()
-        hidden_states[t] = h
-        output_probs[t] = p
+        acts = torch_model.forward_with_activations(X)
+        q_idx = W - 1
 
-    return hidden_states, output_probs
+        token_emb[t] = acts["token_emb"][0, q_idx].cpu().numpy()
+        pos_emb[t] = acts["pos_emb"][0, q_idx].cpu().numpy()
+        block_input[t] = acts["block_input"][0, q_idx].cpu().numpy()
+        block_output[t] = acts["block_output"][0, q_idx].cpu().numpy()
+        output_probs[t] = torch.softmax(acts["logits"][0, q_idx], dim=-1).cpu().numpy()
+
+        for layer_idx, layer_acts in enumerate(acts["layers"]):
+            layer = layers[layer_idx]
+            layer.attn_input[t] = layer_acts["attn_input"][0, q_idx].cpu().numpy()
+            layer.post_attn[t] = layer_acts["post_attn"][0, q_idx].cpu().numpy()
+            layer.post_ffwd[t] = layer_acts["post_ffwd"][0, q_idx].cpu().numpy()
+            for h in range(num_heads):
+                layer.queries[h][t] = layer_acts["queries"][h][0, q_idx].cpu().numpy()
+                layer.keys[h][t] = layer_acts["keys"][h][0, q_idx].cpu().numpy()
+                layer.values[h][t] = layer_acts["values"][h][0, q_idx].cpu().numpy()
+                attn_row = layer_acts["attention"][h][0, q_idx].cpu().numpy()
+                for lag in range(W):
+                    layer.attention_lags[h][t, lag] = attn_row[W - 1 - lag]
+
+    return TransformerActivations(
+        token_emb=token_emb,
+        pos_emb=pos_emb,
+        block_input=block_input,
+        block_output=block_output,
+        output_probs=output_probs,
+        layers=layers,
+        num_heads=num_heads,
+        head_size=head_size,
+        n_embd=n_embd,
+        block_size=block_size,
+    )
+
+
+@torch.no_grad()
+def forward_pass(model_dict: dict, text: str) -> tuple[np.ndarray, np.ndarray]:
+    """Backward-compatible helper: returns (block_output, output_probs)."""
+    acts = extract_transformer_activations(model_dict, text)
+    return acts.block_output, acts.output_probs

@@ -1,24 +1,220 @@
-"""Transformer-specific visualization: separate plots per representation type."""
+"""Transformer-specific visualization: one analysis suite per representation type.
+
+Transformers do not have a single recurrent hidden state. Each component —
+token embedding, position embedding, per-layer attention I/O, Q/K/V, and the
+final output vector — is analyzed separately.
+"""
 
 from __future__ import annotations
 
-import math
 import os
+import shutil
+from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from readme_figures import numbered_plot_path
-from transformer.adapter import extract_transformer_activations
+from readme_figures import PLOT_BASENAME_TO_FIGURE, numbered_plot_path
+from transformer.adapter import LayerActivations, TransformerActivations, extract_transformer_activations
 from vocab_diagrams import MinimizedVocabAutomaton
 
 
-def _plot_path(out_dir: str, name: str, condensed: bool) -> str:
-    path = str(numbered_plot_path(out_dir, name))
+# README figures that only apply to the RNN hidden-state readout. When we
+# previously ran the RNN visualization path on transformers, these landed at
+# the plots root with misleading names — remove them on each transformer run.
+_STALE_ROOT_PLOT_NAMES: tuple[str, ...] = tuple(
+    fig.filename() for fig in PLOT_BASENAME_TO_FIGURE.values()
+    if fig.number in {7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19}
+) + (
+    "block_input_heatmap.png",
+    "block_input_pca.png",
+    "block_output_heatmap.png",
+    "block_output_pca.png",
+    "block_output_clustered_heatmap.png",
+    "block_output_correlation_heatmap.png",
+    "position_embedding_heatmap.png",
+    "position_embedding_pca.png",
+    "token_embedding_heatmap.png",
+    "token_embedding_pca.png",
+    "layer0_attention.png",
+    "layer0_attn_input_heatmap.png",
+    "layer0_qkv.png",
+    "layer1_attention.png",
+    "layer1_attn_input_heatmap.png",
+    "layer1_qkv.png",
+)
+
+
+@dataclass(frozen=True)
+class RepresentationSpec:
+    """One representation to analyze.
+
+    Most fields are (T, D) aligned to corpus timesteps. Lookup tables (token /
+    position embeddings) use ``lookup`` so PCA plots one point per vocab symbol
+    or window position, not one point per timestep.
+    """
+
+    slug: str
+    display_name: str
+    dim_label: str
+    vectors: np.ndarray
+    is_readout: bool = False
+    lookup: str | None = None  # None | "token" | "position"
+
+
+def _condensed_path(path: str, condensed: bool) -> str:
     if not condensed:
         return path
     base, ext = os.path.splitext(path)
     return f"{base}_condensed{ext}" if not base.endswith("_condensed") else path
+
+
+def _repr_dir(out_dir: str | Path, slug: str) -> Path:
+    return Path(out_dir) / "representations" / slug
+
+
+def _repr_plot_path(
+    out_dir: str | Path,
+    slug: str,
+    plot_basename: str,
+    *,
+    condensed: bool = False,
+) -> str:
+    path = numbered_plot_path(_repr_dir(out_dir, slug), plot_basename)
+    return _condensed_path(str(path), condensed)
+
+
+def _attention_dir(out_dir: str | Path) -> Path:
+    return Path(out_dir) / "attention"
+
+
+_STALE_REPRESENTATION_SLUGS: frozenset[str] = frozenset({"block_input"})
+
+
+def cleanup_stale_representation_dirs(out_dir: str | Path, valid_slugs: set[str]) -> None:
+    """Remove representation folders left from multi-head / block_input runs."""
+    repr_root = Path(out_dir) / "representations"
+    if not repr_root.is_dir():
+        return
+    for child in repr_root.iterdir():
+        if not child.is_dir():
+            continue
+        if child.name in valid_slugs:
+            continue
+        if "_head" in child.name or child.name in _STALE_REPRESENTATION_SLUGS:
+            shutil.rmtree(child)
+            print(f"removed stale representation dir {child}")
+
+
+def cleanup_stale_attention_plots(out_dir: str | Path, n_layers: int) -> None:
+    """Drop old attention figure names (multi-head grids, etc.)."""
+    attn_dir = Path(out_dir) / "attention"
+    if not attn_dir.is_dir():
+        return
+    valid = {
+        *(f"layer{i}_qkv.png" for i in range(n_layers)),
+        *(f"layer{i}_attention_lags.png" for i in range(n_layers)),
+    }
+    for stale in attn_dir.iterdir():
+        if stale.is_file() and stale.name not in valid:
+            stale.unlink()
+            print(f"removed stale attention plot {stale}")
+
+
+def cleanup_stale_transformer_plots(out_dir: str | Path) -> None:
+    """Drop root-level plots from the old 'treat block output as h' approach."""
+    root = Path(out_dir)
+    for name in _STALE_ROOT_PLOT_NAMES:
+        stale = root / name
+        if stale.is_file():
+            stale.unlink()
+            print(f"removed stale plot {stale}")
+
+
+def plot_lookup_table_heatmap(
+    row_labels: list[str],
+    vectors: np.ndarray,
+    save_path: str,
+    *,
+    title: str,
+    dim_label: str,
+) -> None:
+    """Heatmap of a lookup table (vocab × dim or positions × dim)."""
+    n_rows, n_dims = vectors.shape
+    fig, ax = plt.subplots(figsize=(max(8, n_dims * 0.35), max(2.5, n_rows * 0.55)))
+    im = ax.imshow(
+        vectors,
+        aspect="auto",
+        cmap="RdBu_r",
+        interpolation="nearest",
+        origin="lower",
+    )
+    ax.set_yticks(range(n_rows))
+    ax.set_yticklabels(row_labels)
+    ax.set_xticks(range(n_dims))
+    ax.set_xticklabels([f"{dim_label}{i}" for i in range(n_dims)], fontsize=7, rotation=90)
+    ax.set_ylabel("lookup index")
+    ax.set_xlabel(dim_label)
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="value")
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def plot_lookup_pca(
+    labels: list[str],
+    vectors: np.ndarray,
+    save_path: str,
+    *,
+    title: str,
+) -> None:
+    """PCA scatter with one labeled point per lookup row (not per timestep)."""
+    from visualize import fit_pca_2d_with_evr
+
+    if vectors.shape[0] < 1:
+        return
+    projected, _, _, evr = fit_pca_2d_with_evr(vectors)
+    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
+    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
+
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+    cmap = plt.get_cmap("tab10", max(len(labels), 1))
+    for i, lab in enumerate(labels):
+        disp = "␣" if lab == " " else lab
+        ax.scatter(
+            projected[i, 0], projected[i, 1],
+            s=120, c=[cmap(i)], edgecolors="black", linewidths=0.4, zorder=3,
+        )
+        ax.annotate(
+            repr(disp), (projected[i, 0], projected[i, 1]),
+            xytext=(6, 6), textcoords="offset points", fontsize=11,
+        )
+    ax.set_xlabel(f"PC1 ({pc1:.1f}%)")
+    ax.set_ylabel(f"PC2 ({pc2:.1f}%)")
+    ax.set_title(title)
+    ax.axhline(0, color="lightgrey", linewidth=0.6, zorder=0)
+    ax.axvline(0, color="lightgrey", linewidth=0.6, zorder=0)
+    ax.grid(True, linestyle=":", alpha=0.35)
+    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def _lookup_table_from_model(model: dict, lookup: str) -> tuple[list[str], np.ndarray]:
+    """Rows of a learned embedding table (not timestep samples)."""
+    torch_model = model["_torch_model"]
+    if lookup == "token":
+        table = torch_model.token_embedding.weight.detach().cpu().numpy()
+        labels = list(model["chars"])
+        return labels, table
+    if lookup == "position":
+        table = torch_model.position_embedding_table.weight.detach().cpu().numpy()
+        labels = [str(i) for i in range(table.shape[0])]
+        return labels, table
+    raise ValueError(f"unknown lookup type: {lookup}")
 
 
 def plot_embedding_heatmap(
@@ -31,7 +227,7 @@ def plot_embedding_heatmap(
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
 ) -> None:
-    """Heatmap for a (T, n_embd) embedding or block vector."""
+    """Heatmap for a (T, D) embedding or block vector at the query position."""
     from visualize import plot_hidden_states_heatmap
 
     plot_hidden_states_heatmap(
@@ -40,7 +236,7 @@ def plot_embedding_heatmap(
         save_path,
         act_label="raw",
         y_label=dim_label,
-        title=f"{repr_name} at each timestep (current query position)",
+        title=f"{repr_name} at each timestep (query position)",
         colorbar_label="value",
         automaton=automaton,
         spaced=spaced,
@@ -53,41 +249,34 @@ def plot_layer_qkv_figure(
     layer_idx: int,
     save_path: str,
     *,
-    num_heads: int,
-    head_size: int,
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
 ) -> None:
-    """One figure with Q, K, V heatmaps per attention head."""
+    """Q, K, V heatmaps for the single attention head at the query position."""
     from visualize import _color_tick_labels_by_state_ids, _dfa_state_ids_at_timesteps
 
     T = len(text)
-    fig, axes = plt.subplots(3, num_heads, figsize=(max(12, num_heads * 3.2), 9), squeeze=False)
-    qkv_rows = [
-        ("Query", layer.queries),
-        ("Key", layer.keys),
-        ("Value", layer.values),
-    ]
-    for row_idx, (qkv_name, head_arrays) in enumerate(qkv_rows):
-        for h in range(num_heads):
-            ax = axes[row_idx, h]
-            data = head_arrays[h].T
-            im = ax.imshow(data, aspect="auto", cmap="RdBu_r", interpolation="nearest", origin="lower")
-            ax.set_title(f"Layer {layer_idx} · head {h} · {qkv_name}")
-            ax.set_yticks(range(head_size))
-            ax.set_yticklabels([f"d{i}" for i in range(head_size)], fontsize=7)
-            ax.set_xticks(range(T))
-            ax.set_xticklabels(list(text), fontsize=6, rotation=90)
-            if automaton is not None:
-                state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
-                _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-            if row_idx == 2:
-                ax.set_xlabel("timestep / input character")
-            if h == 0:
-                ax.set_ylabel(f"{qkv_name} dim")
-            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+    q, k, v = layer.queries[0], layer.keys[0], layer.values[0]
+    head_size = q.shape[1]
+    fig, axes = plt.subplots(3, 1, figsize=(max(12, T * 0.15), 8), squeeze=False)
+    for ax, (qkv_name, data) in zip(
+        axes[:, 0],
+        [("Query", q), ("Key", k), ("Value", v)],
+    ):
+        im = ax.imshow(data.T, aspect="auto", cmap="RdBu_r", interpolation="nearest", origin="lower")
+        ax.set_title(f"Layer {layer_idx} · {qkv_name}")
+        ax.set_yticks(range(head_size))
+        ax.set_yticklabels([f"d{i}" for i in range(head_size)], fontsize=7)
+        ax.set_xticks(range(T))
+        ax.set_xticklabels(list(text), fontsize=6, rotation=90)
+        if automaton is not None:
+            state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
+            _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
+        ax.set_ylabel(f"{qkv_name} dim")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+    axes[-1, 0].set_xlabel("timestep / input character")
     fig.suptitle(
-        f"Per-head Q/K/V at the current query position (layer {layer_idx})",
+        f"Q / K / V at the query position (layer {layer_idx})",
         fontsize=12,
         y=1.02,
     )
@@ -104,51 +293,256 @@ def plot_layer_attention_figure(
     block_size: int,
     save_path: str,
     *,
-    num_heads: int,
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
 ) -> None:
-    """Attention weights from the current query to prior keys (lag 0 = self)."""
+    """Causal attention weights: query at t attends to keys at lags 0..block_size-1."""
     from visualize import _color_tick_labels_by_state_ids, _dfa_state_ids_at_timesteps
 
     T = len(text)
-    ncols = min(num_heads, 4)
-    nrows = math.ceil(num_heads / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(max(12, ncols * 3.5), nrows * 3.2), squeeze=False)
+    attn = layer.attention_lags[0]
     lag_labels = [f"lag {i}" for i in range(block_size)]
-    for h in range(num_heads):
-        ax = axes[h // ncols, h % ncols]
-        im = ax.imshow(
-            layer.attention_lags[h].T,
-            aspect="auto",
-            cmap="magma",
-            vmin=0.0,
-            vmax=1.0,
-            interpolation="nearest",
-            origin="lower",
-        )
-        ax.set_title(f"Layer {layer_idx} · head {h}")
-        ax.set_yticks(range(block_size))
-        ax.set_yticklabels(lag_labels, fontsize=7)
-        ax.set_xticks(range(T))
-        ax.set_xticklabels(list(text), fontsize=6, rotation=90)
-        if automaton is not None:
-            state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
-            _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-        ax.set_xlabel("timestep / input character")
-        ax.set_ylabel("attention to key lag")
-        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="weight")
-    for h in range(num_heads, nrows * ncols):
-        axes[h // ncols, h % ncols].axis("off")
-    fig.suptitle(
-        f"Causal attention weights (layer {layer_idx}): query at timestep t attends to lag k",
-        fontsize=12,
-        y=1.02,
+    fig, ax = plt.subplots(figsize=(max(12, T * 0.15), 5))
+    im = ax.imshow(
+        attn.T,
+        aspect="auto",
+        cmap="magma",
+        vmin=0.0,
+        vmax=1.0,
+        interpolation="nearest",
+        origin="lower",
     )
+    ax.set_title(f"Layer {layer_idx} causal attention")
+    ax.set_yticks(range(block_size))
+    ax.set_yticklabels(lag_labels, fontsize=7)
+    ax.set_xticks(range(T))
+    ax.set_xticklabels(list(text), fontsize=6, rotation=90)
+    if automaton is not None:
+        state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
+        _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
+    ax.set_xlabel("timestep / input character")
+    ax.set_ylabel("attention to key lag")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="weight")
     fig.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
+
+
+def collect_representation_specs(acts: TransformerActivations) -> list[RepresentationSpec]:
+    """All (T, D) representations to analyze, in forward-pass order."""
+    specs = [
+        RepresentationSpec(
+            "token_embedding",
+            "token embedding E[token] (lookup table)",
+            "token emb",
+            acts.token_emb,
+            lookup="token",
+        ),
+        RepresentationSpec(
+            "position_embedding",
+            "position embedding E[pos] (lookup table)",
+            "pos emb",
+            acts.pos_emb,
+            lookup="position",
+        ),
+    ]
+    for layer_idx, layer in enumerate(acts.layers):
+        specs.extend([
+            RepresentationSpec(
+                f"layer{layer_idx}_attn_input",
+                f"layer {layer_idx} attention input (post-ln1)",
+                "attn in",
+                layer.attn_input,
+            ),
+            RepresentationSpec(
+                f"layer{layer_idx}_post_attn",
+                f"layer {layer_idx} post-attention residual",
+                "post attn",
+                layer.post_attn,
+            ),
+            RepresentationSpec(
+                f"layer{layer_idx}_post_ffwd",
+                f"layer {layer_idx} post-FFN output",
+                "post ffn",
+                layer.post_ffwd,
+            ),
+            RepresentationSpec(
+                f"layer{layer_idx}_query",
+                f"layer {layer_idx} query",
+                "q",
+                layer.queries[0],
+            ),
+            RepresentationSpec(
+                f"layer{layer_idx}_key",
+                f"layer {layer_idx} key",
+                "k",
+                layer.keys[0],
+            ),
+            RepresentationSpec(
+                f"layer{layer_idx}_value",
+                f"layer {layer_idx} value",
+                "v",
+                layer.values[0],
+            ),
+        ])
+    specs.append(RepresentationSpec(
+        "block_output",
+        "transformer output (pre-lm_head, query position)",
+        "out",
+        acts.block_output,
+        is_readout=True,
+    ))
+    return specs
+
+
+def _condense_representation(
+    text: str,
+    vectors: np.ndarray,
+    output_probs: np.ndarray,
+    *,
+    spaced: bool,
+    words: list[str] | None,
+    condensed: bool,
+):
+    from visualize import condense_hidden_states_by_prefix
+
+    if not condensed:
+        return None
+    return condense_hidden_states_by_prefix(
+        text, vectors, output_probs, spaced=spaced, words=words,
+    )
+
+
+def plot_representation_suite(
+    spec: RepresentationSpec,
+    *,
+    model: dict,
+    text: str,
+    out_dir: str,
+    output_probs: np.ndarray,
+    spaced: bool,
+    automaton: MinimizedVocabAutomaton | None,
+    words: list[str] | None,
+    condensed: bool,
+) -> None:
+    """RNN-parallel plot set for one transformer representation."""
+    from visualize import (
+        plot_dfa_grouped_state_correlation,
+        plot_dfa_state_distance_comparison,
+        plot_hidden_states_clustermap,
+        plot_hidden_states_correlation_clustermap,
+        plot_pca_context_labels,
+        plot_pca_dfa_analysis,
+        plot_pca_next_char_probability_panels,
+        plot_pca_prediction_regions,
+        plot_per_char_hidden_state_heatmaps,
+        plot_space_to_space_trajectories,
+    )
+
+    chars = model["chars"]
+    name = spec.display_name
+    dim = spec.dim_label
+
+    if spec.lookup is not None:
+        row_labels, table = _lookup_table_from_model(model, spec.lookup)
+        plot_lookup_table_heatmap(
+            row_labels, table,
+            _repr_plot_path(out_dir, spec.slug, "activation_heatmap.png", condensed=condensed),
+            title=f"{name} — learned lookup table",
+            dim_label=dim,
+        )
+        plot_lookup_pca(
+            row_labels, table,
+            _repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+            title=f"{name} — one point per lookup row (PCA)",
+        )
+        return
+
+    cv = _condense_representation(
+        text, spec.vectors, output_probs,
+        spaced=spaced, words=words, condensed=condensed,
+    )
+
+    plot_embedding_heatmap(
+        text, spec.vectors,
+        _repr_plot_path(out_dir, spec.slug, "activation_heatmap.png", condensed=condensed),
+        repr_name=name, dim_label=dim,
+        automaton=automaton, spaced=spaced,
+    )
+    plot_per_char_hidden_state_heatmaps(
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "activation_by_input_char.png", condensed=condensed),
+        spaced=spaced, condensed=cv, automaton=automaton,
+        repr_label=name, dim_label=dim,
+    )
+    plot_hidden_states_clustermap(
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "activation_clustered_heatmap.png", condensed=condensed),
+        condensed=cv, automaton=automaton, spaced=spaced,
+        repr_label=name, dim_label=dim,
+    )
+    plot_pca_context_labels(
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, condensed=cv,
+    )
+    plot_hidden_states_correlation_clustermap(
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "state_correlation_clustered_heatmap.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, words=words, condensed=cv,
+        repr_label=name,
+    )
+    if automaton is not None:
+        plot_dfa_grouped_state_correlation(
+            text, spec.vectors,
+            save_path=_repr_plot_path(
+                out_dir, spec.slug, "state_correlation_by_dfa_state.png", condensed=condensed,
+            ),
+            spaced=spaced, automaton=automaton, condensed=cv,
+            repr_label=name,
+        )
+        plot_dfa_state_distance_comparison(
+            text, spec.vectors, automaton,
+            save_path=_repr_plot_path(
+                out_dir, spec.slug, "dfa_state_distance_comparison.png", condensed=condensed,
+            ),
+            spaced=spaced, condensed=cv,
+            repr_label=name,
+        )
+
+    if not spec.is_readout:
+        return
+
+    if automaton is not None and words:
+        plot_pca_dfa_analysis(
+            text, spec.vectors, chars, words,
+            save_path=_repr_plot_path(out_dir, spec.slug, "dfa_and_embedding_pca.png", condensed=condensed),
+            automaton=automaton,
+            model=model,
+            spaced=spaced, condensed=cv,
+            repr_name=name,
+        )
+    plot_pca_prediction_regions(
+        model, text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "next_char_regions_pca.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, condensed=cv,
+        repr_name=name,
+    )
+    plot_pca_next_char_probability_panels(
+        model, text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "next_char_prob_panels_pca.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, condensed=cv,
+    )
+    if words:
+        plot_space_to_space_trajectories(
+            text, spec.vectors,
+            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
+            model=None,
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+        )
 
 
 def run_transformer_visualization(
@@ -160,104 +554,66 @@ def run_transformer_visualization(
     automaton: MinimizedVocabAutomaton | None = None,
     words: list[str] | None = None,
     condensed: bool = False,
-) -> object:
-    """Generate representation-specific plots (not RNN-style hidden-state analysis)."""
-    from visualize import (
-        condense_hidden_states_by_prefix,
-        plot_hidden_states_clustermap,
-        plot_hidden_states_correlation_clustermap,
-        plot_output_probs,
-        plot_pca_context_labels,
-        plot_pca_dfa_analysis,
-        plot_pca_next_char_probability_panels,
-        plot_pca_prediction_regions,
-    )
+) -> TransformerActivations:
+    """Generate per-representation plots mirroring the RNN visualization suite."""
+    from visualize import plot_output_probs
 
+    cleanup_stale_transformer_plots(out_dir)
     acts = extract_transformer_activations(model, text)
-    cv = None
-    if condensed:
-        cv = condense_hidden_states_by_prefix(
-            text, acts.block_output, acts.output_probs, spaced=spaced, words=words,
+    if acts.num_heads != 1:
+        raise ValueError(
+            f"Transformer visualization expects num_heads=1 (got {acts.num_heads}). "
+            "Retrain with the current defaults: python -m transformer.train --exp <name>"
         )
+    specs = collect_representation_specs(acts)
+    valid_slugs = {spec.slug for spec in specs}
+    cleanup_stale_representation_dirs(out_dir, valid_slugs)
+    cleanup_stale_attention_plots(out_dir, len(acts.layers))
 
+    cv_readout = _condense_representation(
+        text, acts.block_output, acts.output_probs,
+        spaced=spaced, words=words, condensed=condensed,
+    )
     plot_output_probs(
         text, acts.output_probs, model["chars"],
-        save_path=_plot_path(out_dir, "next_char_prob_sequence_heatmap.png", condensed),
-        condensed=cv,
+        save_path=_condensed_path(
+            str(numbered_plot_path(out_dir, "next_char_prob_sequence_heatmap.png")),
+            condensed,
+        ),
+        condensed=cv_readout,
         automaton=automaton,
         spaced=spaced,
         words=words,
     )
 
-    embedding_specs = [
-        ("token_embedding", acts.token_emb, "token_embedding_heatmap.png", "token emb dim"),
-        ("position_embedding", acts.pos_emb, "position_embedding_heatmap.png", "position emb dim"),
-        ("block_input (token + position)", acts.block_input, "block_input_heatmap.png", "block input dim"),
-        ("block output (pre-lm_head)", acts.block_output, "block_output_heatmap.png", "block output dim"),
-    ]
-    for repr_name, vectors, fname, dim_label in embedding_specs:
-        plot_embedding_heatmap(
-            text, vectors, _plot_path(out_dir, fname, condensed),
-            repr_name=repr_name, dim_label=dim_label,
-            automaton=automaton, spaced=spaced,
-        )
-        pca_name = fname.replace("_heatmap.png", "_pca.png")
-        plot_pca_context_labels(
-            text, vectors, model["chars"],
-            save_path=_plot_path(out_dir, pca_name, condensed),
-            spaced=spaced, automaton=automaton, condensed=cv,
-        )
-
+    attn_dir = _attention_dir(out_dir)
+    attn_dir.mkdir(parents=True, exist_ok=True)
     for layer_idx, layer in enumerate(acts.layers):
         plot_layer_qkv_figure(
             text, layer, layer_idx,
-            _plot_path(out_dir, f"layer{layer_idx}_qkv.png", condensed),
-            num_heads=acts.num_heads, head_size=acts.head_size,
+            str(attn_dir / f"layer{layer_idx}_qkv.png"),
             automaton=automaton, spaced=spaced,
         )
         plot_layer_attention_figure(
             text, layer, layer_idx, acts.block_size,
-            _plot_path(out_dir, f"layer{layer_idx}_attention.png", condensed),
-            num_heads=acts.num_heads,
-            automaton=automaton, spaced=spaced,
-        )
-        plot_embedding_heatmap(
-            text, layer.attn_input,
-            _plot_path(out_dir, f"layer{layer_idx}_attn_input_heatmap.png", condensed),
-            repr_name=f"layer {layer_idx} attention input (post-ln1)",
-            dim_label="attn input dim",
+            str(attn_dir / f"layer{layer_idx}_attention_lags.png"),
             automaton=automaton, spaced=spaced,
         )
 
-    if automaton is not None and words:
-        plot_pca_dfa_analysis(
-            text, acts.block_output, model["chars"], words,
-            save_path=_plot_path(out_dir, "dfa_and_embedding_pca.png", condensed),
-            automaton=automaton,
+    print(f"transformer: analyzing {len(specs)} separate representations")
+    for spec in specs:
+        print(f"  · {spec.slug}: {spec.display_name}  shape={spec.vectors.shape}")
+        _repr_dir(out_dir, spec.slug).mkdir(parents=True, exist_ok=True)
+        plot_representation_suite(
+            spec,
             model=model,
-            spaced=spaced, condensed=cv,
+            text=text,
+            out_dir=out_dir,
+            output_probs=acts.output_probs,
+            spaced=spaced,
+            automaton=automaton,
+            words=words,
+            condensed=condensed,
         )
-
-    plot_pca_prediction_regions(
-        model, text, acts.block_output, model["chars"],
-        save_path=_plot_path(out_dir, "next_char_regions_pca.png", condensed),
-        spaced=spaced, automaton=automaton, condensed=cv,
-    )
-    plot_pca_next_char_probability_panels(
-        model, text, acts.block_output, model["chars"],
-        save_path=_plot_path(out_dir, "next_char_prob_panels_pca.png", condensed),
-        spaced=spaced, automaton=automaton, condensed=cv,
-    )
-
-    plot_hidden_states_clustermap(
-        text, acts.block_output, model["chars"],
-        save_path=_plot_path(out_dir, "block_output_clustered_heatmap.png", condensed),
-        condensed=cv, automaton=automaton, spaced=spaced,
-    )
-    plot_hidden_states_correlation_clustermap(
-        text, acts.block_output, model["chars"],
-        save_path=_plot_path(out_dir, "block_output_correlation_heatmap.png", condensed),
-        spaced=spaced, automaton=automaton, words=words, condensed=cv,
-    )
 
     return acts

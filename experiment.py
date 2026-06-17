@@ -25,6 +25,19 @@ EXPERIMENTS_ROOT = REPO_ROOT / "experiments"
 MODEL_TYPES = ("rnn", "transformer")
 
 _BASE_CONFIG: dict[str, dict] = {
+    # Tiny 2D sandbox: 3 words, short corpus, fast training for transformer debugging.
+    "three_word_overlap": {
+        "chars": 3_000,
+        "steps": 500,
+        "viz_length": 40,
+        "hidden_size": 12,
+        "sequence_length": 8,
+        "num_heads": 1,
+        "n_layer": 1,
+        "eval_interval": 100,
+        "eval_iterations": 10,
+        "metric_rollout_len": 400,
+    },
     "ten_word_overlap": {
         "chars": 50_000,
         "steps": 15_000,
@@ -65,8 +78,8 @@ _BASE_CONFIG: dict[str, dict] = {
 TRANSFORMER_DEFAULTS: dict[str, object] = {
     "n_embd": 32,
     "block_size": 40,
-    "num_heads": 4,
-    "head_size": 8,
+    "num_heads": 1,
+    "head_size": 32,
     "n_layer": 2,
     "use_layernorm": True,
     "use_residual": True,

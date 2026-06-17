@@ -1,0 +1,59 @@
+{
+  "loss_iterations": [
+    0,
+    100,
+    200,
+    300,
+    400,
+    500
+  ],
+  "loss_smooth": [
+    2.042584037780762,
+    2.034840928271413,
+    2.026389453700409,
+    2.017809154169529,
+    2.0091967430948072,
+    2.000584444249934
+  ],
+  "metric_iterations": [
+    0,
+    100,
+    200,
+    300,
+    400,
+    500
+  ],
+  "metric_word_error_frac": [
+    1.0,
+    0.53547872319098,
+    0.21934996746000546,
+    0.12493117448778152,
+    0.08612752031505672,
+    0.06327589621707269
+  ],
+  "sample_before": "accccmcmm ahcmamctmcmaattmcmtcmmahmhmmhhtmtmcmtmam",
+  "sample_after": "mat hat mat cat mat cat mat cat mat cat cat mat ha",
+  "demo_snippet": "mat cat cat mat hat cat cat cat mat cat mat mat ma",
+  "demo_before": "accccmcmm ahcmamctmcmaattmcmtcmmahmhmmhhtmtmcmtmam",
+  "demo_after": "mat hat mat cat mat cat mat cat mat cat cat mat ha",
+  "demo_word_error_frac": 0.06930693069306931,
+  "demo_rng_seed": 542,
+  "demo_seed_char": " ",
+  "final_word_error_frac": 0.06362376237623762,
+  "stoi": {
+    " ": 0,
+    "a": 1,
+    "c": 2,
+    "h": 3,
+    "m": 4,
+    "t": 5
+  },
+  "itos": {
+    "0": " ",
+    "1": "a",
+    "2": "c",
+    "3": "h",
+    "4": "m",
+    "5": "t"
+  }
+}

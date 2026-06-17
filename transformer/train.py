@@ -120,16 +120,22 @@ def train(
     hidden_size = int(cfg.get("hidden_size", TRANSFORMER_DEFAULTS["n_embd"]))
     block_size = int(cfg.get("sequence_length", TRANSFORMER_DEFAULTS["block_size"]))
     max_steps = steps if steps is not None else int(cfg["steps"])
+    num_heads = int(cfg.get("num_heads", TRANSFORMER_DEFAULTS["num_heads"]))
+    head_size = int(cfg.get("head_size", hidden_size if num_heads == 1 else TRANSFORMER_DEFAULTS["head_size"]))
+    if num_heads * head_size != hidden_size:
+        raise ValueError(
+            f"num_heads ({num_heads}) * head_size ({head_size}) must equal hidden_size ({hidden_size})"
+        )
 
     model_cfg = {
         "vocab_size": vocab_size,
         "n_embd": hidden_size,
         "block_size": block_size,
-        "num_heads": int(TRANSFORMER_DEFAULTS["num_heads"]),
-        "head_size": int(TRANSFORMER_DEFAULTS["head_size"]),
-        "n_layer": int(TRANSFORMER_DEFAULTS["n_layer"]),
-        "use_layernorm": bool(TRANSFORMER_DEFAULTS["use_layernorm"]),
-        "use_residual": bool(TRANSFORMER_DEFAULTS["use_residual"]),
+        "num_heads": num_heads,
+        "head_size": head_size,
+        "n_layer": int(cfg.get("n_layer", TRANSFORMER_DEFAULTS["n_layer"])),
+        "use_layernorm": bool(cfg.get("use_layernorm", TRANSFORMER_DEFAULTS["use_layernorm"])),
+        "use_residual": bool(cfg.get("use_residual", TRANSFORMER_DEFAULTS["use_residual"])),
         "alphabet": alphabet,
         "chars": list(alphabet),
         "words": words,
@@ -151,9 +157,10 @@ def train(
         model.parameters(), lr=float(TRANSFORMER_DEFAULTS["learning_rate"]),
     )
 
-    batch_size = int(TRANSFORMER_DEFAULTS["batch_size"])
-    eval_interval = int(TRANSFORMER_DEFAULTS["eval_interval"])
-    eval_iterations = int(TRANSFORMER_DEFAULTS["eval_iterations"])
+    batch_size = int(cfg.get("batch_size", TRANSFORMER_DEFAULTS["batch_size"]))
+    eval_interval = int(cfg.get("eval_interval", TRANSFORMER_DEFAULTS["eval_interval"]))
+    eval_iterations = int(cfg.get("eval_iterations", TRANSFORMER_DEFAULTS["eval_iterations"]))
+    metric_rollout_len = int(cfg.get("metric_rollout_len", 3000))
 
     loss_iterations: list[int] = []
     loss_smooth: list[float] = []
@@ -171,7 +178,7 @@ def train(
     model.eval()
     _, sample_before = evaluate_word_error(
         model, stoi, itos, vocab_words,
-        word_space=word_space, rollout_len=3000, num_rollouts=1, rng=metric_rng,
+        word_space=word_space, rollout_len=metric_rollout_len, num_rollouts=1, rng=metric_rng,
     )
     demo_before = sample_before[:demo_snippet_len]
 
@@ -196,7 +203,7 @@ def train(
 
             word_err, _ = evaluate_word_error(
                 model, stoi, itos, vocab_words,
-                word_space=word_space, rollout_len=3000, num_rollouts=3,
+                word_space=word_space, rollout_len=metric_rollout_len, num_rollouts=3,
                 rng=random.Random(seed + step),
             )
             metric_iterations.append(step)
@@ -220,7 +227,7 @@ def train(
     model.eval()
     final_word_err, sample_after = evaluate_word_error(
         model, stoi, itos, vocab_words,
-        word_space=word_space, rollout_len=3000, num_rollouts=5,
+        word_space=word_space, rollout_len=metric_rollout_len, num_rollouts=5,
         rng=random.Random(seed + max_steps),
     )
     demo_after = sample_after[:demo_snippet_len]

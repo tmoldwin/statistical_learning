@@ -25,7 +25,7 @@ Loads the saved model from `model.npz`, runs a forward pass over the first
        Per-window training loss vs iteration (from model.npz).
 
   6) embedding_panels_context.png
-       2D embeddings (PCA/UMAP/t-SNE/Isomap) of hidden states with context labels.
+       2D PCA of vectors with context labels.
 
   7) next_char_regions_pca.png
        Two PCA panels: argmax next-char regions and prediction entropy (2D h).
@@ -721,8 +721,10 @@ def plot_hidden_states_clustermap(
     condensed: CondensedView | None = None,
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
+    repr_label: str = "hidden state",
+    dim_label: str = "hidden unit",
 ):
-    """Heatmap (hidden units × timesteps) with seaborn clustermap layout."""
+    """Heatmap (dims × timesteps) with seaborn clustermap layout."""
     prefix_keys: list[str] | None = None
     if condensed is not None:
         hidden_states = condensed.hidden_states
@@ -739,7 +741,7 @@ def plot_hidden_states_clustermap(
     n_rows, n_cols = hidden_states.shape
     if n_rows == 0:
         return
-    col_labels = [f"h{i}" for i in range(n_cols)]
+    col_labels = [f"{dim_label}{i}" for i in range(n_cols)]
     # Flip orientation: units on rows, timesteps on columns (makes long sequences readable).
     data = pd.DataFrame(hidden_states, index=row_labels, columns=col_labels).T
 
@@ -774,12 +776,12 @@ def plot_hidden_states_clustermap(
         )
         xlabel += " · tick color = min DFA state"
     grid.ax_heatmap.set_xlabel(xlabel)
-    grid.ax_heatmap.set_ylabel("hidden unit")
+    grid.ax_heatmap.set_ylabel(dim_label)
     grid.ax_heatmap.tick_params(axis="y", labelsize=8)
     grid.ax_heatmap.tick_params(axis="x", labelsize=7)
     grid.fig.suptitle(
         _condensed_plot_title(
-            f"Hidden states clustered (units × timesteps) · {original_vocabulary_title(chars, text)}",
+            f"{repr_label} clustered (dims × timesteps) · {original_vocabulary_title(chars, text)}",
             condensed,
         ),
         y=1.02, fontsize=11,
@@ -807,8 +809,9 @@ def plot_hidden_states_correlation_clustermap(
     automaton: MinimizedVocabAutomaton | None = None,
     words: list[str] | None = None,
     condensed: CondensedView | None = None,
+    repr_label: str = "hidden state",
 ):
-    """One clustered matrix: Pearson r between hidden states at each timestep."""
+    """One clustered matrix: Pearson r between vectors at each timestep."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         spaced = condensed.spaced
@@ -874,7 +877,7 @@ def plot_hidden_states_correlation_clustermap(
     grid.ax_heatmap.tick_params(axis="both", labelsize=7)
     plt.setp(grid.ax_heatmap.get_xticklabels(), rotation=90, ha="center")
 
-    title = "Hidden-state correlation"
+    title = f"{repr_label} correlation"
     if automaton is not None:
         title += " · tick color = min DFA state"
     grid.fig.suptitle(
@@ -908,8 +911,9 @@ def plot_dfa_grouped_state_correlation(
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton,
     condensed: CondensedView | None = None,
+    repr_label: str = "hidden state",
 ) -> None:
-    """Pearson r between hidden vectors; rows/cols grouped by min DFA state (all blocks)."""
+    """Pearson r between vectors; rows/cols grouped by min DFA state (all blocks)."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         spaced = condensed.spaced
@@ -994,7 +998,7 @@ def plot_dfa_grouped_state_correlation(
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="Pearson r")
     fig.suptitle(
         _condensed_plot_title(
-            "Hidden-state correlation grouped by min DFA state "
+            f"{repr_label} correlation grouped by min DFA state "
             "(diagonal = within state, off-diagonal = vs other states)",
             condensed,
         ),
@@ -1036,6 +1040,7 @@ def plot_dfa_state_distance_comparison(
     *,
     spaced: bool = False,
     condensed: CondensedView | None = None,
+    repr_label: str = "hidden state",
 ) -> None:
     """Subsampled pairwise distances + mean (diamond) ± std; y-axis clipped at 0."""
     if condensed is not None:
@@ -1126,9 +1131,9 @@ def plot_dfa_state_distance_comparison(
     ax.set_xticks(x)
     ax.set_xticklabels(order)
     ax.set_xlabel("")
-    ax.set_ylabel("Euclidean distance ||h_i − h_j||")
+    ax.set_ylabel(f"Euclidean distance ||v_i − v_j|| ({repr_label})")
     n_pairs = n * (n - 1) // 2
-    title = f"Pairwise hidden-state distance ({n_pairs} pairs, n={n} timesteps)"
+    title = f"Pairwise {repr_label} distance ({n_pairs} pairs, n={n} timesteps)"
     ax.set_title(_condensed_plot_title(title, condensed))
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
     ax.set_xlim(-0.6, len(order) - 0.4)
@@ -1561,12 +1566,21 @@ def prediction_entropy(probs):
     return -np.sum(p * np.log(p), axis=1)
 
 
-def representation_label(model, *, prob_grid: bool = False) -> str:
+def representation_label(
+    model,
+    *,
+    prob_grid: bool = False,
+    repr_name: str | None = None,
+) -> str:
     """Human-readable name for the vector being PCA'd / read out."""
+    if repr_name is not None:
+        if prob_grid:
+            return f"{repr_name} (lm_head on 2D PCA reconstruction; not full forward pass)"
+        return repr_name
     if model.get("model_type") == "transformer":
         if prob_grid:
             return "block output (lm_head on 2D PCA reconstruction; not full forward pass)"
-        return "final block output (pre-lm_head, query position)"
+        return "transformer output (pre-lm_head, query position)"
     return "hidden state h"
 
 
@@ -2264,7 +2278,7 @@ def plot_dimred_context_panels(
     annot_style: str = "leaders",
     condensed: CondensedView | None = None,
 ) -> None:
-    """Compare multiple 2D embeddings with the same annotation/coloring scheme."""
+    """2D PCA of vectors with prefix / DFA annotations."""
     _ = chars
     if condensed is not None:
         hidden_states = condensed.hidden_states
@@ -2276,43 +2290,9 @@ def plot_dimred_context_panels(
     if n < 1:
         return
 
-    # Lazy imports: these are optional in some environments.
-    from sklearn.manifold import TSNE, Isomap  # type: ignore
-    from umap import UMAP  # type: ignore
-
-    # --- Embeddings -----------------------------------------------------------
     pca_xy, _, _, evr = fit_pca_2d_with_evr(hidden_states)
     pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
     pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
-
-    umap_xy = UMAP(
-        n_components=2,
-        n_neighbors=min(15, max(2, n - 1)),
-        min_dist=0.1,
-        random_state=0,
-    ).fit_transform(hidden_states)
-
-    perplexity = min(30, max(5, (n - 1) // 3))
-    tsne_xy = TSNE(
-        n_components=2,
-        init="pca",
-        learning_rate="auto",
-        perplexity=perplexity,
-        random_state=0,
-    ).fit_transform(hidden_states)
-
-    isomap_xy = Isomap(
-        n_components=2,
-        n_neighbors=min(10, max(2, n - 1)),
-    ).fit_transform(hidden_states)
-
-    panels = [
-        ("PCA", pca_xy, f"PC1 ({pc1:.1f}%)", f"PC2 ({pc2:.1f}%)",
-         f"PCA\nvariance explained: PC1 {pc1:.1f}%, PC2 {pc2:.1f}%"),
-        ("UMAP", umap_xy, "UMAP-1", "UMAP-2", "UMAP"),
-        ("t-SNE", tsne_xy, "t-SNE-1", "t-SNE-2", f"t-SNE (perplexity={perplexity})"),
-        ("Isomap", isomap_xy, "Isomap-1", "Isomap-2", "Isomap"),
-    ]
 
     ctx = prefix_axis_label(spaced=spaced, text=text)
     if automaton is not None:
@@ -2320,24 +2300,22 @@ def plot_dimred_context_panels(
     else:
         scheme = f"prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
 
-    fig, axes = plt.subplots(2, 2, figsize=(18, 14), constrained_layout=True)
-    axes = axes.ravel()
-    for ax, (_, xy, xlabel, ylabel, title) in zip(axes, panels):
-        _plot_2d_hidden_state_labels_on_ax(
-            ax,
-            text,
-            xy,
-            title=f"{title}\n({scheme})",
-            xlabel=xlabel,
-            ylabel=ylabel,
-            spaced=spaced,
-            automaton=automaton,
-            annot_style=annot_style,
-            prefix_labels=prefix_labels,
-        )
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.tick_params(top=False, right=False)
+    fig, ax = plt.subplots(figsize=(14, 11), constrained_layout=True)
+    _plot_2d_hidden_state_labels_on_ax(
+        ax,
+        text,
+        pca_xy,
+        title=f"PCA (PC1 {pc1:.1f}%, PC2 {pc2:.1f}%)\n({scheme})",
+        xlabel=f"PC1 ({pc1:.1f}%)",
+        ylabel=f"PC2 ({pc2:.1f}%)",
+        spaced=spaced,
+        automaton=automaton,
+        annot_style=annot_style,
+        prefix_labels=prefix_labels,
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.tick_params(top=False, right=False)
 
     fig.suptitle(
         _condensed_plot_title(original_vocabulary_title(chars, text), condensed),
@@ -2359,8 +2337,10 @@ def plot_per_char_hidden_state_heatmaps(
     spaced: bool = False,
     condensed: CondensedView | None = None,
     automaton: MinimizedVocabAutomaton | None = None,
+    repr_label: str = "hidden state",
+    dim_label: str = "hidden unit",
 ):
-    """Combined per-input-char heatmaps, rows = hidden units, columns = occurrences."""
+    """Combined per-input-char heatmaps, rows = dims, columns = occurrences."""
     hidden_size = hidden_states.shape[1]
     groups: list[tuple] = []
 
@@ -2399,7 +2379,7 @@ def plot_per_char_hidden_state_heatmaps(
                 rows = rows[order]
                 labels = [labels[i] for i in order]
                 prefix_keys = [prefix_keys[i] for i in order]
-                title_suffix = "clustered by hidden-state similarity"
+                title_suffix = "clustered by vector similarity"
             else:
                 title_suffix = "in sequence order"
 
@@ -2427,7 +2407,7 @@ def plot_per_char_hidden_state_heatmaps(
         last_image = im
 
         ax.set_yticks(range(hidden_size))
-        ax.set_yticklabels([f"h{i}" for i in range(hidden_size)])
+        ax.set_yticklabels([f"{dim_label}{i}" for i in range(hidden_size)])
         ax.set_xticks(range(len(labels)))
         ax.set_xticklabels(labels, fontsize=6, rotation=90)
         if automaton is not None:
@@ -2435,9 +2415,9 @@ def plot_per_char_hidden_state_heatmaps(
                 prefix_keys, automaton, spaced=spaced,
             )
             _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-        ax.set_ylabel("hidden unit")
+        ax.set_ylabel(dim_label)
         ax.set_title(
-            f"Hidden states for input {display_char(char)!r} "
+            f"{repr_label} for input {display_char(char)!r} "
             f"({len(labels)} occurrences, {title_suffix})"
         )
 
@@ -2447,7 +2427,7 @@ def plot_per_char_hidden_state_heatmaps(
     axes[-1].set_xlabel(xlabel)
     fig.suptitle(
         _condensed_plot_title(
-            f"Hidden states by input character · {original_vocabulary_title(chars, text)}",
+            f"{repr_label} by input character · {original_vocabulary_title(chars, text)}",
             condensed,
         ),
         y=0.995,
@@ -3045,10 +3025,11 @@ def plot_pca_dfa_analysis(
     model=None,
     spaced: bool = False,
     annot_style: str = "leaders",
-    embedding: str = "pca",
     condensed: CondensedView | None = None,
+    repr_name: str | None = None,
+    embedding: str | None = None,
 ):
-    """Embedding (default: PCA) beside the min-DFA with matching state colors."""
+    """PCA beside the min-DFA with matching state colors."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -3057,31 +3038,16 @@ def plot_pca_dfa_analysis(
         prefix_labels = None
     if hidden_states.shape[0] < 2:
         return
-    embedding = (embedding or "umap").lower()
-    if embedding == "pca":
-        projected, _, _, evr = fit_pca_2d_with_evr(hidden_states)
-        xlabel = f"PC1 ({100.0 * float(evr[0]):.1f}%)" if len(evr) > 0 else "PC1"
-        ylabel = f"PC2 ({100.0 * float(evr[1]):.1f}%)" if len(evr) > 1 else "PC2"
-        embed_title = "2D PCA"
-        embed_subtitle = (
-            f"variance explained: PC1 {100.0 * float(evr[0]):.1f}%, PC2 {100.0 * float(evr[1]):.1f}%"
-            if len(evr) > 1
-            else ""
-        )
-    else:
-        # Lazy import: optional dependency.
-        from umap import UMAP  # type: ignore
 
-        n = hidden_states.shape[0]
-        projected = UMAP(
-            n_components=2,
-            n_neighbors=min(15, max(2, n - 1)),
-            min_dist=0.1,
-            random_state=0,
-        ).fit_transform(hidden_states)
-        xlabel, ylabel = "UMAP-1", "UMAP-2"
-        embed_title = "UMAP"
-        embed_subtitle = ""
+    projected, _, _, evr = fit_pca_2d_with_evr(hidden_states)
+    xlabel = f"PC1 ({100.0 * float(evr[0]):.1f}%)" if len(evr) > 0 else "PC1"
+    ylabel = f"PC2 ({100.0 * float(evr[1]):.1f}%)" if len(evr) > 1 else "PC2"
+    embed_title = "2D PCA"
+    embed_subtitle = (
+        f"variance explained: PC1 {100.0 * float(evr[0]):.1f}%, PC2 {100.0 * float(evr[1]):.1f}%"
+        if len(evr) > 1
+        else ""
+    )
     if prefix_labels is not None:
         state_ids = [
             dfa_state_for_prefix(p, automaton, spaced=spaced) for p in prefix_labels
@@ -3120,7 +3086,9 @@ def plot_pca_dfa_analysis(
     ax_embed.set_ylabel(ylabel)
     ctx = prefix_axis_label(spaced=spaced, text=text)
     subtitle = f"\n{embed_subtitle}" if embed_subtitle else ""
-    rep = representation_label(model) if model is not None else "hidden state h"
+    rep = representation_label(model, repr_name=repr_name) if model is not None else (
+        repr_name or "hidden state h"
+    )
     ax_embed.set_title(
         f"{embed_title} of {rep} (min DFA state · {ctx}){subtitle}"
     )
@@ -3149,6 +3117,7 @@ def plot_pca_prediction_regions(
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
+    repr_name: str | None = None,
 ):
     """PCA panels: argmax next-char regions and softmax entropy, with context labels."""
     if condensed is not None:
@@ -3194,7 +3163,7 @@ def plot_pca_prediction_regions(
                 vmax=None,
             ),
             "Argmax next-char (2D-reconstructed "
-            f"{representation_label(model, prob_grid=True)})",
+            f"{representation_label(model, prob_grid=True, repr_name=repr_name)})",
         ),
         (
             axes[1],
@@ -3868,8 +3837,8 @@ def main() -> None:
     parser.add_argument(
         "--condensed",
         action="store_true",
-        help="average hidden states over equivalent in-word prefixes (trie positions); "
-             "writes *_condensed.png figures",
+        help="average vectors over equivalent in-word prefixes (trie positions); "
+             "writes *_condensed.png figures (RNN hidden states or transformer representations)",
     )
     args = parser.parse_args()
 
@@ -3924,8 +3893,8 @@ def main() -> None:
 
     if is_transformer:
         print(
-            "transformer mode: analyzing token/position embeddings, Q/K/V, "
-            "attention weights, and block output separately (not RNN hidden states)"
+            "transformer mode: each representation gets its own plot suite "
+            "under representations/<name>/"
         )
         acts = run_transformer_visualization(
             model,

@@ -25,6 +25,8 @@ from experiment import (
 )
 
 REGIMES: dict[str, list[str]] = {
+    # Minimal sandbox: three words sharing -at (for 2D transformer/RNN prototyping).
+    "three_word_overlap": ["cat", "hat", "mat"],
     # 10 words, length 3; overlap on -at/-et/-ea; vowels a, e, i.
     "ten_word_overlap": [
         "cat", "hat", "mat", "rat",

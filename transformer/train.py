@@ -100,6 +100,7 @@ def train(
     *,
     steps: int | None = None,
     seed: int = 42,
+    eval_interval: int | None = None,
 ) -> None:
     cfg = EXPERIMENT_CONFIG[exp_name]
     regime = experiment_regime(exp_name)
@@ -127,9 +128,12 @@ def train(
             f"num_heads ({num_heads}) * head_size ({head_size}) must equal hidden_size ({hidden_size})"
         )
 
+    pos_embd_dim = int(cfg.get("pos_embd_dim", hidden_size))
+
     model_cfg = {
         "vocab_size": vocab_size,
         "n_embd": hidden_size,
+        "pos_embd_dim": pos_embd_dim,
         "block_size": block_size,
         "num_heads": num_heads,
         "head_size": head_size,
@@ -152,17 +156,24 @@ def train(
         use_residual=model_cfg["use_residual"],
         n_layer=model_cfg["n_layer"],
         use_layernorm=model_cfg["use_layernorm"],
+        pos_embd_dim=pos_embd_dim,
     )
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(TRANSFORMER_DEFAULTS["learning_rate"]),
     )
 
     batch_size = int(cfg.get("batch_size", TRANSFORMER_DEFAULTS["batch_size"]))
-    eval_interval = int(cfg.get("eval_interval", TRANSFORMER_DEFAULTS["eval_interval"]))
+    eval_interval = int(
+        eval_interval
+        if eval_interval is not None
+        else cfg.get("eval_interval", TRANSFORMER_DEFAULTS["eval_interval"])
+    )
     eval_iterations = int(cfg.get("eval_iterations", TRANSFORMER_DEFAULTS["eval_iterations"]))
     metric_rollout_len = int(cfg.get("metric_rollout_len", 3000))
+    record_word_metric = bool(cfg.get("record_word_metric", True))
 
     loss_iterations: list[int] = []
+    loss_window: list[float] = []
     loss_smooth: list[float] = []
     metric_iterations: list[int] = []
     metric_word_error_frac: list[float] = []
@@ -199,20 +210,26 @@ def train(
             blend = train_loss
             smooth_loss = blend if not np.isfinite(smooth_loss) else smooth_loss * 0.995 + blend * 0.005
             loss_iterations.append(step)
+            loss_window.append(train_loss)
             loss_smooth.append(smooth_loss)
 
-            word_err, _ = evaluate_word_error(
-                model, stoi, itos, vocab_words,
-                word_space=word_space, rollout_len=metric_rollout_len, num_rollouts=3,
-                rng=random.Random(seed + step),
-            )
-            metric_iterations.append(step)
-            metric_word_error_frac.append(word_err)
-            print(
-                f"  step {step:5d} | loss {smooth_loss:.4f} | "
-                f"word err {100 * word_err:.2f}%",
-                flush=True,
-            )
+            word_err = float("nan")
+            if record_word_metric:
+                word_err, _ = evaluate_word_error(
+                    model, stoi, itos, vocab_words,
+                    word_space=word_space, rollout_len=metric_rollout_len, num_rollouts=3,
+                    rng=random.Random(seed + step),
+                )
+                metric_iterations.append(step)
+                metric_word_error_frac.append(word_err)
+            if record_word_metric:
+                print(
+                    f"  step {step:5d} | loss {train_loss:.4f} | "
+                    f"word err {100 * word_err:.2f}%",
+                    flush=True,
+                )
+            else:
+                print(f"  step {step:5d} | loss {train_loss:.4f}", flush=True)
             model.train()
 
         if step == max_steps:
@@ -241,6 +258,7 @@ def train(
 
     meta = {
         "loss_iterations": loss_iterations,
+        "loss_window": loss_window,
         "loss_smooth": loss_smooth,
         "metric_iterations": metric_iterations,
         "metric_word_error_frac": metric_word_error_frac,
@@ -266,9 +284,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exp", required=True, choices=list(EXPERIMENT_CONFIG.keys()))
     parser.add_argument("--steps", type=int, default=None)
+    parser.add_argument("--eval-interval", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
-    train(args.exp, steps=args.steps, seed=args.seed)
+    train(args.exp, steps=args.steps, seed=args.seed, eval_interval=args.eval_interval)
 
 
 if __name__ == "__main__":

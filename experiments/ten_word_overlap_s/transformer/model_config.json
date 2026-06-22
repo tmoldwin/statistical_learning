@@ -1,12 +1,13 @@
 {
   "vocab_size": 10,
-  "n_embd": 32,
+  "n_embd": 128,
+  "pos_embd_dim": 24,
   "block_size": 40,
   "num_heads": 1,
-  "head_size": 32,
-  "n_layer": 2,
+  "head_size": 128,
+  "n_layer": 1,
   "use_layernorm": true,
-  "use_residual": true,
+  "use_residual": false,
   "alphabet": " acehmnprt",
   "chars": [
     " ",

@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from readme_figures import PLOT_BASENAME_TO_FIGURE, numbered_plot_path
-from transformer.adapter import LayerActivations, TransformerActivations, extract_transformer_activations
+from transformer.adapter import LayerActivations, TransformerActivations, extract_attention_matrix, extract_transformer_activations
 from vocab_diagrams import MinimizedVocabAutomaton
+from viz_timing import VizTimer
 
 
 # README figures that only apply to the RNN hidden-state readout. When we
@@ -92,6 +93,14 @@ def _attention_dir(out_dir: str | Path) -> Path:
 _STALE_REPRESENTATION_SLUGS: frozenset[str] = frozenset({"block_input"})
 
 
+def cleanup_representation_plot_dir(slug_dir: Path) -> None:
+    """Remove stale PNGs before rewriting a representation folder."""
+    if not slug_dir.is_dir():
+        return
+    for stale in slug_dir.glob("*.png"):
+        stale.unlink()
+
+
 def cleanup_stale_representation_dirs(out_dir: str | Path, valid_slugs: set[str]) -> None:
     """Remove representation folders left from multi-head / block_input runs."""
     repr_root = Path(out_dir) / "representations"
@@ -102,9 +111,8 @@ def cleanup_stale_representation_dirs(out_dir: str | Path, valid_slugs: set[str]
             continue
         if child.name in valid_slugs:
             continue
-        if "_head" in child.name or child.name in _STALE_REPRESENTATION_SLUGS:
-            shutil.rmtree(child)
-            print(f"removed stale representation dir {child}")
+        shutil.rmtree(child)
+        print(f"removed stale representation dir {child}")
 
 
 def cleanup_stale_attention_plots(out_dir: str | Path, n_layers: int) -> None:
@@ -114,7 +122,7 @@ def cleanup_stale_attention_plots(out_dir: str | Path, n_layers: int) -> None:
         return
     valid = {
         *(f"layer{i}_qkv.png" for i in range(n_layers)),
-        *(f"layer{i}_attention_lags.png" for i in range(n_layers)),
+        *(f"layer{i}_attention.png" for i in range(n_layers)),
     }
     for stale in attn_dir.iterdir():
         if stale.is_file() and stale.name not in valid:
@@ -203,6 +211,37 @@ def plot_lookup_pca(
     print(f"wrote {save_path}")
 
 
+def plot_lookup_pca_3d(
+    labels: list[str],
+    vectors: np.ndarray,
+    save_path: str,
+    *,
+    title: str,
+) -> None:
+    """3D PCA scatter with one labeled point per lookup row."""
+    from visualize import fit_pca_3d_with_evr, _pca_axis_labels, _plot_3d_pca_scatter_with_labels
+
+    if vectors.shape[0] < 2 or vectors.shape[1] < 2:
+        return
+    projected, _, _, evr = fit_pca_3d_with_evr(vectors)
+    xlabel, ylabel, zlabel = _pca_axis_labels(evr)
+    display_labels = ["␣" if lab == " " else lab for lab in labels]
+    cmap = plt.get_cmap("tab10", max(len(labels), 1))
+    point_colors = [cmap(i) for i in range(len(labels))]
+
+    fig = plt.figure(figsize=(11, 9))
+    ax = fig.add_subplot(111, projection="3d")
+    _plot_3d_pca_scatter_with_labels(
+        ax, projected, display_labels,
+        point_colors=point_colors,
+        title=f"{title} (3D)",
+        xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
+    )
+    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
 def _lookup_table_from_model(model: dict, lookup: str) -> tuple[list[str], np.ndarray]:
     """Rows of a learned embedding table (not timestep samples)."""
     torch_model = model["_torch_model"]
@@ -258,23 +297,24 @@ def plot_layer_qkv_figure(
     T = len(text)
     q, k, v = layer.queries[0], layer.keys[0], layer.values[0]
     head_size = q.shape[1]
-    fig, axes = plt.subplots(3, 1, figsize=(max(12, T * 0.15), 8), squeeze=False)
+    fig, axes = plt.subplots(3, 1, figsize=(max(10, head_size * 0.35), max(8, T * 0.18)), squeeze=False)
     for ax, (qkv_name, data) in zip(
         axes[:, 0],
         [("Query", q), ("Key", k), ("Value", v)],
     ):
-        im = ax.imshow(data.T, aspect="auto", cmap="RdBu_r", interpolation="nearest", origin="lower")
+        im = ax.imshow(data, aspect="auto", cmap="RdBu_r", interpolation="nearest", origin="upper")
         ax.set_title(f"Layer {layer_idx} · {qkv_name}")
-        ax.set_yticks(range(head_size))
-        ax.set_yticklabels([f"d{i}" for i in range(head_size)], fontsize=7)
-        ax.set_xticks(range(T))
-        ax.set_xticklabels(list(text), fontsize=6, rotation=90)
+        ax.set_yticks(range(T))
+        tick_labels = ["␣" if c == " " else c for c in text]
+        ax.set_yticklabels(tick_labels, fontsize=5)
+        ax.set_xticks(range(head_size))
+        ax.set_xticklabels([f"d{i}" for i in range(head_size)], fontsize=7, rotation=90)
         if automaton is not None:
             state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
-            _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-        ax.set_ylabel(f"{qkv_name} dim")
+            _color_tick_labels_by_state_ids(ax.get_yticklabels(), state_ids)
+        ax.set_ylabel("timestep / input character")
+        ax.set_xlabel(f"{qkv_name} dim")
         fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
-    axes[-1, 0].set_xlabel("timestep / input character")
     fig.suptitle(
         f"Q / K / V at the query position (layer {layer_idx})",
         fontsize=12,
@@ -287,42 +327,56 @@ def plot_layer_qkv_figure(
 
 
 def plot_layer_attention_figure(
+    model: dict,
     text: str,
-    layer: LayerActivations,
     layer_idx: int,
-    block_size: int,
     save_path: str,
     *,
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
 ) -> None:
-    """Causal attention weights: query at t attends to keys at lags 0..block_size-1."""
+    """Standard causal attention heatmap from a single forward pass."""
     from visualize import _color_tick_labels_by_state_ids, _dfa_state_ids_at_timesteps
 
-    T = len(text)
-    attn = layer.attention_lags[0]
-    lag_labels = [f"lag {i}" for i in range(block_size)]
-    fig, ax = plt.subplots(figsize=(max(12, T * 0.15), 5))
+    attn, plot_text = extract_attention_matrix(model, text, layer_idx=layer_idx, head_idx=0)
+    T = len(plot_text)
+    chars = list(plot_text)
+    truncated = len(text) > T
+
+    future_mask = np.triu(np.ones((T, T), dtype=bool), k=1)
+    attn_plot = np.ma.array(attn, mask=future_mask)
+
+    cmap = plt.cm.Blues.copy()
+    cmap.set_bad(color="white")
+
+    size = max(8.0, T * 0.32)
+    fig, ax = plt.subplots(figsize=(size, size * 0.92))
     im = ax.imshow(
-        attn.T,
-        aspect="auto",
-        cmap="magma",
+        attn_plot,
+        cmap=cmap,
         vmin=0.0,
         vmax=1.0,
+        aspect="equal",
         interpolation="nearest",
-        origin="lower",
+        origin="upper",
     )
-    ax.set_title(f"Layer {layer_idx} causal attention")
-    ax.set_yticks(range(block_size))
-    ax.set_yticklabels(lag_labels, fontsize=7)
-    ax.set_xticks(range(T))
-    ax.set_xticklabels(list(text), fontsize=6, rotation=90)
+    tick_pos = np.arange(T)
+    tick_labels = ["␣" if c == " " else c for c in chars]
+    ax.set_xticks(tick_pos)
+    ax.set_xticklabels(tick_labels, fontsize=7, rotation=90, ha="center")
+    ax.set_yticks(tick_pos)
+    ax.set_yticklabels(tick_labels, fontsize=7)
     if automaton is not None:
-        state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
+        state_ids = _dfa_state_ids_at_timesteps(plot_text, automaton, spaced=spaced)
         _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-    ax.set_xlabel("timestep / input character")
-    ax.set_ylabel("attention to key lag")
-    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="weight")
+        _color_tick_labels_by_state_ids(ax.get_yticklabels(), state_ids)
+    title = f"Layer {layer_idx} attention (causal softmax)"
+    if truncated:
+        title += f"\nfirst {T} characters (block_size)"
+    ax.set_title(title, fontsize=11)
+    ax.set_xlabel("Key position")
+    ax.set_ylabel("Query position")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="attention weight")
     fig.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -425,6 +479,8 @@ def plot_representation_suite(
     automaton: MinimizedVocabAutomaton | None,
     words: list[str] | None,
     condensed: bool,
+    timer: VizTimer | None = None,
+    quick: bool = False,
 ) -> None:
     """RNN-parallel plot set for one transformer representation."""
     from visualize import (
@@ -433,6 +489,7 @@ def plot_representation_suite(
         plot_hidden_states_clustermap,
         plot_hidden_states_correlation_clustermap,
         plot_pca_context_labels,
+        plot_pca_context_labels_3d,
         plot_pca_dfa_analysis,
         plot_pca_next_char_probability_panels,
         plot_pca_prediction_regions,
@@ -444,17 +501,34 @@ def plot_representation_suite(
     name = spec.display_name
     dim = spec.dim_label
 
+    def _plot(plot_name: str, fn, *args, **kwargs):
+        if timer is None:
+            return fn(*args, **kwargs)
+        with timer.section(plot_name):
+            return fn(*args, **kwargs)
+
     if spec.lookup is not None:
         row_labels, table = _lookup_table_from_model(model, spec.lookup)
-        plot_lookup_table_heatmap(
+        _plot(
+            "lookup_table_heatmap",
+            plot_lookup_table_heatmap,
             row_labels, table,
             _repr_plot_path(out_dir, spec.slug, "activation_heatmap.png", condensed=condensed),
             title=f"{name} — learned lookup table",
             dim_label=dim,
         )
-        plot_lookup_pca(
+        _plot(
+            "lookup_pca",
+            plot_lookup_pca,
             row_labels, table,
             _repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+            title=f"{name} — one point per lookup row (PCA)",
+        )
+        _plot(
+            "lookup_pca_3d",
+            plot_lookup_pca_3d,
+            row_labels, table,
+            _repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
             title=f"{name} — one point per lookup row (PCA)",
         )
         return
@@ -464,37 +538,60 @@ def plot_representation_suite(
         spaced=spaced, words=words, condensed=condensed,
     )
 
-    plot_embedding_heatmap(
+    _plot(
+        "activation_heatmap",
+        plot_embedding_heatmap,
         text, spec.vectors,
         _repr_plot_path(out_dir, spec.slug, "activation_heatmap.png", condensed=condensed),
         repr_name=name, dim_label=dim,
         automaton=automaton, spaced=spaced,
     )
-    plot_per_char_hidden_state_heatmaps(
+    _plot(
+        "embedding_panels_context",
+        plot_pca_context_labels,
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, condensed=cv,
+    )
+    _plot(
+        "embedding_panels_context_3d",
+        plot_pca_context_labels_3d,
+        text, spec.vectors, chars,
+        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
+        spaced=spaced, automaton=automaton, condensed=cv,
+        repr_name=name,
+    )
+    if quick:
+        return
+
+    _plot(
+        "activation_by_input_char",
+        plot_per_char_hidden_state_heatmaps,
         text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "activation_by_input_char.png", condensed=condensed),
         spaced=spaced, condensed=cv, automaton=automaton,
         repr_label=name, dim_label=dim,
     )
-    plot_hidden_states_clustermap(
+    _plot(
+        "activation_clustered_heatmap",
+        plot_hidden_states_clustermap,
         text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "activation_clustered_heatmap.png", condensed=condensed),
         condensed=cv, automaton=automaton, spaced=spaced,
         repr_label=name, dim_label=dim,
     )
-    plot_pca_context_labels(
-        text, spec.vectors, chars,
-        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
-        spaced=spaced, automaton=automaton, condensed=cv,
-    )
-    plot_hidden_states_correlation_clustermap(
+    _plot(
+        "state_correlation_clustered",
+        plot_hidden_states_correlation_clustermap,
         text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "state_correlation_clustered_heatmap.png", condensed=condensed),
         spaced=spaced, automaton=automaton, words=words, condensed=cv,
         repr_label=name,
     )
     if automaton is not None:
-        plot_dfa_grouped_state_correlation(
+        _plot(
+            "state_correlation_by_dfa_state",
+            plot_dfa_grouped_state_correlation,
             text, spec.vectors,
             save_path=_repr_plot_path(
                 out_dir, spec.slug, "state_correlation_by_dfa_state.png", condensed=condensed,
@@ -502,7 +599,9 @@ def plot_representation_suite(
             spaced=spaced, automaton=automaton, condensed=cv,
             repr_label=name,
         )
-        plot_dfa_state_distance_comparison(
+        _plot(
+            "dfa_state_distance_comparison",
+            plot_dfa_state_distance_comparison,
             text, spec.vectors, automaton,
             save_path=_repr_plot_path(
                 out_dir, spec.slug, "dfa_state_distance_comparison.png", condensed=condensed,
@@ -515,7 +614,9 @@ def plot_representation_suite(
         return
 
     if automaton is not None and words:
-        plot_pca_dfa_analysis(
+        _plot(
+            "dfa_and_embedding_pca",
+            plot_pca_dfa_analysis,
             text, spec.vectors, chars, words,
             save_path=_repr_plot_path(out_dir, spec.slug, "dfa_and_embedding_pca.png", condensed=condensed),
             automaton=automaton,
@@ -523,19 +624,25 @@ def plot_representation_suite(
             spaced=spaced, condensed=cv,
             repr_name=name,
         )
-    plot_pca_prediction_regions(
+    _plot(
+        "next_char_regions_pca",
+        plot_pca_prediction_regions,
         model, text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "next_char_regions_pca.png", condensed=condensed),
         spaced=spaced, automaton=automaton, condensed=cv,
         repr_name=name,
     )
-    plot_pca_next_char_probability_panels(
+    _plot(
+        "next_char_prob_panels_pca",
+        plot_pca_next_char_probability_panels,
         model, text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "next_char_prob_panels_pca.png", condensed=condensed),
         spaced=spaced, automaton=automaton, condensed=cv,
     )
     if words:
-        plot_space_to_space_trajectories(
+        _plot(
+            "word_trajectories_pca",
+            plot_space_to_space_trajectories,
             text, spec.vectors,
             save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
             model=None,
@@ -554,9 +661,13 @@ def run_transformer_visualization(
     automaton: MinimizedVocabAutomaton | None = None,
     words: list[str] | None = None,
     condensed: bool = False,
+    quick: bool = False,
 ) -> TransformerActivations:
     """Generate per-representation plots mirroring the RNN visualization suite."""
     from visualize import plot_output_probs
+
+    plot_timer = VizTimer()
+    suite_timer = VizTimer()
 
     cleanup_stale_transformer_plots(out_dir)
     acts = extract_transformer_activations(model, text)
@@ -574,46 +685,58 @@ def run_transformer_visualization(
         text, acts.block_output, acts.output_probs,
         spaced=spaced, words=words, condensed=condensed,
     )
-    plot_output_probs(
-        text, acts.output_probs, model["chars"],
-        save_path=_condensed_path(
-            str(numbered_plot_path(out_dir, "next_char_prob_sequence_heatmap.png")),
-            condensed,
-        ),
-        condensed=cv_readout,
-        automaton=automaton,
-        spaced=spaced,
-        words=words,
-    )
+    with plot_timer.section("next_char_prob_sequence"):
+        plot_output_probs(
+            text, acts.output_probs, model["chars"],
+            save_path=_condensed_path(
+                str(numbered_plot_path(out_dir, "next_char_prob_sequence_heatmap.png")),
+                condensed,
+            ),
+            condensed=cv_readout,
+            automaton=automaton,
+            spaced=spaced,
+            words=words,
+        )
 
     attn_dir = _attention_dir(out_dir)
     attn_dir.mkdir(parents=True, exist_ok=True)
     for layer_idx, layer in enumerate(acts.layers):
-        plot_layer_qkv_figure(
-            text, layer, layer_idx,
-            str(attn_dir / f"layer{layer_idx}_qkv.png"),
-            automaton=automaton, spaced=spaced,
-        )
-        plot_layer_attention_figure(
-            text, layer, layer_idx, acts.block_size,
-            str(attn_dir / f"layer{layer_idx}_attention_lags.png"),
-            automaton=automaton, spaced=spaced,
-        )
+        with plot_timer.section("attention_qkv"):
+            plot_layer_qkv_figure(
+                text, layer, layer_idx,
+                str(attn_dir / f"layer{layer_idx}_qkv.png"),
+                automaton=automaton, spaced=spaced,
+            )
+        with plot_timer.section("attention_matrix"):
+            plot_layer_attention_figure(
+                model, text, layer_idx,
+                str(attn_dir / f"layer{layer_idx}_attention.png"),
+                automaton=automaton, spaced=spaced,
+            )
 
-    print(f"transformer: analyzing {len(specs)} separate representations")
+    print(f"transformer: analyzing {len(specs)} separate representations"
+          + (" (quick mode: heatmap + PCA only)" if quick else ""))
     for spec in specs:
         print(f"  · {spec.slug}: {spec.display_name}  shape={spec.vectors.shape}")
-        _repr_dir(out_dir, spec.slug).mkdir(parents=True, exist_ok=True)
-        plot_representation_suite(
-            spec,
-            model=model,
-            text=text,
-            out_dir=out_dir,
-            output_probs=acts.output_probs,
-            spaced=spaced,
-            automaton=automaton,
-            words=words,
-            condensed=condensed,
-        )
+        slug_dir = _repr_dir(out_dir, spec.slug)
+        slug_dir.mkdir(parents=True, exist_ok=True)
+        cleanup_representation_plot_dir(slug_dir)
+        with suite_timer.section(spec.slug):
+            plot_representation_suite(
+                spec,
+                model=model,
+                text=text,
+                out_dir=out_dir,
+                output_probs=acts.output_probs,
+                spaced=spaced,
+                automaton=automaton,
+                words=words,
+                condensed=condensed,
+                timer=plot_timer,
+                quick=quick,
+            )
+
+    plot_timer.print_summary(title="Transformer plot types (aggregated across representations)")
+    suite_timer.print_summary(title="Per-representation totals")
 
     return acts

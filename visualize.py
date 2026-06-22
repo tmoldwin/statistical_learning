@@ -67,6 +67,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import math
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -91,6 +92,7 @@ from experiment import (
 from transformer.adapter import forward_pass as transformer_forward_pass
 from transformer.adapter import load_model as load_transformer_model
 from transformer.viz_repr import run_transformer_visualization
+from viz_timing import VizTimer
 from readme_figures import (
     numbered_plot_path,
     remove_legacy_readme_plot_names,
@@ -1174,6 +1176,23 @@ def fit_pca_2d_with_evr(points):
     return coords, mean, components, evr
 
 
+def fit_pca_3d_with_evr(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """PCA fit + explained variance ratio for PC1/PC2/PC3."""
+    mean = np.mean(points, axis=0)
+    centered = points - mean
+    _, s, vh = np.linalg.svd(centered, full_matrices=False)
+    n_comp = min(3, points.shape[0], points.shape[1])
+    components = vh[:n_comp]
+    coords = centered @ components.T
+    if coords.shape[1] < 3:
+        coords = np.pad(coords, ((0, 0), (0, 3 - coords.shape[1])))
+    denom = float(np.sum(s * s)) if len(s) else 1.0
+    evr = np.zeros(3, dtype=float)
+    if denom > 0 and n_comp:
+        evr[:n_comp] = (s[:n_comp] * s[:n_comp]) / denom
+    return coords, mean, components, evr
+
+
 def pca_2d(points):
     """Project points to two dimensions with PCA using NumPy's SVD."""
     return fit_pca_2d(points)[0]
@@ -1636,66 +1655,104 @@ def _rolling_median(y: np.ndarray, win: int) -> np.ndarray:
     return out
 
 
-def plot_learning_curve(model, save_path):
-    """Per-window CE (rolling median) and stochastic word-validity metric."""
+def _tight_ylim(
+    y: np.ndarray,
+    *,
+    pad_frac: float = 0.06,
+    floor: float | None = None,
+    ceiling: float | None = None,
+) -> tuple[float, float]:
+    """Axis limits that fit the full series with a small margin."""
+    vals = np.asarray(y, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    if vals.size == 0:
+        return (0.0, 1.0)
+    lo, hi = float(vals.min()), float(vals.max())
+    if hi == lo:
+        pad = max(abs(lo) * 0.05, 1e-3)
+    else:
+        pad = (hi - lo) * pad_frac
+    lo -= pad
+    hi += pad
+    if floor is not None:
+        lo = max(floor, lo)
+    if ceiling is not None:
+        hi = min(ceiling, hi)
+    if lo >= hi:
+        hi = lo + max(pad, 1e-3)
+    return lo, hi
+
+
+def plot_learning_curve(model, save_path, *, loss_only: bool = False):
+    """Per-eval cross-entropy (raw); optional word-validity metric on twin axis."""
     if "loss_iterations" not in model:
-        print(f"skip {save_path}: re-run min-char-rnn.py to record loss history")
+        print(f"skip {save_path}: re-run training to record loss history")
         return
 
     iters = np.asarray(model["loss_iterations"], dtype=int)
     if "loss_window" in model:
-        window = np.asarray(model["loss_window"], dtype=float)
-        ce_plot = _rolling_median(window, 51)
-        ce_label = "CE (51-iter median)"
+        ce_plot = np.asarray(model["loss_window"], dtype=float)
+        ce_label = "cross-entropy"
     elif "loss_smooth" in model:
         ce_plot = np.asarray(model["loss_smooth"], dtype=float)
-        ce_label = "smoothed loss"
+        ce_label = "cross-entropy (smoothed; re-train for raw loss)"
     else:
         print(f"skip {save_path}: no loss history in model bundle")
         return
 
     fig, ax = plt.subplots(figsize=(9, 4), constrained_layout=True)
-    ax.plot(iters, ce_plot, color="steelblue", linewidth=1.2, label=ce_label)
+    ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=1.2, label=ce_label)
     ax.set_xlabel("iteration")
-    ax.set_ylabel("cross-entropy (sum over BPTT window)")
-    ax.set_title("Training: cross-entropy vs word-validity rollout")
+    ax.set_ylabel("cross-entropy")
+    title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
+    ax.set_title(title)
     ax.grid(True, linestyle=":", alpha=0.4)
-    finite = ce_plot[np.isfinite(ce_plot)]
-    if finite.size:
-        # Zoom the CE axis to the bulk of training; anchoring at 0 hides the
-        # post-warmup curve when loss lives on a narrow plateau (e.g. ~23–24).
-        warmup_idx = min(len(ce_plot) - 1, max(250, int(0.05 * len(ce_plot))))
-        steady = ce_plot[warmup_idx:]
-        steady_finite = steady[np.isfinite(steady)]
-        y_src = steady_finite if steady_finite.size else finite
-        lo = float(np.percentile(y_src, 1))
-        hi = float(np.percentile(y_src, 99))
-        pad = max(0.08 * (hi - lo), 0.15)
-        ax.set_ylim(lo - pad, hi + pad)
+    ax.set_ylim(*_tight_ylim(ce_plot, floor=0.0))
+    ax.legend(loc="upper right", fontsize=8)
+
+    if loss_only:
+        fig.savefig(save_path, dpi=150)
+        plt.close(fig)
+        print(f"wrote {save_path}")
+        return
+
+    legend_lines = [ce_line]
+    legend_labels = [ce_label]
 
     if "metric_iterations" in model and "metric_word_error_frac" in model:
         ax2 = ax.twinx()
-        ax2.plot(
+        metric_pct = 100.0 * np.asarray(model["metric_word_error_frac"], dtype=float)
+        metric_line, = ax2.plot(
             model["metric_iterations"],
-            100.0 * np.asarray(model["metric_word_error_frac"], dtype=float),
+            metric_pct,
             color="darkorange",
             linewidth=1.2,
             alpha=0.9,
+            label="% invalid words (rollout)",
         )
         ax2.set_ylabel("% invalid words (mean stochastic rollout)")
-        ax2.set_ylim(0, 100)
-        ax.legend(loc="upper right", fontsize=8)
+        ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
+        legend_lines.append(metric_line)
+        legend_labels.append(metric_line.get_label())
     elif "metric_iterations" in model and "metric_valid_vocab_letter_frac" in model:
         ax2 = ax.twinx()
-        ax2.plot(
+        metric_pct = 100.0 * (1.0 - np.asarray(model["metric_valid_vocab_letter_frac"], dtype=float))
+        metric_line, = ax2.plot(
             model["metric_iterations"],
-            100.0 * (1.0 - model["metric_valid_vocab_letter_frac"]),
+            metric_pct,
             color="darkorange",
             linewidth=1.2,
             alpha=0.9,
+            label="% letters out of vocab (rollout)",
         )
         ax2.set_ylabel("% letters out of vocab (rollout)")
-        ax2.set_ylim(0, 100)
+        ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
+        legend_lines.append(metric_line)
+        legend_labels.append(metric_line.get_label())
+
+    if len(legend_lines) > 1:
+        ax.legend(legend_lines, legend_labels, loc="upper right", fontsize=8)
+
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -2327,6 +2384,137 @@ def plot_dimred_context_panels(
     print(f"wrote {save_path}")
 
 
+def _pca_axis_labels(evr: np.ndarray) -> tuple[str, str, str]:
+    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
+    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
+    pc3 = 100.0 * float(evr[2]) if len(evr) > 2 else 0.0
+    return (
+        f"PC1 ({pc1:.1f}%)",
+        f"PC2 ({pc2:.1f}%)",
+        f"PC3 ({pc3:.1f}%)",
+    )
+
+
+def _dfa_point_colors_for_pca(
+    text: str,
+    *,
+    n: int,
+    spaced: bool,
+    automaton: MinimizedVocabAutomaton,
+    prefix_labels: list[str] | None,
+) -> tuple[list[tuple], list[str], dict[int, tuple]]:
+    if prefix_labels is not None:
+        prefixes = prefix_labels
+        state_ids = [
+            dfa_state_for_prefix(p, automaton, spaced=spaced) for p in prefixes
+        ]
+    else:
+        state_ids = [
+            dfa_state_at_position(
+                text, i, automaton, spaced=spaced, vocab=_corpus_vocab(text),
+            ) for i in range(n)
+        ]
+        prefixes = [
+            prefix_annotation_label(text, i, spaced=spaced) for i in range(n)
+        ]
+    state_colors = _state_id_colors(state_ids)
+    point_colors = [state_colors[s] for s in state_ids]
+    return point_colors, prefixes, state_colors
+
+
+def _plot_3d_pca_scatter_with_labels(
+    ax,
+    projected: np.ndarray,
+    labels: list[str],
+    *,
+    point_colors: list[tuple] | None = None,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str,
+) -> None:
+    colors = point_colors if point_colors is not None else ["C0"] * len(labels)
+    ax.scatter(
+        projected[:, 0], projected[:, 1], projected[:, 2],
+        s=50, c=colors, edgecolors="black", linewidths=0.4, depthshade=True,
+    )
+    for i, label in enumerate(labels):
+        disp = "␣" if label == " " else label
+        ax.text(
+            projected[i, 0], projected[i, 1], projected[i, 2],
+            disp, fontsize=7, color="#1a1a1a",
+        )
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_zlabel(zlabel)
+    ax.set_title(title)
+    ax.grid(True, linestyle=":", alpha=0.35)
+
+
+def plot_dimred_context_panels_3d(
+    text: str,
+    hidden_states: np.ndarray,
+    chars,
+    save_path: str,
+    *,
+    spaced: bool = False,
+    automaton: MinimizedVocabAutomaton | None = None,
+    condensed: CondensedView | None = None,
+    repr_name: str = "hidden state",
+) -> None:
+    """3D PCA scatter with prefix labels (separate figure from the 2D panel)."""
+    if condensed is not None:
+        hidden_states = condensed.hidden_states
+        prefix_labels = condensed.labels
+        spaced = condensed.spaced
+    else:
+        prefix_labels = None
+    n = hidden_states.shape[0]
+    if n < 2 or hidden_states.shape[1] < 2:
+        return
+
+    pca_xyz, _, _, evr = fit_pca_3d_with_evr(hidden_states)
+    xlabel, ylabel, zlabel = _pca_axis_labels(evr)
+    ctx = prefix_axis_label(spaced=spaced, text=text)
+    if automaton is not None:
+        scheme = f"min DFA state · {ctx}"
+    else:
+        scheme = f"prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection="3d")
+    if automaton is not None:
+        point_colors, prefixes, state_colors = _dfa_point_colors_for_pca(
+            text, n=n, spaced=spaced, automaton=automaton, prefix_labels=prefix_labels,
+        )
+        _plot_3d_pca_scatter_with_labels(
+            ax, pca_xyz, prefixes,
+            point_colors=point_colors,
+            title=f"{repr_name} · 3D PCA\n({scheme})",
+            xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
+        )
+        _add_dfa_state_color_legend(ax, automaton, state_colors)
+    else:
+        if prefix_labels is not None:
+            prefixes = prefix_labels
+        else:
+            prefixes = [context_label(text, i, spaced=spaced) for i in range(n)]
+        _plot_3d_pca_scatter_with_labels(
+            ax, pca_xyz, prefixes,
+            title=f"{repr_name} · 3D PCA\n({scheme})",
+            xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
+        )
+
+    fig.suptitle(
+        _condensed_plot_title(original_vocabulary_title(chars, text), condensed),
+        fontsize=12,
+        y=0.98,
+    )
+    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
 def plot_per_char_hidden_state_heatmaps(
     text,
     hidden_states,
@@ -2349,7 +2537,7 @@ def plot_per_char_hidden_state_heatmaps(
         spaced = condensed.spaced
         for char in chars:
             indices = [i for i, ch in enumerate(condensed.input_chars) if ch == char]
-            if not indices:
+            if len(indices) < 2:
                 continue
             rows = hidden_states[indices]
             prefix_keys = [condensed.labels[i] for i in indices]
@@ -2365,7 +2553,7 @@ def plot_per_char_hidden_state_heatmaps(
     else:
         for char in chars:
             indices = np.array([i for i, text_char in enumerate(text) if i > 0 and text_char == char])
-            if len(indices) == 0:
+            if len(indices) < 2:
                 continue
 
             rows = hidden_states[indices]
@@ -2388,17 +2576,24 @@ def plot_per_char_hidden_state_heatmaps(
     if not groups:
         return
 
+    n = len(groups)
+    ncols = max(2, min(n, math.ceil(math.sqrt(n * 2))))
+    nrows = math.ceil(n / ncols)
+    max_panel_cols = max(len(labels) for _, _, labels, _, _ in groups)
     fig, axes = plt.subplots(
-        len(groups), 1,
-        figsize=(max(12, max(len(labels) for _, _, labels, _, _ in groups) * 0.28),
-                 max(3, len(groups) * max(2.1, hidden_size * 0.24))),
+        nrows, ncols,
+        figsize=(
+            max(12, ncols * max_panel_cols * 0.28),
+            max(3, nrows * max(2.1, hidden_size * 0.24)),
+        ),
         sharey=True,
+        squeeze=False,
         constrained_layout=True,
     )
-    axes = np.atleast_1d(axes)
     last_image = None
 
-    for ax, (char, rows, labels, title_suffix, prefix_keys) in zip(axes, groups):
+    for idx, (char, rows, labels, title_suffix, prefix_keys) in enumerate(groups):
+        ax = axes[idx // ncols, idx % ncols]
         im = ax.imshow(
             rows.T,
             aspect="auto", cmap="RdBu_r", vmin=-1, vmax=1,
@@ -2418,13 +2613,18 @@ def plot_per_char_hidden_state_heatmaps(
         ax.set_ylabel(dim_label)
         ax.set_title(
             f"{repr_label} for input {display_char(char)!r} "
-            f"({len(labels)} occurrences, {title_suffix})"
+            f"({len(labels)} occurrences, {title_suffix})",
+            fontsize=9,
         )
+        if idx // ncols == nrows - 1:
+            xlabel = f"{prefix_axis_label(spaced=spaced, text=text)} @ timestep"
+            if automaton is not None:
+                xlabel += " · tick color = min DFA state"
+            ax.set_xlabel(xlabel)
 
-    xlabel = f"{prefix_axis_label(spaced=spaced, text=text)} @ timestep"
-    if automaton is not None:
-        xlabel += " · tick color = min DFA state"
-    axes[-1].set_xlabel(xlabel)
+    for idx in range(n, nrows * ncols):
+        axes[idx // ncols, idx % ncols].axis("off")
+
     fig.suptitle(
         _condensed_plot_title(
             f"{repr_label} by input character · {original_vocabulary_title(chars, text)}",
@@ -2432,7 +2632,7 @@ def plot_per_char_hidden_state_heatmaps(
         ),
         y=0.995,
     )
-    fig.colorbar(last_image, ax=axes, fraction=0.015, pad=0.01, label="activation")
+    fig.colorbar(last_image, ax=axes, fraction=0.02, pad=0.01, label="activation")
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -2583,6 +2783,30 @@ def plot_pca_context_labels(
         automaton=automaton,
         annot_style="leaders",
         condensed=condensed,
+    )
+
+
+def plot_pca_context_labels_3d(
+    text,
+    hidden_states,
+    chars,
+    save_path,
+    *,
+    spaced: bool = False,
+    automaton: MinimizedVocabAutomaton | None = None,
+    condensed: CondensedView | None = None,
+    repr_name: str = "hidden state",
+):
+    """3D PCA scatter (companion to embedding_panels_context)."""
+    plot_dimred_context_panels_3d(
+        text,
+        hidden_states,
+        chars,
+        save_path,
+        spaced=spaced,
+        automaton=automaton,
+        condensed=condensed,
+        repr_name=repr_name,
     )
 
 
@@ -3840,34 +4064,44 @@ def main() -> None:
         help="average vectors over equivalent in-word prefixes (trie positions); "
              "writes *_condensed.png figures (RNN hidden states or transformer representations)",
     )
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="transformer only: skip slow per-char / clustermap / DFA-distance plots",
+    )
     args = parser.parse_args()
 
+    timer = VizTimer()
     model_file, input_file, out_dir, model_type = resolve_paths(args)
     os.makedirs(out_dir, exist_ok=True)
     if args.exp:
         print(f"experiment: {args.exp} ({model_type}) -> {out_dir}")
 
-    model = load_model_for_viz(model_file, model_type)
+    with timer.section("load_model"):
+        model = load_model_for_viz(model_file, model_type)
     is_transformer = model.get("model_type") == "transformer" or model_type == "transformer"
     print(f"loaded model: hidden_size={model['hidden_size']}, "
           f"vocab_size={model['vocab_size']}, chars={''.join(model['chars'])}")
 
     if not is_transformer:
-        plot_learned_weights(model, save_path=str(numbered_plot_path(out_dir, "weights.png")))
-        plot_weight_eigenspectra(
-            model, save_path=str(numbered_plot_path(out_dir, "weights_eigenspectra.png")),
+        with timer.section("weight_plots"):
+            plot_learned_weights(model, save_path=str(numbered_plot_path(out_dir, "weights.png")))
+            plot_weight_eigenspectra(
+                model, save_path=str(numbered_plot_path(out_dir, "weights_eigenspectra.png")),
+            )
+            plot_weight_dynamics_over_training(
+                model, os.path.join(out_dir, "weight_dynamics_over_training.png"),
+            )
+    with timer.section("learning_curve"):
+        plot_learning_curve(
+            model,
+            save_path=str(numbered_plot_path(out_dir, "learning_curve.png")),
         )
-        plot_weight_dynamics_over_training(
-            model, os.path.join(out_dir, "weight_dynamics_over_training.png"),
+    with timer.section("samples_before_after"):
+        plot_sample_before_after(
+            model,
+            save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
         )
-    plot_learning_curve(
-        model,
-        save_path=str(numbered_plot_path(out_dir, "learning_curve.png")),
-    )
-    plot_sample_before_after(
-        model,
-        save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
-    )
 
     with open(input_file, "r") as f:
         text = f.read()[: args.length]
@@ -3896,15 +4130,17 @@ def main() -> None:
             "transformer mode: each representation gets its own plot suite "
             "under representations/<name>/"
         )
-        acts = run_transformer_visualization(
-            model,
-            text,
-            out_dir,
-            spaced=spaced,
-            automaton=automaton,
-            words=words,
-            condensed=args.condensed,
-        )
+        with timer.section("transformer_representations"):
+            acts = run_transformer_visualization(
+                model,
+                text,
+                out_dir,
+                spaced=spaced,
+                automaton=automaton,
+                words=words,
+                condensed=args.condensed,
+                quick=args.quick,
+            )
         output_probs = acts.output_probs
     else:
         hidden_states, output_probs = run_forward_pass(model, text, model_type)
@@ -4088,6 +4324,8 @@ def main() -> None:
     if args.exp:
         remove_legacy_readme_plot_names(out_dir)
         remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))
+
+    timer.print_summary(title="Overall visualization timing")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, d
         use_residual=cfg.get("use_residual", True),
         n_layer=cfg.get("n_layer", 2),
         use_layernorm=cfg.get("use_layernorm", True),
+        pos_embd_dim=cfg.get("pos_embd_dim"),
     )
     state = torch.load(exp_dir / "model.pt", map_location="cpu", weights_only=True)
     model.load_state_dict(state)
@@ -47,6 +48,7 @@ def load_model(path: str) -> dict:
         "model_config": cfg,
         "chars": chars,
         "hidden_size": int(cfg["n_embd"]),
+        "pos_embd_dim": int(cfg.get("pos_embd_dim", cfg["n_embd"])),
         "vocab_size": int(cfg["vocab_size"]),
         "block_size": int(cfg["block_size"]),
         "num_heads": int(cfg["num_heads"]),
@@ -57,7 +59,7 @@ def load_model(path: str) -> dict:
     }
 
     for key in (
-        "loss_iterations", "loss_smooth", "metric_iterations",
+        "loss_iterations", "loss_window", "loss_smooth", "metric_iterations",
         "metric_word_error_frac", "sample_before", "sample_after",
         "demo_snippet", "demo_before", "demo_after", "demo_word_error_frac",
         "demo_rng_seed", "demo_seed_char",
@@ -66,7 +68,7 @@ def load_model(path: str) -> dict:
             val = meta[key]
             if key.endswith("_iterations"):
                 model_dict[key] = np.array(val, dtype=np.int32)
-            elif key.endswith("_frac") or key == "loss_smooth":
+            elif key.endswith("_frac") or key in ("loss_smooth", "loss_window"):
                 model_dict[key] = np.array(val, dtype=np.float64) if isinstance(val, list) else float(val)
             elif key == "demo_rng_seed":
                 model_dict[key] = int(val)
@@ -81,13 +83,12 @@ def load_model(path: str) -> dict:
 
 @dataclass
 class LayerActivations:
-    """Per-layer Q/K/V and attention extracted at each corpus timestep."""
+    """Per-layer Q/K/V extracted at each corpus timestep."""
 
     attn_input: np.ndarray
     queries: list[np.ndarray]
     keys: list[np.ndarray]
     values: list[np.ndarray]
-    attention_lags: list[np.ndarray]
     post_attn: np.ndarray
     post_ffwd: np.ndarray
 
@@ -140,7 +141,6 @@ def extract_transformer_activations(model_dict: dict, text: str) -> TransformerA
             queries=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
             keys=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
             values=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
-            attention_lags=[np.full((T, block_size), np.nan, dtype=np.float64) for _ in range(num_heads)],
             post_attn=np.zeros((T, n_embd), dtype=np.float64),
             post_ffwd=np.zeros((T, n_embd), dtype=np.float64),
         ))
@@ -169,9 +169,6 @@ def extract_transformer_activations(model_dict: dict, text: str) -> TransformerA
                 layer.queries[h][t] = layer_acts["queries"][h][0, q_idx].cpu().numpy()
                 layer.keys[h][t] = layer_acts["keys"][h][0, q_idx].cpu().numpy()
                 layer.values[h][t] = layer_acts["values"][h][0, q_idx].cpu().numpy()
-                attn_row = layer_acts["attention"][h][0, q_idx].cpu().numpy()
-                for lag in range(W):
-                    layer.attention_lags[h][t, lag] = attn_row[W - 1 - lag]
 
     return TransformerActivations(
         token_emb=token_emb,
@@ -192,3 +189,30 @@ def forward_pass(model_dict: dict, text: str) -> tuple[np.ndarray, np.ndarray]:
     """Backward-compatible helper: returns (block_output, output_probs)."""
     acts = extract_transformer_activations(model_dict, text)
     return acts.block_output, acts.output_probs
+
+
+@torch.no_grad()
+def extract_attention_matrix(
+    model_dict: dict,
+    text: str,
+    *,
+    layer_idx: int = 0,
+    head_idx: int = 0,
+) -> tuple[np.ndarray, str]:
+    """Return causal softmax attention (T, T) from one forward pass.
+
+    Row i is the attention distribution for query position i over keys 0..i.
+    """
+    torch_model: BigramLanguageModel = model_dict["_torch_model"]
+    block_size = int(model_dict["block_size"])
+    char_to_index = {c: i for i, c in enumerate(model_dict["chars"])}
+
+    plot_text = text[:block_size]
+    ids = [char_to_index[ch] for ch in plot_text]
+    X = torch.tensor([ids], dtype=torch.long)
+    acts = torch_model.forward_with_activations(X)
+    attn = acts["layers"][layer_idx]["attention"][head_idx][0].cpu().numpy()
+    row_sums = attn.sum(axis=1)
+    if not np.allclose(row_sums, 1.0, atol=1e-3):
+        raise ValueError(f"attention rows do not softmax-normalize: {row_sums}")
+    return attn, plot_text

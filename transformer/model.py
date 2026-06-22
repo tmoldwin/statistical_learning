@@ -93,10 +93,28 @@ class BigramLanguageModel(nn.Module):
     - lm_head: maps attention output -> logits over vocab
     - use_residual: if False, disable residual connections (no x+attn, no x+ffwd)
     """
-    def __init__(self, vocab_size: int, n_embd: int, block_size: int, num_heads: int, head_size: int, use_residual: bool = True, n_layer: int = 1, use_layernorm: bool = False):
+    def __init__(
+        self,
+        vocab_size: int,
+        n_embd: int,
+        block_size: int,
+        num_heads: int,
+        head_size: int,
+        use_residual: bool = True,
+        n_layer: int = 1,
+        use_layernorm: bool = False,
+        pos_embd_dim: int | None = None,
+    ):
         super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, n_embd)           # (vocab, n_embd)
-        self.position_embedding_table = nn.Embedding(block_size, n_embd)  # (block_size, n_embd)
+        self.n_embd = n_embd
+        self.pos_embd_dim = n_embd if pos_embd_dim is None else pos_embd_dim
+        self.token_embedding = nn.Embedding(vocab_size, n_embd)  # (vocab, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, self.pos_embd_dim)
+        self.pos_proj = (
+            nn.Identity()
+            if self.pos_embd_dim == n_embd
+            else nn.Linear(self.pos_embd_dim, n_embd, bias=False)
+        )
         self.block_size = block_size
         self.use_residual = use_residual
         self.n_layer = n_layer
@@ -119,7 +137,7 @@ class BigramLanguageModel(nn.Module):
 
         token_emb = self.token_embedding(idx)  # (B,T,C)
         positions = torch.arange(T, device=idx.device) % self.block_size
-        pos_emb = self.position_embedding_table(positions)  # (T,C)
+        pos_emb = self.pos_proj(self.position_embedding_table(positions))  # (T, n_embd)
 
         x = token_emb + pos_emb  # (B,T,n_embd)
 
@@ -164,7 +182,7 @@ class BigramLanguageModel(nn.Module):
         B, T = idx.shape
         token_emb = self.token_embedding(idx)
         positions = torch.arange(T, device=idx.device) % self.block_size
-        pos_emb = self.position_embedding_table(positions).unsqueeze(0).expand(B, -1, -1)
+        pos_emb = self.pos_proj(self.position_embedding_table(positions)).unsqueeze(0).expand(B, -1, -1)
         x = token_emb + pos_emb
 
         layers = []

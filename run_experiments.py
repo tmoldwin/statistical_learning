@@ -83,6 +83,7 @@ def main() -> None:
                     train_cmd.extend(["--e-fraction", str(cfg.get("e_fraction", 0.8))])
                 if "sequence_length" in cfg:
                     train_cmd.extend(["--sequence-length", str(cfg["sequence_length"])])
+                train_cmd.extend(["--exp", name])
                 run(train_cmd)
 
             if "transformer" in args.models:

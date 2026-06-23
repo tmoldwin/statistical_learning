@@ -82,6 +82,14 @@ REGIMES: dict[str, list[str]] = {
         # independent
         "tea", "oil",
     ],
+    # 10 words, lengths 1–5; unspaced (concatenated) regime.
+    "ten_word_mixed": [
+        "a",
+        "at", "be",
+        "cat", "hat", "mat",
+        "bake", "lake",
+        "plant", "slant",
+    ],
 }
 
 

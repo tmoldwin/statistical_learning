@@ -34,6 +34,7 @@ from transformer.data_char import (  # noqa: E402
     split_train_val,
 )
 from transformer.model import BigramLanguageModel  # noqa: E402
+from vocab_diagrams import segment_corpus_by_words  # noqa: E402
 
 
 def set_seed(seed: int) -> None:
@@ -60,10 +61,18 @@ def sample_text(
     return text[1:] if (word_space and text.startswith(" ")) else text
 
 
-def invalid_word_fraction(text: str, vocab_words: set[str]) -> float:
+def invalid_word_fraction(
+    text: str,
+    vocab_words: set[str],
+    *,
+    word_space: bool = False,
+) -> float:
     if not vocab_words:
         return float("nan")
-    tokens = [t for t in text.split(" ") if t]
+    if word_space:
+        tokens = [t for t in text.split(" ") if t]
+    else:
+        tokens = [seg[2] for seg in segment_corpus_by_words(text, vocab_words)]
     if not tokens:
         return float("nan")
     bad = sum(1 for t in tokens if t not in vocab_words)
@@ -91,7 +100,7 @@ def evaluate_word_error(
         )
         if r == 0:
             first = text
-        errs.append(invalid_word_fraction(text, vocab_words))
+        errs.append(invalid_word_fraction(text, vocab_words, word_space=word_space))
     return float(np.nanmean(errs)), first
 
 
@@ -267,7 +276,9 @@ def train(
         "demo_snippet": demo_snippet,
         "demo_before": demo_before,
         "demo_after": demo_after,
-        "demo_word_error_frac": invalid_word_fraction(sample_after, vocab_words),
+        "demo_word_error_frac": invalid_word_fraction(
+            sample_after, vocab_words, word_space=word_space,
+        ),
         "demo_rng_seed": seed + max_steps,
         "demo_seed_char": " " if (" " in stoi) else alphabet[0],
         "final_word_error_frac": final_word_err,

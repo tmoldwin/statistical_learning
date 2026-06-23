@@ -1,8 +1,8 @@
 """Transformer-specific visualization: one analysis suite per representation type.
 
 Transformers do not have a single recurrent hidden state. Each component —
-token embedding, position embedding, per-layer attention I/O, Q/K/V, and the
-final output vector — is analyzed separately.
+token embedding, position embedding, their sum (block input), per-layer
+attention I/O, Q/K/V, and the final output vector — is analyzed separately.
 """
 
 from __future__ import annotations
@@ -90,9 +90,6 @@ def _attention_dir(out_dir: str | Path) -> Path:
     return Path(out_dir) / "attention"
 
 
-_STALE_REPRESENTATION_SLUGS: frozenset[str] = frozenset({"block_input"})
-
-
 def cleanup_representation_plot_dir(slug_dir: Path) -> None:
     """Remove stale PNGs before rewriting a representation folder."""
     if not slug_dir.is_dir():
@@ -102,7 +99,7 @@ def cleanup_representation_plot_dir(slug_dir: Path) -> None:
 
 
 def cleanup_stale_representation_dirs(out_dir: str | Path, valid_slugs: set[str]) -> None:
-    """Remove representation folders left from multi-head / block_input runs."""
+    """Remove representation folders that are no longer in the spec list."""
     repr_root = Path(out_dir) / "representations"
     if not repr_root.is_dir():
         return
@@ -391,7 +388,7 @@ def plot_layer_attention_figure(
     future_mask = np.triu(np.ones((T, T), dtype=bool), k=1)
     attn_plot = np.ma.array(attn, mask=future_mask)
 
-    cmap = plt.cm.Blues.copy()
+    cmap = plt.cm.magma.copy()
     cmap.set_bad(color="white")
 
     size = max(8.0, T * 0.32)
@@ -444,6 +441,12 @@ def collect_representation_specs(acts: TransformerActivations) -> list[Represent
             "pos emb",
             acts.pos_emb,
             lookup="position",
+        ),
+        RepresentationSpec(
+            "block_input",
+            "token + position embedding (pre-attention input)",
+            "tok+pos",
+            acts.block_input,
         ),
     ]
     for layer_idx, layer in enumerate(acts.layers):

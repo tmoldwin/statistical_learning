@@ -43,6 +43,9 @@ from rnn.rnn_dyn import (
     sample_dale_signs,
     stable_softmax,
 )
+from experiment import experiment_regime
+from task import REGIMES
+from vocab_diagrams import segment_corpus_by_words
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--steps', type=int, default=2000,
@@ -59,6 +62,8 @@ parser.add_argument('--e-fraction', type=float, default=0.8,
                     help='fraction of excitatory neurons when --dale (default: 0.8)')
 parser.add_argument('--sequence-length', type=int, default=25,
                     help='BPTT window length in characters (default: 25)')
+parser.add_argument('--exp', default=None,
+                    help='experiment name; loads word list for unspaced word-error metrics')
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -69,8 +74,16 @@ print('data has %d characters, %d unique.' % (text_length, vocab_size))
 char_to_index = { char: i for i, char in enumerate(unique_chars) }  # str -> int id
 index_to_char = { i: char for i, char in enumerate(unique_chars) }  # int id -> str
 
-# For word-space corpora, infer the (training) vocabulary as the set of whitespace-delimited tokens.
-vocab_words = set(text.split()) if (" " in text) else set()
+# For word-space corpora, infer vocabulary from whitespace tokens; for unspaced
+# experiment corpora, load the regime word list via --exp.
+corpus_has_spaces = " " in text
+if args.exp:
+    vocab_words = set(REGIMES[experiment_regime(args.exp)])
+elif corpus_has_spaces:
+    vocab_words = set(text.split())
+else:
+    vocab_words = set()
+use_word_segmentation = bool(vocab_words) and not corpus_has_spaces
 
 # ----- hyperparameters --------------------------------------------------------
 hidden_size = args.hidden_size  # number of recurrent units in the hidden layer
@@ -401,10 +414,13 @@ def stochastic_word_validity_metrics(
 
 
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
-    """Fraction of whitespace-delimited tokens not in the training vocabulary."""
+    """Fraction of words (split or segmented) not in the training vocabulary."""
     if not vocab:
         return float("nan")
-    tokens = [t for t in sampled_text.split(" ") if t]
+    if use_word_segmentation:
+        tokens = [seg[2] for seg in segment_corpus_by_words(sampled_text, vocab)]
+    else:
+        tokens = [t for t in sampled_text.split(" ") if t]
     if not tokens:
         return float("nan")
     bad = sum(1 for t in tokens if t not in vocab)
@@ -412,17 +428,15 @@ def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
 
 
 def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str]) -> float:
-  """Fraction of non-space letters that belong to tokens in `vocab`."""
+  """Fraction of letters that belong to in-vocabulary words."""
   if not vocab:
     return float("nan")
-  total_letters = 0
-  valid_letters = 0
-  for token in sampled_text.split(" "):
-    if token == "":
-      continue
-    total_letters += len(token)
-    if token in vocab:
-      valid_letters += len(token)
+  if use_word_segmentation:
+    tokens = [seg[2] for seg in segment_corpus_by_words(sampled_text, vocab)]
+  else:
+    tokens = [t for t in sampled_text.split(" ") if t]
+  total_letters = sum(len(token) for token in tokens)
+  valid_letters = sum(len(token) for token in tokens if token in vocab)
   return (valid_letters / total_letters) if total_letters > 0 else float("nan")
 
 

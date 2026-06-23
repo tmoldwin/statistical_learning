@@ -2,7 +2,7 @@
   "vocab_size": 15,
   "n_embd": 128,
   "pos_embd_dim": 24,
-  "block_size": 40,
+  "block_size": 12,
   "num_heads": 1,
   "head_size": 128,
   "n_layer": 1,

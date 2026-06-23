@@ -895,10 +895,18 @@ def plot_hidden_states_correlation_clustermap(
     print(f"wrote {save_path}")
 
 
-def _invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
+def _invalid_word_fraction(
+    sampled_text: str,
+    vocab: set[str],
+    *,
+    spaced: bool = True,
+) -> float:
     if not vocab:
         return float("nan")
-    tokens = [t for t in sampled_text.split(" ") if t]
+    if spaced:
+        tokens = [t for t in sampled_text.split(" ") if t]
+    else:
+        tokens = [seg[2] for seg in segment_corpus_by_words(sampled_text, vocab)]
     if not tokens:
         return float("nan")
     bad = sum(1 for t in tokens if t not in vocab)
@@ -1849,10 +1857,12 @@ def plot_sample_before_after(model, save_path: str) -> None:
     demo_before = demo_before[:SAMPLE_DISPLAY_LEN]
     demo_after = demo_after[:SAMPLE_DISPLAY_LEN]
     spaced = " " in demo_snippet or " " in demo_after
+    if model.get("model_config", {}).get("word_space") is False:
+        spaced = False
 
     after_err = model.get("demo_word_error_frac")
-    if after_err is None or not np.isfinite(after_err):
-        after_err = _invalid_word_fraction(demo_after, vocab)
+    if after_err is None or not np.isfinite(after_err) or not spaced:
+        after_err = _invalid_word_fraction(demo_after, vocab, spaced=spaced)
     after_title = f"Generated after learning — {100.0 * after_err:.1f}% invalid words"
     if "metric_word_error_frac" in model and len(model["metric_word_error_frac"]):
         train_err = float(model["metric_word_error_frac"][-1])

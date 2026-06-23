@@ -1,0 +1,39 @@
+{
+  "vocab_size": 12,
+  "n_embd": 128,
+  "pos_embd_dim": 24,
+  "block_size": 16,
+  "num_heads": 1,
+  "head_size": 128,
+  "n_layer": 1,
+  "use_layernorm": true,
+  "use_residual": false,
+  "alphabet": "abcehklmnpst",
+  "chars": [
+    "a",
+    "b",
+    "c",
+    "e",
+    "h",
+    "k",
+    "l",
+    "m",
+    "n",
+    "p",
+    "s",
+    "t"
+  ],
+  "words": [
+    "a",
+    "at",
+    "be",
+    "cat",
+    "hat",
+    "mat",
+    "bake",
+    "lake",
+    "plant",
+    "slant"
+  ],
+  "word_space": false
+}

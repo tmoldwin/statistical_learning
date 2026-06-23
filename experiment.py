@@ -44,7 +44,7 @@ _BASE_CONFIG: dict[str, dict] = {
         "viz_length": 50,
         "hidden_size": 128,
         "pos_embd_dim": 24,
-        "sequence_length": 40,
+        "sequence_length": 12,
         "num_heads": 1,
         "n_layer": 1,
         "use_residual": False,
@@ -91,7 +91,7 @@ _BASE_CONFIG: dict[str, dict] = {
 # Transformer defaults aligned with RNN regimes (char-level LM).
 TRANSFORMER_DEFAULTS: dict[str, object] = {
     "n_embd": 32,
-    "block_size": 40,
+    "block_size": 12,
     "num_heads": 1,
     "head_size": 32,
     "n_layer": 1,

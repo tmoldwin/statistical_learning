@@ -123,6 +123,7 @@ def cleanup_stale_attention_plots(out_dir: str | Path, n_layers: int) -> None:
     valid = {
         *(f"layer{i}_qkv.png" for i in range(n_layers)),
         *(f"layer{i}_attention.png" for i in range(n_layers)),
+        *(f"layer{i}_attention_lags.png" for i in range(n_layers)),
     }
     for stale in attn_dir.iterdir():
         if stale.is_file() and stale.name not in valid:
@@ -320,6 +321,50 @@ def plot_layer_qkv_figure(
         fontsize=12,
         y=1.02,
     )
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def plot_layer_attention_lags_figure(
+    text: str,
+    layer: LayerActivations,
+    layer_idx: int,
+    block_size: int,
+    save_path: str,
+    *,
+    automaton: MinimizedVocabAutomaton | None = None,
+    spaced: bool = False,
+) -> None:
+    """Causal attention weights: query at t attends to keys at lags 0..block_size-1."""
+    from visualize import _color_tick_labels_by_state_ids, _dfa_state_ids_at_timesteps
+
+    T = len(text)
+    attn = layer.attention_lags[0]
+    lag_labels = [f"lag {i}" for i in range(block_size)]
+    fig, ax = plt.subplots(figsize=(max(12, T * 0.15), 5))
+    im = ax.imshow(
+        attn.T,
+        aspect="auto",
+        cmap="magma",
+        vmin=0.0,
+        vmax=1.0,
+        interpolation="nearest",
+        origin="lower",
+    )
+    ax.set_title(f"Layer {layer_idx} causal attention by lag")
+    ax.set_yticks(range(block_size))
+    ax.set_yticklabels(lag_labels, fontsize=7)
+    ax.set_xticks(range(T))
+    tick_labels = ["␣" if c == " " else c for c in text]
+    ax.set_xticklabels(tick_labels, fontsize=6, rotation=90)
+    if automaton is not None:
+        state_ids = _dfa_state_ids_at_timesteps(text, automaton, spaced=spaced)
+        _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
+    ax.set_xlabel("timestep / input character")
+    ax.set_ylabel("attention to key lag")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="weight")
     fig.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -711,6 +756,12 @@ def run_transformer_visualization(
             plot_layer_attention_figure(
                 model, text, layer_idx,
                 str(attn_dir / f"layer{layer_idx}_attention.png"),
+                automaton=automaton, spaced=spaced,
+            )
+        with plot_timer.section("attention_lags"):
+            plot_layer_attention_lags_figure(
+                text, layer, layer_idx, acts.block_size,
+                str(attn_dir / f"layer{layer_idx}_attention_lags.png"),
                 automaton=automaton, spaced=spaced,
             )
 

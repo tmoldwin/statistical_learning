@@ -89,6 +89,7 @@ class LayerActivations:
     queries: list[np.ndarray]
     keys: list[np.ndarray]
     values: list[np.ndarray]
+    attention_lags: list[np.ndarray]
     post_attn: np.ndarray
     post_ffwd: np.ndarray
 
@@ -141,6 +142,7 @@ def extract_transformer_activations(model_dict: dict, text: str) -> TransformerA
             queries=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
             keys=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
             values=[np.zeros((T, head_size), dtype=np.float64) for _ in range(num_heads)],
+            attention_lags=[np.full((T, block_size), np.nan, dtype=np.float64) for _ in range(num_heads)],
             post_attn=np.zeros((T, n_embd), dtype=np.float64),
             post_ffwd=np.zeros((T, n_embd), dtype=np.float64),
         ))
@@ -169,6 +171,9 @@ def extract_transformer_activations(model_dict: dict, text: str) -> TransformerA
                 layer.queries[h][t] = layer_acts["queries"][h][0, q_idx].cpu().numpy()
                 layer.keys[h][t] = layer_acts["keys"][h][0, q_idx].cpu().numpy()
                 layer.values[h][t] = layer_acts["values"][h][0, q_idx].cpu().numpy()
+                attn_row = layer_acts["attention"][h][0, q_idx].cpu().numpy()
+                for lag in range(W):
+                    layer.attention_lags[h][t, lag] = attn_row[W - 1 - lag]
 
     return TransformerActivations(
         token_emb=token_emb,

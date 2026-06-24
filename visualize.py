@@ -45,8 +45,8 @@ Loads the saved model from `model.npz`, runs a forward pass over the first
        Timesteps grouped by min DFA state; Pearson r within and between state blocks.
 
   11) dfa_state_distance_comparison.png
-       Pairwise Euclidean distances between hidden states; bars = within vs between
-       minimized DFA state (all timestep pairs in the test window).
+       Pairwise Euclidean distances between hidden states; within vs between
+       minimized DFA state, same input character, same position in word (all timestep pairs).
 
   12) weights.png
        Side-by-side heatmaps of final input weights (char columns × hidden rows)
@@ -108,6 +108,8 @@ from vocab_diagrams import (
     dfa_state_label,
     draw_minimized_dfa_on_axes,
     in_word_prefix_at_position,
+    position_in_word_at_index,
+    position_in_word_for_prefix_label,
     segment_corpus_by_words,
     trie_prefix_display_order,
     vocabulary_for_experiment,
@@ -1020,26 +1022,72 @@ def plot_dfa_grouped_state_correlation(
     print(f"wrote {save_path}")
 
 
+def median_mad(vals: np.ndarray) -> tuple[float, float]:
+    """Median and median absolute deviation (empty → nan)."""
+    if len(vals) == 0:
+        return float("nan"), float("nan")
+    med = float(np.median(vals))
+    mad = float(np.median(np.abs(vals - med)))
+    return med, mad
+
+
 def pairwise_hidden_state_distance_groups(
     text: str,
     hidden_states: np.ndarray,
     state_ids: list[int],
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """L2 distance for each timestep pair (i < j): within DFA, between DFA, same input char."""
+    position_ids: list[int | None],
+) -> dict[str, np.ndarray]:
+    """L2 distances (i < j) for within/between DFA, word position, char, and all pairs."""
     n = hidden_states.shape[0]
-    within: list[float] = []
-    between: list[float] = []
-    same_input: list[float] = []
+    groups: dict[str, list[float]] = {
+        "Within DFA state": [],
+        "Between DFA states": [],
+        "Within word position": [],
+        "Between word positions": [],
+        "Within char": [],
+        "Between chars": [],
+        "All pairs": [],
+    }
     for i in range(n):
         for j in range(i + 1, n):
             dist = float(np.linalg.norm(hidden_states[i] - hidden_states[j]))
+            groups["All pairs"].append(dist)
             if state_ids[i] == state_ids[j]:
-                within.append(dist)
+                groups["Within DFA state"].append(dist)
             else:
-                between.append(dist)
+                groups["Between DFA states"].append(dist)
             if text[i] == text[j]:
-                same_input.append(dist)
-    return np.asarray(within), np.asarray(between), np.asarray(same_input)
+                groups["Within char"].append(dist)
+            else:
+                groups["Between chars"].append(dist)
+            pi, pj = position_ids[i], position_ids[j]
+            if pi is not None and pj is not None:
+                if pi == pj:
+                    groups["Within word position"].append(dist)
+                else:
+                    groups["Between word positions"].append(dist)
+    return {k: np.asarray(v) for k, v in groups.items()}
+
+
+PAIR_DISTANCE_CATEGORY_ORDER = (
+    "Within DFA state",
+    "Between DFA states",
+    "Within word position",
+    "Between word positions",
+    "Within char",
+    "Between chars",
+    "All pairs",
+)
+
+PAIR_DISTANCE_PALETTE = {
+    "Within DFA state": "#4c72b0",
+    "Between DFA states": "#dd8452",
+    "Within word position": "#8172b3",
+    "Between word positions": "#9372b3",
+    "Within char": "#55a868",
+    "Between chars": "#2ca02c",
+    "All pairs": "#8c8c8c",
+}
 
 
 def plot_dfa_state_distance_comparison(
@@ -1049,10 +1097,12 @@ def plot_dfa_state_distance_comparison(
     save_path: str,
     *,
     spaced: bool = False,
+    words: list[str] | None = None,
     condensed: CondensedView | None = None,
     repr_label: str = "hidden state",
 ) -> None:
-    """Subsampled pairwise distances + mean (diamond) ± std; y-axis clipped at 0."""
+    """Subsampled pairwise distances + median (diamond) ± MAD; y-axis clipped at 0."""
+    vocab = _corpus_vocab(text, words)
     if condensed is not None:
         hidden_states = condensed.hidden_states
         spaced = condensed.spaced
@@ -1060,45 +1110,43 @@ def plot_dfa_state_distance_comparison(
         state_ids = [
             dfa_state_for_prefix(l, automaton, spaced=spaced) for l in condensed.labels
         ]
+        position_ids = [
+            position_in_word_for_prefix_label(l) for l in condensed.labels
+        ]
     else:
         compare_chars = list(text)
         state_ids = [
             dfa_state_at_position(
-                text, t, automaton, spaced=spaced, vocab=_corpus_vocab(text),
+                text, t, automaton, spaced=spaced, vocab=vocab,
             ) for t in range(len(text))
+        ]
+        position_ids = [
+            position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
+            for t in range(len(text))
         ]
     n = hidden_states.shape[0]
     if n < 2:
         return
 
-    within, between, same_input = pairwise_hidden_state_distance_groups(
-        compare_chars, hidden_states, state_ids
+    by_label = pairwise_hidden_state_distance_groups(
+        compare_chars, hidden_states, state_ids, position_ids
     )
-    if len(within) == 0 or len(between) == 0:
+    if len(by_label["Within DFA state"]) == 0 or len(by_label["Between DFA states"]) == 0:
         print("DFA distance comparison: need both within- and between-state pairs")
         return
 
-    palette = {
-        "Within DFA state": "#4c72b0",
-        "Same input char": "#55a868",
-        "Between DFA states": "#dd8452",
-    }
-    by_label = {
-        "Within DFA state": within,
-        "Same input char": same_input,
-        "Between DFA states": between,
-    }
+    palette = PAIR_DISTANCE_PALETTE
     order = [
-        label for label in ("Within DFA state", "Same input char", "Between DFA states")
+        label for label in PAIR_DISTANCE_CATEGORY_ORDER
         if len(by_label[label]) > 0
     ]
     specs = [(label, by_label[label]) for label in order]
     stats = {
-        label: (float(np.mean(vals)), float(np.std(vals)), len(vals))
+        label: (*median_mad(vals), len(vals))
         for label, vals in specs
     }
 
-    fig, ax = plt.subplots(figsize=(8.5, 5.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(14.0, 5.5), constrained_layout=True)
     x = np.arange(len(order))
     rng = np.random.default_rng(0)
     max_points = 200
@@ -1119,12 +1167,12 @@ def plot_dfa_state_distance_comparison(
             zorder=1,
         )
 
-        mean, std, _ = stats[label]
-        err_lo = min(mean, std)
+        med, mad, _ = stats[label]
+        err_lo = min(med, mad)
         ax.errorbar(
             x[i],
-            mean,
-            yerr=np.array([[err_lo], [std]]),
+            med,
+            yerr=np.array([[err_lo], [mad]]),
             fmt="D",
             color=color,
             ecolor=color,
@@ -1148,11 +1196,11 @@ def plot_dfa_state_distance_comparison(
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
     ax.set_xlim(-0.6, len(order) - 0.4)
     ax.set_ylim(bottom=0)
-    within_mean = stats.get("Within DFA state", (float("nan"),))[0]
-    between_mean = stats.get("Between DFA states", (float("nan"),))[0]
-    ratio = within_mean / between_mean if between_mean > 0 else float("inf")
+    within_med = stats.get("Within DFA state", (float("nan"),))[0]
+    between_med = stats.get("Between DFA states", (float("nan"),))[0]
+    ratio = within_med / between_med if between_med > 0 else float("inf")
     parts = [
-        f"{label}: n={n_} mean={m:.4f} std={s:.4f}"
+        f"{label}: n={n_} median={m:.4f} mad={s:.4f}"
         for label, (m, s, n_) in stats.items()
     ]
     print("pairwise L2: " + " | ".join(parts) + f" | ratio within/between={ratio:.3f}")
@@ -4287,6 +4335,7 @@ def main() -> None:
                 text, hidden_states, automaton,
                 save_path=plot_path("dfa_state_distance_comparison.png"),
                 spaced=spaced,
+                words=words,
                 condensed=cv,
             )
 

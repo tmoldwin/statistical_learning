@@ -579,6 +579,23 @@ def plot_representation_suite(
             _repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
             title=f"{name} — one point per lookup row (PCA)",
         )
+        if automaton is not None:
+            cv = _condense_representation(
+                text, spec.vectors, output_probs,
+                spaced=spaced, words=words, condensed=condensed,
+            )
+            _plot(
+                "dfa_state_distance_comparison",
+                plot_dfa_state_distance_comparison,
+                text, spec.vectors, automaton,
+                save_path=_repr_plot_path(
+                    out_dir, spec.slug, "dfa_state_distance_comparison.png", condensed=condensed,
+                ),
+                spaced=spaced,
+                words=words,
+                condensed=cv,
+                repr_label=name,
+            )
         return
 
     cv = _condense_representation(
@@ -654,7 +671,9 @@ def plot_representation_suite(
             save_path=_repr_plot_path(
                 out_dir, spec.slug, "dfa_state_distance_comparison.png", condensed=condensed,
             ),
-            spaced=spaced, condensed=cv,
+            spaced=spaced,
+            words=words,
+            condensed=cv,
             repr_label=name,
         )
 

@@ -189,12 +189,12 @@ README_FIGURES: list[ReadmeFigure] = [
     ),
     ReadmeFigure(
         19, "dfa_state_distance_comparison", "dfa_state_distance_comparison.png",
-        "Pairwise Euclidean distances between hidden vectors (subsampled pairs). Three distributions: "
-        "within the same DFA state, between different DFA states, and pairs with the same input character.",
-        "The quantitative summary: within-state distances are sharply smaller than between-state distances, "
-        "even though same-input-character pairs can be far apart. The DFA partition captures variance in "
-        "$\\mathbf{h}_t$ that raw character identity alone cannot. Error bars / overlays show means; "
-        "scatter shows individual pairs.",
+        "Pairwise Euclidean distances between hidden vectors (subsampled pairs). Seven distributions: "
+        "within/between DFA states, within/between word positions, within/between characters, "
+        "and all pairs (overall spread). Summaries use median ± MAD.",
+        "The quantitative summary: within-state distances are sharply smaller than between-state distances. "
+        "Parallel within/between splits for word position and character identity isolate each factor. "
+        "Diamond markers show medians; error bars show MAD.",
     ),
 ]
 

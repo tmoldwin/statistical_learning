@@ -347,6 +347,29 @@ def in_word_prefix_at_position(
     return text[max(0, index - 2) : index + 1]
 
 
+def position_in_word_for_prefix_label(label: str) -> int | None:
+    """0-based character index within the current word for a condensed prefix label."""
+    if label == " " or not label:
+        return None
+    return len(label) - 1
+
+
+def position_in_word_at_index(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> int | None:
+    """0-based character index within the current word (None on spaces / empty)."""
+    if index < 0 or index >= len(text):
+        return None
+    if spaced and text[index] == " ":
+        return None
+    prefix = in_word_prefix_at_position(text, index, spaced=spaced, vocab=vocab)
+    return position_in_word_for_prefix_label(prefix)
+
+
 def walk_dfa_prefix(dfa: DFA, prefix: str) -> int | None:
     """DFA state after reading `prefix` from the start state (None if undefined)."""
     state = dfa.start

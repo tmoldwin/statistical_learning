@@ -21,6 +21,7 @@ from visualize import (
     load_model_for_viz,
     median_mad,
     position_in_word_at_index,
+    run_forward_pass,
 )
 
 SHORT_NAMES = {
@@ -39,6 +40,31 @@ SHORT_NAMES = {
 CATEGORIES = list(PAIR_DISTANCE_CATEGORY_ORDER)
 PALETTE = PAIR_DISTANCE_PALETTE
 CAT_SHORT = ["w DFA", "b DFA", "w pos", "b pos", "w chr", "b chr", "all"]
+RNN_SLUG = "rnn_hidden"
+
+
+def _row_label(row: dict) -> str:
+    if row["slug"] == RNN_SLUG:
+        return "RNN h"
+    return SHORT_NAMES.get(row["slug"], row["slug"])
+
+
+def _analysis_context(exp: str) -> tuple[str, list[str], list[int], list[int | None], object]:
+    cfg = EXPERIMENT_CONFIG[exp]
+    text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
+    words = vocabulary_for_experiment(exp)
+    spaced = True
+    automaton = build_minimized_vocabulary_automaton(words)
+    vocab = _corpus_vocab(text, words)
+    state_ids = [
+        dfa_state_at_position(text, t, automaton, spaced=spaced, vocab=vocab)
+        for t in range(len(text))
+    ]
+    pos_ids = [
+        position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
+        for t in range(len(text))
+    ]
+    return text, list(text), state_ids, pos_ids, automaton
 
 
 def _pair_distance(a: np.ndarray, b: np.ndarray, metric: str) -> float:
@@ -111,35 +137,50 @@ def _summarize_groups(
     return row
 
 
-def analyze(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> list[dict]:
-    cfg = EXPERIMENT_CONFIG[exp]
-    text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
-    words = vocabulary_for_experiment(exp)
-    spaced = True
-    automaton = build_minimized_vocabulary_automaton(words)
-    vocab = _corpus_vocab(text, words)
+def analyze_transformer(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> list[dict]:
+    text, chars, state_ids, pos_ids, _ = _analysis_context(exp)
 
     model = load_model_for_viz(str(model_path(exp, "transformer")), "transformer")
     acts = extract_transformer_activations(model, text)
     specs = collect_representation_specs(acts)
 
-    state_ids = [
-        dfa_state_at_position(text, t, automaton, spaced=spaced, vocab=vocab)
-        for t in range(len(text))
-    ]
-    pos_ids = [
-        position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
-        for t in range(len(text))
-    ]
-
     rows: list[dict] = []
     for spec in specs:
         groups = pairwise_distance_groups(
-            list(text), spec.vectors, state_ids, pos_ids, metric=metric,
+            chars, spec.vectors, state_ids, pos_ids, metric=metric,
         )
         rows.append(_summarize_groups(
             groups, slug=spec.slug, name=spec.display_name, metric=metric,
         ))
+    return rows
+
+
+def analyze_rnn(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> dict | None:
+    rnn_path = model_path(exp, "rnn")
+    if not rnn_path.is_file():
+        print(f"skip RNN row: no model at {rnn_path}")
+        return None
+
+    text, chars, state_ids, pos_ids, _ = _analysis_context(exp)
+    model = load_model_for_viz(str(rnn_path), "rnn")
+    hidden_states, _ = run_forward_pass(model, text, "rnn")
+    groups = pairwise_distance_groups(
+        chars, hidden_states, state_ids, pos_ids, metric=metric,
+    )
+    return _summarize_groups(
+        groups,
+        slug=RNN_SLUG,
+        name="RNN hidden state",
+        metric=metric,
+    )
+
+
+def analyze(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> list[dict]:
+    """Transformer representations plus RNN hidden state (first row) when available."""
+    rows = analyze_transformer(exp, metric=metric)
+    rnn_row = analyze_rnn(exp, metric=metric)
+    if rnn_row is not None:
+        rows = [rnn_row] + rows
     return rows
 
 
@@ -150,7 +191,8 @@ def _normalize_to_overall_median(mat: np.ndarray, scales: np.ndarray) -> np.ndar
 
 def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> None:
     """Heatmaps: category median / all-pairs median (bwr centered at 1.0)."""
-    names = [SHORT_NAMES.get(r["slug"], r["slug"]) for r in rows_l2]
+    names = [_row_label(r) for r in rows_l2]
+    n_rows = len(names)
 
     def median_matrix(rows: list[dict]) -> np.ndarray:
         return np.array([[r[f"{cat} median"] for cat in CATEGORIES] for r in rows])
@@ -177,7 +219,7 @@ def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> 
     mean_span = max(mean_dev, 0.2)
     mean_norm_cmap = TwoSlopeNorm(vmin=1.0 - mean_span, vcenter=1.0, vmax=1.0 + mean_span)
 
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(16, max(10, 0.55 * n_rows + 3)), constrained_layout=True)
     gap_vmax = 1.5
 
     for col, (label, med_raw, mad_raw, gap_raw, row_scale) in enumerate(raw_specs):
@@ -223,7 +265,7 @@ def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> 
         cbar_g.set_label("× all-pairs median", fontsize=8)
 
     fig.suptitle(
-        "Transformer pairwise distance sensitivity (median + MAD)\n"
+        "RNN + transformer pairwise distance sensitivity (median + MAD)\n"
         "(ten_word_overlap_s, 50 timesteps; blue < all-pairs median < red)",
         fontsize=11,
         y=1.02,
@@ -234,16 +276,17 @@ def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> 
 
 
 def plot(rows: list[dict], out_path: Path) -> None:
-    names = [SHORT_NAMES.get(r["slug"], r["slug"]) for r in rows]
+    tf_rows = [r for r in rows if r["slug"] != RNN_SLUG]
+    names = [_row_label(r) for r in tf_rows]
     n_cats = len(CATEGORIES)
     fig, axes = plt.subplots(1, 2, figsize=(20, 6), constrained_layout=True)
 
     ax = axes[0]
-    x = np.arange(len(rows))
+    x = np.arange(len(tf_rows))
     width = 0.11
     for i, cat in enumerate(CATEGORIES):
-        meds = [r[f"{cat} median"] for r in rows]
-        mads = [r[f"{cat} mad"] for r in rows]
+        meds = [r[f"{cat} median"] for r in tf_rows]
+        mads = [r[f"{cat} mad"] for r in tf_rows]
         offset = (i - (n_cats - 1) / 2) * width
         ax.bar(
             x + offset, meds, width, yerr=mads, capsize=2,
@@ -259,9 +302,9 @@ def plot(rows: list[dict], out_path: Path) -> None:
 
     ax2 = axes[1]
     bar_w = 0.22
-    ax2.bar(x - bar_w, [r["dfa_gap"] for r in rows], bar_w, label="DFA gap", color="#dd8452")
-    ax2.bar(x, [r["char_gap"] for r in rows], bar_w, label="Char gap", color="#55a868")
-    ax2.bar(x + bar_w, [r["pos_gap"] for r in rows], bar_w, label="Pos gap", color="#8172b3")
+    ax2.bar(x - bar_w, [r["dfa_gap"] for r in tf_rows], bar_w, label="DFA gap", color="#dd8452")
+    ax2.bar(x, [r["char_gap"] for r in tf_rows], bar_w, label="Char gap", color="#55a868")
+    ax2.bar(x + bar_w, [r["pos_gap"] for r in tf_rows], bar_w, label="Pos gap", color="#8172b3")
     ax2.set_xticks(x)
     ax2.set_xticklabels(names, rotation=35, ha="right")
     ax2.set_ylabel("Median distance gap (between − within)")
@@ -289,7 +332,13 @@ def main() -> None:
     plot_heatmaps(rows_l2, rows_cos, heatmap_png)
 
     json_path = bar_png.with_suffix(".json")
-    json_path.write_text(json.dumps({"l2": rows_l2, "cosine": rows_cos}, indent=2), encoding="utf-8")
+    payload = {
+        "l2": rows_l2,
+        "cosine": rows_cos,
+        "transformer_only_l2": [r for r in rows_l2 if r["slug"] != RNN_SLUG],
+        "transformer_only_cosine": [r for r in rows_cos if r["slug"] != RNN_SLUG],
+    }
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
 

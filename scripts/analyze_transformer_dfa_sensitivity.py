@@ -18,6 +18,8 @@ from visualize import (
     PAIR_DISTANCE_PALETTE,
     _corpus_vocab,
     dfa_state_at_position,
+    in_word_prefix_at_position,
+    in_word_prefix_before_current,
     load_model_for_viz,
     median_mad,
     position_in_word_at_index,
@@ -39,7 +41,10 @@ SHORT_NAMES = {
 
 CATEGORIES = list(PAIR_DISTANCE_CATEGORY_ORDER)
 PALETTE = PAIR_DISTANCE_PALETTE
-CAT_SHORT = ["same all", "w DFA", "b DFA", "w pos", "b pos", "w chr", "b chr", "all"]
+CAT_SHORT = [
+    "w pfx", "b pfx", "w str", "b str",
+    "w DFA", "b DFA", "w pos", "b pos", "w chr", "b chr", "all",
+]
 RNN_SLUG = "rnn_hidden"
 
 
@@ -49,7 +54,9 @@ def _row_label(row: dict) -> str:
     return SHORT_NAMES.get(row["slug"], row["slug"])
 
 
-def _analysis_context(exp: str) -> tuple[str, list[str], list[int], list[int | None], object]:
+def _analysis_context(
+    exp: str,
+) -> tuple[str, list[str], list[int], list[int | None], list[str], list[str], object]:
     cfg = EXPERIMENT_CONFIG[exp]
     text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
     words = vocabulary_for_experiment(exp)
@@ -64,7 +71,15 @@ def _analysis_context(exp: str) -> tuple[str, list[str], list[int], list[int | N
         position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
         for t in range(len(text))
     ]
-    return text, list(text), state_ids, pos_ids, automaton
+    string_labels = [
+        in_word_prefix_at_position(text, t, spaced=spaced, vocab=vocab)
+        for t in range(len(text))
+    ]
+    prefix_labels = [
+        in_word_prefix_before_current(text, t, spaced=spaced, vocab=vocab)
+        for t in range(len(text))
+    ]
+    return text, list(text), state_ids, pos_ids, prefix_labels, string_labels, automaton
 
 
 def _pair_distance(a: np.ndarray, b: np.ndarray, metric: str) -> float:
@@ -83,16 +98,26 @@ def pairwise_distance_groups(
     vectors: np.ndarray,
     state_ids: list[int],
     position_ids: list[int | None],
+    prefix_labels: list[str],
+    string_labels: list[str],
     *,
     metric: str = "l2",
 ) -> dict[str, np.ndarray]:
-    """Pairwise distances (i < j) for within/between DFA, position, char, and all pairs."""
+    """Pairwise distances (i < j) for within/between prefix, string, DFA, position, char, all pairs."""
     n = vectors.shape[0]
     groups: dict[str, list[float]] = {cat: [] for cat in CATEGORIES}
     for i in range(n):
         for j in range(i + 1, n):
             dist = _pair_distance(vectors[i], vectors[j], metric)
             groups["All pairs"].append(dist)
+            if prefix_labels[i] == prefix_labels[j]:
+                groups["Within prefix"].append(dist)
+            else:
+                groups["Between prefixes"].append(dist)
+            if string_labels[i] == string_labels[j]:
+                groups["Within string"].append(dist)
+            else:
+                groups["Between strings"].append(dist)
             if state_ids[i] == state_ids[j]:
                 groups["Within DFA state"].append(dist)
             else:
@@ -107,14 +132,6 @@ def pairwise_distance_groups(
                     groups["Within word position"].append(dist)
                 else:
                     groups["Between word positions"].append(dist)
-            if (
-                state_ids[i] == state_ids[j]
-                and chars[i] == chars[j]
-                and pi is not None
-                and pj is not None
-                and pi == pj
-            ):
-                groups["Same all"].append(dist)
     return {k: np.asarray(v) for k, v in groups.items()}
 
 
@@ -146,7 +163,7 @@ def _summarize_groups(
 
 
 def analyze_transformer(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> list[dict]:
-    text, chars, state_ids, pos_ids, _ = _analysis_context(exp)
+    text, chars, state_ids, pos_ids, prefix_labels, string_labels, _ = _analysis_context(exp)
 
     model = load_model_for_viz(str(model_path(exp, "transformer")), "transformer")
     acts = extract_transformer_activations(model, text)
@@ -155,7 +172,8 @@ def analyze_transformer(exp: str = "ten_word_overlap_s", *, metric: str = "l2") 
     rows: list[dict] = []
     for spec in specs:
         groups = pairwise_distance_groups(
-            chars, spec.vectors, state_ids, pos_ids, metric=metric,
+            chars, spec.vectors, state_ids, pos_ids,
+            prefix_labels, string_labels, metric=metric,
         )
         rows.append(_summarize_groups(
             groups, slug=spec.slug, name=spec.display_name, metric=metric,
@@ -169,11 +187,12 @@ def analyze_rnn(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> dict 
         print(f"skip RNN row: no model at {rnn_path}")
         return None
 
-    text, chars, state_ids, pos_ids, _ = _analysis_context(exp)
+    text, chars, state_ids, pos_ids, prefix_labels, string_labels, _ = _analysis_context(exp)
     model = load_model_for_viz(str(rnn_path), "rnn")
     hidden_states, _ = run_forward_pass(model, text, "rnn")
     groups = pairwise_distance_groups(
-        chars, hidden_states, state_ids, pos_ids, metric=metric,
+        chars, hidden_states, state_ids, pos_ids,
+        prefix_labels, string_labels, metric=metric,
     )
     return _summarize_groups(
         groups,
@@ -240,7 +259,7 @@ def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> 
 
     diverging = TwoSlopeNorm(vmin=-1.0, vcenter=0.0, vmax=1.0)
 
-    fig, axes = plt.subplots(2, 2, figsize=(17, max(10, 0.55 * n_rows + 3)), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(20, max(10, 0.55 * n_rows + 3)), constrained_layout=True)
 
     for col, (label, med_raw, mad_raw, gap_raw, row_scale) in enumerate(raw_specs):
         med_shift = _shift_from_overall_median(med_raw, row_scale)
@@ -303,11 +322,11 @@ def plot(rows: list[dict], out_path: Path) -> None:
     tf_rows = [r for r in rows if r["slug"] != RNN_SLUG]
     names = [_row_label(r) for r in tf_rows]
     n_cats = len(CATEGORIES)
-    fig, axes = plt.subplots(1, 2, figsize=(20, 6), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(22, 6), constrained_layout=True)
 
     ax = axes[0]
     x = np.arange(len(tf_rows))
-    width = 0.095
+    width = 0.075
     for i, cat in enumerate(CATEGORIES):
         meds = [r[f"{cat} median"] for r in tf_rows]
         mads = [r[f"{cat} mad"] for r in tf_rows]

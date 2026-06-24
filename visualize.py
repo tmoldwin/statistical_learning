@@ -108,8 +108,10 @@ from vocab_diagrams import (
     dfa_state_label,
     draw_minimized_dfa_on_axes,
     in_word_prefix_at_position,
+    in_word_prefix_before_current,
     position_in_word_at_index,
     position_in_word_for_prefix_label,
+    prefix_before_from_string_label,
     segment_corpus_by_words,
     trie_prefix_display_order,
     vocabulary_for_experiment,
@@ -1032,15 +1034,20 @@ def median_mad(vals: np.ndarray) -> tuple[float, float]:
 
 
 def pairwise_hidden_state_distance_groups(
-    text: str,
+    chars: list[str],
     hidden_states: np.ndarray,
     state_ids: list[int],
     position_ids: list[int | None],
+    prefix_labels: list[str],
+    string_labels: list[str],
 ) -> dict[str, np.ndarray]:
-    """L2 distances (i < j) for within/between DFA, word position, char, and all pairs."""
+    """L2 distances (i < j) for within/between prefix, string, DFA, position, char, all pairs."""
     n = hidden_states.shape[0]
     groups: dict[str, list[float]] = {
-        "Same all": [],
+        "Within prefix": [],
+        "Between prefixes": [],
+        "Within string": [],
+        "Between strings": [],
         "Within DFA state": [],
         "Between DFA states": [],
         "Within word position": [],
@@ -1053,11 +1060,19 @@ def pairwise_hidden_state_distance_groups(
         for j in range(i + 1, n):
             dist = float(np.linalg.norm(hidden_states[i] - hidden_states[j]))
             groups["All pairs"].append(dist)
+            if prefix_labels[i] == prefix_labels[j]:
+                groups["Within prefix"].append(dist)
+            else:
+                groups["Between prefixes"].append(dist)
+            if string_labels[i] == string_labels[j]:
+                groups["Within string"].append(dist)
+            else:
+                groups["Between strings"].append(dist)
             if state_ids[i] == state_ids[j]:
                 groups["Within DFA state"].append(dist)
             else:
                 groups["Between DFA states"].append(dist)
-            if text[i] == text[j]:
+            if chars[i] == chars[j]:
                 groups["Within char"].append(dist)
             else:
                 groups["Between chars"].append(dist)
@@ -1067,19 +1082,14 @@ def pairwise_hidden_state_distance_groups(
                     groups["Within word position"].append(dist)
                 else:
                     groups["Between word positions"].append(dist)
-            if (
-                state_ids[i] == state_ids[j]
-                and text[i] == text[j]
-                and pi is not None
-                and pj is not None
-                and pi == pj
-            ):
-                groups["Same all"].append(dist)
     return {k: np.asarray(v) for k, v in groups.items()}
 
 
 PAIR_DISTANCE_CATEGORY_ORDER = (
-    "Same all",
+    "Within prefix",
+    "Between prefixes",
+    "Within string",
+    "Between strings",
     "Within DFA state",
     "Between DFA states",
     "Within word position",
@@ -1090,7 +1100,10 @@ PAIR_DISTANCE_CATEGORY_ORDER = (
 )
 
 PAIR_DISTANCE_PALETTE = {
-    "Same all": "#9467bd",
+    "Within prefix": "#9467bd",
+    "Between prefixes": "#c5b0d5",
+    "Within string": "#8c564b",
+    "Between strings": "#c49c94",
     "Within DFA state": "#4c72b0",
     "Between DFA states": "#dd8452",
     "Within word position": "#8172b3",
@@ -1124,6 +1137,10 @@ def plot_dfa_state_distance_comparison(
         position_ids = [
             position_in_word_for_prefix_label(l) for l in condensed.labels
         ]
+        string_labels = list(condensed.labels)
+        prefix_labels = [
+            prefix_before_from_string_label(l) for l in condensed.labels
+        ]
     else:
         compare_chars = list(text)
         state_ids = [
@@ -1135,12 +1152,21 @@ def plot_dfa_state_distance_comparison(
             position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
             for t in range(len(text))
         ]
+        string_labels = [
+            in_word_prefix_at_position(text, t, spaced=spaced, vocab=vocab)
+            for t in range(len(text))
+        ]
+        prefix_labels = [
+            in_word_prefix_before_current(text, t, spaced=spaced, vocab=vocab)
+            for t in range(len(text))
+        ]
     n = hidden_states.shape[0]
     if n < 2:
         return
 
     by_label = pairwise_hidden_state_distance_groups(
-        compare_chars, hidden_states, state_ids, position_ids
+        compare_chars, hidden_states, state_ids, position_ids,
+        prefix_labels, string_labels,
     )
     if len(by_label["Within DFA state"]) == 0 or len(by_label["Between DFA states"]) == 0:
         print("DFA distance comparison: need both within- and between-state pairs")
@@ -1157,7 +1183,7 @@ def plot_dfa_state_distance_comparison(
         for label, vals in specs
     }
 
-    fig, ax = plt.subplots(figsize=(15.5, 5.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(18.5, 5.5), constrained_layout=True)
     x = np.arange(len(order))
     rng = np.random.default_rng(0)
     max_points = 200

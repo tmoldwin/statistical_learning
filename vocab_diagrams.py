@@ -370,6 +370,26 @@ def position_in_word_at_index(
     return position_in_word_for_prefix_label(prefix)
 
 
+def in_word_prefix_before_current(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> str:
+    """Letters since the previous word break, excluding the character at `index`."""
+    full = in_word_prefix_at_position(text, index, spaced=spaced, vocab=vocab)
+    if full == " " or not full:
+        return ""
+    return full[:-1]
+
+
+def prefix_before_from_string_label(label: str) -> str:
+    """Prefix-only part of an in-word string label (excludes the current character)."""
+    if label == " " or not label:
+        return ""
+    return label[:-1]
+
 def walk_dfa_prefix(dfa: DFA, prefix: str) -> int | None:
     """DFA state after reading `prefix` from the start state (None if undefined)."""
     state = dfa.start

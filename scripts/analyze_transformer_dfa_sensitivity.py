@@ -39,7 +39,7 @@ SHORT_NAMES = {
 
 CATEGORIES = list(PAIR_DISTANCE_CATEGORY_ORDER)
 PALETTE = PAIR_DISTANCE_PALETTE
-CAT_SHORT = ["w DFA", "b DFA", "w pos", "b pos", "w chr", "b chr", "all"]
+CAT_SHORT = ["same all", "w DFA", "b DFA", "w pos", "b pos", "w chr", "b chr", "all"]
 RNN_SLUG = "rnn_hidden"
 
 
@@ -107,6 +107,14 @@ def pairwise_distance_groups(
                     groups["Within word position"].append(dist)
                 else:
                     groups["Between word positions"].append(dist)
+            if (
+                state_ids[i] == state_ids[j]
+                and chars[i] == chars[j]
+                and pi is not None
+                and pj is not None
+                and pi == pj
+            ):
+                groups["Same all"].append(dist)
     return {k: np.asarray(v) for k, v in groups.items()}
 
 
@@ -184,13 +192,32 @@ def analyze(exp: str = "ten_word_overlap_s", *, metric: str = "l2") -> list[dict
     return rows
 
 
-def _normalize_to_overall_median(mat: np.ndarray, scales: np.ndarray) -> np.ndarray:
-    """Divide each row by that representation's median all-pairs distance."""
-    return mat / np.maximum(scales[:, None], 1e-12)
+def _shift_from_overall_median(mat: np.ndarray, baselines: np.ndarray) -> np.ndarray:
+    """Subtract each row's all-pairs median (baseline column = 0)."""
+    return mat - baselines[:, None]
+
+
+def _row_normalized_for_color(values: np.ndarray) -> np.ndarray:
+    """Scale each row to [-1, 1] by its max |value| so within-row contrast is visible."""
+    row_max = np.max(np.abs(values), axis=1, keepdims=True)
+    return values / np.maximum(row_max, 1e-12)
+
+
+def _fmt_dist(v: float) -> str:
+    av = abs(v)
+    if av < 1e-15:
+        return "0"
+    if av < 0.01:
+        return f"{v:.2e}"
+    if av < 1:
+        return f"{v:.3f}"
+    if av < 100:
+        return f"{v:.2f}"
+    return f"{v:.1f}"
 
 
 def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> None:
-    """Heatmaps: category median / all-pairs median (bwr centered at 1.0)."""
+    """Heatmaps: category median − all-pairs median; color row-normalized for contrast."""
     names = [_row_label(r) for r in rows_l2]
     n_rows = len(names)
 
@@ -211,62 +238,59 @@ def plot_heatmaps(rows_l2: list[dict], rows_cos: list[dict], out_path: Path) -> 
         ("Cosine (1 − cos sim)", median_matrix(rows_cos), mad_matrix(rows_cos), gap_matrix(rows_cos), scales(rows_cos)),
     ]
 
-    mean_norms = [
-        _normalize_to_overall_median(med_raw, row_scale)
-        for _, med_raw, _, _, row_scale in raw_specs
-    ]
-    mean_dev = max(float(np.max(np.abs(m - 1.0))) for m in mean_norms)
-    mean_span = max(mean_dev, 0.2)
-    mean_norm_cmap = TwoSlopeNorm(vmin=1.0 - mean_span, vcenter=1.0, vmax=1.0 + mean_span)
+    diverging = TwoSlopeNorm(vmin=-1.0, vcenter=0.0, vmax=1.0)
 
-    fig, axes = plt.subplots(2, 2, figsize=(16, max(10, 0.55 * n_rows + 3)), constrained_layout=True)
-    gap_vmax = 1.5
+    fig, axes = plt.subplots(2, 2, figsize=(17, max(10, 0.55 * n_rows + 3)), constrained_layout=True)
 
     for col, (label, med_raw, mad_raw, gap_raw, row_scale) in enumerate(raw_specs):
-        med_norm = mean_norms[col]
-        gap_norm = _normalize_to_overall_median(gap_raw, row_scale)
+        med_shift = _shift_from_overall_median(med_raw, row_scale)
+        med_color = _row_normalized_for_color(med_shift)
+        gap_color = _row_normalized_for_color(gap_raw)
 
         ax_mean = axes[0, col]
-        im_m = ax_mean.imshow(med_norm, aspect="auto", cmap="bwr", norm=mean_norm_cmap)
-        ax_mean.set_xticks(range(med_norm.shape[1]))
+        im_m = ax_mean.imshow(med_color, aspect="auto", cmap="bwr", norm=diverging)
+        ax_mean.set_xticks(range(med_color.shape[1]))
         ax_mean.set_xticklabels(CAT_SHORT, fontsize=8)
         ax_mean.set_yticks(range(len(names)))
         ax_mean.set_yticklabels(names, fontsize=9)
-        ax_mean.set_title(f"{label}\n(category median / all-pairs median)", fontsize=10)
-        for i in range(med_norm.shape[0]):
-            for j in range(med_norm.shape[1]):
-                ratio, raw_m, raw_s = med_norm[i, j], med_raw[i, j], mad_raw[i, j]
-                txt_color = "white" if abs(ratio - 1.0) > 0.45 * mean_span else "0.15"
+        ax_mean.set_title(
+            f"{label}\n(median − all-pairs median; labels show raw median ± MAD)",
+            fontsize=10,
+        )
+        for i in range(med_color.shape[0]):
+            for j in range(med_color.shape[1]):
+                shift, raw_m, raw_s = med_shift[i, j], med_raw[i, j], mad_raw[i, j]
+                txt_color = "white" if abs(med_color[i, j]) > 0.45 else "0.15"
                 ax_mean.text(
-                    j, i, f"{ratio:.2f}\n({raw_m:.1f}±{raw_s:.1f})",
+                    j, i,
+                    f"Δ{_fmt_dist(shift)}\n({_fmt_dist(raw_m)}±{_fmt_dist(raw_s)})",
                     ha="center", va="center", fontsize=5, color=txt_color,
                 )
         cbar_m = fig.colorbar(im_m, ax=ax_mean, fraction=0.046, pad=0.02)
-        cbar_m.set_label("× all-pairs median (white = baseline)", fontsize=8)
+        cbar_m.set_label("row-normalized Δ (white = all-pairs median)", fontsize=8)
 
         ax_gap = axes[1, col]
-        gap_norm_cmap = TwoSlopeNorm(vmin=-gap_vmax, vcenter=0.0, vmax=gap_vmax)
-        im_g = ax_gap.imshow(gap_norm, aspect="auto", cmap="bwr", norm=gap_norm_cmap)
+        im_g = ax_gap.imshow(gap_color, aspect="auto", cmap="bwr", norm=diverging)
         gap_labels = ["DFA gap", "char gap", "pos gap"]
-        ax_gap.set_xticks(range(gap_norm.shape[1]))
+        ax_gap.set_xticks(range(gap_color.shape[1]))
         ax_gap.set_xticklabels(gap_labels, fontsize=9)
         ax_gap.set_yticks(range(len(names)))
         ax_gap.set_yticklabels(names, fontsize=9)
         ax_gap.set_title(f"{label} gaps (median between − within)", fontsize=10)
-        for i in range(gap_norm.shape[0]):
-            for j in range(gap_norm.shape[1]):
-                ratio, raw = gap_norm[i, j], gap_raw[i, j]
-                txt_color = "white" if abs(ratio) > 0.55 * gap_vmax else "0.15"
+        for i in range(gap_color.shape[0]):
+            for j in range(gap_color.shape[1]):
+                raw = gap_raw[i, j]
+                txt_color = "white" if abs(gap_color[i, j]) > 0.45 else "0.15"
                 ax_gap.text(
-                    j, i, f"{ratio:.2f}\n({raw:.1f})",
+                    j, i, _fmt_dist(raw),
                     ha="center", va="center", fontsize=6, color=txt_color,
                 )
         cbar_g = fig.colorbar(im_g, ax=ax_gap, fraction=0.046, pad=0.02)
-        cbar_g.set_label("× all-pairs median", fontsize=8)
+        cbar_g.set_label("row-normalized gap", fontsize=8)
 
     fig.suptitle(
         "RNN + transformer pairwise distance sensitivity (median + MAD)\n"
-        "(ten_word_overlap_s, 50 timesteps; blue < all-pairs median < red)",
+        "(ten_word_overlap_s, 50 timesteps; blue below baseline, red above)",
         fontsize=11,
         y=1.02,
     )
@@ -283,7 +307,7 @@ def plot(rows: list[dict], out_path: Path) -> None:
 
     ax = axes[0]
     x = np.arange(len(tf_rows))
-    width = 0.11
+    width = 0.095
     for i, cat in enumerate(CATEGORIES):
         meds = [r[f"{cat} median"] for r in tf_rows]
         mads = [r[f"{cat} mad"] for r in tf_rows]

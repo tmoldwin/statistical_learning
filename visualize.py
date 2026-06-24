@@ -1040,6 +1040,7 @@ def pairwise_hidden_state_distance_groups(
     """L2 distances (i < j) for within/between DFA, word position, char, and all pairs."""
     n = hidden_states.shape[0]
     groups: dict[str, list[float]] = {
+        "Same all": [],
         "Within DFA state": [],
         "Between DFA states": [],
         "Within word position": [],
@@ -1066,10 +1067,19 @@ def pairwise_hidden_state_distance_groups(
                     groups["Within word position"].append(dist)
                 else:
                     groups["Between word positions"].append(dist)
+            if (
+                state_ids[i] == state_ids[j]
+                and text[i] == text[j]
+                and pi is not None
+                and pj is not None
+                and pi == pj
+            ):
+                groups["Same all"].append(dist)
     return {k: np.asarray(v) for k, v in groups.items()}
 
 
 PAIR_DISTANCE_CATEGORY_ORDER = (
+    "Same all",
     "Within DFA state",
     "Between DFA states",
     "Within word position",
@@ -1080,6 +1090,7 @@ PAIR_DISTANCE_CATEGORY_ORDER = (
 )
 
 PAIR_DISTANCE_PALETTE = {
+    "Same all": "#9467bd",
     "Within DFA state": "#4c72b0",
     "Between DFA states": "#dd8452",
     "Within word position": "#8172b3",
@@ -1146,7 +1157,7 @@ def plot_dfa_state_distance_comparison(
         for label, vals in specs
     }
 
-    fig, ax = plt.subplots(figsize=(14.0, 5.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(15.5, 5.5), constrained_layout=True)
     x = np.arange(len(order))
     rng = np.random.default_rng(0)
     max_points = 200

@@ -45,7 +45,7 @@ from rnn.rnn_dyn import (
 )
 from experiment import experiment_regime
 from task import REGIMES
-from vocab_diagrams import segment_corpus_by_words
+from vocab_diagrams import invalid_word_fraction, segment_corpus_by_words
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--steps', type=int, default=2000,
@@ -62,6 +62,8 @@ parser.add_argument('--e-fraction', type=float, default=0.8,
                     help='fraction of excitatory neurons when --dale (default: 0.8)')
 parser.add_argument('--sequence-length', type=int, default=25,
                     help='BPTT window length in characters (default: 25)')
+parser.add_argument('--learning-rate', type=float, default=None,
+                    help='SGD step size (default: 0.1 tanh, 0.025 Dale)')
 parser.add_argument('--exp', default=None,
                     help='experiment name; loads word list for unspaced word-error metrics')
 args = parser.parse_args()
@@ -89,7 +91,9 @@ use_word_segmentation = bool(vocab_words) and not corpus_has_spaces
 hidden_size = args.hidden_size  # number of recurrent units in the hidden layer
 sequence_length = max(1, int(args.sequence_length))
 dale_law = bool(args.dale)
-learning_rate = 2.5e-2 if dale_law else 1e-1  # Dale/ReLU: gentler than tanh, not too slow
+learning_rate = args.learning_rate if args.learning_rate is not None else (
+    2.5e-2 if dale_law else 1e-1
+)
 use_relu = dale_law        # Dale's law: nonnegative activity, fixed outgoing sign
 e_fraction = float(args.e_fraction)
 init_rng = np.random.default_rng(0)
@@ -406,7 +410,7 @@ def stochastic_word_validity_metrics(
         text = "".join(index_to_char[i] for i in indices)
         if r == 0:
             first_text = text
-        word_errs.append(invalid_word_fraction(text, vocab))
+        word_errs.append(invalid_word_fraction(text, vocab, spaced=False))
         letter_fracs.append(valid_vocab_letter_fraction(text, vocab))
     word_err = float(np.nanmean(word_errs))
     letter_frac = float(np.nanmean(letter_fracs))
@@ -415,16 +419,11 @@ def stochastic_word_validity_metrics(
 
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
     """Fraction of words (split or segmented) not in the training vocabulary."""
-    if not vocab:
-        return float("nan")
-    if use_word_segmentation:
-        tokens = [seg[2] for seg in segment_corpus_by_words(sampled_text, vocab)]
-    else:
-        tokens = [t for t in sampled_text.split(" ") if t]
-    if not tokens:
-        return float("nan")
-    bad = sum(1 for t in tokens if t not in vocab)
-    return bad / len(tokens)
+    from vocab_diagrams import invalid_word_fraction as _invalid_word_fraction
+
+    return _invalid_word_fraction(
+        sampled_text, vocab, spaced=not use_word_segmentation, trim_edges=True,
+    )
 
 
 def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str]) -> float:

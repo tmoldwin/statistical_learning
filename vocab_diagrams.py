@@ -309,6 +309,42 @@ def segment_corpus_by_words(text: str, vocab: set[str]) -> list[tuple[int, int, 
     return segs
 
 
+def segmented_word_tokens(
+    text: str,
+    vocab: set[str],
+    *,
+    spaced: bool,
+    trim_edges: bool = True,
+) -> list[str]:
+    """Word tokens for validity metrics; drops boundary fragments on fixed-length rollouts."""
+    if spaced:
+        tokens = [t for t in text.split(" ") if t]
+    else:
+        tokens = [seg[2] for seg in segment_corpus_by_words(text, vocab)]
+    if trim_edges and len(tokens) > 2:
+        tokens = tokens[1:-1]
+    return tokens
+
+
+def invalid_word_fraction(
+    sampled_text: str,
+    vocab: set[str],
+    *,
+    spaced: bool = False,
+    trim_edges: bool = True,
+) -> float:
+    """Fraction of words not in the training vocabulary."""
+    if not vocab:
+        return float("nan")
+    tokens = segmented_word_tokens(
+        sampled_text, vocab, spaced=spaced, trim_edges=trim_edges,
+    )
+    if not tokens:
+        return float("nan")
+    bad = sum(1 for t in tokens if t not in vocab)
+    return bad / len(tokens)
+
+
 def word_start_at_index(text: str, index: int, vocab: set[str]) -> int | None:
     """Start index of the vocabulary word (or in-progress prefix) containing `index`."""
     if not text or index < 0 or index >= len(text):
@@ -318,6 +354,106 @@ def word_start_at_index(text: str, index: int, vocab: set[str]) -> int | None:
         return None
     start, end, _ = segs[-1]
     return start if start <= index <= end else None
+
+
+def discover_auxiliary_words(
+    text: str,
+    base_words: list[str],
+    extensions: list[str] | None = None,
+    lengths: tuple[int, ...] = (4, 5),
+) -> list[str]:
+    """
+    Label-only words (length 4–5) that appear in `text` and segment cleanly
+    when added to the training vocabulary.
+    """
+    if not extensions:
+        return []
+    vocab = set(base_words)
+    found: list[str] = []
+    for w in extensions:
+        if len(w) not in lengths or w in vocab or w not in text:
+            continue
+        trial = vocab | set(found) | {w}
+        if any(word == w for _s, _e, word in segment_corpus_by_words(text, trial)):
+            found.append(w)
+    return sorted(found, key=len, reverse=True)
+
+
+def labeling_vocabulary(
+    text: str,
+    words: list[str],
+    *,
+    spaced: bool,
+    extra_lengths: tuple[int, ...] = (4, 5),
+    extensions: list[str] | None = None,
+) -> list[str]:
+    """Word list for timestep labels (may include 4–5 letter label extensions)."""
+    if spaced or not words:
+        return list(words)
+    aux = discover_auxiliary_words(
+        text, words, extensions, extra_lengths,
+    )
+    return sorted(set(words) | set(aux), key=len, reverse=True)
+
+
+def _position_scores_from_segments(
+    segs: list[tuple[int, int, str]],
+    length: int,
+) -> int:
+    score = 0
+    for start, end, _word in segs:
+        for t in range(max(0, start), min(length, end + 1)):
+            pos = t - start
+            if pos in (3, 4):
+                score += 3
+            elif pos == 2:
+                score += 1
+    return score
+
+
+def select_analysis_window(
+    full_text: str,
+    words: list[str],
+    length: int,
+    *,
+    spaced: bool,
+    extra_lengths: tuple[int, ...] = (4, 5),
+    extensions: list[str] | None = None,
+) -> tuple[int, str, list[str]]:
+    """
+    Pick a length-`length` slice of the corpus for visualization.
+
+    Unspaced: prefer windows with many timesteps at in-word positions 3–4
+    (4th–5th letters) using an extended labeling vocabulary.
+    """
+    if len(full_text) <= length:
+        label_words = labeling_vocabulary(
+            full_text, words, spaced=spaced, extra_lengths=extra_lengths,
+            extensions=extensions,
+        )
+        return 0, full_text, label_words
+
+    if spaced:
+        return 0, full_text[:length], list(words)
+
+    label_vocab = set(labeling_vocabulary(
+        full_text, words, spaced=False, extra_lengths=extra_lengths,
+        extensions=extensions,
+    ))
+
+    def score(start: int) -> int:
+        snippet = full_text[start : start + length]
+        return _position_scores_from_segments(
+            segment_corpus_by_words(snippet, label_vocab), length,
+        )
+
+    best_start = max(range(len(full_text) - length + 1), key=score)
+    snippet = full_text[best_start : best_start + length]
+    label_words = labeling_vocabulary(
+        snippet, words, spaced=False, extra_lengths=extra_lengths,
+        extensions=extensions,
+    )
+    return best_start, snippet, label_words
 
 
 def in_word_prefix_at_position(
@@ -368,6 +504,49 @@ def position_in_word_at_index(
         return None
     prefix = in_word_prefix_at_position(text, index, spaced=spaced, vocab=vocab)
     return position_in_word_for_prefix_label(prefix)
+
+
+def word_boundary_flags_at_index(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> tuple[str, str]:
+    """
+    Whether this timestep is the first / last character of the current word.
+
+    Returns (word_start, word_end) each in {'yes', 'no', 'space'}.
+    """
+    if index < 0 or index >= len(text):
+        return "no", "no"
+    if spaced and text[index] == " ":
+        return "space", "space"
+    if spaced:
+        at_start = index == 0 or text[index - 1] == " "
+        at_end = index == len(text) - 1 or text[index + 1] == " "
+        return ("yes" if at_start else "no", "yes" if at_end else "no")
+    if vocab:
+        for start, end, _ in segment_corpus_by_words(text, vocab):
+            if start <= index <= end:
+                return (
+                    "yes" if index == start else "no",
+                    "yes" if index == end else "no",
+                )
+    return "no", "no"
+
+
+def word_boundary_flags_for_prefix_label(
+    label: str,
+    words: list[str] | None = None,
+) -> tuple[str, str]:
+    """Boundary flags for a condensed in-word prefix label."""
+    if label == " ":
+        return "space", "space"
+    word_set = set(words) if words else set()
+    at_start = len(label) == 1
+    at_end = label in word_set
+    return ("yes" if at_start else "no", "yes" if at_end else "no")
 
 
 def in_word_prefix_before_current(

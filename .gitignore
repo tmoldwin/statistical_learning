@@ -5,4 +5,11 @@ venv/
 .idea/
 .cursor/
 
+# Generated experiment artifacts (run_experiments.py / visualize.py)
+experiments/**/model.npz
+experiments/**/model.pt
+experiments/**/plots/
+experiments/**/learning_dynamics/
+experiments/**/input.txt
+experiments/**/shared/
 

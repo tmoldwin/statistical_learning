@@ -54,7 +54,7 @@ REGIMES: dict[str, list[str]] = {
         "sin", "six", "sir",
         "cat", "hat", "mat",
     ],
-    # 12 real words: user-specified overlaps (plus one to make 12).
+    # 12+ real words: 3-letter base set plus overlapping 4–5 letter words.
     "twelve_word_overlap": [
         "ban",
         "rot",
@@ -63,7 +63,11 @@ REGIMES: dict[str, list[str]] = {
         "son",
         "din",
         "fun",
-        "bun",  # added (real word) to make 12; overlaps with fun on -un
+        "bun",
+        # 4-letter (same character inventory)
+        "that", "math", "band", "fund", "bund",
+        # 5-letter
+        "front", "count", "storm",
     ],
     # 16 real words: more suffix/prefix groups plus independents.
     "sixteen_word_overlap": [
@@ -82,6 +86,18 @@ REGIMES: dict[str, list[str]] = {
         # independent
         "tea", "oil",
     ],
+    # 25 real words: extends sixteen_word_overlap with more overlap families.
+    "twenty_five_word_overlap": [
+        "cat", "hat", "mat", "rat",
+        "met", "pet", "net",
+        "can", "ban", "pan",
+        "car", "bar", "tar",
+        "ant", "and",
+        "bed", "bet",
+        "fun", "bun", "sun",
+        "map", "cap",
+        "tea", "oil", "run",
+    ],
     # 10 words, lengths 1–5; unspaced (concatenated) regime.
     "ten_word_mixed": [
         "a",
@@ -91,6 +107,19 @@ REGIMES: dict[str, list[str]] = {
         "plant", "slant",
     ],
 }
+
+# Extra 4–5 letter words for plot labels only (not training vocabulary).
+# Must appear in the generated corpus and segment cleanly when added to the base words.
+LABEL_WORD_EXTENSIONS: dict[str, list[str]] = {
+    "twelve_word_overlap": [
+        "that", "math", "band", "fund", "bund", "front", "count", "storm",
+    ],
+    "ten_word_mixed": ["bake", "lake", "plant", "slant"],
+}
+
+
+def label_extensions_for_experiment(name: str) -> list[str]:
+    return list(LABEL_WORD_EXTENSIONS.get(name, []))
 
 
 def generate_sequence(

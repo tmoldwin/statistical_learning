@@ -67,16 +67,11 @@ def invalid_word_fraction(
     *,
     word_space: bool = False,
 ) -> float:
-    if not vocab_words:
-        return float("nan")
-    if word_space:
-        tokens = [t for t in text.split(" ") if t]
-    else:
-        tokens = [seg[2] for seg in segment_corpus_by_words(text, vocab_words)]
-    if not tokens:
-        return float("nan")
-    bad = sum(1 for t in tokens if t not in vocab_words)
-    return bad / len(tokens)
+    from vocab_diagrams import invalid_word_fraction as _invalid_word_fraction
+
+    return _invalid_word_fraction(
+        text, vocab_words, spaced=word_space, trim_edges=True,
+    )
 
 
 @torch.no_grad()

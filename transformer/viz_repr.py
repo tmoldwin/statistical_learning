@@ -543,6 +543,7 @@ def plot_representation_suite(
         plot_pca_prediction_regions,
         plot_per_char_hidden_state_heatmaps,
         plot_space_to_space_trajectories,
+        plot_space_to_space_trajectories_3d,
     )
 
     chars = model["chars"]
@@ -676,6 +677,23 @@ def plot_representation_suite(
             condensed=cv,
             repr_label=name,
         )
+        from unit_selectivity import plot_unit_selectivity_suite
+
+        unit_dir = _repr_dir(out_dir, spec.slug) / "unit_selectivity"
+        _plot(
+            "unit_selectivity",
+            plot_unit_selectivity_suite,
+            spec.vectors,
+            text,
+            automaton,
+            unit_dir,
+            model=model,
+            spaced=spaced,
+            words=words,
+            condensed=cv,
+            repr_label=name,
+            unit_labels=[f"{dim}{i}" for i in range(spec.vectors.shape[1])],
+        )
 
     if not spec.is_readout:
         return
@@ -712,6 +730,16 @@ def plot_representation_suite(
             plot_space_to_space_trajectories,
             text, spec.vectors,
             save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
+            model=None,
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+        )
+        _plot(
+            "word_trajectories_pca_3d",
+            plot_space_to_space_trajectories_3d,
+            text, spec.vectors,
+            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
             model=None,
             spaced=spaced,
             automaton=automaton,

@@ -472,6 +472,84 @@ def _corpus_vocab(text: str, words: list[str] | None = None) -> set[str] | None:
     return set(w) if w else None
 
 
+def _trajectory_vocabulary_words(text: str, words: list[str] | None = None) -> list[str]:
+    """Word list used for trajectory rollout length and seed letters."""
+    if words:
+        return list(words)
+    if _VIS_LABEL_WORDS:
+        return list(_VIS_LABEL_WORDS)
+    resolved = _resolve_words(text)
+    if resolved:
+        return list(resolved)
+    vocab = _corpus_vocab(text)
+    return sorted(vocab) if vocab else []
+
+
+def _longest_vocabulary_word_length(words: list[str]) -> int:
+    return max((len(w) for w in words), default=3)
+
+
+def _trajectory_seed_letters(model: dict, words: list[str]) -> list[str]:
+    """Unique vocabulary letters (excluding space), in sorted order."""
+    model_chars = set(model["chars"])
+    letters = sorted({c for w in words for c in w if c != " " and c in model_chars})
+    return letters or [c for c in sorted(model_chars) if c != " "][:1]
+
+
+def _accumulated_output_labels(generated: list[str], n_states: int) -> list[str]:
+    """Cumulative sampled string at each hidden-state index."""
+    return ["".join(generated[: i + 1]) for i in range(n_states)]
+
+
+def _seed_letter_colors(seed_letters: list[str]) -> dict[str, tuple]:
+    cmap = plt.get_cmap("tab20", max(len(seed_letters), 1))
+    return {letter: cmap(i) for i, letter in enumerate(seed_letters)}
+
+
+def _hidden_state_after_char(
+    model: dict,
+    seed_char: str,
+    *,
+    hidden_size: int,
+    h0: np.ndarray | None = None,
+) -> np.ndarray:
+    """Hidden state after one forward step from ``h0`` (default zeros) with ``seed_char``."""
+    chars = list(model["chars"])
+    char_to_index = {c: i for i, c in enumerate(chars)}
+    if seed_char not in char_to_index:
+        seed_char = chars[0]
+    W_xh = np.asarray(model["weights_input_to_hidden"])
+    W_hh = np.asarray(model["weights_hidden_to_hidden"])
+    b_h_col = np.asarray(model["bias_hidden"])
+    use_relu = bool(model.get("use_relu", False))
+    h = np.zeros((hidden_size, 1), dtype=float) if h0 is None else np.asarray(h0, dtype=float).reshape(-1, 1)
+    x = np.zeros((len(chars), 1), dtype=float)
+    x[char_to_index[seed_char], 0] = 1.0
+    h, _ = rnn_hidden_step(h, x, W_xh, W_hh, b_h_col, use_relu=use_relu)
+    return h.ravel().copy()
+
+
+def _letter_seed_no_input_trajectory_pca(
+    model: dict,
+    *,
+    seed_char: str,
+    steps: int,
+    mean: np.ndarray,
+    components: np.ndarray,
+    hidden_size: int,
+) -> np.ndarray:
+    """PCA path from zero init: feed ``seed_char``, then ``steps`` no-input steps."""
+    W_hh = np.asarray(model["weights_hidden_to_hidden"])
+    b_h = np.asarray(model["bias_hidden"]).ravel()
+    use_relu = bool(model.get("use_relu", False))
+    h = _hidden_state_after_char(model, seed_char, hidden_size=hidden_size)
+    zs = [(h - mean) @ components.T]
+    for _ in range(max(0, int(steps) - 1)):
+        h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
+        zs.append((h - mean) @ components.T)
+    return np.asarray(zs, dtype=float)
+
+
 def _boundary_prefix_labels(text: str, *, spaced: bool) -> list[str]:
     """In-word prefix at each timestep (characters since last word boundary)."""
     vocab = _corpus_vocab(text)
@@ -479,6 +557,40 @@ def _boundary_prefix_labels(text: str, *, spaced: bool) -> list[str]:
         in_word_prefix_at_position(text, i, spaced=spaced, vocab=vocab)
         for i in range(len(text))
     ]
+
+
+def _annotate_trajectory_labels(
+    ax,
+    coords: np.ndarray,
+    labels: list[str],
+    *,
+    colors: list | None = None,
+    fontsize: float = 9.0,
+) -> None:
+    """Text labels at PCA coordinates with a white halo for readability."""
+    n = min(len(coords), len(labels))
+    if n == 0:
+        return
+    fs = max(7, int(fontsize))
+    halo = [path_effects.withStroke(linewidth=2.5, foreground="white")]
+    for i in range(n):
+        label = labels[i]
+        if not label:
+            continue
+        display = "␣" if label == " " else label
+        color = colors[i] if colors is not None and i < len(colors) else "#1a1a1a"
+        if coords.shape[1] >= 3:
+            ax.text(
+                coords[i, 0], coords[i, 1], coords[i, 2],
+                display, fontsize=fs, color=color, ha="center", va="center",
+                path_effects=halo,
+            )
+        else:
+            ax.text(
+                coords[i, 0], coords[i, 1],
+                display, fontsize=fs, color=color, ha="center", va="center", zorder=10,
+                path_effects=halo,
+            )
 
 
 def _annotate_boundary_prefixes(
@@ -490,23 +602,7 @@ def _annotate_boundary_prefixes(
     fontsize: float = 7.0,
 ) -> None:
     """Prefix-since-boundary labels at PCA coordinates (no DFA coloring)."""
-    n = min(len(coords), len(prefix_labels))
-    if n == 0:
-        return
-    fs = max(6, int(fontsize))
-    for i in range(n):
-        prefix = prefix_labels[i]
-        label = "␣" if prefix == " " else prefix
-        if coords.shape[1] >= 3:
-            ax.text(
-                coords[i, 0], coords[i, 1], coords[i, 2],
-                label, fontsize=fs, color="#1a1a1a", ha="center", va="center",
-            )
-        else:
-            ax.text(
-                coords[i, 0], coords[i, 1],
-                label, fontsize=fs, color="#1a1a1a", ha="center", va="center", zorder=10,
-            )
+    _annotate_trajectory_labels(ax, coords, prefix_labels, fontsize=fontsize)
 
 
 def _closed_loop_rollout_pca(
@@ -518,7 +614,6 @@ def _closed_loop_rollout_pca(
     mean: np.ndarray,
     components: np.ndarray,
     hidden_size: int,
-    spaced: bool,
 ) -> tuple[np.ndarray, str, list[str]]:
     """One stochastic closed-loop rollout projected into PCA space."""
     chars = list(model["chars"])
@@ -535,28 +630,30 @@ def _closed_loop_rollout_pca(
     use_relu = bool(model.get("use_relu", False))
 
     h = np.zeros((hidden_size, 1), dtype=float)
-    generated = [seed_char]
+    target_len = max(1, int(steps))
+    generated: list[str] = []
     gen_h: list[np.ndarray] = []
     prev_char = seed_char
-    for _ in range(int(steps)):
+    for i in range(target_len):
         x = np.zeros((vocab_size, 1), dtype=float)
         x[char_to_index[prev_char], 0] = 1.0
         h, _ = rnn_hidden_step(h, x, W_xh, W_hh, b_h_col, use_relu=use_relu)
         gen_h.append(h.ravel().copy())
+        generated.append(prev_char)
+        if i >= target_len - 1:
+            break
         logits = W_ho @ h.ravel() + b_o
         logits = logits - np.max(logits)
         probs = np.exp(logits)
         probs = probs / np.sum(probs)
         next_ix = int(rng.choice(vocab_size, p=probs))
-        next_char = chars[next_ix]
-        generated.append(next_char)
-        prev_char = next_char
+        prev_char = chars[next_ix]
 
     gen_h_arr = np.asarray(gen_h, dtype=float)
     gen_z = (gen_h_arr - mean) @ components.T
-    gen_text = "".join(generated[: len(gen_z)])
-    gen_prefixes = _boundary_prefix_labels(gen_text, spaced=spaced)
-    return gen_z, gen_text, gen_prefixes
+    gen_text = "".join(generated)
+    gen_labels = _accumulated_output_labels(generated, len(gen_z))
+    return gen_z, gen_text, gen_labels
 
 
 def prefix_axis_label(
@@ -3100,6 +3197,90 @@ def _word_trajectory_colors(segments: list[tuple[int, int, str]]) -> dict[str, t
     return {word: cmap(i) for i, word in enumerate(words)}
 
 
+def _step_path_colors(n_points: int, cmap_name: str = "viridis") -> list:
+    """Sequential colors for trajectory points / arrows (step 1 → darkest)."""
+    cmap = plt.get_cmap(cmap_name)
+    if n_points <= 1:
+        return [cmap(0.85)]
+    return [cmap(0.12 + 0.78 * i / (n_points - 1)) for i in range(n_points)]
+
+
+def _plot_step_colored_path_arrows(
+    ax,
+    path: np.ndarray,
+    *,
+    linewidth: float = 1.6,
+    alpha: float = 0.55,
+    zorder: int = 2,
+    cmap_name: str = "viridis",
+) -> None:
+    """Trajectory with each arrow segment colored by step index."""
+    if len(path) < 2:
+        return
+    point_colors = _step_path_colors(len(path), cmap_name)
+    for i in range(len(path) - 1):
+        color = point_colors[i]
+        ax.plot(
+            path[i : i + 2, 0], path[i : i + 2, 1],
+            color=color, linewidth=linewidth, alpha=alpha, solid_capstyle="round", zorder=zorder,
+        )
+        ax.quiver(
+            path[i, 0], path[i, 1],
+            path[i + 1, 0] - path[i, 0], path[i + 1, 1] - path[i, 1],
+            angles="xy", scale_units="xy", scale=1,
+            color=color, width=0.0035, headwidth=4.5, headlength=5,
+            alpha=min(alpha + 0.15, 1.0), zorder=zorder + 1,
+        )
+
+
+def _plot_step_colored_path_arrows_3d(
+    ax,
+    path: np.ndarray,
+    *,
+    linewidth: float = 1.6,
+    alpha: float = 0.55,
+    cmap_name: str = "viridis",
+) -> None:
+    """3D trajectory with each arrow segment colored by step index."""
+    if len(path) < 2:
+        return
+    point_colors = _step_path_colors(len(path), cmap_name)
+    for i in range(len(path) - 1):
+        color = point_colors[i]
+        ax.plot(
+            path[i : i + 2, 0], path[i : i + 2, 1], path[i : i + 2, 2],
+            color=color, linewidth=linewidth, alpha=alpha,
+        )
+        ax.quiver(
+            path[i, 0], path[i, 1], path[i, 2],
+            path[i + 1, 0] - path[i, 0],
+            path[i + 1, 1] - path[i, 1],
+            path[i + 1, 2] - path[i, 2],
+            color=color,
+            alpha=min(alpha + 0.15, 1.0),
+            arrow_length_ratio=0.35,
+            linewidth=max(linewidth * 0.6, 0.4),
+        )
+
+
+def _add_trajectory_step_colorbar(
+    fig,
+    axes,
+    n_steps: int,
+    *,
+    label: str = "step",
+) -> None:
+    if n_steps <= 1:
+        return
+    cmap = plt.get_cmap("viridis")
+    norm = plt.Normalize(vmin=1, vmax=n_steps)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    fig.colorbar(
+        sm, ax=axes, fraction=0.025, pad=0.02, label=label,
+    )
+
+
 def _plot_colored_path_arrows(
     ax,
     path: np.ndarray,
@@ -3248,20 +3429,541 @@ def _vocabulary_prefix_paths(
     return paths
 
 
+def _letter_rollout_steps(
+    words: list[str],
+    closed_loop_steps: int | None,
+) -> int:
+    """Number of generation steps (= longest vocabulary word length)."""
+    max_len = _longest_vocabulary_word_length(words)
+    if closed_loop_steps is not None:
+        return max(1, int(closed_loop_steps))
+    return max(1, max_len)
+
+
+def _trained_word_examples(
+    segments: list[tuple[int, int, str]],
+    vocab_words: list[str],
+) -> list[tuple[int, int, str, str]]:
+    """First corpus occurrence per vocabulary word: (start, end, segment_text, word_label)."""
+    vocab_set = set(vocab_words)
+    seen: set[str] = set()
+    examples: list[tuple[int, int, str, str]] = []
+    for start, end, seg in segments:
+        word = segment_word_label(seg)
+        if not word or word == "␣":
+            continue
+        if vocab_set and word not in vocab_set:
+            continue
+        if word in seen:
+            continue
+        seen.add(word)
+        examples.append((start, end, seg, word))
+    return examples
+
+
+def _in_word_prefix_labels(segment_text: str, n_points: int) -> list[str]:
+    """Cumulative in-word prefix labels for the first ``n_points`` characters."""
+    word = segment_text.strip()
+    if not word:
+        return [""] * n_points
+    return [word[: i + 1] for i in range(min(n_points, len(word)))]
+
+
+def _plot_trained_word_examples(
+    ax,
+    projected: np.ndarray,
+    examples: list[tuple[int, int, str, str]],
+    *,
+    max_word_len: int,
+    annotate_fontsize: float = 9.5,
+    is_3d: bool = False,
+) -> list[np.ndarray]:
+    """Plot one observed trajectory per vocabulary word from its first character."""
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    paths: list[np.ndarray] = []
+    for start, end, seg, _word in examples:
+        n_pts = min(max_word_len, end - start + 1, len(seg.strip()) or (end - start + 1))
+        if n_pts < 1:
+            continue
+        path = projected[start : start + n_pts]
+        if len(path) < 1:
+            continue
+        paths.append(path)
+        if is_3d:
+            plot_path(ax, path, linewidth=1.8, alpha=0.72)
+        else:
+            plot_path(ax, path, linewidth=1.8, alpha=0.72, zorder=2)
+        labels = _in_word_prefix_labels(seg, len(path))
+        _annotate_trajectory_labels(
+            ax, path, labels,
+            colors=_step_path_colors(len(labels)), fontsize=annotate_fontsize,
+        )
+    return paths
+
+
+def _plot_trained_word_examples_grid(
+    fig,
+    gridspec,
+    projected: np.ndarray,
+    examples: list[tuple[int, int, str, str]],
+    *,
+    max_word_len: int,
+    is_3d: bool,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str | None = None,
+    annotate_fontsize: float = 8.5,
+) -> list[np.ndarray]:
+    """One subplot per trained vocabulary word (first corpus occurrence)."""
+    n_words = len(examples)
+    if n_words == 0:
+        return []
+    ncols = min(4, max(1, n_words))
+    nrows = int(math.ceil(n_words / ncols))
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    paths: list[np.ndarray] = []
+    for i, (start, end, seg, word) in enumerate(examples):
+        row, col = divmod(i, ncols)
+        if is_3d:
+            ax = fig.add_subplot(gridspec[row, col], projection="3d")
+        else:
+            ax = fig.add_subplot(gridspec[row, col])
+        n_pts = min(max_word_len, end - start + 1, len(seg.strip()) or (end - start + 1))
+        if n_pts < 1:
+            continue
+        path = projected[start : start + n_pts]
+        if len(path) < 1:
+            continue
+        paths.append(path)
+        if is_3d:
+            plot_path(ax, path, linewidth=2.0, alpha=0.85)
+        else:
+            plot_path(ax, path, linewidth=2.0, alpha=0.85, zorder=2)
+        labels = _in_word_prefix_labels(seg, len(path))
+        _annotate_trajectory_labels(
+            ax, path, labels,
+            colors=_step_path_colors(len(labels)), fontsize=annotate_fontsize,
+        )
+        ax.set_title(f"'{word}'", fontsize=10, fontweight="bold")
+        ax.set_xlabel(xlabel, fontsize=8)
+        ax.set_ylabel(ylabel, fontsize=8)
+        if is_3d and zlabel is not None:
+            ax.set_zlabel(zlabel, fontsize=8)
+        if is_3d:
+            xlim, ylim, zlim = _cube_data_limits(path)
+            _apply_cube_limits_3d(ax, xlim, ylim, zlim)
+        else:
+            xlim, ylim = _square_data_limits(path)
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_aspect("equal", adjustable="box")
+        ax.grid(True, linestyle=":", alpha=0.35)
+    return paths
+
+
+def _teacher_forced_vocab_trajectories(
+    model: dict,
+    vocab_words: list[str],
+    *,
+    mean: np.ndarray,
+    components: np.ndarray,
+    max_word_len: int,
+) -> list[tuple[str, np.ndarray, list[str]]]:
+    """One teacher-forced trajectory per vocabulary word from its first character."""
+    examples: list[tuple[str, np.ndarray, list[str]]] = []
+    for word in sorted(set(vocab_words)):
+        snippet = word[:max_word_len]
+        if not snippet:
+            continue
+        hidden, _ = forward_pass(model, snippet)
+        if hidden.shape[0] < 1:
+            continue
+        z = (hidden - mean) @ components.T
+        labels = [snippet[: i + 1] for i in range(len(snippet))]
+        examples.append((word, z, labels))
+    return examples
+
+
+def _plot_teacher_forced_vocab_on_axis(
+    ax,
+    examples: list[tuple[str, np.ndarray, list[str]]],
+    *,
+    annotate_fontsize: float = 9.5,
+    is_3d: bool = False,
+) -> list[np.ndarray]:
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    paths: list[np.ndarray] = []
+    for _word, z, labels in examples:
+        if len(z) < 1:
+            continue
+        paths.append(z)
+        if is_3d:
+            plot_path(ax, z, linewidth=1.8, alpha=0.72)
+        else:
+            plot_path(ax, z, linewidth=1.8, alpha=0.72, zorder=2)
+        _annotate_trajectory_labels(
+            ax, z, labels,
+            colors=_step_path_colors(len(labels)), fontsize=annotate_fontsize,
+        )
+    return paths
+
+
+def _plot_teacher_forced_vocab_grid(
+    fig,
+    gridspec,
+    examples: list[tuple[str, np.ndarray, list[str]]],
+    *,
+    is_3d: bool,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str | None = None,
+    annotate_fontsize: float = 8.5,
+) -> list[np.ndarray]:
+    n_words = len(examples)
+    if n_words == 0:
+        return []
+    ncols = min(4, max(1, n_words))
+    nrows = int(math.ceil(n_words / ncols))
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    paths: list[np.ndarray] = []
+    for i, (word, z, labels) in enumerate(examples):
+        row, col = divmod(i, ncols)
+        if is_3d:
+            ax = fig.add_subplot(gridspec[row, col], projection="3d")
+        else:
+            ax = fig.add_subplot(gridspec[row, col])
+        if len(z) < 1:
+            continue
+        paths.append(z)
+        if is_3d:
+            plot_path(ax, z, linewidth=2.0, alpha=0.85)
+        else:
+            plot_path(ax, z, linewidth=2.0, alpha=0.85, zorder=2)
+        _annotate_trajectory_labels(
+            ax, z, labels,
+            colors=_step_path_colors(len(labels)), fontsize=annotate_fontsize,
+        )
+        ax.set_title(f"'{word}'", fontsize=10, fontweight="bold")
+        ax.set_xlabel(xlabel, fontsize=8)
+        ax.set_ylabel(ylabel, fontsize=8)
+        if is_3d and zlabel is not None:
+            ax.set_zlabel(zlabel, fontsize=8)
+        if is_3d:
+            xlim, ylim, zlim = _cube_data_limits(z)
+            _apply_cube_limits_3d(ax, xlim, ylim, zlim)
+        else:
+            xlim, ylim = _square_data_limits(z)
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_aspect("equal", adjustable="box")
+        ax.grid(True, linestyle=":", alpha=0.35)
+    return paths
+
+
+def _plot_letter_seed_closed_loop_on_axis(
+    ax,
+    model: dict,
+    *,
+    seed_letters: list[str],
+    trials_per_char: int,
+    steps: int,
+    closed_loop_seed: int,
+    mean: np.ndarray,
+    components: np.ndarray,
+    hidden_size: int,
+    limit_arrays: list[np.ndarray],
+    annotate: bool = True,
+    annotate_fontsize: float = 9.0,
+    is_3d: bool = False,
+) -> None:
+    """Overlay stochastic closed-loop rollouts for every vocabulary letter."""
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    trial_idx = 0
+    for seed_char in seed_letters:
+        for trial in range(max(1, int(trials_per_char))):
+            rng = np.random.default_rng(int(closed_loop_seed) + trial_idx)
+            trial_idx += 1
+            gen_z, _, gen_labels = _closed_loop_rollout_pca(
+                model,
+                seed_char=seed_char,
+                steps=steps,
+                rng=rng,
+                mean=mean,
+                components=components,
+                hidden_size=hidden_size,
+            )
+            if len(gen_z) < 1:
+                continue
+            limit_arrays.append(gen_z)
+            alpha = 0.65 if trial == 0 else 0.28
+            lw = 1.6 if trial == 0 else 1.0
+            if is_3d:
+                plot_path(ax, gen_z, linewidth=lw, alpha=alpha)
+            else:
+                plot_path(ax, gen_z, linewidth=lw, alpha=alpha, zorder=2)
+            if annotate:
+                label_colors = _step_path_colors(len(gen_labels))
+                _annotate_trajectory_labels(
+                    ax, gen_z, gen_labels,
+                    colors=label_colors, fontsize=annotate_fontsize,
+                )
+
+
+def _plot_letter_seed_closed_loop_grid(
+    fig,
+    gridspec,
+    model: dict,
+    *,
+    seed_letters: list[str],
+    trials_per_char: int,
+    steps: int,
+    closed_loop_seed: int,
+    mean: np.ndarray,
+    components: np.ndarray,
+    hidden_size: int,
+    limit_arrays: list[np.ndarray],
+    is_3d: bool,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str | None = None,
+    annotate_fontsize: float = 8.5,
+) -> None:
+    """One subplot per seed letter for closed-loop rollouts."""
+    n_letters = len(seed_letters)
+    ncols = min(4, max(1, n_letters))
+    nrows = int(math.ceil(n_letters / ncols))
+    plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    trial_idx = 0
+    for i, seed_char in enumerate(seed_letters):
+        row, col = divmod(i, ncols)
+        if is_3d:
+            ax = fig.add_subplot(gridspec[row, col], projection="3d")
+        else:
+            ax = fig.add_subplot(gridspec[row, col])
+        letter_paths: list[np.ndarray] = []
+        for trial in range(max(1, int(trials_per_char))):
+            rng = np.random.default_rng(int(closed_loop_seed) + trial_idx)
+            trial_idx += 1
+            gen_z, _, gen_labels = _closed_loop_rollout_pca(
+                model,
+                seed_char=seed_char,
+                steps=steps,
+                rng=rng,
+                mean=mean,
+                components=components,
+                hidden_size=hidden_size,
+            )
+            if len(gen_z) < 1:
+                continue
+            letter_paths.append(gen_z)
+            limit_arrays.append(gen_z)
+            alpha = 0.70 if trial == 0 else 0.30
+            lw = 1.6 if trial == 0 else 1.0
+            if is_3d:
+                plot_path(ax, gen_z, linewidth=lw, alpha=alpha)
+            else:
+                plot_path(ax, gen_z, linewidth=lw, alpha=alpha, zorder=2)
+            _annotate_trajectory_labels(
+                ax, gen_z, gen_labels,
+                colors=_step_path_colors(len(gen_labels)), fontsize=annotate_fontsize,
+            )
+        ax.set_title(f"'{seed_char}' · {trials_per_char} trials", fontsize=10, fontweight="bold")
+        ax.set_xlabel(xlabel, fontsize=8)
+        ax.set_ylabel(ylabel, fontsize=8)
+        if is_3d and zlabel is not None:
+            ax.set_zlabel(zlabel, fontsize=8)
+        if letter_paths:
+            if is_3d:
+                xlim, ylim, zlim = _cube_data_limits(*letter_paths)
+                _apply_cube_limits_3d(ax, xlim, ylim, zlim)
+            else:
+                xlim, ylim = _square_data_limits(*letter_paths)
+                ax.set_xlim(xlim)
+                ax.set_ylim(ylim)
+                ax.set_aspect("equal", adjustable="box")
+        ax.grid(True, linestyle=":", alpha=0.35)
+
+
+def _plot_trajectory_internal_panel(
+    ax,
+    model: dict,
+    seed_letters: list[str],
+    steps: int,
+    mean: np.ndarray,
+    components: np.ndarray,
+    hidden_size: int,
+    *,
+    is_3d: bool,
+) -> list[np.ndarray]:
+    paths: list[np.ndarray] = []
+    plot_fn = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
+    for seed_char in seed_letters:
+        zs = _letter_seed_no_input_trajectory_pca(
+            model,
+            seed_char=seed_char,
+            steps=steps,
+            mean=mean,
+            components=components,
+            hidden_size=hidden_size,
+        )
+        if zs.shape[0] < 2:
+            continue
+        paths.append(zs)
+        if is_3d:
+            plot_fn(ax, zs, linewidth=1.2, alpha=0.45)
+        else:
+            plot_fn(ax, zs, linewidth=1.2, alpha=0.45, zorder=3)
+        _annotate_trajectory_labels(
+            ax, zs, [seed_char] * len(zs),
+            colors=_step_path_colors(len(zs)), fontsize=9.0,
+        )
+    return paths
+
+
+def _plot_trajectory_trained_panel(
+    ax,
+    model: dict | None,
+    vocab_words: list[str],
+    segments: list[tuple[int, int, str]],
+    projected: np.ndarray,
+    mean: np.ndarray,
+    components: np.ndarray,
+    max_word_len: int,
+    *,
+    is_3d: bool,
+) -> tuple[list[np.ndarray], int]:
+    if model is not None:
+        trained_tf = _teacher_forced_vocab_trajectories(
+            model, vocab_words, mean=mean, components=components, max_word_len=max_word_len,
+        )
+        paths = _plot_teacher_forced_vocab_on_axis(
+            ax, trained_tf, annotate_fontsize=9.5, is_3d=is_3d,
+        )
+        return paths, len(trained_tf)
+    trained_examples = _trained_word_examples(segments, vocab_words)
+    paths = _plot_trained_word_examples(
+        ax, projected, trained_examples,
+        max_word_len=max_word_len, annotate_fontsize=9.5, is_3d=is_3d,
+    )
+    return paths, len(trained_examples)
+
+
+def _plot_trajectory_closed_loop_panel(
+    ax,
+    model: dict,
+    seed_letters: list[str],
+    trials_per_char: int,
+    steps: int,
+    closed_loop_seed: int,
+    mean: np.ndarray,
+    components: np.ndarray,
+    hidden_size: int,
+    limit_arrays: list[np.ndarray],
+    *,
+    is_3d: bool,
+) -> None:
+    _plot_letter_seed_closed_loop_on_axis(
+        ax, model,
+        seed_letters=seed_letters,
+        trials_per_char=trials_per_char,
+        steps=steps,
+        closed_loop_seed=closed_loop_seed,
+        mean=mean,
+        components=components,
+        hidden_size=hidden_size,
+        limit_arrays=limit_arrays,
+        annotate=True,
+        annotate_fontsize=9.0,
+        is_3d=is_3d,
+    )
+
+
+def _style_trajectory_row_2d(
+    axes: list,
+    limit_arrays: list[np.ndarray],
+    *,
+    xlabel: str,
+    ylabel: str,
+    model: dict | None,
+    mean: np.ndarray,
+    components: np.ndarray,
+    max_word_len: int,
+    fig,
+) -> None:
+    if not limit_arrays:
+        return
+    xlim, ylim = _square_data_limits(*limit_arrays)
+    if model is not None:
+        grid_resolution = 26
+        xs = np.linspace(xlim[0], xlim[1], grid_resolution)
+        ys = np.linspace(ylim[0], ylim[1], grid_resolution)
+        grid_x, grid_y = np.meshgrid(xs, ys)
+        z_grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
+        h = reconstruct_from_pca(z_grid, mean, components)
+        W_hh = np.asarray(model["weights_hidden_to_hidden"])
+        b_h = np.asarray(model["bias_hidden"]).ravel()
+        use_relu = bool(model.get("use_relu", False))
+        h_next = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
+        z_next = (h_next - mean) @ components.T
+        d = z_next - z_grid
+        U = d[:, 0].reshape(grid_resolution, grid_resolution)
+        V = d[:, 1].reshape(grid_resolution, grid_resolution)
+        for ax in axes:
+            ax.quiver(
+                grid_x, grid_y, U, V,
+                angles="xy", scale_units="xy", scale=35.0,
+                width=0.0022, headwidth=3.6, headlength=4.6, headaxislength=3.6,
+                color="#000000", alpha=0.18, zorder=1,
+            )
+    _add_trajectory_step_colorbar(fig, axes, max_word_len)
+    for ax in axes:
+        ax.axhline(0, color="lightgrey", linewidth=0.6, zorder=0)
+        ax.axvline(0, color="lightgrey", linewidth=0.6, zorder=0)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.grid(True, linestyle=":", alpha=0.35)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.set_aspect("equal", adjustable="box")
+
+
+def _style_trajectory_row_3d(
+    axes: list,
+    limit_arrays: list[np.ndarray],
+    *,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str,
+    max_word_len: int,
+    fig,
+) -> None:
+    if not limit_arrays:
+        return
+    xlim, ylim, zlim = _cube_data_limits(*limit_arrays)
+    for ax in axes:
+        _apply_cube_limits_3d(ax, xlim, ylim, zlim)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_zlabel(zlabel)
+        ax.grid(True, linestyle=":", alpha=0.35)
+    _add_trajectory_step_colorbar(fig, axes, max_word_len)
+
+
 def plot_space_to_space_trajectories(
     text: str,
     hidden_states: np.ndarray,
     save_path: str,
     *,
     model=None,
-    free_rollout_steps: int = 10,
+    free_rollout_steps: int | None = None,
     closed_loop_steps: int | None = None,
     closed_loop_seed: int = 0,
-    closed_loop_num_rollouts: int = 6,
+    closed_loop_trials_per_char: int = 3,
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton | None = None,
     annot_style: str = "leaders",
     condensed: CondensedView | None = None,
+    words: list[str] | None = None,
 ):
     """PCA plot of every hidden-state path from one space timestep to the next.
 
@@ -3311,172 +4013,142 @@ def plot_space_to_space_trajectories(
     if len(text) < 2 or not segments:
         return
 
-    projected, mean, components, evr = fit_pca_2d_with_evr(hidden_states)
-    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
-    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
-    xlabel = f"PC1 ({pc1:.1f}%)"
-    ylabel = f"PC2 ({pc2:.1f}%)"
-    word_colors = _word_trajectory_colors(segments)
+    projected2d, mean2d, components2d, evr2d = fit_pca_2d_with_evr(hidden_states)
+    pc1 = 100.0 * float(evr2d[0]) if len(evr2d) > 0 else 0.0
+    pc2 = 100.0 * float(evr2d[1]) if len(evr2d) > 1 else 0.0
+    xlabel2d = f"PC1 ({pc1:.1f}%)"
+    ylabel2d = f"PC2 ({pc2:.1f}%)"
+    vocab_words = _trajectory_vocabulary_words(text, words)
+    rollout_steps = _letter_rollout_steps(vocab_words, closed_loop_steps)
+    if free_rollout_steps is None:
+        free_rollout_steps = rollout_steps
+    seed_letters = _trajectory_seed_letters(model, vocab_words) if model is not None else []
+    max_word_len = _longest_vocabulary_word_length(vocab_words)
 
-    if closed_loop_steps is None:
-        closed_loop_steps = min(max(2 * len(text), 60), 120)
+    if model is not None and seed_letters:
+        projected3d, mean3d, components3d, evr3d = fit_pca_3d_with_evr(hidden_states)
+        xlabel3d, ylabel3d, zlabel3d = _pca_axis_labels(evr3d)
 
-    ncols = 3 if model is not None else 1
-    fig, axes = plt.subplots(1, ncols, figsize=(22 if ncols == 2 else 30, 11), constrained_layout=True)
+        fig = plt.figure(figsize=(30, 20))
+        gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.0], hspace=0.28, wspace=0.18)
+        ax_free_2d = fig.add_subplot(gs[0, 0])
+        ax_train_2d = fig.add_subplot(gs[0, 1])
+        ax_gen_2d = fig.add_subplot(gs[0, 2])
+        ax_free_3d = fig.add_subplot(gs[1, 0], projection="3d")
+        ax_train_3d = fig.add_subplot(gs[1, 1], projection="3d")
+        ax_gen_3d = fig.add_subplot(gs[1, 2], projection="3d")
+
+        limits_2d: list[np.ndarray] = []
+        limits_3d: list[np.ndarray] = []
+
+        internal_2d = _plot_trajectory_internal_panel(
+            ax_free_2d, model, seed_letters, int(free_rollout_steps),
+            mean2d, components2d, hidden_states.shape[1], is_3d=False,
+        )
+        limits_2d.extend(internal_2d)
+        internal_3d = _plot_trajectory_internal_panel(
+            ax_free_3d, model, seed_letters, int(free_rollout_steps),
+            mean3d, components3d, hidden_states.shape[1], is_3d=True,
+        )
+        limits_3d.extend(internal_3d)
+
+        trained_2d, n_trained = _plot_trajectory_trained_panel(
+            ax_train_2d, model, vocab_words, segments, projected2d,
+            mean2d, components2d, max_word_len, is_3d=False,
+        )
+        limits_2d.extend(trained_2d)
+        trained_3d, _ = _plot_trajectory_trained_panel(
+            ax_train_3d, model, vocab_words, segments, projected3d,
+            mean3d, components3d, max_word_len, is_3d=True,
+        )
+        limits_3d.extend(trained_3d)
+
+        _plot_trajectory_closed_loop_panel(
+            ax_gen_2d, model, seed_letters, closed_loop_trials_per_char,
+            rollout_steps, closed_loop_seed, mean2d, components2d,
+            hidden_states.shape[1], limits_2d, is_3d=False,
+        )
+        _plot_trajectory_closed_loop_panel(
+            ax_gen_3d, model, seed_letters, closed_loop_trials_per_char,
+            rollout_steps, closed_loop_seed, mean3d, components3d,
+            hidden_states.shape[1], limits_3d, is_3d=True,
+        )
+
+        _style_trajectory_row_2d(
+            [ax_free_2d, ax_train_2d, ax_gen_2d], limits_2d,
+            xlabel=xlabel2d, ylabel=ylabel2d, model=model,
+            mean=mean2d, components=components2d, max_word_len=max_word_len, fig=fig,
+        )
+        _style_trajectory_row_3d(
+            [ax_free_3d, ax_train_3d, ax_gen_3d], limits_3d,
+            xlabel=xlabel3d, ylabel=ylabel3d, zlabel=zlabel3d,
+            max_word_len=max_word_len, fig=fig,
+        )
+
+        ax_free_2d.set_title(
+            f"Internal dynamics (no input) · 2D\n"
+            f"{len(seed_letters)} seed letters × {max_word_len} chars"
+        )
+        ax_train_2d.set_title(
+            f"Trained (teacher-forced) · 2D\n"
+            f"{n_trained} vocabulary words · labels = in-word prefix"
+        )
+        ax_gen_2d.set_title(
+            f"Closed-loop generation · 2D\n"
+            f"{len(seed_letters)} letters × {closed_loop_trials_per_char} trials × "
+            f"{max_word_len} chars · labels = accumulated output"
+        )
+        ax_free_3d.set_title(
+            f"Internal dynamics (no input) · 3D\n"
+            f"{len(seed_letters)} seed letters × {max_word_len} chars"
+        )
+        ax_train_3d.set_title(
+            f"Trained (teacher-forced) · 3D\n"
+            f"{n_trained} vocabulary words · labels = in-word prefix"
+        )
+        ax_gen_3d.set_title(
+            f"Closed-loop generation · 3D\n"
+            f"{len(seed_letters)} letters × {closed_loop_trials_per_char} trials × "
+            f"{max_word_len} chars · labels = accumulated output"
+        )
+
+        fig.subplots_adjust(left=0.04, right=0.96, bottom=0.05, top=0.94)
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+        plt.close(fig)
+        print(f"wrote {save_path}")
+        return
+
+    # Single 2D row when model unavailable.
+    projected = projected2d
+    mean, components = mean2d, components2d
+    xlabel, ylabel = xlabel2d, ylabel2d
+    ncols = 1
+    fig, axes = plt.subplots(1, ncols, figsize=(12, 10), constrained_layout=True)
     axes = np.atleast_1d(axes)
-    # Panel order: internal (no input), trained (observed), closed-loop (self-fed).
-    ax_free = axes[0] if ncols >= 2 else None
-    ax_paths = axes[1] if ncols >= 2 else axes[0]
-    ax_gen = axes[2] if ncols >= 3 else None
+    ax_free = None
+    ax_paths = axes[0]
+    ax_gen = None
 
     rollout_paths: list[np.ndarray] = []
-    gen_paths: list[np.ndarray] = []
-    limit_arrays = [projected]
+    limit_arrays: list[np.ndarray] = []
 
-    train_prefixes = _boundary_prefix_labels(text, spaced=spaced)
-
-    # Panel: trained (observed) trajectories colored by true word segment.
-    for start, end, segment_text in segments:
-        path = projected[start : end + 1]
-        if len(path) == 0:
-            continue
-        color = word_colors[segment_word_label(segment_text)]
-
-        _plot_colored_path_arrows(
-            ax_paths, path, color, linewidth=1.6, alpha=0.55, zorder=2,
-        )
-
-    # Panel 2: free dynamics rollouts from each observed hidden state (no input).
-    if ax_free is not None and model is not None and free_rollout_steps > 0:
-        W_hh = np.asarray(model["weights_hidden_to_hidden"])
-        b_h = np.asarray(model["bias_hidden"]).ravel()
-
-        # Map each timestep to its containing word label for coloring.
-        word_at_t = [""] * len(text)
-        for start, end, segment_text in segments:
-            word = segment_word_label(segment_text)
-            for t in range(start, end + 1):
-                if 0 <= t < len(word_at_t):
-                    word_at_t[t] = word
-
-        use_relu = bool(model.get("use_relu", False))
-        for t, h0 in enumerate(hidden_states):
-            h = np.asarray(h0, dtype=float)
-            zs = [projected[t]]  # start exactly at the observed point
-            for _ in range(int(free_rollout_steps)):
-                h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
-                z = (h - mean) @ components.T
-                zs.append(z)
-            zs = np.asarray(zs, dtype=float)
-            if zs.shape[0] < 2:
-                continue
-            rollout_paths.append(zs)
-            color = word_colors.get(word_at_t[t], "0.15")
-            _plot_colored_path_arrows(
-                ax_free, zs, color, linewidth=1.0, alpha=0.22, zorder=3,
-            )
-
-    # Panel 3: several closed-loop rollouts (different seed chars / RNG seeds).
-    if ax_gen is not None and model is not None and closed_loop_steps > 1:
-        label_vocab = list(_corpus_vocab(text) or _resolve_words(text) or [])
-        seed_indices = np.linspace(
-            0, max(len(text) - 1, 0),
-            num=max(1, int(closed_loop_num_rollouts)),
-            dtype=int,
-        )
-        for k, t0 in enumerate(seed_indices):
-            seed_char = text[int(t0)] if text else model["chars"][0]
-            rng = np.random.default_rng(int(closed_loop_seed) + k)
-            gen_z, gen_text, gen_prefixes = _closed_loop_rollout_pca(
-                model,
-                seed_char=seed_char,
-                steps=int(closed_loop_steps),
-                rng=rng,
-                mean=mean,
-                components=components,
-                hidden_size=hidden_states.shape[1],
-                spaced=spaced,
-            )
-            gen_paths.append(gen_z)
-            limit_arrays.append(gen_z)
-            gen_segments = corpus_segments(gen_text, label_vocab, spaced=spaced)
-            if not gen_segments:
-                gen_segments = [(0, len(gen_text) - 1, gen_text)]
-            alpha = 0.55 if k == 0 else 0.30
-            lw = 1.5 if k == 0 else 1.1
-            for start, end, seg in gen_segments:
-                if start < 0 or end < 0 or start >= len(gen_z):
-                    continue
-                end = min(end, len(gen_z) - 1)
-                path = gen_z[start : end + 1]
-                if len(path) == 0:
-                    continue
-                word = segment_word_label(seg)
-                color = word_colors.get(word, (0.2, 0.2, 0.2, 1.0))
-                _plot_colored_path_arrows(
-                    ax_gen, path, color, linewidth=lw, alpha=alpha, zorder=2,
-                )
-            _annotate_boundary_prefixes(
-                ax_gen, gen_z, gen_prefixes, spaced=spaced, fontsize=6.5,
-            )
+    trained_examples = _trained_word_examples(segments, vocab_words)
+    trained_paths = _plot_trained_word_examples(
+        ax_paths, projected, trained_examples,
+        max_word_len=max_word_len, annotate_fontsize=9.5, is_3d=False,
+    )
+    n_trained = len(trained_examples)
+    limit_arrays.extend(trained_paths)
 
     limit_arrays.extend(rollout_paths)
+    if not limit_arrays:
+        limit_arrays = [projected]
     xlim, ylim = _square_data_limits(*limit_arrays)
 
-    if model is not None:
-        grid_resolution = 26
-        xs = np.linspace(xlim[0], xlim[1], grid_resolution)
-        ys = np.linspace(ylim[0], ylim[1], grid_resolution)
-        grid_x, grid_y = np.meshgrid(xs, ys)
-        z_grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
+    panel_axes = [ax_paths]
+    _add_trajectory_step_colorbar(fig, panel_axes, max_word_len)
 
-        h = reconstruct_from_pca(z_grid, mean, components)
-        W_hh = np.asarray(model["weights_hidden_to_hidden"])
-        b_h = np.asarray(model["bias_hidden"]).ravel()
-        use_relu = bool(model.get("use_relu", False))
-        h_next = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
-        z_next = (h_next - mean) @ components.T
-        d = z_next - z_grid
-        U = d[:, 0].reshape(grid_resolution, grid_resolution)
-        V = d[:, 1].reshape(grid_resolution, grid_resolution)
-
-        for ax in (a for a in (ax_paths, ax_free, ax_gen) if a is not None):
-            ax.quiver(
-                grid_x,
-                grid_y,
-                U,
-                V,
-                angles="xy",
-                scale_units="xy",
-                scale=35.0,
-                width=0.0022,
-                headwidth=3.6,
-                headlength=4.6,
-                headaxislength=3.6,
-                color="#000000",
-                alpha=0.18,
-                zorder=1,
-            )
-
-    _annotate_boundary_prefixes(
-        ax_paths, projected, train_prefixes, spaced=spaced, fontsize=7.0,
-    )
-
-    handles = [
-        Patch(facecolor=word_colors[w], edgecolor="#333333", label=w)
-        for w in sorted(word_colors)
-    ]
-    ax_paths.legend(
-        handles=handles,
-        title="word",
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        fontsize=7,
-        title_fontsize=8,
-        framealpha=0.95,
-    )
-
-    for ax in (a for a in (ax_paths, ax_free, ax_gen) if a is not None):
+    for ax in panel_axes:
         ax.axhline(0, color="lightgrey", linewidth=0.6, zorder=0)
         ax.axvline(0, color="lightgrey", linewidth=0.6, zorder=0)
         ax.set_xlabel(xlabel)
@@ -3488,19 +4160,21 @@ def plot_space_to_space_trajectories(
 
     ax_paths.set_title(
         f"Trained (observed) trajectories (PCA)\n"
-        f"{len(segments)} word segments, {len(text)} chars · labels = prefix since boundary"
+        f"{n_trained} vocabulary words · labels = in-word prefix"
     )
-    if ax_free is not None:
-        ax_free.set_title(
-            f"Internal dynamics (no input)\n"
-            f"{len(text)} start states × {free_rollout_steps} steps"
-        )
-    if ax_gen is not None:
-        ax_gen.set_title(
-            f"Closed-loop generation (sampled; self-fed)\n"
-            f"{closed_loop_num_rollouts} rollouts × {closed_loop_steps} steps · labels = prefix since boundary"
-        )
 
+    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def _trajectory_figure_sibling(save_path: str, suffix: str) -> str:
+    """Derive a sibling output path, e.g. foo_3d.png + '_trained' -> foo_3d_trained.png."""
+    p = Path(save_path)
+    return str(p.with_name(f"{p.stem}{suffix}{p.suffix}"))
+
+
+def _save_trajectory_figure(fig, save_path: str) -> None:
     fig.savefig(save_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -3512,13 +4186,14 @@ def plot_space_to_space_trajectories_3d(
     save_path: str,
     *,
     model=None,
-    free_rollout_steps: int = 10,
+    free_rollout_steps: int | None = None,
     closed_loop_steps: int | None = None,
     closed_loop_seed: int = 0,
-    closed_loop_num_rollouts: int = 6,
+    closed_loop_trials_per_char: int = 3,
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
+    words: list[str] | None = None,
 ):
     """3D PCA plot of hidden-state paths from one space timestep to the next."""
     if condensed is not None:
@@ -3564,138 +4239,146 @@ def plot_space_to_space_trajectories_3d(
 
     projected, mean, components, evr = fit_pca_3d_with_evr(hidden_states)
     xlabel, ylabel, zlabel = _pca_axis_labels(evr)
-    word_colors = _word_trajectory_colors(segments)
+    vocab_words = _trajectory_vocabulary_words(text, words)
+    rollout_steps = _letter_rollout_steps(vocab_words, closed_loop_steps)
+    if free_rollout_steps is None:
+        free_rollout_steps = rollout_steps
+    seed_letters = _trajectory_seed_letters(model, vocab_words) if model is not None else []
+    max_word_len = _longest_vocabulary_word_length(vocab_words)
 
-    if closed_loop_steps is None:
-        closed_loop_steps = min(max(2 * len(text), 60), 120)
-
-    ncols = 3 if model is not None else 1
-    fig = plt.figure(figsize=(22 if ncols == 2 else 30, 11))
-    ax_free = fig.add_subplot(1, ncols, 1, projection="3d") if ncols >= 2 else None
-    ax_paths = fig.add_subplot(1, ncols, 2 if ncols >= 2 else 1, projection="3d")
-    ax_gen = fig.add_subplot(1, ncols, 3, projection="3d") if ncols >= 3 else None
+    trained_examples = _trained_word_examples(segments, vocab_words)
+    if model is not None:
+        trained_tf = _teacher_forced_vocab_trajectories(
+            model, vocab_words, mean=mean, components=components, max_word_len=max_word_len,
+        )
+        n_trained = len(trained_tf)
+    else:
+        trained_tf = []
+        n_trained = len(trained_examples)
+    n_trained_rows = int(math.ceil(n_trained / min(4, max(1, n_trained))))
+    n_loop_cols = min(4, max(1, len(seed_letters)))
+    n_loop_rows = int(math.ceil(len(seed_letters) / n_loop_cols))
 
     rollout_paths: list[np.ndarray] = []
-    limit_arrays = [projected]
-    train_prefixes = _boundary_prefix_labels(text, spaced=spaced)
 
-    for start, end, segment_text in segments:
-        path = projected[start : end + 1]
-        if len(path) == 0:
-            continue
-        color = word_colors[segment_word_label(segment_text)]
-        _plot_colored_path_arrows_3d(ax_paths, path, color, linewidth=1.6, alpha=0.55)
-
-    if ax_free is not None and model is not None and free_rollout_steps > 0:
-        W_hh = np.asarray(model["weights_hidden_to_hidden"])
-        b_h = np.asarray(model["bias_hidden"]).ravel()
-        word_at_t = [""] * len(text)
-        for start, end, segment_text in segments:
-            word = segment_word_label(segment_text)
-            for t in range(start, end + 1):
-                if 0 <= t < len(word_at_t):
-                    word_at_t[t] = word
-        use_relu = bool(model.get("use_relu", False))
-        for t, h0 in enumerate(hidden_states):
-            h = np.asarray(h0, dtype=float)
-            zs = [projected[t]]
-            for _ in range(int(free_rollout_steps)):
-                h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
-                z = (h - mean) @ components.T
-                zs.append(z)
-            zs = np.asarray(zs, dtype=float)
-            if zs.shape[0] < 2:
-                continue
-            rollout_paths.append(zs)
-            color = word_colors.get(word_at_t[t], "0.15")
-            _plot_colored_path_arrows_3d(ax_free, zs, color, linewidth=1.0, alpha=0.22)
-
-    if ax_gen is not None and model is not None and closed_loop_steps > 1:
-        label_vocab = list(_corpus_vocab(text) or _resolve_words(text) or [])
-        seed_indices = np.linspace(
-            0, max(len(text) - 1, 0),
-            num=max(1, int(closed_loop_num_rollouts)),
-            dtype=int,
-        )
-        for k, t0 in enumerate(seed_indices):
-            seed_char = text[int(t0)] if text else model["chars"][0]
-            rng = np.random.default_rng(int(closed_loop_seed) + k)
-            gen_z, gen_text, gen_prefixes = _closed_loop_rollout_pca(
+    if model is not None and seed_letters:
+        # --- Figure 1: internal dynamics (main panel only) ---
+        fig_main = plt.figure(figsize=(12, 10))
+        ax_free = fig_main.add_subplot(111, projection="3d")
+        main_limits: list[np.ndarray] = []
+        for seed_char in seed_letters:
+            zs = _letter_seed_no_input_trajectory_pca(
                 model,
                 seed_char=seed_char,
-                steps=int(closed_loop_steps),
-                rng=rng,
+                steps=int(free_rollout_steps),
                 mean=mean,
                 components=components,
                 hidden_size=hidden_states.shape[1],
-                spaced=spaced,
             )
-            limit_arrays.append(gen_z)
-            gen_segments = corpus_segments(gen_text, label_vocab, spaced=spaced)
-            if not gen_segments:
-                gen_segments = [(0, len(gen_text) - 1, gen_text)]
-            alpha = 0.55 if k == 0 else 0.30
-            lw = 1.5 if k == 0 else 1.1
-            for start, end, seg in gen_segments:
-                if start < 0 or end < 0 or start >= len(gen_z):
-                    continue
-                end = min(end, len(gen_z) - 1)
-                path = gen_z[start : end + 1]
-                if len(path) == 0:
-                    continue
-                word = segment_word_label(seg)
-                color = word_colors.get(word, (0.2, 0.2, 0.2, 1.0))
-                _plot_colored_path_arrows_3d(ax_gen, path, color, linewidth=lw, alpha=alpha)
-            _annotate_boundary_prefixes(
-                ax_gen, gen_z, gen_prefixes, spaced=spaced, fontsize=6.0,
+            if zs.shape[0] < 2:
+                continue
+            rollout_paths.append(zs)
+            main_limits.append(zs)
+            _plot_step_colored_path_arrows_3d(ax_free, zs, linewidth=1.2, alpha=0.45)
+            _annotate_trajectory_labels(
+                ax_free, zs, [seed_char] * len(zs),
+                colors=_step_path_colors(len(zs)), fontsize=9.0,
             )
-
-    limit_arrays.extend(rollout_paths)
-    xlim, ylim, zlim = _cube_data_limits(*limit_arrays)
-
-    _annotate_boundary_prefixes(
-        ax_paths, projected, train_prefixes, spaced=spaced, fontsize=6.5,
-    )
-    for ax in (a for a in (ax_paths, ax_free, ax_gen) if a is not None):
-        _apply_cube_limits_3d(ax, xlim, ylim, zlim)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_zlabel(zlabel)
-        ax.grid(True, linestyle=":", alpha=0.35)
-
-    handles = [
-        Patch(facecolor=word_colors[w], edgecolor="#333333", label=w)
-        for w in sorted(word_colors)
-    ]
-    ax_paths.legend(
-        handles=handles,
-        title="word",
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        fontsize=7,
-        title_fontsize=8,
-        framealpha=0.95,
-    )
-
-    ax_paths.set_title(
-        f"Trained (observed) trajectories (3D PCA)\n"
-        f"{len(segments)} word segments, {len(text)} chars · labels = prefix since boundary"
-    )
-    if ax_free is not None:
+        if not main_limits:
+            main_limits = [projected]
+        xlim, ylim, zlim = _cube_data_limits(*main_limits)
+        _apply_cube_limits_3d(ax_free, xlim, ylim, zlim)
+        ax_free.set_xlabel(xlabel)
+        ax_free.set_ylabel(ylabel)
+        ax_free.set_zlabel(zlabel)
+        ax_free.grid(True, linestyle=":", alpha=0.35)
+        _add_trajectory_step_colorbar(fig_main, [ax_free], max_word_len)
         ax_free.set_title(
             f"Internal dynamics (no input)\n"
-            f"{len(text)} start states × {free_rollout_steps} steps"
+            f"{len(seed_letters)} seed letters × {max_word_len} chars",
+            fontsize=12,
         )
-    if ax_gen is not None:
-        ax_gen.set_title(
-            f"Closed-loop generation (sampled; self-fed)\n"
-            f"{closed_loop_num_rollouts} rollouts × {closed_loop_steps} steps · labels = prefix since boundary"
-        )
+        fig_main.subplots_adjust(left=0.05, right=0.92, bottom=0.05, top=0.92)
+        _save_trajectory_figure(fig_main, save_path)
 
+        # --- Figure 2: teacher-forced vocabulary words ---
+        if trained_tf:
+            ncols_trained = min(4, max(1, n_trained))
+            fig_trained = plt.figure(figsize=(22, max(6, 2.8 * n_trained_rows)))
+            trained_gs = fig_trained.add_gridspec(
+                n_trained_rows, ncols_trained, hspace=0.48, wspace=0.30,
+            )
+            fig_trained.suptitle(
+                f"Trained (teacher-forced) · {n_trained} vocabulary words",
+                fontsize=13, fontweight="bold", y=0.98,
+            )
+            _plot_teacher_forced_vocab_grid(
+                fig_trained, trained_gs, trained_tf,
+                is_3d=True, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
+                annotate_fontsize=8.5,
+            )
+            fig_trained.subplots_adjust(top=0.93, bottom=0.06)
+            _save_trajectory_figure(
+                fig_trained, _trajectory_figure_sibling(save_path, "_trained"),
+            )
+
+        # --- Figure 3: closed-loop generation per seed letter ---
+        fig_loop = plt.figure(figsize=(22, max(6, 3.0 * n_loop_rows)))
+        loop_gs = fig_loop.add_gridspec(
+            n_loop_rows, n_loop_cols, hspace=0.48, wspace=0.30,
+        )
+        fig_loop.suptitle(
+            f"Closed-loop generation · {len(seed_letters)} letters × "
+            f"{closed_loop_trials_per_char} trials × {max_word_len} chars",
+            fontsize=13, fontweight="bold", y=0.98,
+        )
+        loop_limits: list[np.ndarray] = []
+        _plot_letter_seed_closed_loop_grid(
+            fig_loop, loop_gs, model,
+            seed_letters=seed_letters,
+            trials_per_char=closed_loop_trials_per_char,
+            steps=rollout_steps,
+            closed_loop_seed=closed_loop_seed,
+            mean=mean,
+            components=components,
+            hidden_size=hidden_states.shape[1],
+            limit_arrays=loop_limits,
+            is_3d=True,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            zlabel=zlabel,
+            annotate_fontsize=8.5,
+        )
+        fig_loop.subplots_adjust(top=0.93, bottom=0.06)
+        _save_trajectory_figure(
+            fig_loop, _trajectory_figure_sibling(save_path, "_closed_loop"),
+        )
+        return
+
+    # Fallback: model unavailable — single trained-only figure.
+    fig = plt.figure(figsize=(12, 10))
+    ax_paths = fig.add_subplot(111, projection="3d")
+    limit_arrays: list[np.ndarray] = []
+    if trained_examples:
+        limit_arrays = _plot_trained_word_examples(
+            ax_paths, projected, trained_examples,
+            max_word_len=max_word_len, annotate_fontsize=9.5, is_3d=True,
+        )
+    if not limit_arrays:
+        limit_arrays = [projected]
+    xlim, ylim, zlim = _cube_data_limits(*limit_arrays)
+    _apply_cube_limits_3d(ax_paths, xlim, ylim, zlim)
+    ax_paths.set_xlabel(xlabel)
+    ax_paths.set_ylabel(ylabel)
+    ax_paths.set_zlabel(zlabel)
+    ax_paths.grid(True, linestyle=":", alpha=0.35)
+    ax_paths.set_title(
+        f"Trained (observed) trajectories (3D PCA)\n"
+        f"{n_trained} vocabulary words · labels = in-word prefix",
+        fontsize=12,
+    )
     fig.tight_layout()
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
-    plt.close(fig)
-    print(f"wrote {save_path}")
+    _save_trajectory_figure(fig, save_path)
 
 
 def plot_pca_vector_field(
@@ -4799,6 +5482,7 @@ def main() -> None:
             )
 
         if words:
+            traj_words = label_words if label_words is not None else words
             plot_space_to_space_trajectories(
                 text, hidden_states,
                 save_path=plot_path("word_trajectories_pca.png"),
@@ -4807,6 +5491,7 @@ def main() -> None:
                 automaton=automaton,
                 annot_style=args.dfa_annot_style,
                 condensed=cv,
+                words=traj_words,
             )
             plot_space_to_space_trajectories_3d(
                 text, hidden_states,
@@ -4815,6 +5500,7 @@ def main() -> None:
                 spaced=spaced,
                 automaton=automaton,
                 condensed=cv,
+                words=traj_words,
             )
 
         plot_pca_next_char_probability_panels(

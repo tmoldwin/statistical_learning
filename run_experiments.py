@@ -52,6 +52,11 @@ def main() -> None:
         action="store_true",
         help="short training run for quick verification",
     )
+    parser.add_argument(
+        "--trajectories-only",
+        action="store_true",
+        help="skip full visualize suite; only word trajectory PCA plots",
+    )
     args = parser.parse_args()
 
     names = args.only if args.only else list(EXPERIMENT_CONFIG.keys())
@@ -101,12 +106,15 @@ def main() -> None:
         write_vocabulary_diagrams_for_experiment(name)
 
         for model_type in args.models:
-            run([
+            viz_cmd = [
                 sys.executable, "visualize.py",
                 "--exp", name,
                 "--model-type", model_type,
                 "--length", str(cfg["viz_length"]),
-            ])
+            ]
+            if args.trajectories_only:
+                viz_cmd.append("--trajectories-only")
+            run(viz_cmd)
 
         if name == "ten_word_overlap_s" and "rnn" in args.models:
             run([sys.executable, "scripts/build_readme.py"])

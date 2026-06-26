@@ -24,19 +24,48 @@ EXPERIMENTS_ROOT = REPO_ROOT / "experiments"
 
 MODEL_TYPES = ("rnn", "transformer")
 
+_MICRO_VOCAB_CONFIG: dict[str, object] = {
+    "chars": 3_000,
+    "steps": 5_000,
+    "viz_length": 40,
+    "hidden_size": 12,
+    "sequence_length": 8,
+    "num_heads": 1,
+    "n_layer": 1,
+    "eval_interval": 100,
+    "eval_iterations": 10,
+    "metric_rollout_len": 400,
+    "timestep_noise_std": 0.1,
+}
+
+# Ordered micro curriculum (spaced `_s` variants); see task.py REGIMES.
+MICRO_CURRICULUM: tuple[str, ...] = (
+    "two_word_disjoint",
+    "two_word_pos_overlap",
+    "two_word_prefix_branch",
+    "two_word_nested",
+    "three_word_overlap",
+    "three_word_permutation",
+    "three_word_ca_hub",
+    "four_word_ca_hub",
+)
+
 _BASE_CONFIG: dict[str, dict] = {
     # Tiny 2D sandbox: 3 words, short corpus, fast training for transformer debugging.
-    "three_word_overlap": {
-        "chars": 3_000,
-        "steps": 500,
-        "viz_length": 40,
-        "hidden_size": 12,
-        "sequence_length": 8,
+    "three_word_overlap": dict(_MICRO_VOCAB_CONFIG),
+    "three_word_permutation": {
+        **_MICRO_VOCAB_CONFIG,
+        "chars": 50_000,
+        "steps": 100_000,
+        "hidden_size": 32,
         "num_heads": 1,
-        "n_layer": 1,
-        "eval_interval": 100,
-        "eval_iterations": 10,
-        "metric_rollout_len": 400,
+        "head_size": 32,
+        "timestep_noise_std": 0.05,
+    },
+    **{
+        regime: dict(_MICRO_VOCAB_CONFIG)
+        for regime in MICRO_CURRICULUM
+        if regime not in ("three_word_overlap", "three_word_permutation")
     },
     "ten_word_overlap": {
         "chars": 50_000,

@@ -36,6 +36,7 @@ from rnn.rnn_dyn import (
     flatten_weight_snapshot,
     hidden_activation,
     hidden_activation_backward,
+    inject_timestep_noise,
     dale_violation_fraction,
     init_dale_weights,
     recurrent_pre_activation,
@@ -66,6 +67,8 @@ parser.add_argument('--learning-rate', type=float, default=None,
                     help='SGD step size (default: 0.1 tanh, 0.025 Dale)')
 parser.add_argument('--exp', default=None,
                     help='experiment name; loads word list for unspaced word-error metrics')
+parser.add_argument('--noise-std', type=float, default=None,
+                    help='Gaussian noise std added to hidden state every timestep (train + sample)')
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -96,6 +99,14 @@ learning_rate = args.learning_rate if args.learning_rate is not None else (
 )
 use_relu = dale_law        # Dale's law: nonnegative activity, fixed outgoing sign
 e_fraction = float(args.e_fraction)
+if args.noise_std is not None:
+    timestep_noise_std = float(args.noise_std)
+elif args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    timestep_noise_std = float(EXPERIMENT_CONFIG.get(args.exp, {}).get("timestep_noise_std", 0.0))
+else:
+    timestep_noise_std = 0.0
+noise_rng = np.random.default_rng(0)
 init_rng = np.random.default_rng(0)
 
 # ----- model parameters -------------------------------------------------------
@@ -119,6 +130,9 @@ else:
     weights_input_to_hidden = init_rng.standard_normal((hidden_size, vocab_size)) * 0.01
     weights_hidden_to_hidden = init_rng.standard_normal((hidden_size, hidden_size)) * 0.01
     weights_hidden_to_output = init_rng.standard_normal((vocab_size, hidden_size)) * 0.01
+
+if timestep_noise_std > 0:
+    print(f"timestep noise std: {timestep_noise_std}")
 
 bias_hidden = np.zeros((hidden_size, 1))
 bias_output = np.zeros((vocab_size, 1))
@@ -158,6 +172,7 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
     )
     hidden_states[t] = hidden_activation(pre_activations[t], use_relu=use_relu)
+    hidden_states[t] = inject_timestep_noise(hidden_states[t], timestep_noise_std, noise_rng)
 
     # Read out logits, then softmax to get a probability distribution over the vocab.
     output_logits[t] = np.dot(weights_hidden_to_output, hidden_states[t]) + bias_output
@@ -263,6 +278,8 @@ def sample(
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -283,6 +300,8 @@ def argmax_sample(hidden_state, seed_index, num_chars_to_sample):
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -312,6 +331,8 @@ def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     # Advance input to the true next prompt char.
     input_one_hot = np.zeros((vocab_size, 1))
@@ -324,6 +345,8 @@ def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -351,6 +374,8 @@ def sample_with_prompt(prompt_text: str, num_chars_to_sample: int, *, rng: np.ra
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     input_one_hot = np.zeros((vocab_size, 1))
     input_one_hot[char_to_index[ch_next]] = 1
@@ -361,6 +386,8 @@ def sample_with_prompt(prompt_text: str, num_chars_to_sample: int, *, rng: np.ra
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -384,6 +411,8 @@ def sample_from_seed_char(seed_char: str, num_chars_to_sample: int, *, rng: np.r
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
+        timestep_noise_std=timestep_noise_std,
+        noise_rng=noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -743,5 +772,6 @@ np.savez(
     use_relu=np.array(use_relu),
     e_fraction=np.array(e_fraction),
     dale_sign=np.array(dale_sign if dale_sign is not None else []),
+    timestep_noise_std=np.array(timestep_noise_std, dtype=np.float64),
 )
 print(f'saved trained model to {model_out}')

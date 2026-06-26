@@ -104,9 +104,11 @@ class BigramLanguageModel(nn.Module):
         n_layer: int = 1,
         use_layernorm: bool = False,
         pos_embd_dim: int | None = None,
+        timestep_noise_std: float = 0.0,
     ):
         super().__init__()
         self.n_embd = n_embd
+        self.timestep_noise_std = float(timestep_noise_std)
         self.pos_embd_dim = n_embd if pos_embd_dim is None else pos_embd_dim
         self.token_embedding = nn.Embedding(vocab_size, n_embd)  # (vocab, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, self.pos_embd_dim)
@@ -132,6 +134,12 @@ class BigramLanguageModel(nn.Module):
             self.ln_f = nn.LayerNorm(n_embd) if use_layernorm else nn.Identity()
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
+    def _inject_timestep_noise(self, x: torch.Tensor) -> torch.Tensor:
+        """Add isotropic Gaussian noise at every (batch, time) position."""
+        if self.timestep_noise_std <= 0:
+            return x
+        return x + torch.randn_like(x) * self.timestep_noise_std
+
     def forward(self, idx: torch.Tensor, targets: torch.Tensor | None = None, return_wei: bool = False):
         B, T = idx.shape
 
@@ -139,7 +147,7 @@ class BigramLanguageModel(nn.Module):
         positions = torch.arange(T, device=idx.device) % self.block_size
         pos_emb = self.pos_proj(self.position_embedding_table(positions))  # (T, n_embd)
 
-        x = token_emb + pos_emb  # (B,T,n_embd)
+        x = self._inject_timestep_noise(token_emb + pos_emb)  # (B,T,n_embd)
 
         if self._legacy:
             attn_out, wei = self.sa_heads(x)  # (B,T,n_embd)
@@ -183,7 +191,8 @@ class BigramLanguageModel(nn.Module):
         token_emb = self.token_embedding(idx)
         positions = torch.arange(T, device=idx.device) % self.block_size
         pos_emb = self.pos_proj(self.position_embedding_table(positions)).unsqueeze(0).expand(B, -1, -1)
-        x = token_emb + pos_emb
+        block_input = self._inject_timestep_noise(token_emb + pos_emb)
+        x = block_input
 
         layers = []
         if self._legacy:
@@ -223,7 +232,7 @@ class BigramLanguageModel(nn.Module):
         return {
             "token_emb": token_emb,
             "pos_emb": pos_emb,
-            "block_input": token_emb + pos_emb,
+            "block_input": block_input,
             "layers": layers,
             "block_output": x,
             "logits": logits,

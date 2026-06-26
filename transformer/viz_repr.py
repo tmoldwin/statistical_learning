@@ -529,6 +529,7 @@ def plot_representation_suite(
     condensed: bool,
     timer: VizTimer | None = None,
     quick: bool = False,
+    trajectories_only: bool = False,
 ) -> None:
     """RNN-parallel plot set for one transformer representation."""
     from visualize import (
@@ -603,6 +604,33 @@ def plot_representation_suite(
         text, spec.vectors, output_probs,
         spaced=spaced, words=words, condensed=condensed,
     )
+
+    if trajectories_only:
+        if not spec.is_readout or not words:
+            return
+        _plot(
+            "word_trajectories_pca",
+            plot_space_to_space_trajectories,
+            text, spec.vectors,
+            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
+            model=None,
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+            words=words,
+        )
+        _plot(
+            "word_trajectories_pca_3d",
+            plot_space_to_space_trajectories_3d,
+            text, spec.vectors,
+            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
+            model=None,
+            spaced=spaced,
+            automaton=automaton,
+            condensed=cv,
+            words=words,
+        )
+        return
 
     _plot(
         "activation_heatmap",
@@ -757,6 +785,7 @@ def run_transformer_visualization(
     words: list[str] | None = None,
     condensed: bool = False,
     quick: bool = False,
+    trajectories_only: bool = False,
 ) -> TransformerActivations:
     """Generate per-representation plots mirroring the RNN visualization suite."""
     from visualize import plot_output_probs
@@ -772,6 +801,8 @@ def run_transformer_visualization(
             "Retrain with the current defaults: python -m transformer.train --exp <name>"
         )
     specs = collect_representation_specs(acts)
+    if trajectories_only:
+        specs = [s for s in specs if s.is_readout]
     valid_slugs = {spec.slug for spec in specs}
     cleanup_stale_representation_dirs(out_dir, valid_slugs)
     cleanup_stale_attention_plots(out_dir, len(acts.layers))
@@ -780,43 +811,48 @@ def run_transformer_visualization(
         text, acts.block_output, acts.output_probs,
         spaced=spaced, words=words, condensed=condensed,
     )
-    with plot_timer.section("next_char_prob_sequence"):
-        plot_output_probs(
-            text, acts.output_probs, model["chars"],
-            save_path=_condensed_path(
-                str(numbered_plot_path(out_dir, "next_char_prob_sequence_heatmap.png")),
-                condensed,
-            ),
-            condensed=cv_readout,
-            automaton=automaton,
-            spaced=spaced,
-            words=words,
-        )
-
-    attn_dir = _attention_dir(out_dir)
-    attn_dir.mkdir(parents=True, exist_ok=True)
-    for layer_idx, layer in enumerate(acts.layers):
-        with plot_timer.section("attention_qkv"):
-            plot_layer_qkv_figure(
-                text, layer, layer_idx,
-                str(attn_dir / f"layer{layer_idx}_qkv.png"),
-                automaton=automaton, spaced=spaced,
-            )
-        with plot_timer.section("attention_matrix"):
-            plot_layer_attention_figure(
-                model, text, layer_idx,
-                str(attn_dir / f"layer{layer_idx}_attention.png"),
-                automaton=automaton, spaced=spaced,
-            )
-        with plot_timer.section("attention_lags"):
-            plot_layer_attention_lags_figure(
-                text, layer, layer_idx, acts.block_size,
-                str(attn_dir / f"layer{layer_idx}_attention_lags.png"),
-                automaton=automaton, spaced=spaced,
+    if not trajectories_only:
+        with plot_timer.section("next_char_prob_sequence"):
+            plot_output_probs(
+                text, acts.output_probs, model["chars"],
+                save_path=_condensed_path(
+                    str(numbered_plot_path(out_dir, "next_char_prob_sequence_heatmap.png")),
+                    condensed,
+                ),
+                condensed=cv_readout,
+                automaton=automaton,
+                spaced=spaced,
+                words=words,
             )
 
-    print(f"transformer: analyzing {len(specs)} separate representations"
-          + (" (quick mode: heatmap + PCA only)" if quick else ""))
+        attn_dir = _attention_dir(out_dir)
+        attn_dir.mkdir(parents=True, exist_ok=True)
+        for layer_idx, layer in enumerate(acts.layers):
+            with plot_timer.section("attention_qkv"):
+                plot_layer_qkv_figure(
+                    text, layer, layer_idx,
+                    str(attn_dir / f"layer{layer_idx}_qkv.png"),
+                    automaton=automaton, spaced=spaced,
+                )
+            with plot_timer.section("attention_matrix"):
+                plot_layer_attention_figure(
+                    model, text, layer_idx,
+                    str(attn_dir / f"layer{layer_idx}_attention.png"),
+                    automaton=automaton, spaced=spaced,
+                )
+            with plot_timer.section("attention_lags"):
+                plot_layer_attention_lags_figure(
+                    text, layer, layer_idx, acts.block_size,
+                    str(attn_dir / f"layer{layer_idx}_attention_lags.png"),
+                    automaton=automaton, spaced=spaced,
+                )
+
+    mode_note = ""
+    if trajectories_only:
+        mode_note = " (trajectories only: block_output; use animate_micro_curriculum_trajectories.py for closed-loop)"
+    elif quick:
+        mode_note = " (quick mode: heatmap + PCA only)"
+    print(f"transformer: analyzing {len(specs)} separate representations{mode_note}")
     for spec in specs:
         print(f"  · {spec.slug}: {spec.display_name}  shape={spec.vectors.shape}")
         slug_dir = _repr_dir(out_dir, spec.slug)
@@ -835,6 +871,7 @@ def run_transformer_visualization(
                 condensed=condensed,
                 timer=plot_timer,
                 quick=quick,
+                trajectories_only=trajectories_only,
             )
 
     plot_timer.print_summary(title="Transformer plot types (aggregated across representations)")

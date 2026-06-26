@@ -99,7 +99,7 @@ from readme_figures import (
     remove_shared_figures_from_model_plots,
 )
 from task import REGIMES
-from rnn.rnn_dyn import activation_label, no_input_hidden_step, rnn_hidden_step
+from rnn.rnn_dyn import activation_label, inject_timestep_noise, no_input_hidden_step, rnn_hidden_step
 from vocab_diagrams import (
     MinimizedVocabAutomaton,
     build_minimized_vocabulary_automaton,
@@ -185,6 +185,10 @@ def load_model(path: str = "model.npz"):
         model["weight_snap_bias_output"] = data["weight_snap_bias_output"]
     if "metric_word_error_frac" in data.files:
         model["metric_word_error_frac"] = data["metric_word_error_frac"]
+    if "timestep_noise_std" in data.files:
+        model["timestep_noise_std"] = float(data["timestep_noise_std"])
+    else:
+        model["timestep_noise_std"] = 0.0
     return model
 
 
@@ -200,6 +204,8 @@ def forward_pass(model, text: str):
     weights_hidden_to_output = model["weights_hidden_to_output"]
     bias_hidden              = model["bias_hidden"]
     bias_output              = model["bias_output"]
+    noise_std = float(model.get("timestep_noise_std", 0.0))
+    noise_rng = np.random.default_rng()
 
     hidden_state = np.zeros((hidden_size, 1))
     hidden_states = np.zeros((len(text), hidden_size))
@@ -215,6 +221,8 @@ def forward_pass(model, text: str):
             weights_hidden_to_hidden,
             bias_hidden,
             use_relu=model.get("use_relu", False),
+            timestep_noise_std=noise_std,
+            noise_rng=noise_rng,
         )
         logits = weights_hidden_to_output @ hidden_state + bias_output
         exp = np.exp(logits - np.max(logits))
@@ -525,7 +533,10 @@ def _hidden_state_after_char(
     h = np.zeros((hidden_size, 1), dtype=float) if h0 is None else np.asarray(h0, dtype=float).reshape(-1, 1)
     x = np.zeros((len(chars), 1), dtype=float)
     x[char_to_index[seed_char], 0] = 1.0
-    h, _ = rnn_hidden_step(h, x, W_xh, W_hh, b_h_col, use_relu=use_relu)
+    h, _ = rnn_hidden_step(
+        h, x, W_xh, W_hh, b_h_col, use_relu=use_relu,
+        timestep_noise_std=float(model.get("timestep_noise_std", 0.0)),
+    )
     return h.ravel().copy()
 
 
@@ -543,9 +554,13 @@ def _letter_seed_no_input_trajectory_pca(
     b_h = np.asarray(model["bias_hidden"]).ravel()
     use_relu = bool(model.get("use_relu", False))
     h = _hidden_state_after_char(model, seed_char, hidden_size=hidden_size)
+    noise_std = float(model.get("timestep_noise_std", 0.0))
+    noise_rng = np.random.default_rng()
     zs = [(h - mean) @ components.T]
     for _ in range(max(0, int(steps) - 1)):
         h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
+        if noise_std > 0:
+            h = inject_timestep_noise(h, noise_std, noise_rng)
         zs.append((h - mean) @ components.T)
     return np.asarray(zs, dtype=float)
 
@@ -559,37 +574,273 @@ def _boundary_prefix_labels(text: str, *, spaced: bool) -> list[str]:
     ]
 
 
+def _label_condense_radius(coords: np.ndarray, frac: float = 0.06) -> float:
+    if len(coords) == 0:
+        return 0.1
+    span = float(np.max(coords.max(axis=0) - coords.min(axis=0)))
+    return max(span * frac, 1e-3)
+
+
+def _clusters_for_nearby_labels(
+    coords: np.ndarray,
+    labels: list[str],
+    eps: float,
+) -> list[tuple[str, list[int]]]:
+    """Merge repeated labels whose PCA positions fall within ``eps``."""
+    clusters: list[tuple[str, list[int]]] = []
+    for i, label in enumerate(labels):
+        if not label:
+            continue
+        placed = False
+        for cl, idxs in clusters:
+            if cl != label:
+                continue
+            centroid = coords[idxs].mean(axis=0)
+            if float(np.linalg.norm(coords[i] - centroid)) <= eps:
+                idxs.append(i)
+                placed = True
+                break
+        if not placed:
+            clusters.append((label, [i]))
+    clusters.sort(key=lambda item: item[1][0])
+    return clusters
+
+
+def _estimate_label_radius(display: str, fontsize: float, span: float) -> float:
+    """Approximate label footprint radius in data coordinates."""
+    char_w = fontsize * 0.55
+    width = max(char_w, len(display) * char_w * 0.68)
+    return max(span * 0.038, width * span * 0.0022)
+
+
+def _point_segment_distance_2d(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    ab = b - a
+    denom = float(np.dot(ab, ab))
+    if denom < 1e-18:
+        return float(np.linalg.norm(p - a))
+    t = float(np.clip(np.dot(p - a, ab) / denom, 0.0, 1.0))
+    return float(np.linalg.norm(p - (a + t * ab)))
+
+
+def _layout_trajectory_label_positions(
+    vertices: np.ndarray,
+    keys: list[str],
+    displays: list[str],
+    *,
+    offset_frac: float = 0.17,
+    fontsize: float = 9.0,
+    path_coords: np.ndarray | None = None,
+    line_clearance_frac: float = 0.055,
+) -> dict[str, np.ndarray]:
+    """Place offset labels on PC1–PC2 with no mutual overlap (2D or 3D paths)."""
+    ndim = vertices.shape[1]
+    plane = vertices[:, :2]
+    center = plane.mean(axis=0)
+    span = max(float(np.max(np.ptp(plane, axis=0))), 1e-3)
+    base_offset = span * offset_frac
+    path_plane = path_coords[:, :2] if path_coords is not None and len(path_coords) else None
+
+    def _rot2(v: np.ndarray, deg: float) -> np.ndarray:
+        t = np.deg2rad(deg)
+        c, s = float(np.cos(t)), float(np.sin(t))
+        return np.array([c * v[0] - s * v[1], s * v[0] + c * v[1]])
+
+    def _clear_of_path(cand2: np.ndarray, radius: float) -> bool:
+        if path_plane is None or len(path_plane) < 2:
+            return True
+        clearance = span * line_clearance_frac + radius * 0.55
+        for j in range(len(path_plane) - 1):
+            if _point_segment_distance_2d(cand2, path_plane[j], path_plane[j + 1]) < clearance:
+                return False
+        return True
+
+    angle_candidates_deg = (
+        0, 15, -15, 30, -30, 45, -45, 60, -60, 75, -75,
+        90, -90, 105, -105, 120, -120, 135, -135, 150, -150, 180,
+    )
+    distance_scales = (1.0, 1.3, 1.65, 2.0, 2.4, 2.9, 3.5, 4.2, 5.0)
+
+    placed: list[tuple[np.ndarray, float]] = []
+    positions: dict[str, np.ndarray] = {}
+
+    order = sorted(range(len(keys)), key=lambda i: float(np.linalg.norm(plane[i] - center)))
+    for i in order:
+        key = keys[i]
+        centroid2 = plane[i]
+        radius = _estimate_label_radius(displays[i], fontsize, span)
+        outward = centroid2 - center
+        norm = float(np.linalg.norm(outward))
+        if norm < 1e-9:
+            outward = np.array([0.0, 1.0])
+        else:
+            outward = outward / norm
+
+        best2: np.ndarray | None = None
+        best_score = float("inf")
+        label_pad = radius * 1.4
+        for dist_scale in distance_scales:
+            for deg in angle_candidates_deg:
+                cand2 = centroid2 + _rot2(outward, deg) * (base_offset * dist_scale)
+                if any(
+                    float(np.linalg.norm(cand2 - pos2)) < (label_pad + r2)
+                    for pos2, r2 in placed
+                ):
+                    continue
+                if any(
+                    float(np.linalg.norm(cand2 - plane[j])) < label_pad * 1.1
+                    for j in range(len(plane))
+                    if j != i
+                ):
+                    continue
+                if not _clear_of_path(cand2, radius):
+                    continue
+                score = dist_scale * 100.0 + abs(deg)
+                if score < best_score:
+                    best_score = score
+                    best2 = cand2
+            if best2 is not None:
+                break
+
+        if best2 is None:
+            best2 = centroid2 + outward * base_offset * distance_scales[-1]
+
+        placed.append((best2, radius))
+        full = vertices[i].copy()
+        full[0], full[1] = float(best2[0]), float(best2[1])
+        positions[key] = full
+
+    return positions
+
+
+def _layout_cluster_label_positions(
+    vertices: np.ndarray,
+    keys: list[str],
+    *,
+    offset_frac: float = 0.10,
+) -> dict[str, np.ndarray]:
+    """Push labels outward from the trajectory centroid (2D or 3D)."""
+    ndim = vertices.shape[1]
+    center = vertices.mean(axis=0)
+    span = max(float(np.max(np.ptp(vertices, axis=0))), 1e-3)
+    offset_dist = span * offset_frac
+    positions: dict[str, np.ndarray] = {}
+    for i, key in enumerate(keys):
+        centroid = vertices[i]
+        outward = centroid - center
+        norm = float(np.linalg.norm(outward))
+        if norm < 1e-9:
+            outward = np.zeros(ndim, dtype=float)
+            outward[min(1, ndim - 1)] = 1.0
+        else:
+            outward = outward / norm
+        positions[key] = centroid + outward * offset_dist
+    return positions
+
+
 def _annotate_trajectory_labels(
     ax,
     coords: np.ndarray,
     labels: list[str],
     *,
     colors: list | None = None,
+    text_color: str = "#000000",
     fontsize: float = 9.0,
+    fontweight: str = "bold",
+    dedupe: bool = False,
+    condense_nearby: bool = False,
+    condense_radius_frac: float = 0.06,
+    use_leaders: bool = False,
+    leader_linewidth: float = 0.4,
+    label_offset_frac: float = 0.17,
+    line_clearance_frac: float = 0.055,
 ) -> None:
-    """Text labels at PCA coordinates with a white halo for readability."""
+    """Text labels at PCA coordinates."""
     n = min(len(coords), len(labels))
     if n == 0:
         return
     fs = max(7, int(fontsize))
-    halo = [path_effects.withStroke(linewidth=2.5, foreground="white")]
-    for i in range(n):
-        label = labels[i]
+
+    clusters: list[tuple[str, list[int]]]
+    if condense_nearby:
+        eps = _label_condense_radius(coords[:n], condense_radius_frac)
+        clusters = _clusters_for_nearby_labels(coords[:n], labels[:n], eps)
+    elif dedupe:
+        from collections import defaultdict
+
+        buckets: dict[str, list[int]] = defaultdict(list)
+        for i in range(n):
+            label = labels[i]
+            if label:
+                buckets[label].append(i)
+        clusters = sorted(
+            ((label, idxs) for label, idxs in buckets.items()),
+            key=lambda item: item[1][0],
+        )
+    else:
+        clusters = [(labels[i], [i]) for i in range(n) if labels[i]]
+
+    if not clusters:
+        return
+
+    keys = [f"{label}:{idxs[0]}" for label, idxs in clusters]
+    vertices = np.array([coords[idxs].mean(axis=0) for _, idxs in clusters])
+    displays = [
+        "␣" if clusters[i][0] == " " else clusters[i][0]
+        for i in range(len(clusters))
+    ]
+    is_3d = vertices.shape[1] >= 3
+
+    if use_leaders:
+        label_positions = _layout_trajectory_label_positions(
+            vertices, keys, displays,
+            offset_frac=label_offset_frac,
+            fontsize=fs,
+            path_coords=coords[:n],
+            line_clearance_frac=line_clearance_frac,
+        )
+    else:
+        label_positions = {key: vertices[i] for i, key in enumerate(keys)}
+
+    leader_color = "0.42"
+    for i, key in enumerate(keys):
+        label = clusters[i][0]
         if not label:
             continue
-        display = "␣" if label == " " else label
-        color = colors[i] if colors is not None and i < len(colors) else "#1a1a1a"
-        if coords.shape[1] >= 3:
+        display = displays[i]
+        color = colors[i] if colors is not None and i < len(colors) else text_color
+        vertex = vertices[i]
+        text_pos = label_positions[key]
+        if use_leaders:
+            if is_3d:
+                ax.plot(
+                    [text_pos[0], vertex[0]],
+                    [text_pos[1], vertex[1]],
+                    [text_pos[2], vertex[2]],
+                    color=leader_color,
+                    linewidth=leader_linewidth,
+                    solid_capstyle="round",
+                    zorder=9,
+                )
+            else:
+                ax.plot(
+                    [text_pos[0], vertex[0]],
+                    [text_pos[1], vertex[1]],
+                    color=leader_color,
+                    linewidth=leader_linewidth,
+                    solid_capstyle="round",
+                    zorder=9,
+                )
+        if is_3d:
             ax.text(
-                coords[i, 0], coords[i, 1], coords[i, 2],
-                display, fontsize=fs, color=color, ha="center", va="center",
-                path_effects=halo,
+                text_pos[0], text_pos[1], text_pos[2],
+                display, fontsize=fs, color=color, fontweight=fontweight,
+                ha="center", va="center", zorder=10,
             )
         else:
             ax.text(
-                coords[i, 0], coords[i, 1],
-                display, fontsize=fs, color=color, ha="center", va="center", zorder=10,
-                path_effects=halo,
+                text_pos[0], text_pos[1],
+                display, fontsize=fs, color=color, fontweight=fontweight,
+                ha="center", va="center", zorder=10,
             )
 
 
@@ -637,7 +888,10 @@ def _closed_loop_rollout_pca(
     for i in range(target_len):
         x = np.zeros((vocab_size, 1), dtype=float)
         x[char_to_index[prev_char], 0] = 1.0
-        h, _ = rnn_hidden_step(h, x, W_xh, W_hh, b_h_col, use_relu=use_relu)
+        h, _ = rnn_hidden_step(h, x, W_xh, W_hh, b_h_col, use_relu=use_relu,
+            timestep_noise_std=float(model.get("timestep_noise_std", 0.0)),
+            noise_rng=rng,
+        )
         gen_h.append(h.ravel().copy())
         generated.append(prev_char)
         if i >= target_len - 1:
@@ -3205,6 +3459,112 @@ def _step_path_colors(n_points: int, cmap_name: str = "viridis") -> list:
     return [cmap(0.12 + 0.78 * i / (n_points - 1)) for i in range(n_points)]
 
 
+# Trajectory word palette (user-specified).
+_TRAJECTORY_WORD_PALETTE: tuple[str, ...] = (
+    "#000000",  # black
+    "#0066CC",  # blue
+    "#DE2D26",  # red
+    "#228B22",  # green
+    "#FF69B4",  # hotpink
+)
+_TRAJECTORY_RETURN_COLOR = "#9A9A9A"  # gray — space / return-to-word-start
+
+
+def _vocab_word_colors(words: list[str]) -> dict[str, tuple]:
+    """Distinct color per vocabulary word."""
+    colors = {
+        word: plt.matplotlib.colors.to_rgba(_TRAJECTORY_WORD_PALETTE[i % len(_TRAJECTORY_WORD_PALETTE)])
+        for i, word in enumerate(words)
+    }
+    colors["␣"] = plt.matplotlib.colors.to_rgba(_TRAJECTORY_RETURN_COLOR)
+    colors["?"] = plt.matplotlib.colors.to_rgba(_TRAJECTORY_RETURN_COLOR)
+    return colors
+
+
+def _midsegment_arrowhead_2d(
+    ax,
+    p0: np.ndarray,
+    p1: np.ndarray,
+    *,
+    color,
+    alpha: float,
+    zorder: int,
+    mutation_scale: float = 12.0,
+    head_frac: float = 0.22,
+) -> None:
+    """Arrowhead only, centered on the segment midpoint (no extra shaft)."""
+    d = p1 - p0
+    norm = float(np.linalg.norm(d))
+    if norm < 1e-12:
+        return
+    u = d / norm
+    mid = 0.5 * (p0 + p1)
+    head_len = norm * head_frac
+    ax.annotate(
+        "",
+        xy=(float(mid[0]), float(mid[1])),
+        xytext=(float(mid[0] - head_len * u[0]), float(mid[1] - head_len * u[1])),
+        arrowprops=dict(
+            arrowstyle="-|>",
+            color=color,
+            lw=0,
+            mutation_scale=mutation_scale,
+            shrinkA=0,
+            shrinkB=0,
+            alpha=alpha,
+        ),
+        zorder=zorder,
+    )
+
+
+def _midsegment_arrowhead_3d(
+    ax,
+    p0: np.ndarray,
+    p1: np.ndarray,
+    *,
+    color,
+    alpha: float,
+    mutation_scale: float = 12.0,
+    head_frac: float = 0.22,
+) -> None:
+    """Arrowhead only at segment midpoint (3D FancyArrowPatch projection)."""
+    from matplotlib.patches import FancyArrowPatch
+    from mpl_toolkits.mplot3d import proj3d
+
+    class _Arrow3D(FancyArrowPatch):
+        def __init__(self, xs, ys, zs, *args, **kwargs):
+            super().__init__((0, 0), (0, 0), *args, **kwargs)
+            self._verts3d = xs, ys, zs
+
+        def do_3d_projection(self, renderer=None):
+            xs3d, ys3d, zs3d = self._verts3d
+            xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+            self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+            return float(np.min(zs))
+
+    d = p1 - p0
+    norm = float(np.linalg.norm(d))
+    if norm < 1e-12:
+        return
+    u = d / norm
+    mid = 0.5 * (p0 + p1)
+    head_len = norm * head_frac
+    tail = mid - head_len * u
+    arrow = _Arrow3D(
+        [float(tail[0]), float(mid[0])],
+        [float(tail[1]), float(mid[1])],
+        [float(tail[2]), float(mid[2])],
+        arrowstyle="-|>",
+        mutation_scale=mutation_scale,
+        color=color,
+        lw=0,
+        alpha=alpha,
+        shrinkA=0,
+        shrinkB=0,
+    )
+    ax.add_artist(arrow)
+
+
 def _plot_step_colored_path_arrows(
     ax,
     path: np.ndarray,
@@ -3213,23 +3573,30 @@ def _plot_step_colored_path_arrows(
     alpha: float = 0.55,
     zorder: int = 2,
     cmap_name: str = "viridis",
+    segment_colors: list | None = None,
+    segment_linestyles: list[str] | None = None,
+    arrow_mutation_scale: float = 12.0,
 ) -> None:
-    """Trajectory with each arrow segment colored by step index."""
+    """Trajectory lines with arrowheads centered on each segment."""
     if len(path) < 2:
         return
-    point_colors = _step_path_colors(len(path), cmap_name)
+    if segment_colors is None:
+        segment_colors = _step_path_colors(len(path), cmap_name)
     for i in range(len(path) - 1):
-        color = point_colors[i]
+        color = segment_colors[i] if i < len(segment_colors) else segment_colors[-1]
+        linestyle = "-"
+        if segment_linestyles is not None and i < len(segment_linestyles):
+            linestyle = segment_linestyles[i]
+        p0, p1 = path[i], path[i + 1]
         ax.plot(
-            path[i : i + 2, 0], path[i : i + 2, 1],
-            color=color, linewidth=linewidth, alpha=alpha, solid_capstyle="round", zorder=zorder,
+            [p0[0], p1[0]], [p0[1], p1[1]],
+            color=color, linewidth=linewidth, alpha=alpha,
+            linestyle=linestyle, solid_capstyle="round", zorder=zorder,
         )
-        ax.quiver(
-            path[i, 0], path[i, 1],
-            path[i + 1, 0] - path[i, 0], path[i + 1, 1] - path[i, 1],
-            angles="xy", scale_units="xy", scale=1,
-            color=color, width=0.0035, headwidth=4.5, headlength=5,
-            alpha=min(alpha + 0.15, 1.0), zorder=zorder + 1,
+        _midsegment_arrowhead_2d(
+            ax, p0, p1,
+            color=color, alpha=alpha, zorder=zorder + 1,
+            mutation_scale=arrow_mutation_scale,
         )
 
 
@@ -3240,26 +3607,28 @@ def _plot_step_colored_path_arrows_3d(
     linewidth: float = 1.6,
     alpha: float = 0.55,
     cmap_name: str = "viridis",
+    segment_colors: list | None = None,
+    segment_linestyles: list[str] | None = None,
+    arrow_mutation_scale: float = 12.0,
 ) -> None:
-    """3D trajectory with each arrow segment colored by step index."""
+    """3D trajectory lines with arrowheads centered on each segment."""
     if len(path) < 2:
         return
-    point_colors = _step_path_colors(len(path), cmap_name)
+    if segment_colors is None:
+        segment_colors = _step_path_colors(len(path), cmap_name)
     for i in range(len(path) - 1):
-        color = point_colors[i]
+        color = segment_colors[i] if i < len(segment_colors) else segment_colors[-1]
+        linestyle = "-"
+        if segment_linestyles is not None and i < len(segment_linestyles):
+            linestyle = segment_linestyles[i]
+        p0, p1 = path[i], path[i + 1]
         ax.plot(
-            path[i : i + 2, 0], path[i : i + 2, 1], path[i : i + 2, 2],
-            color=color, linewidth=linewidth, alpha=alpha,
+            [p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]],
+            color=color, linewidth=linewidth, alpha=alpha, linestyle=linestyle,
         )
-        ax.quiver(
-            path[i, 0], path[i, 1], path[i, 2],
-            path[i + 1, 0] - path[i, 0],
-            path[i + 1, 1] - path[i, 1],
-            path[i + 1, 2] - path[i, 2],
-            color=color,
-            alpha=min(alpha + 0.15, 1.0),
-            arrow_length_ratio=0.35,
-            linewidth=max(linewidth * 0.6, 0.4),
+        _midsegment_arrowhead_3d(
+            ax, p0, p1,
+            color=color, alpha=alpha, mutation_scale=arrow_mutation_scale,
         )
 
 
@@ -5314,6 +5683,11 @@ def main() -> None:
         action="store_true",
         help="transformer only: skip slow per-char / clustermap / DFA-distance plots",
     )
+    parser.add_argument(
+        "--trajectories-only",
+        action="store_true",
+        help="only word trajectory PCA plots (block_output for transformer; fast)",
+    )
     args = parser.parse_args()
 
     timer = VizTimer()
@@ -5328,7 +5702,7 @@ def main() -> None:
     print(f"loaded model: hidden_size={model['hidden_size']}, "
           f"vocab_size={model['vocab_size']}, chars={''.join(model['chars'])}")
 
-    if not is_transformer:
+    if not is_transformer and not args.trajectories_only:
         with timer.section("weight_plots"):
             plot_learned_weights(model, save_path=str(numbered_plot_path(out_dir, "weights.png")))
             plot_weight_eigenspectra(
@@ -5337,16 +5711,17 @@ def main() -> None:
             plot_weight_dynamics_over_training(
                 model, os.path.join(out_dir, "weight_dynamics_over_training.png"),
             )
-    with timer.section("learning_curve"):
-        plot_learning_curve(
-            model,
-            save_path=str(numbered_plot_path(out_dir, "learning_curve.png")),
-        )
-    with timer.section("samples_before_after"):
-        plot_sample_before_after(
-            model,
-            save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
-        )
+    if not args.trajectories_only:
+        with timer.section("learning_curve"):
+            plot_learning_curve(
+                model,
+                save_path=str(numbered_plot_path(out_dir, "learning_curve.png")),
+            )
+        with timer.section("samples_before_after"):
+            plot_sample_before_after(
+                model,
+                save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
+            )
 
     with open(input_file, "r") as f:
         full_text = f.read()
@@ -5391,6 +5766,8 @@ def main() -> None:
         print(
             "transformer mode: each representation gets its own plot suite "
             "under representations/<name>/"
+            if not args.trajectories_only
+            else "transformer mode: trajectories only (representations/block_output/)"
         )
         with timer.section("transformer_representations"):
             acts = run_transformer_visualization(
@@ -5402,8 +5779,30 @@ def main() -> None:
                 words=words,
                 condensed=args.condensed,
                 quick=args.quick,
+                trajectories_only=args.trajectories_only,
             )
         output_probs = acts.output_probs
+    elif args.trajectories_only:
+        hidden_states, output_probs = run_forward_pass(model, text, model_type)
+        if words:
+            traj_words = label_words if label_words is not None else words
+            plot_space_to_space_trajectories(
+                text, hidden_states,
+                save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca.png")),
+                model=model,
+                spaced=spaced,
+                automaton=automaton,
+                annot_style=args.dfa_annot_style,
+                words=traj_words,
+            )
+            plot_space_to_space_trajectories_3d(
+                text, hidden_states,
+                save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca_3d.png")),
+                model=model,
+                spaced=spaced,
+                automaton=automaton,
+                words=traj_words,
+            )
     else:
         hidden_states, output_probs = run_forward_pass(model, text, model_type)
         act_label = activation_label(use_relu=bool(model.get("use_relu", False)))

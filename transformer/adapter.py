@@ -29,9 +29,11 @@ def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, d
         n_layer=cfg.get("n_layer", 2),
         use_layernorm=cfg.get("use_layernorm", True),
         pos_embd_dim=cfg.get("pos_embd_dim"),
+        timestep_noise_std=cfg.get("timestep_noise_std", 0.0),
     )
     state = torch.load(exp_dir / "model.pt", map_location="cpu", weights_only=True)
     model.load_state_dict(state)
+    model.timestep_noise_std = float(cfg.get("timestep_noise_std", 0.0))
     model.eval()
     return model, cfg, meta
 
@@ -56,6 +58,7 @@ def load_model(path: str) -> dict:
         "n_layer": int(cfg.get("n_layer", 2)),
         "use_relu": False,
         "dale_law": False,
+        "timestep_noise_std": float(cfg.get("timestep_noise_std", 0.0)),
     }
 
     for key in (
@@ -187,6 +190,42 @@ def extract_transformer_activations(model_dict: dict, text: str) -> TransformerA
         n_embd=n_embd,
         block_size=block_size,
     )
+
+
+@torch.no_grad()
+def transformer_closed_loop_rollout(
+    model_dict: dict,
+    *,
+    seed_text: str,
+    steps: int,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, list[str]]:
+    """Autoregressive rollout with per-step noise; returns block_output (T, n_embd) and chars."""
+    torch_model: BigramLanguageModel = model_dict["_torch_model"]
+    chars = model_dict["chars"]
+    stoi = {c: i for i, c in enumerate(chars)}
+    block_size = int(model_dict["block_size"])
+
+    ids: list[int] = [stoi[c] for c in seed_text if c in stoi]
+    if not ids:
+        ids = [0]
+
+    hidden_rows: list[np.ndarray] = []
+    generated = list(seed_text)
+
+    for _ in range(max(1, int(steps))):
+        window = ids[-block_size:]
+        x = torch.tensor([window], dtype=torch.long)
+        acts = torch_model.forward_with_activations(x)
+        hidden_rows.append(acts["block_output"][0, -1].cpu().numpy())
+
+        logits = acts["logits"][0, -1]
+        probs = torch.softmax(logits, dim=-1).cpu().numpy()
+        next_ix = int(rng.choice(len(chars), p=probs))
+        ids.append(next_ix)
+        generated.append(chars[next_ix])
+
+    return np.asarray(hidden_rows, dtype=np.float64), generated
 
 
 @torch.no_grad()

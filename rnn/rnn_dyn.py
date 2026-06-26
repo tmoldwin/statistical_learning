@@ -341,6 +341,18 @@ def no_input_hidden_step(
     return hidden_activation(pre, use_relu=use_relu).ravel()
 
 
+def inject_timestep_noise(
+    state: np.ndarray,
+    std: float,
+    rng: np.random.Generator | None = None,
+) -> np.ndarray:
+    """Add isotropic Gaussian noise to a hidden state vector."""
+    if std <= 0:
+        return state
+    rng = rng or np.random.default_rng()
+    return state + rng.standard_normal(state.shape) * std
+
+
 def rnn_hidden_step(
     hidden_state: np.ndarray,
     input_one_hot: np.ndarray,
@@ -349,6 +361,8 @@ def rnn_hidden_step(
     bias_hidden: np.ndarray,
     *,
     use_relu: bool,
+    timestep_noise_std: float = 0.0,
+    noise_rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """One recurrent update; returns (hidden_state, pre_activation)."""
     pre = recurrent_pre_activation(
@@ -358,4 +372,5 @@ def rnn_hidden_step(
         weights_hidden_to_hidden,
         bias_hidden,
     )
-    return hidden_activation(pre, use_relu=use_relu), pre
+    hidden = hidden_activation(pre, use_relu=use_relu)
+    return inject_timestep_noise(hidden, timestep_noise_std, noise_rng), pre

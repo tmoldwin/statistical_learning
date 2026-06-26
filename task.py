@@ -25,6 +25,14 @@ from experiment import (
 )
 
 REGIMES: dict[str, list[str]] = {
+    # Micro curriculum (2–4 words): isolate prefix vs DFA axes.
+    "two_word_disjoint": ["cat", "mop"],
+    "two_word_pos_overlap": ["cut", "nun"],
+    "two_word_prefix_branch": ["can", "cat"],
+    "two_word_nested": ["a", "at"],
+    "three_word_permutation": ["ate", "eat", "tea"],
+    "three_word_ca_hub": ["can", "cat", "cab"],
+    "four_word_ca_hub": ["can", "cat", "cab", "car"],
     # Minimal sandbox: three words sharing -at (for 2D transformer/RNN prototyping).
     "three_word_overlap": ["cat", "hat", "mat"],
     # 10 words, length 3; overlap on -at/-et/-ea; vowels a, e, i.

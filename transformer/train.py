@@ -105,6 +105,7 @@ def train(
     steps: int | None = None,
     seed: int = 42,
     eval_interval: int | None = None,
+    noise_std: float | None = None,
 ) -> None:
     cfg = EXPERIMENT_CONFIG[exp_name]
     regime = experiment_regime(exp_name)
@@ -134,6 +135,10 @@ def train(
 
     pos_embd_dim = int(cfg.get("pos_embd_dim", hidden_size))
 
+    timestep_noise_std = float(
+        noise_std if noise_std is not None else cfg.get("timestep_noise_std", 0.0)
+    )
+
     model_cfg = {
         "vocab_size": vocab_size,
         "n_embd": hidden_size,
@@ -148,6 +153,7 @@ def train(
         "chars": list(alphabet),
         "words": words,
         "word_space": word_space,
+        "timestep_noise_std": timestep_noise_std,
     }
 
     set_seed(seed)
@@ -161,10 +167,14 @@ def train(
         n_layer=model_cfg["n_layer"],
         use_layernorm=model_cfg["use_layernorm"],
         pos_embd_dim=pos_embd_dim,
+        timestep_noise_std=timestep_noise_std,
     )
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(TRANSFORMER_DEFAULTS["learning_rate"]),
     )
+
+    if timestep_noise_std > 0:
+        print(f"timestep noise std: {timestep_noise_std}", flush=True)
 
     batch_size = int(cfg.get("batch_size", TRANSFORMER_DEFAULTS["batch_size"]))
     eval_interval = int(
@@ -292,8 +302,16 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=None)
     parser.add_argument("--eval-interval", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--noise-std", type=float, default=None,
+                        help="override timestep_noise_std from experiment config")
     args = parser.parse_args()
-    train(args.exp, steps=args.steps, seed=args.seed, eval_interval=args.eval_interval)
+    train(
+        args.exp,
+        steps=args.steps,
+        seed=args.seed,
+        eval_interval=args.eval_interval,
+        noise_std=args.noise_std,
+    )
 
 
 if __name__ == "__main__":

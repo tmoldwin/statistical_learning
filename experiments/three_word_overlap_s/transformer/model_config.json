@@ -1,6 +1,7 @@
 {
   "vocab_size": 6,
   "n_embd": 12,
+  "pos_embd_dim": 12,
   "block_size": 8,
   "num_heads": 1,
   "head_size": 12,

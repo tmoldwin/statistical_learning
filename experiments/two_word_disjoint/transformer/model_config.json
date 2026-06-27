@@ -1,0 +1,26 @@
+{
+  "vocab_size": 6,
+  "n_embd": 12,
+  "pos_embd_dim": 12,
+  "block_size": 8,
+  "num_heads": 1,
+  "head_size": 12,
+  "n_layer": 1,
+  "use_layernorm": true,
+  "use_residual": true,
+  "alphabet": "acmopt",
+  "chars": [
+    "a",
+    "c",
+    "m",
+    "o",
+    "p",
+    "t"
+  ],
+  "words": [
+    "cat",
+    "mop"
+  ],
+  "word_space": false,
+  "timestep_noise_std": 0.1
+}

@@ -27,6 +27,7 @@ from visualize import (
     _annotate_trajectory_labels,
     _apply_cube_limits_3d,
     _cube_data_limits,
+    _is_return_to_baseline_segment,
     _plot_step_colored_path_arrows,
     _plot_step_colored_path_arrows_3d,
     _square_data_limits,
@@ -42,11 +43,9 @@ PANEL_TITLES: dict[str, str] = {
     "two_word_disjoint": "disjoint",
     "two_word_pos_overlap": "same 2nd letter",
     "two_word_prefix_branch": "shared prefix",
-    "two_word_nested": "nested length",
     "three_word_overlap": "suffix family",
     "three_word_permutation": "permutation",
     "three_word_ca_hub": "3-way ca hub",
-    "four_word_ca_hub": "4-way ca hub",
 }
 
 DEFAULT_STEPS: int | None = None
@@ -236,7 +235,10 @@ def _closed_loop_panel(
     word_start = _word_start_segment_flags(labels, word_at_step)
     gray = word_colors["␣"]
     segment_colors = [
-        gray if word_at_step[i + 1] == "␣"
+        gray
+        if _is_return_to_baseline_segment(
+            labels[i], labels[i + 1], word_start=word_start[i],
+        )
         else word_colors.get(word_at_step[i + 1], word_colors[words[0]])
         for i in range(len(z) - 1)
     ]
@@ -265,7 +267,7 @@ def _closed_loop_panel(
         _annotate_trajectory_labels(
             ax, z, labels,
             fontsize=annotate_fontsize,
-            condense_nearby=True,
+            dedupe=True,
             use_leaders=True,
             leader_linewidth=0.4,
         )
@@ -308,7 +310,7 @@ def _write_panels(
     out_path: Path,
     suptitle: str,
 ) -> None:
-    ncols = 4
+    ncols = 3
     nrows = int(np.ceil(len(exps) / ncols))
     figsize = (4.5 * ncols, 4.2 * nrows) if n_components == 3 else (4.2 * ncols, 4.0 * nrows)
     fig = plt.figure(figsize=figsize, constrained_layout=True)

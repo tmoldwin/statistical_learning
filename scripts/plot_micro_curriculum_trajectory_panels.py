@@ -31,11 +31,9 @@ PANEL_TITLES: dict[str, str] = {
     "two_word_disjoint": "disjoint",
     "two_word_pos_overlap": "same 2nd letter",
     "two_word_prefix_branch": "shared prefix",
-    "two_word_nested": "nested length",
     "three_word_overlap": "suffix family",
     "three_word_permutation": "permutation",
     "three_word_ca_hub": "3-way ca hub",
-    "four_word_ca_hub": "4-way ca hub",
 }
 
 
@@ -88,7 +86,7 @@ def _trajectory_panel(
 def main() -> None:
     exps = [spaced_experiment_name(r) for r in MICRO_CURRICULUM]
     n = len(exps)
-    ncols = 4
+    ncols = 3
     nrows = int(np.ceil(n / ncols))
 
     fig, axes = plt.subplots(

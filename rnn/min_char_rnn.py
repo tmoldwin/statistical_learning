@@ -439,7 +439,7 @@ def stochastic_word_validity_metrics(
         text = "".join(index_to_char[i] for i in indices)
         if r == 0:
             first_text = text
-        word_errs.append(invalid_word_fraction(text, vocab, spaced=False))
+        word_errs.append(invalid_word_fraction(text, vocab))
         letter_fracs.append(valid_vocab_letter_fraction(text, vocab))
     word_err = float(np.nanmean(word_errs))
     letter_frac = float(np.nanmean(letter_fracs))

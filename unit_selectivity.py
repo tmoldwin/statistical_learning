@@ -656,9 +656,19 @@ def _set_all_timestep_xticks(ax, labels: TimestepLabels, indices: list[int] | No
     ax.set_xlabel("character at each timestep")
 
 
-def _example_panel_figsize(n_timesteps: int, n_rows: int, n_cols: int = 2) -> tuple[float, float]:
+def _example_panel_figsize(
+    n_timesteps: int,
+    n_rows: int,
+    n_cols: int = 2,
+    *,
+    compact: bool = False,
+) -> tuple[float, float]:
     width = max(12.0, 0.14 * n_timesteps + 4.0) * (n_cols / 2)
-    height = max(3.4, 2.6 + 0.04 * n_timesteps) * n_rows
+    if compact:
+        row_h = max(1.6, 0.9 + 0.012 * n_timesteps)
+    else:
+        row_h = max(3.4, 2.6 + 0.04 * n_timesteps)
+    height = row_h * n_rows
     return width, height
 
 
@@ -671,6 +681,7 @@ def _plot_unit_timestep_trace(
     *,
     automaton: MinimizedVocabAutomaton | None = None,
     target_prob: np.ndarray | None = None,
+    compact: bool = False,
 ) -> None:
     """Stem plot of unit activation per corpus timestep; color = feature category."""
     vals, mask = labels.feature_values(feature)
@@ -685,37 +696,43 @@ def _plot_unit_timestep_trace(
     )
 
     y0 = 0.0
+    lw = 1.0 if compact else 1.4
+    pt = 18 if compact else 36
     for i in visible:
         color = cat_to_color[vals[i]]
         y = float(unit_acts[i])
-        ax.plot([i, i], [y0, y], color=color, linewidth=1.4, solid_capstyle="round", zorder=2)
-        ax.scatter(i, y, c=[color], s=36, zorder=3, edgecolors="0.25", linewidths=0.4)
+        ax.plot([i, i], [y0, y], color=color, linewidth=lw, solid_capstyle="round", zorder=2)
+        ax.scatter(i, y, c=[color], s=pt, zorder=3, edgecolors="0.25", linewidths=0.3)
 
     ax.axhline(y0, color="0.8", linewidth=0.6, zorder=1)
     ax.set_xlim(-0.8, n - 0.2)
-    ax.set_ylabel("activation")
-    ax.set_title(
-        f"{unit_label} — each timestep is one character read\n"
-        f"stem color = {FEATURE_DISPLAY[feature]}",
-        fontsize=9,
-    )
-
-    _set_all_timestep_xticks(ax, labels)
-
-    cats = list(cat_to_color.keys())
-    if len(cats) <= 10:
-        handles = [
-            Patch(facecolor=cat_to_color[c], label=legend_labels[c])
-            for c in cats
-        ]
-        ax.legend(
-            handles=handles,
-            title=FEATURE_DISPLAY[feature],
-            fontsize=7,
-            title_fontsize=7,
-            loc="upper right",
-            framealpha=0.9,
+    ax.set_ylabel("activation", fontsize=7 if compact else 9)
+    if compact:
+        ax.set_title(unit_label, fontsize=8)
+        _set_all_timestep_xticks(ax, labels)
+        ax.tick_params(axis="both", labelsize=7)
+        ax.set_xlabel("character at each timestep", fontsize=7)
+    else:
+        ax.set_title(
+            f"{unit_label} — each timestep is one character read\n"
+            f"stem color = {FEATURE_DISPLAY[feature]}",
+            fontsize=9,
         )
+        _set_all_timestep_xticks(ax, labels)
+        cats = list(cat_to_color.keys())
+        if len(cats) <= 10:
+            handles = [
+                Patch(facecolor=cat_to_color[c], label=legend_labels[c])
+                for c in cats
+            ]
+            ax.legend(
+                handles=handles,
+                title=FEATURE_DISPLAY[feature],
+                fontsize=7,
+                title_fontsize=7,
+                loc="upper right",
+                framealpha=0.9,
+            )
 
     if target_prob is not None and feature in PREDICTION_SET:
         ax2 = ax.twinx()
@@ -723,8 +740,8 @@ def _plot_unit_timestep_trace(
             visible, [target_prob[i] for i in visible],
             color="0.55", linewidth=0.8, linestyle="--", alpha=0.8,
         )
-        ax2.set_ylabel("P(correct next char)", fontsize=8, color="0.45")
-        ax2.tick_params(axis="y", labelsize=7, colors="0.45")
+        ax2.set_ylabel("P(correct next char)", fontsize=7 if compact else 8, color="0.45")
+        ax2.tick_params(axis="y", labelsize=6 if compact else 7, colors="0.45")
         ax2.set_ylim(0, 1)
 
 
@@ -735,22 +752,32 @@ def _plot_unit_category_bars(
     mask: list[bool] | None,
     cat_to_color: dict,
     legend_labels: dict,
+    *,
+    compact: bool = False,
 ) -> None:
     bar_cats, means, sems = _category_means(unit_acts, vals, mask)
     x = np.arange(len(bar_cats))
     colors = [cat_to_color.get(c, "#888") for c in bar_cats]
-    ax.bar(x, means, yerr=sems, color=colors, capsize=4, edgecolor="white", linewidth=0.6)
+    cap = 2 if compact else 4
+    ax.bar(x, means, yerr=sems, color=colors, capsize=cap, edgecolor="white", linewidth=0.6)
     ax.set_xticks(x)
+    rot = 45 if compact and len(bar_cats) > 4 else 30
+    fs = 6 if compact else 8
     ax.set_xticklabels(
         [legend_labels.get(c, str(c)) for c in bar_cats],
-        rotation=30,
+        rotation=rot,
         ha="right",
-        fontsize=8,
+        fontsize=fs,
     )
-    ax.set_ylabel("mean activation")
-    ax.set_title("average over timesteps in each category")
+    ax.set_ylabel("mean activation", fontsize=7 if compact else 9)
+    if compact:
+        ax.set_title("mean by category", fontsize=7)
+    else:
+        ax.set_title("average over timesteps in each category")
     ax.axhline(0, color="0.8", linewidth=0.5)
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+    if compact:
+        ax.tick_params(axis="y", labelsize=6)
 
 
 def _plot_unit_example_panel(
@@ -764,6 +791,7 @@ def _plot_unit_example_panel(
     feature: str,
     target_prob: np.ndarray | None,
     automaton: MinimizedVocabAutomaton | None = None,
+    compact: bool = False,
 ) -> None:
     unit_acts = activations[:, unit_ix]
     vals, mask = labels.feature_values(feature)
@@ -776,8 +804,12 @@ def _plot_unit_example_panel(
         ax_trace, unit_acts, labels, feature, unit_label,
         automaton=automaton,
         target_prob=target_prob,
+        compact=compact,
     )
-    _plot_unit_category_bars(ax_tune, unit_acts, vals, mask, cat_to_color, legend_labels)
+    _plot_unit_category_bars(
+        ax_tune, unit_acts, vals, mask, cat_to_color, legend_labels,
+        compact=compact,
+    )
 
 
 def _target_prob_array(model: dict, activations: np.ndarray, text: str) -> np.ndarray:

@@ -43,11 +43,9 @@ MICRO_CURRICULUM: tuple[str, ...] = (
     "two_word_disjoint",
     "two_word_pos_overlap",
     "two_word_prefix_branch",
-    "two_word_nested",
     "three_word_overlap",
     "three_word_permutation",
     "three_word_ca_hub",
-    "four_word_ca_hub",
 )
 
 _BASE_CONFIG: dict[str, dict] = {

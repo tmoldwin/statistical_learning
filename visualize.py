@@ -782,54 +782,58 @@ def _annotate_trajectory_labels(
     if not clusters:
         return
 
-    keys = [f"{label}:{idxs[0]}" for label, idxs in clusters]
-    vertices = np.array([coords[idxs].mean(axis=0) for _, idxs in clusters])
+    keys = [
+        label if dedupe else f"{label}:{idxs[0]}"
+        for label, idxs in clusters
+    ]
+    anchor_vertices = np.array([coords[idxs].mean(axis=0) for _, idxs in clusters])
     displays = [
         "␣" if clusters[i][0] == " " else clusters[i][0]
         for i in range(len(clusters))
     ]
-    is_3d = vertices.shape[1] >= 3
+    is_3d = anchor_vertices.shape[1] >= 3
 
     if use_leaders:
         label_positions = _layout_trajectory_label_positions(
-            vertices, keys, displays,
+            anchor_vertices, keys, displays,
             offset_frac=label_offset_frac,
             fontsize=fs,
             path_coords=coords[:n],
             line_clearance_frac=line_clearance_frac,
         )
     else:
-        label_positions = {key: vertices[i] for i, key in enumerate(keys)}
+        label_positions = {key: anchor_vertices[i] for i, key in enumerate(keys)}
 
     leader_color = "0.42"
     for i, key in enumerate(keys):
-        label = clusters[i][0]
+        label, idxs = clusters[i]
         if not label:
             continue
         display = displays[i]
         color = colors[i] if colors is not None and i < len(colors) else text_color
-        vertex = vertices[i]
         text_pos = label_positions[key]
+        leader_targets = [coords[j] for j in idxs] if dedupe else [anchor_vertices[i]]
         if use_leaders:
-            if is_3d:
-                ax.plot(
-                    [text_pos[0], vertex[0]],
-                    [text_pos[1], vertex[1]],
-                    [text_pos[2], vertex[2]],
-                    color=leader_color,
-                    linewidth=leader_linewidth,
-                    solid_capstyle="round",
-                    zorder=9,
-                )
-            else:
-                ax.plot(
-                    [text_pos[0], vertex[0]],
-                    [text_pos[1], vertex[1]],
-                    color=leader_color,
-                    linewidth=leader_linewidth,
-                    solid_capstyle="round",
-                    zorder=9,
-                )
+            for vertex in leader_targets:
+                if is_3d:
+                    ax.plot(
+                        [text_pos[0], vertex[0]],
+                        [text_pos[1], vertex[1]],
+                        [text_pos[2], vertex[2]],
+                        color=leader_color,
+                        linewidth=leader_linewidth,
+                        solid_capstyle="round",
+                        zorder=9,
+                    )
+                else:
+                    ax.plot(
+                        [text_pos[0], vertex[0]],
+                        [text_pos[1], vertex[1]],
+                        color=leader_color,
+                        linewidth=leader_linewidth,
+                        solid_capstyle="round",
+                        zorder=9,
+                    )
         if is_3d:
             ax.text(
                 text_pos[0], text_pos[1], text_pos[2],
@@ -3468,6 +3472,20 @@ _TRAJECTORY_WORD_PALETTE: tuple[str, ...] = (
     "#FF69B4",  # hotpink
 )
 _TRAJECTORY_RETURN_COLOR = "#9A9A9A"  # gray — space / return-to-word-start
+
+
+def _is_return_to_baseline_segment(
+    prev_label: str,
+    next_label: str,
+    *,
+    word_start: bool,
+) -> bool:
+    """True when a segment ends at baseline or crosses a completed-word boundary."""
+    if next_label in ("", "␣"):
+        return True
+    if word_start and prev_label not in ("", "␣"):
+        return True
+    return False
 
 
 def _vocab_word_colors(words: list[str]) -> dict[str, tuple]:

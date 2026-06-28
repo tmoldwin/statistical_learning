@@ -2296,38 +2296,54 @@ def _tight_ylim(
     return lo, hi
 
 
-def plot_learning_curve(model, save_path, *, loss_only: bool = False):
-    """Per-eval cross-entropy (raw); optional word-validity metric on twin axis."""
+def _learning_curve_series(model) -> tuple[np.ndarray, np.ndarray, str] | None:
     if "loss_iterations" not in model:
-        print(f"skip {save_path}: re-run training to record loss history")
-        return
-
+        return None
     iters = np.asarray(model["loss_iterations"], dtype=int)
     if "loss_window" in model:
-        ce_plot = np.asarray(model["loss_window"], dtype=float)
-        ce_label = "cross-entropy"
-    elif "loss_smooth" in model:
-        ce_plot = np.asarray(model["loss_smooth"], dtype=float)
-        ce_label = "cross-entropy (smoothed; re-train for raw loss)"
-    else:
-        print(f"skip {save_path}: no loss history in model bundle")
-        return
+        return iters, np.asarray(model["loss_window"], dtype=float), "cross-entropy"
+    if "loss_smooth" in model:
+        return (
+            iters,
+            np.asarray(model["loss_smooth"], dtype=float),
+            "cross-entropy (smoothed; re-train for raw loss)",
+        )
+    return None
 
-    fig, ax = plt.subplots(figsize=(9, 4), constrained_layout=True)
-    ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=1.2, label=ce_label)
-    ax.set_xlabel("iteration")
-    ax.set_ylabel("cross-entropy")
-    title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
-    ax.set_title(title)
+
+def plot_learning_curve_on_axes(
+    ax,
+    model,
+    *,
+    title: str | None = None,
+    compact: bool = False,
+    loss_only: bool = False,
+    show_legend: bool = True,
+    show_ylabel: bool = True,
+    show_metric_ylabel: bool = True,
+) -> bool:
+    """Plot cross-entropy (and optional rollout metric) on ax. Returns False if no history."""
+    series = _learning_curve_series(model)
+    if series is None:
+        return False
+
+    iters, ce_plot, ce_label = series
+    lw = 1.0 if compact else 1.2
+    fs = 7 if compact else 8
+    ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=lw, label=ce_label)
+    ax.set_xlabel("iteration", fontsize=fs)
+    if show_ylabel:
+        ax.set_ylabel("cross-entropy", fontsize=fs)
+    if title is not None:
+        ax.set_title(title, fontsize=fs + 1 if compact else 10)
     ax.grid(True, linestyle=":", alpha=0.4)
     ax.set_ylim(*_tight_ylim(ce_plot, floor=0.0))
-    ax.legend(loc="upper right", fontsize=8)
+    ax.tick_params(labelsize=fs)
 
     if loss_only:
-        fig.savefig(save_path, dpi=150)
-        plt.close(fig)
-        print(f"wrote {save_path}")
-        return
+        if show_legend:
+            ax.legend(loc="upper right", fontsize=fs)
+        return True
 
     legend_lines = [ce_line]
     legend_labels = [ce_label]
@@ -2339,12 +2355,14 @@ def plot_learning_curve(model, save_path, *, loss_only: bool = False):
             model["metric_iterations"],
             metric_pct,
             color="darkorange",
-            linewidth=1.2,
+            linewidth=lw,
             alpha=0.9,
-            label="% invalid words (rollout)",
+            label="% invalid words",
         )
-        ax2.set_ylabel("% invalid words (mean stochastic rollout)")
+        if show_metric_ylabel:
+            ax2.set_ylabel("% invalid words", fontsize=fs)
         ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
+        ax2.tick_params(labelsize=fs)
         legend_lines.append(metric_line)
         legend_labels.append(metric_line.get_label())
     elif "metric_iterations" in model and "metric_valid_vocab_letter_frac" in model:
@@ -2354,17 +2372,34 @@ def plot_learning_curve(model, save_path, *, loss_only: bool = False):
             model["metric_iterations"],
             metric_pct,
             color="darkorange",
-            linewidth=1.2,
+            linewidth=lw,
             alpha=0.9,
-            label="% letters out of vocab (rollout)",
+            label="% letters OOV",
         )
-        ax2.set_ylabel("% letters out of vocab (rollout)")
+        if show_metric_ylabel:
+            ax2.set_ylabel("% letters OOV", fontsize=fs)
         ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
+        ax2.tick_params(labelsize=fs)
         legend_lines.append(metric_line)
         legend_labels.append(metric_line.get_label())
 
-    if len(legend_lines) > 1:
-        ax.legend(legend_lines, legend_labels, loc="upper right", fontsize=8)
+    if show_legend and legend_lines:
+        ax.legend(legend_lines, legend_labels, loc="upper right", fontsize=fs)
+    return True
+
+
+def plot_learning_curve(model, save_path, *, loss_only: bool = False):
+    """Per-eval cross-entropy (raw); optional word-validity metric on twin axis."""
+    if _learning_curve_series(model) is None:
+        print(f"skip {save_path}: re-run training to record loss history")
+        return
+
+    fig, ax = plt.subplots(figsize=(9, 4), constrained_layout=True)
+    title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
+    if not plot_learning_curve_on_axes(ax, model, title=title, loss_only=loss_only):
+        print(f"skip {save_path}: no loss history in model bundle")
+        plt.close(fig)
+        return
 
     fig.savefig(save_path, dpi=150)
     plt.close(fig)

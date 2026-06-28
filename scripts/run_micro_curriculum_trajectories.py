@@ -27,6 +27,14 @@ def _plot_curriculum_figures() -> None:
             "--no-word-space", *model_flag,
         ])
         run([
+            sys.executable, "scripts/plot_micro_curriculum_learning_curve_panels.py",
+            *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/plot_micro_curriculum_learning_curve_panels.py",
+            "--no-word-space", *model_flag,
+        ])
+        run([
             sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
             "--steps", "80", *model_flag,
         ])

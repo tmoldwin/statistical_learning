@@ -20,7 +20,7 @@ from experiment import (
     MICRO_CURRICULUM,
     MODEL_TYPES,
     input_path,
-    micro_curriculum_validation_dir,
+    micro_curriculum_viz_dir,
     model_path,
     spaced_experiment_name,
 )
@@ -276,6 +276,7 @@ def plot_curriculum_exemplar_overview(
     if not items or overview_k < 1:
         return
 
+    out_dir.mkdir(parents=True, exist_ok=True)
     ncols = 3
     n_regime_rows = int(np.ceil(len(items) / ncols))
     n_timesteps = len(items[0].labels.chars)
@@ -364,7 +365,7 @@ def plot_curriculum_exemplar_overview(
             fontsize=12,
             y=0.995,
         )
-        out_path = out_dir / f"unit_exemplars_{feature}.png"
+        out_path = out_dir / f"{feature}.png"
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {out_path}")
@@ -409,24 +410,24 @@ def main() -> None:
         print(f"no {args.model_type} checkpoints found for micro curriculum")
         return
 
-    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
+    out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="unit_selectivity")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = collect_rows(items)
-    json_path = out_dir / "unit_selectivity_curriculum.json"
+    json_path = out_dir / "curriculum.json"
     json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
     plot_curriculum_heatmaps(
-        items, out_dir / "unit_selectivity_curriculum_heatmap.png", spaced=spaced,
+        items, out_dir / "heatmap.png", spaced=spaced,
     )
 
-    exemplar_root = out_dir / "unit_exemplars"
+    exemplar_root = out_dir / "exemplars"
     for item in items:
         plot_per_regime_exemplars(item, exemplar_root, example_k=args.example_k)
 
     plot_curriculum_exemplar_overview(
-        items, out_dir, overview_k=args.overview_k, spaced=spaced,
+        items, out_dir / "overview", overview_k=args.overview_k, spaced=spaced,
     )
 
 

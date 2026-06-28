@@ -201,13 +201,35 @@ def experiment_uses_word_space(name: str) -> bool:
 
 MICRO_CURRICULUM_VALIDATION_ROOT = EXPERIMENTS_ROOT / "micro_curriculum_validation"
 
+MICRO_CURRICULUM_VIZ_KINDS: tuple[str, ...] = (
+    "trajectories",
+    "learning_curves",
+    "closed_loop",
+    "dfa_sensitivity",
+    "unit_selectivity",
+)
+
 
 def micro_curriculum_validation_dir(*, spaced: bool, model_type: str = "rnn") -> Path:
-    """Output folder for micro-curriculum validation figures (<model_type>/_s|_ns)."""
+    """Base folder for micro-curriculum validation (<model_type>/_s|_ns)."""
     if model_type not in MODEL_TYPES:
         raise ValueError(f"model_type must be one of {MODEL_TYPES}, got {model_type!r}")
     spacing = "_s" if spaced else "_ns"
     return MICRO_CURRICULUM_VALIDATION_ROOT / model_type / spacing
+
+
+def micro_curriculum_viz_dir(
+    *,
+    spaced: bool,
+    model_type: str = "rnn",
+    kind: str,
+) -> Path:
+    """Typed subfolder under micro_curriculum_validation_dir (e.g. trajectories/)."""
+    if kind not in MICRO_CURRICULUM_VIZ_KINDS:
+        raise ValueError(
+            f"kind must be one of {MICRO_CURRICULUM_VIZ_KINDS}, got {kind!r}",
+        )
+    return micro_curriculum_validation_dir(spaced=spaced, model_type=model_type) / kind
 
 
 MICRO_CURRICULUM_REPR: dict[str, str] = {

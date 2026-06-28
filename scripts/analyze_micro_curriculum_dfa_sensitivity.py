@@ -18,7 +18,7 @@ from experiment import (
     MICRO_CURRICULUM,
     MODEL_TYPES,
     micro_curriculum_repr_label,
-    micro_curriculum_validation_dir,
+    micro_curriculum_viz_dir,
     model_path,
     plots_dir,
     spaced_experiment_name,
@@ -131,16 +131,16 @@ def main() -> None:
     spaced = not args.no_word_space
 
     rows = collect_rows(spaced=spaced, model_type=args.model_type, metric="l2")
-    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
+    out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="dfa_sensitivity")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    json_path = out_dir / "dfa_sensitivity_curriculum.json"
+    json_path = out_dir / "curriculum.json"
     json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
     plot_curriculum(
         rows,
-        out_dir / "dfa_sensitivity_curriculum.png",
+        out_dir / "curriculum.png",
         spaced=spaced,
         model_type=args.model_type,
     )

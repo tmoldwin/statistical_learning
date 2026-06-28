@@ -19,7 +19,7 @@ from experiment import (
     MODEL_TYPES,
     input_path,
     micro_curriculum_repr_label,
-    micro_curriculum_validation_dir,
+    micro_curriculum_viz_dir,
     model_path,
     spaced_experiment_name,
 )
@@ -119,8 +119,8 @@ def main() -> None:
         if spaced
         else list(MICRO_CURRICULUM)
     )
-    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
-    out_path = out_dir / "micro_curriculum_trajectories_panels.png"
+    out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="trajectories")
+    out_path = out_dir / "panels.png"
     if not any(model_path(exp, args.model_type).is_file() for exp in exps):
         print(f"skip {out_path}: no {args.model_type} checkpoints for micro curriculum")
         return

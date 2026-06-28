@@ -19,7 +19,7 @@ from experiment import (
     MODEL_TYPES,
     input_path,
     micro_curriculum_repr_label,
-    micro_curriculum_validation_dir,
+    micro_curriculum_viz_dir,
     model_path,
     spaced_experiment_name,
 )
@@ -481,7 +481,7 @@ def main() -> None:
         f"Micro curriculum: closed-loop trajectories "
         f"({spacing}, {args.model_type} {repr_label}"
     )
-    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
+    out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="closed_loop")
 
     if args.dims in ("2", "both"):
         _write_panels(
@@ -491,7 +491,7 @@ def main() -> None:
             seed_char=args.seed_char,
             rng_seed=args.rng_seed,
             n_components=2,
-            out_path=out_dir / "micro_curriculum_closed_loop_panels.png",
+            out_path=out_dir / "panels.png",
             suptitle=base_title,
         )
     if args.dims in ("3", "both"):
@@ -502,7 +502,7 @@ def main() -> None:
             seed_char=args.seed_char,
             rng_seed=args.rng_seed,
             n_components=3,
-            out_path=out_dir / "micro_curriculum_closed_loop_panels_3d.png",
+            out_path=out_dir / "panels_3d.png",
             suptitle=base_title,
         )
 

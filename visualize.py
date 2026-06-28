@@ -743,10 +743,12 @@ def _annotate_trajectory_labels(
     labels: list[str],
     *,
     colors: list | None = None,
+    label_colors: list | None = None,
     text_color: str = "#000000",
     fontsize: float = 9.0,
     fontweight: str = "bold",
     dedupe: bool = False,
+    word_keys: list[str] | None = None,
     condense_nearby: bool = False,
     condense_radius_frac: float = 0.06,
     use_leaders: bool = False,
@@ -760,35 +762,40 @@ def _annotate_trajectory_labels(
         return
     fs = max(7, int(fontsize))
 
-    clusters: list[tuple[str, list[int]]]
+    def _cluster_text(bucket_key) -> str:
+        return bucket_key[0] if isinstance(bucket_key, tuple) else bucket_key
+
+    def _layout_key(bucket_key, idxs: list[int]) -> str:
+        if isinstance(bucket_key, tuple):
+            return f"{bucket_key[0]}\0{bucket_key[1]}"
+        if dedupe:
+            return str(bucket_key)
+        return f"{bucket_key}:{idxs[0]}"
+
+    clusters: list[tuple[object, list[int]]]
     if condense_nearby:
         eps = _label_condense_radius(coords[:n], condense_radius_frac)
         clusters = _clusters_for_nearby_labels(coords[:n], labels[:n], eps)
     elif dedupe:
         from collections import defaultdict
 
-        buckets: dict[str, list[int]] = defaultdict(list)
+        buckets: dict[object, list[int]] = defaultdict(list)
         for i in range(n):
             label = labels[i]
             if label:
-                buckets[label].append(i)
-        clusters = sorted(
-            ((label, idxs) for label, idxs in buckets.items()),
-            key=lambda item: item[1][0],
-        )
+                key = (label, word_keys[i]) if word_keys is not None else label
+                buckets[key].append(i)
+        clusters = sorted(buckets.items(), key=lambda item: item[1][0])
     else:
         clusters = [(labels[i], [i]) for i in range(n) if labels[i]]
 
     if not clusters:
         return
 
-    keys = [
-        label if dedupe else f"{label}:{idxs[0]}"
-        for label, idxs in clusters
-    ]
+    keys = [_layout_key(bucket_key, idxs) for bucket_key, idxs in clusters]
     anchor_vertices = np.array([coords[idxs].mean(axis=0) for _, idxs in clusters])
     displays = [
-        "␣" if clusters[i][0] == " " else clusters[i][0]
+        "␣" if _cluster_text(clusters[i][0]) == " " else _cluster_text(clusters[i][0])
         for i in range(len(clusters))
     ]
     is_3d = anchor_vertices.shape[1] >= 3
@@ -806,11 +813,18 @@ def _annotate_trajectory_labels(
 
     leader_color = "0.42"
     for i, key in enumerate(keys):
-        label, idxs = clusters[i]
+        bucket_key, idxs = clusters[i]
+        label = _cluster_text(bucket_key)
         if not label:
             continue
         display = displays[i]
-        color = colors[i] if colors is not None and i < len(colors) else text_color
+        if label_colors is not None and idxs:
+            color = label_colors[idxs[0]]
+        elif colors is not None and i < len(colors):
+            color = colors[i]
+        else:
+            color = text_color
+        leader_c = color if label_colors is not None or colors is not None else leader_color
         text_pos = label_positions[key]
         leader_targets = [coords[j] for j in idxs] if dedupe else [anchor_vertices[i]]
         if use_leaders:
@@ -820,7 +834,7 @@ def _annotate_trajectory_labels(
                         [text_pos[0], vertex[0]],
                         [text_pos[1], vertex[1]],
                         [text_pos[2], vertex[2]],
-                        color=leader_color,
+                        color=leader_c,
                         linewidth=leader_linewidth,
                         solid_capstyle="round",
                         zorder=9,
@@ -829,7 +843,7 @@ def _annotate_trajectory_labels(
                     ax.plot(
                         [text_pos[0], vertex[0]],
                         [text_pos[1], vertex[1]],
-                        color=leader_color,
+                        color=leader_c,
                         linewidth=leader_linewidth,
                         solid_capstyle="round",
                         zorder=9,
@@ -912,6 +926,61 @@ def _closed_loop_rollout_pca(
     gen_text = "".join(generated)
     gen_labels = _accumulated_output_labels(generated, len(gen_z))
     return gen_z, gen_text, gen_labels
+
+
+def rnn_closed_loop_rollout(
+    model: dict,
+    *,
+    seed_text: str,
+    steps: int,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, list[str]]:
+    """Autoregressive RNN rollout; returns hidden states (T, hidden_size) and char list."""
+    chars = list(model["chars"])
+    char_to_index = {c: i for i, c in enumerate(chars)}
+    vocab_size = len(chars)
+    hidden_size = int(model["hidden_size"])
+
+    W_xh = np.asarray(model["weights_input_to_hidden"])
+    W_hh = np.asarray(model["weights_hidden_to_hidden"])
+    W_ho = np.asarray(model["weights_hidden_to_output"])
+    b_h_col = np.asarray(model["bias_hidden"])
+    b_o = np.asarray(model["bias_output"]).ravel()
+    use_relu = bool(model.get("use_relu", False))
+    noise_std = float(model.get("timestep_noise_std", 0.0))
+
+    h = np.zeros((hidden_size, 1), dtype=float)
+    generated = list(seed_text) if seed_text else []
+    if not generated:
+        generated = [chars[0]]
+
+    for ch in seed_text:
+        if ch not in char_to_index:
+            continue
+        x = np.zeros((vocab_size, 1), dtype=float)
+        x[char_to_index[ch], 0] = 1.0
+        h, _ = rnn_hidden_step(
+            h, x, W_xh, W_hh, b_h_col, use_relu=use_relu,
+            timestep_noise_std=noise_std, noise_rng=rng,
+        )
+
+    hidden_rows: list[np.ndarray] = []
+    for _ in range(max(1, int(steps))):
+        hidden_rows.append(h.ravel().copy())
+        logits = W_ho @ h.ravel() + b_o
+        logits = logits - np.max(logits)
+        probs = np.exp(logits)
+        probs = probs / np.sum(probs)
+        next_ix = int(rng.choice(vocab_size, p=probs))
+        generated.append(chars[next_ix])
+        x = np.zeros((vocab_size, 1), dtype=float)
+        x[next_ix, 0] = 1.0
+        h, _ = rnn_hidden_step(
+            h, x, W_xh, W_hh, b_h_col, use_relu=use_relu,
+            timestep_noise_std=noise_std, noise_rng=rng,
+        )
+
+    return np.asarray(hidden_rows, dtype=np.float64), generated
 
 
 def prefix_axis_label(

@@ -1,4 +1,4 @@
-"""Compare transformer block_output unit selectivity across the micro curriculum."""
+"""Compare unit selectivity across the micro curriculum (RNN or transformer)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from experiment import EXPERIMENT_CONFIG, MICRO_CURRICULUM, input_path, model_path, spaced_experiment_name
+from experiment import (
+    EXPERIMENT_CONFIG,
+    MICRO_CURRICULUM,
+    MODEL_TYPES,
+    input_path,
+    micro_curriculum_validation_dir,
+    model_path,
+    spaced_experiment_name,
+)
 from task import REGIMES
 from transformer.adapter import extract_transformer_activations
 from unit_selectivity import (
@@ -34,7 +42,7 @@ from unit_selectivity import (
     plot_selectivity_heatmap,
 )
 from vocab_diagrams import MinimizedVocabAutomaton, build_minimized_vocabulary_automaton
-from visualize import load_model_for_viz
+from visualize import load_model_for_viz, run_forward_pass
 
 PANEL_TITLES: dict[str, str] = {
     "two_word_disjoint": "disjoint",
@@ -87,10 +95,10 @@ def _feature_summary(gap: np.ndarray, *, stat: str = "p90") -> float:
     return float(np.percentile(vals, 90))
 
 
-def load_experiment_selectivity(exp: str) -> ExperimentSelectivity | None:
-    ckpt = model_path(exp, "transformer")
+def load_experiment_selectivity(exp: str, *, model_type: str) -> ExperimentSelectivity | None:
+    ckpt = model_path(exp, model_type)
     if not ckpt.is_file():
-        print(f"skip {exp}: no transformer checkpoint at {ckpt}")
+        print(f"skip {exp}: no {model_type} checkpoint at {ckpt}")
         return None
 
     cfg = EXPERIMENT_CONFIG[exp]
@@ -98,9 +106,12 @@ def load_experiment_selectivity(exp: str) -> ExperimentSelectivity | None:
     words = REGIMES[regime]
     spaced = bool(cfg.get("word_space", False))
     text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
-    model = load_model_for_viz(str(ckpt), "transformer")
+    model = load_model_for_viz(str(ckpt), model_type)
     automaton = build_minimized_vocabulary_automaton(words)
-    activations = extract_transformer_activations(model, text).block_output
+    if model_type == "transformer":
+        activations = extract_transformer_activations(model, text).block_output
+    else:
+        activations, _ = run_forward_pass(model, text, model_type)
     labels = build_timestep_labels(
         text, automaton,
         spaced=spaced, words=words,
@@ -260,7 +271,6 @@ def plot_curriculum_exemplar_overview(
     *,
     overview_k: int,
     spaced: bool,
-    suffix: str,
 ) -> None:
     """Cross-regime comparison: 2×3 regimes, top-k units each."""
     if not items or overview_k < 1:
@@ -354,7 +364,7 @@ def plot_curriculum_exemplar_overview(
             fontsize=12,
             y=0.995,
         )
-        out_path = out_dir / f"unit_exemplars_{feature}{suffix}.png"
+        out_path = out_dir / f"unit_exemplars_{feature}.png"
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {out_path}")
@@ -380,38 +390,43 @@ def main() -> None:
         default=True,
         help="use unspaced corpora (default: true); pass --no-word-space false for _s",
     )
+    parser.add_argument(
+        "--model-type",
+        default="rnn",
+        choices=list(MODEL_TYPES),
+        help="which model checkpoints to analyze (default: rnn)",
+    )
     args = parser.parse_args()
     spaced = not args.no_word_space
-    suffix = "" if spaced else "_no_space"
 
     items: list[ExperimentSelectivity] = []
     for exp in _curriculum_experiments(spaced=spaced):
-        row = load_experiment_selectivity(exp)
+        row = load_experiment_selectivity(exp, model_type=args.model_type)
         if row is not None:
             items.append(row)
 
     if not items:
-        print("no transformer checkpoints found for micro curriculum")
+        print(f"no {args.model_type} checkpoints found for micro curriculum")
         return
 
-    out_dir = REPO_ROOT / "experiments" / "micro_curriculum_validation"
+    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = collect_rows(items)
-    json_path = out_dir / f"unit_selectivity_curriculum{suffix}.json"
+    json_path = out_dir / "unit_selectivity_curriculum.json"
     json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
     plot_curriculum_heatmaps(
-        items, out_dir / f"unit_selectivity_curriculum_heatmap{suffix}.png", spaced=spaced,
+        items, out_dir / "unit_selectivity_curriculum_heatmap.png", spaced=spaced,
     )
 
-    exemplar_root = out_dir / f"unit_exemplars{suffix}"
+    exemplar_root = out_dir / "unit_exemplars"
     for item in items:
         plot_per_regime_exemplars(item, exemplar_root, example_k=args.example_k)
 
     plot_curriculum_exemplar_overview(
-        items, out_dir, overview_k=args.overview_k, spaced=spaced, suffix=suffix,
+        items, out_dir, overview_k=args.overview_k, spaced=spaced,
     )
 
 

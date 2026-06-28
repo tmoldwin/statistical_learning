@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -13,8 +14,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from experiment import MICRO_CURRICULUM, spaced_experiment_name
-from scripts.analyze_transformer_dfa_sensitivity import analyze
+from experiment import (
+    MICRO_CURRICULUM,
+    MODEL_TYPES,
+    micro_curriculum_repr_label,
+    micro_curriculum_validation_dir,
+    model_path,
+    plots_dir,
+    spaced_experiment_name,
+)
+from scripts.analyze_transformer_dfa_sensitivity import (
+    analyze_rnn,
+    analyze_transformer,
+)
 from task import REGIMES
 
 BLOCK_OUTPUT_SLUG = "block_output"
@@ -22,8 +34,19 @@ GAP_KEYS = ("dfa_gap", "char_gap", "pos_gap")
 GAP_LABELS = ("DFA gap", "char gap", "pos gap")
 
 
-def _curriculum_experiments() -> list[str]:
-    return [spaced_experiment_name(regime) for regime in MICRO_CURRICULUM]
+def _curriculum_experiment(regime: str, *, spaced: bool) -> str:
+    return spaced_experiment_name(regime) if spaced else regime
+
+
+def _summary_row(regime: str, exp: str, block: dict) -> dict:
+    return {
+        "regime": regime,
+        "exp": exp,
+        "words": REGIMES[regime],
+        **{k: block[k] for k in GAP_KEYS},
+        "within_dfa_median": block["Within DFA state median"],
+        "between_dfa_median": block["Between DFA states median"],
+    }
 
 
 def _block_output_row(rows: list[dict]) -> dict | None:
@@ -33,31 +56,34 @@ def _block_output_row(rows: list[dict]) -> dict | None:
     return None
 
 
-def collect_rows(metric: str = "l2") -> list[dict]:
+def collect_rows(*, spaced: bool, model_type: str, metric: str = "l2") -> list[dict]:
     out: list[dict] = []
     for regime in MICRO_CURRICULUM:
-        exp = spaced_experiment_name(regime)
-        model_path = REPO_ROOT / "experiments" / exp / "transformer" / "model.pt"
-        if not model_path.is_file():
-            print(f"skip {exp}: no transformer checkpoint at {model_path}")
+        exp = _curriculum_experiment(regime, spaced=spaced)
+        if not model_path(exp, model_type).is_file():
+            print(f"skip {exp}: no {model_type} checkpoint at {model_path(exp, model_type)}")
             continue
-        rows = analyze(exp, metric=metric)
-        block = _block_output_row(rows)
-        if block is None:
-            print(f"skip {exp}: no block_output row")
-            continue
-        out.append({
-            "regime": regime,
-            "exp": exp,
-            "words": REGIMES[regime],
-            **{k: block[k] for k in GAP_KEYS},
-            "within_dfa_median": block["Within DFA state median"],
-            "between_dfa_median": block["Between DFA states median"],
-        })
+        if model_type == "rnn":
+            block = analyze_rnn(exp, metric=metric)
+            if block is None:
+                continue
+        else:
+            rows = analyze_transformer(exp, metric=metric)
+            block = _block_output_row(rows)
+            if block is None:
+                print(f"skip {exp}: no block_output row")
+                continue
+        out.append(_summary_row(regime, exp, block))
     return out
 
 
-def plot_curriculum(rows: list[dict], out_path: Path) -> None:
+def plot_curriculum(
+    rows: list[dict],
+    out_path: Path,
+    *,
+    spaced: bool,
+    model_type: str,
+) -> None:
     if not rows:
         print("no rows to plot")
         return
@@ -74,7 +100,12 @@ def plot_curriculum(rows: list[dict], out_path: Path) -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=8)
     ax.set_ylabel("Median distance gap (between − within)")
-    ax.set_title("Transformer block_output sensitivity across micro curriculum (_s regimes)")
+    spacing_tag = "_s" if spaced else "_ns"
+    repr_label = micro_curriculum_repr_label(model_type)
+    ax.set_title(
+        f"{model_type} {repr_label} sensitivity across micro curriculum "
+        f"({spacing_tag} regimes)",
+    )
     ax.legend()
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
     ax.axhline(0, color="0.3", linewidth=0.8)
@@ -84,33 +115,59 @@ def plot_curriculum(rows: list[dict], out_path: Path) -> None:
 
 
 def main() -> None:
-    rows = collect_rows(metric="l2")
-    out_dir = REPO_ROOT / "experiments" / "micro_curriculum_validation"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--no-word-space",
+        action="store_true",
+        help="use unspaced micro-curriculum experiments (output under _ns)",
+    )
+    parser.add_argument(
+        "--model-type",
+        default="rnn",
+        choices=list(MODEL_TYPES),
+        help="which model checkpoints to analyze (default: rnn)",
+    )
+    args = parser.parse_args()
+    spaced = not args.no_word_space
+
+    rows = collect_rows(spaced=spaced, model_type=args.model_type, metric="l2")
+    out_dir = micro_curriculum_validation_dir(spaced=spaced, model_type=args.model_type)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = out_dir / "dfa_sensitivity_curriculum.json"
     json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
-    plot_curriculum(rows, out_dir / "dfa_sensitivity_curriculum.png")
+    plot_curriculum(
+        rows,
+        out_dir / "dfa_sensitivity_curriculum.png",
+        spaced=spaced,
+        model_type=args.model_type,
+    )
+
+    from scripts.analyze_transformer_dfa_sensitivity import plot, plot_heatmaps
 
     for regime in MICRO_CURRICULUM:
-        exp = spaced_experiment_name(regime)
-        exp_model = REPO_ROOT / "experiments" / exp / "transformer" / "model.pt"
-        if not exp_model.is_file():
+        exp = _curriculum_experiment(regime, spaced=spaced)
+        if not model_path(exp, args.model_type).is_file():
             continue
-        from scripts.analyze_transformer_dfa_sensitivity import plot, plot_heatmaps
-
-        exp_rows = analyze(exp, metric="l2")
-        exp_rows_cos = analyze(exp, metric="cosine")
-        plots_dir = REPO_ROOT / "experiments" / exp / "transformer" / "plots"
-        plots_dir.mkdir(parents=True, exist_ok=True)
-        plot(exp_rows, plots_dir / "dfa_position_sensitivity_by_representation.png")
-        plot_heatmaps(
-            exp_rows,
-            exp_rows_cos,
-            plots_dir / "dfa_position_sensitivity_heatmap.png",
-        )
+        if args.model_type == "rnn":
+            exp_rows_l2 = [row for row in [analyze_rnn(exp, metric="l2")] if row is not None]
+            exp_rows_cos = [row for row in [analyze_rnn(exp, metric="cosine")] if row is not None]
+        else:
+            exp_rows_l2 = analyze_transformer(exp, metric="l2")
+            exp_rows_cos = analyze_transformer(exp, metric="cosine")
+        if not exp_rows_l2:
+            continue
+        exp_plots_dir = plots_dir(exp, args.model_type)
+        exp_plots_dir.mkdir(parents=True, exist_ok=True)
+        plot(exp_rows_l2, exp_plots_dir / "dfa_position_sensitivity_by_representation.png")
+        if exp_rows_cos:
+            plot_heatmaps(
+                exp_rows_l2,
+                exp_rows_cos,
+                exp_plots_dir / "dfa_position_sensitivity_heatmap.png",
+            )
 
 
 if __name__ == "__main__":

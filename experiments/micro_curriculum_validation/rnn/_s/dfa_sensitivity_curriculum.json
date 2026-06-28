@@ -1,0 +1,83 @@
+[
+  {
+    "regime": "two_word_disjoint",
+    "exp": "two_word_disjoint_s",
+    "words": [
+      "cat",
+      "mop"
+    ],
+    "dfa_gap": 4.344573357431666,
+    "char_gap": 4.333629580557493,
+    "pos_gap": 4.176230551470816,
+    "within_dfa_median": 0.507826929502843,
+    "between_dfa_median": 4.852400286934509
+  },
+  {
+    "regime": "two_word_pos_overlap",
+    "exp": "two_word_pos_overlap_s",
+    "words": [
+      "cub",
+      "nut"
+    ],
+    "dfa_gap": 4.606549173735097,
+    "char_gap": 4.6059143577163475,
+    "pos_gap": 4.53517306820504,
+    "within_dfa_median": 0.5134594725824206,
+    "between_dfa_median": 5.120008646317517
+  },
+  {
+    "regime": "two_word_prefix_branch",
+    "exp": "two_word_prefix_branch_s",
+    "words": [
+      "can",
+      "cat"
+    ],
+    "dfa_gap": 4.760623215109128,
+    "char_gap": 4.745566547547145,
+    "pos_gap": 4.744009081959155,
+    "within_dfa_median": 0.4848002747785296,
+    "between_dfa_median": 5.245423489887657
+  },
+  {
+    "regime": "three_word_overlap",
+    "exp": "three_word_overlap_s",
+    "words": [
+      "cat",
+      "hat",
+      "mat"
+    ],
+    "dfa_gap": 4.4037765397966915,
+    "char_gap": 4.389245124061608,
+    "pos_gap": 4.630709179516478,
+    "within_dfa_median": 0.5434156468745555,
+    "between_dfa_median": 4.947192186671247
+  },
+  {
+    "regime": "three_word_permutation",
+    "exp": "three_word_permutation_s",
+    "words": [
+      "ate",
+      "eat",
+      "tea"
+    ],
+    "dfa_gap": 7.797750592745405,
+    "char_gap": 6.428247493836921,
+    "pos_gap": 6.155122769063308,
+    "within_dfa_median": 0.6541721852969005,
+    "between_dfa_median": 8.451922778042306
+  },
+  {
+    "regime": "three_word_ca_hub",
+    "exp": "three_word_ca_hub_s",
+    "words": [
+      "can",
+      "cat",
+      "cab"
+    ],
+    "dfa_gap": 4.483629251946121,
+    "char_gap": 4.486557682927432,
+    "pos_gap": 4.493064659093155,
+    "within_dfa_median": 0.5400592142334673,
+    "between_dfa_median": 5.023688466179589
+  }
+]

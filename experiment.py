@@ -199,6 +199,29 @@ def experiment_uses_word_space(name: str) -> bool:
     return bool(EXPERIMENT_CONFIG.get(name, {}).get("word_space", False))
 
 
+MICRO_CURRICULUM_VALIDATION_ROOT = EXPERIMENTS_ROOT / "micro_curriculum_validation"
+
+
+def micro_curriculum_validation_dir(*, spaced: bool, model_type: str = "rnn") -> Path:
+    """Output folder for micro-curriculum validation figures (<model_type>/_s|_ns)."""
+    if model_type not in MODEL_TYPES:
+        raise ValueError(f"model_type must be one of {MODEL_TYPES}, got {model_type!r}")
+    spacing = "_s" if spaced else "_ns"
+    return MICRO_CURRICULUM_VALIDATION_ROOT / model_type / spacing
+
+
+MICRO_CURRICULUM_REPR: dict[str, str] = {
+    "rnn": "hidden state",
+    "transformer": "block_output",
+}
+
+
+def micro_curriculum_repr_label(model_type: str) -> str:
+    if model_type not in MICRO_CURRICULUM_REPR:
+        raise ValueError(f"model_type must be one of {tuple(MICRO_CURRICULUM_REPR)}")
+    return MICRO_CURRICULUM_REPR[model_type]
+
+
 def experiment_regime(name: str) -> str:
     cfg = EXPERIMENT_CONFIG.get(name)
     if cfg and "regime" in cfg:

@@ -10,12 +10,46 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from experiment import EXPERIMENT_CONFIG, MICRO_CURRICULUM, spaced_experiment_name
+from experiment import EXPERIMENT_CONFIG, MICRO_CURRICULUM, MODEL_TYPES, model_path, spaced_experiment_name
 
 
 def run(cmd: list[str]) -> None:
     print(f"\n>> {' '.join(cmd)}", flush=True)
     subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+
+
+def _plot_curriculum_figures() -> None:
+    for model_type in MODEL_TYPES:
+        model_flag = ["--model-type", model_type]
+        run([sys.executable, "scripts/plot_micro_curriculum_trajectory_panels.py", *model_flag])
+        run([
+            sys.executable, "scripts/plot_micro_curriculum_trajectory_panels.py",
+            "--no-word-space", *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
+            "--steps", "80", *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
+            "--steps", "80", "--no-word-space", *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/analyze_micro_curriculum_unit_selectivity.py",
+            *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/analyze_micro_curriculum_unit_selectivity.py",
+            "--no-no-word-space", *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/analyze_micro_curriculum_dfa_sensitivity.py",
+            *model_flag,
+        ])
+        run([
+            sys.executable, "scripts/analyze_micro_curriculum_dfa_sensitivity.py",
+            "--no-word-space", *model_flag,
+        ])
 
 
 def main() -> None:
@@ -35,24 +69,30 @@ def main() -> None:
                 "--chars", str(cfg["chars"]),
                 "--seed", "42",
             ])
+            rnn_cmd = [
+                sys.executable, "rnn/min_char_rnn.py",
+                "--input", str(REPO_ROOT / "experiments" / exp / "input.txt"),
+                "--model", str(model_path(exp, "rnn")),
+                "--exp", exp,
+            ]
+            if smoke:
+                rnn_cmd.extend(["--steps", "500"])
+            run(rnn_cmd)
             tf_cmd = [sys.executable, "-m", "transformer.train", "--exp", exp, "--seed", "42"]
             if smoke:
                 tf_cmd.extend(["--steps", "500"])
             run(tf_cmd)
 
-        run([
-            sys.executable, "visualize.py",
-            "--exp", exp,
-            "--model-type", "transformer",
-            "--length", str(cfg["viz_length"]),
-            "--trajectories-only",
-        ])
+        for model_type in MODEL_TYPES:
+            run([
+                sys.executable, "visualize.py",
+                "--exp", exp,
+                "--model-type", model_type,
+                "--length", str(cfg["viz_length"]),
+                "--trajectories-only",
+            ])
 
-    run([sys.executable, "scripts/plot_micro_curriculum_trajectory_panels.py"])
-    run([
-        sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
-        "--steps", "80",
-    ])
+    _plot_curriculum_figures()
 
 
 if __name__ == "__main__":

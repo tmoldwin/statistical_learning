@@ -1,4 +1,4 @@
-"""Train (if needed) and plot word trajectories for the micro curriculum."""
+"""Train (if needed) and plot micro-curriculum validation figures."""
 
 from __future__ import annotations
 
@@ -18,31 +18,38 @@ def run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True, cwd=REPO_ROOT)
 
 
-def _plot_curriculum_figures(*, train_init_seeds: bool = False) -> None:
-    if train_init_seeds:
-        run([sys.executable, "scripts/train_micro_curriculum_init_seeds.py", "--model-type", "rnn"])
+def _train_init_seeds(*, smoke: bool = False) -> None:
+    for model_type in MODEL_TYPES:
+        cmd = [
+            sys.executable, "scripts/train_micro_curriculum_init_seeds.py",
+            "--model-type", model_type,
+            "--both-spacing",
+        ]
+        if smoke:
+            cmd.append("--smoke")
+        run(cmd)
+
+
+def _plot_curriculum_figures() -> None:
     for model_type in MODEL_TYPES:
         model_flag = ["--model-type", model_type]
-        run([sys.executable, "scripts/plot_micro_curriculum_trajectory_panels.py", *model_flag])
+        run([sys.executable, "scripts/plot_micro_curriculum_trajectories.py", *model_flag])
         run([
-            sys.executable, "scripts/plot_micro_curriculum_trajectory_panels.py",
+            sys.executable, "scripts/plot_micro_curriculum_trajectories.py",
             "--no-word-space", *model_flag,
         ])
         run([
-            sys.executable, "scripts/plot_micro_curriculum_learning_curve_panels.py",
+            sys.executable, "scripts/plot_micro_curriculum_learning_curves.py",
             *model_flag,
         ])
         run([
-            sys.executable, "scripts/plot_micro_curriculum_learning_curve_panels.py",
+            sys.executable, "scripts/plot_micro_curriculum_learning_curves.py",
             "--no-word-space", *model_flag,
         ])
+        run([sys.executable, "scripts/plot_micro_curriculum_states.py", *model_flag])
         run([
-            sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
-            "--steps", "80", *model_flag,
-        ])
-        run([
-            sys.executable, "scripts/plot_micro_curriculum_closed_loop_panels.py",
-            "--steps", "80", "--no-word-space", *model_flag,
+            sys.executable, "scripts/plot_micro_curriculum_states.py",
+            "--no-word-space", *model_flag,
         ])
         run([
             sys.executable, "scripts/analyze_micro_curriculum_unit_selectivity.py",
@@ -71,16 +78,16 @@ def _experiments_for_spacing(spaced: bool) -> list[str]:
 def main() -> None:
     smoke = "--smoke" in sys.argv
     skip_train = "--skip-train" in sys.argv
-    train_init_seeds = "--train-init-seeds" in sys.argv
+    skip_seed_train = "--skip-seed-train" in sys.argv
 
-    for spaced in (True, False):
-        exps = _experiments_for_spacing(spaced)
-        for exp in exps:
-            cfg = EXPERIMENT_CONFIG[exp]
-            regime = cfg["regime"]
-            print(f"\n=== {exp} ===")
+    if not skip_train:
+        for spaced in (True, False):
+            exps = _experiments_for_spacing(spaced)
+            for exp in exps:
+                cfg = EXPERIMENT_CONFIG[exp]
+                regime = cfg["regime"]
+                print(f"\n=== {exp} ===")
 
-            if not skip_train:
                 run([
                     sys.executable, "task.py", regime,
                     "--exp", exp,
@@ -93,6 +100,8 @@ def main() -> None:
                     "--model", str(model_path(exp, "rnn")),
                     "--exp", exp,
                 ]
+                if "learning_rate" in cfg:
+                    rnn_cmd.extend(["--learning-rate", str(cfg["learning_rate"])])
                 if smoke:
                     rnn_cmd.extend(["--steps", "500"])
                 run(rnn_cmd)
@@ -110,7 +119,10 @@ def main() -> None:
                         "--trajectories-only",
                     ])
 
-    _plot_curriculum_figures(train_init_seeds=train_init_seeds)
+    if not skip_seed_train:
+        _train_init_seeds(smoke=smoke)
+
+    _plot_curriculum_figures()
 
 
 if __name__ == "__main__":

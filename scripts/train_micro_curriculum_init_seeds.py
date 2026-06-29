@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -56,6 +57,23 @@ def _rnn_train_cmd(exp: str, cfg: dict, *, seed: int, smoke: bool) -> list[str]:
     return cmd
 
 
+def _promote_default_checkpoint(exp: str, model_type: str, *, seed: int) -> None:
+    """Copy the canonical init-seed checkpoint to model.npz / model.pt for analysis scripts."""
+    src = model_path(exp, model_type, seed=seed)
+    dst = model_path(exp, model_type)
+    if not src.is_file():
+        return
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+    if model_type == "transformer":
+        seed_suffix = f"seed{seed}"
+        meta_src = src.parent / f"training_meta_{seed_suffix}.json"
+        meta_dst = src.parent / "training_meta.json"
+        if meta_src.is_file():
+            shutil.copy2(meta_src, meta_dst)
+    print(f"promoted {src.name} -> {dst.name}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true")
@@ -82,6 +100,11 @@ def main() -> None:
         default=list(MICRO_CURRICULUM_INIT_SEEDS),
         help="weight-init / training RNG seeds",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="retrain even when a seeded checkpoint already exists",
+    )
     args = parser.parse_args()
 
     if args.no_word_space:
@@ -103,6 +126,10 @@ def main() -> None:
                     "--seed", "42",
                 ])
             for seed in args.seeds:
+                ckpt = model_path(exp, args.model_type, seed=seed)
+                if ckpt.is_file() and not args.force:
+                    print(f"skip {ckpt}: already exists (use --force to retrain)")
+                    continue
                 print(f"\n=== {exp} seed={seed} ===")
                 if args.model_type == "rnn":
                     run(_rnn_train_cmd(exp, cfg, seed=seed, smoke=args.smoke))
@@ -111,11 +138,14 @@ def main() -> None:
                         sys.executable, "-m", "transformer.train",
                         "--exp", exp,
                         "--seed", str(seed),
-                        "--model", str(model_path(exp, "transformer", seed=seed)),
+                        "--model", str(ckpt),
                     ]
                     if args.smoke:
                         tf_cmd.extend(["--steps", "500"])
+                    elif "steps" in cfg:
+                        tf_cmd.extend(["--steps", str(cfg["steps"])])
                     run(tf_cmd)
+            _promote_default_checkpoint(exp, args.model_type, seed=int(args.seeds[0]))
 
 
 if __name__ == "__main__":

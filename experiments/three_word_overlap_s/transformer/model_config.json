@@ -22,5 +22,6 @@
     "hat",
     "mat"
   ],
-  "word_space": true
+  "word_space": true,
+  "timestep_noise_std": 0.1
 }

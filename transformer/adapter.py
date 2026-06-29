@@ -12,12 +12,29 @@ import torch
 from transformer.model import BigramLanguageModel
 
 
-def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, dict]:
-    """Load model.pt, model_config.json, training_meta.json from a transformer experiment dir."""
+def load_transformer_bundle(
+    exp_dir: Path,
+    *,
+    checkpoint: Path | None = None,
+) -> tuple[BigramLanguageModel, dict, dict]:
+    """Load checkpoint, model_config.json, and training meta from a transformer experiment dir."""
+    exp_dir = Path(exp_dir)
+    checkpoint = Path(checkpoint) if checkpoint is not None else exp_dir / "model.pt"
+    if checkpoint.name.startswith("model_seed"):
+        seed_suffix = checkpoint.stem.removeprefix("model_")
+        meta_path = exp_dir / f"training_meta_{seed_suffix}.json"
+        if not meta_path.is_file():
+            meta_path = exp_dir / "training_meta.json"
+    else:
+        meta_path = exp_dir / "training_meta.json"
+
     with open(exp_dir / "model_config.json", encoding="utf-8") as f:
         cfg = json.load(f)
-    with open(exp_dir / "training_meta.json", encoding="utf-8") as f:
-        meta = json.load(f)
+    if meta_path.is_file():
+        with open(meta_path, encoding="utf-8") as f:
+            meta = json.load(f)
+    else:
+        meta = {}
 
     model = BigramLanguageModel(
         cfg["vocab_size"],
@@ -31,7 +48,7 @@ def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, d
         pos_embd_dim=cfg.get("pos_embd_dim"),
         timestep_noise_std=cfg.get("timestep_noise_std", 0.0),
     )
-    state = torch.load(exp_dir / "model.pt", map_location="cpu", weights_only=True)
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     model.load_state_dict(state)
     model.timestep_noise_std = float(cfg.get("timestep_noise_std", 0.0))
     model.eval()
@@ -40,8 +57,9 @@ def load_transformer_bundle(exp_dir: Path) -> tuple[BigramLanguageModel, dict, d
 
 def load_model(path: str) -> dict:
     """Return a model dict for visualize.py (transformer backend)."""
-    exp_dir = Path(path).parent
-    model, cfg, meta = load_transformer_bundle(exp_dir)
+    ckpt_path = Path(path)
+    exp_dir = ckpt_path.parent
+    model, cfg, meta = load_transformer_bundle(exp_dir, checkpoint=ckpt_path)
 
     chars = list(cfg.get("chars", cfg.get("alphabet", "")))
     model_dict = {

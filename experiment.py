@@ -26,12 +26,13 @@ MODEL_TYPES = ("rnn", "transformer")
 
 _MICRO_VOCAB_CONFIG: dict[str, object] = {
     "chars": 3_000,
-    "steps": 5_000,
+    "steps": 2_000,
     "viz_length": 40,
     "hidden_size": 12,
     "sequence_length": 8,
     "num_heads": 1,
     "n_layer": 1,
+    "learning_rate": 0.05,
     "eval_interval": 100,
     "eval_iterations": 10,
     "metric_rollout_len": 400,
@@ -48,6 +49,15 @@ MICRO_CURRICULUM: tuple[str, ...] = (
     "three_word_ca_hub",
 )
 
+MICRO_CURRICULUM_REGIME_LABELS: dict[str, str] = {
+    "two_word_disjoint": "disjoint",
+    "two_word_pos_overlap": "same 2nd letter",
+    "two_word_prefix_branch": "shared prefix",
+    "three_word_overlap": "suffix family",
+    "three_word_permutation": "permutation",
+    "three_word_ca_hub": "3-way ca hub",
+}
+
 # Weight / training RNG seeds for multi-init trajectory panels.
 MICRO_CURRICULUM_INIT_SEEDS: tuple[int, ...] = (42, 137, 271, 409)
 
@@ -56,11 +66,7 @@ _BASE_CONFIG: dict[str, dict] = {
     "three_word_overlap": dict(_MICRO_VOCAB_CONFIG),
     "three_word_permutation": {
         **_MICRO_VOCAB_CONFIG,
-        "chars": 50_000,
-        "steps": 100_000,
-        "hidden_size": 32,
-        "num_heads": 1,
-        "head_size": 32,
+        "steps": 5_000,
         "timestep_noise_std": 0.05,
     },
     **{
@@ -206,8 +212,8 @@ MICRO_CURRICULUM_VALIDATION_ROOT = EXPERIMENTS_ROOT / "micro_curriculum_validati
 
 MICRO_CURRICULUM_VIZ_KINDS: tuple[str, ...] = (
     "trajectories",
+    "states",
     "learning_curves",
-    "closed_loop",
     "dfa_sensitivity",
     "unit_selectivity",
 )

@@ -6,11 +6,11 @@
       "cat",
       "mop"
     ],
-    "dfa_gap": -0.3981441069252938,
-    "char_gap": 4.27949814365037,
+    "dfa_gap": -0.8832796846212898,
+    "char_gap": 4.559150855217679,
     "pos_gap": NaN,
-    "within_dfa_median": 4.616487386589654,
-    "between_dfa_median": 4.21834327966436
+    "within_dfa_median": 4.66479523877978,
+    "between_dfa_median": 3.78151555415849
   },
   {
     "regime": "two_word_pos_overlap",
@@ -19,11 +19,11 @@
       "cub",
       "nut"
     ],
-    "dfa_gap": -0.5679812622585603,
-    "char_gap": 4.815208136545704,
+    "dfa_gap": -0.811714838481234,
+    "char_gap": 4.5976346268430355,
     "pos_gap": NaN,
-    "within_dfa_median": 5.219447862579038,
-    "between_dfa_median": 4.651466600320478
+    "within_dfa_median": 4.9969337712927615,
+    "between_dfa_median": 4.1852189328115275
   },
   {
     "regime": "two_word_prefix_branch",
@@ -32,11 +32,11 @@
       "can",
       "cat"
     ],
-    "dfa_gap": -0.8025222523885187,
-    "char_gap": 4.774147988294788,
+    "dfa_gap": -0.9896672547017289,
+    "char_gap": 4.619363403707333,
     "pos_gap": NaN,
-    "within_dfa_median": 5.214922179760638,
-    "between_dfa_median": 4.412399927372119
+    "within_dfa_median": 5.110550351197382,
+    "between_dfa_median": 4.120883096495653
   },
   {
     "regime": "three_word_overlap",
@@ -46,11 +46,11 @@
       "hat",
       "mat"
     ],
-    "dfa_gap": -1.2263687250666857,
-    "char_gap": 4.677906978869682,
+    "dfa_gap": -0.6343004774698091,
+    "char_gap": 4.578927890421959,
     "pos_gap": NaN,
-    "within_dfa_median": 5.151964823616101,
-    "between_dfa_median": 3.9255960985494154
+    "within_dfa_median": 5.00000952944176,
+    "between_dfa_median": 4.365709051971951
   },
   {
     "regime": "three_word_permutation",
@@ -60,11 +60,11 @@
       "eat",
       "tea"
     ],
-    "dfa_gap": 0.022323440655291904,
-    "char_gap": 1.9685926714508941,
+    "dfa_gap": -0.07527023568792046,
+    "char_gap": 1.310351930457199,
     "pos_gap": NaN,
-    "within_dfa_median": 7.066382969368519,
-    "between_dfa_median": 7.088706410023811
+    "within_dfa_median": 7.49340970934043,
+    "between_dfa_median": 7.418139473652509
   },
   {
     "regime": "three_word_ca_hub",
@@ -74,10 +74,10 @@
       "cat",
       "cab"
     ],
-    "dfa_gap": -1.259087824976461,
-    "char_gap": 4.6410098514344496,
+    "dfa_gap": -1.450363024529461,
+    "char_gap": 4.7869555168040545,
     "pos_gap": NaN,
-    "within_dfa_median": 5.074705232567801,
-    "between_dfa_median": 3.8156174075913403
+    "within_dfa_median": 5.211633838211629,
+    "between_dfa_median": 3.761270813682168
   }
 ]

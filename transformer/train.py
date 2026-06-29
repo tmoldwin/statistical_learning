@@ -293,7 +293,12 @@ def train(
         "stoi": stoi,
         "itos": {str(k): v for k, v in itos.items()},
     }
-    with open(training_meta_path(exp_name), "w", encoding="utf-8") as f:
+    if checkpoint_path.name.startswith("model_seed"):
+        seed_suffix = checkpoint_path.stem.removeprefix("model_")
+        meta_out = checkpoint_path.parent / f"training_meta_{seed_suffix}.json"
+    else:
+        meta_out = training_meta_path(exp_name)
+    with open(meta_out, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
 
     print(f"Saved transformer to {checkpoint_path}")

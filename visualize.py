@@ -2296,10 +2296,16 @@ def _tight_ylim(
     return lo, hi
 
 
-def _learning_curve_series(model) -> tuple[np.ndarray, np.ndarray, str] | None:
+def _learning_curve_series(
+    model,
+    *,
+    smoothed: bool = False,
+) -> tuple[np.ndarray, np.ndarray, str] | None:
     if "loss_iterations" not in model:
         return None
     iters = np.asarray(model["loss_iterations"], dtype=int)
+    if smoothed and "loss_smooth" in model:
+        return iters, np.asarray(model["loss_smooth"], dtype=float), "cross-entropy"
     if "loss_window" in model:
         return iters, np.asarray(model["loss_window"], dtype=float), "cross-entropy"
     if "loss_smooth" in model:
@@ -2321,13 +2327,26 @@ def plot_learning_curve_on_axes(
     show_legend: bool = True,
     show_ylabel: bool = True,
     show_metric_ylabel: bool = True,
+    smoothed: bool = False,
+    max_iter: int | None = None,
+    truncate_to_plateau: bool = False,
+    plateau_tail_iters: int = 200,
 ) -> bool:
     """Plot cross-entropy (and optional rollout metric) on ax. Returns False if no history."""
-    series = _learning_curve_series(model)
+    series = _learning_curve_series(model, smoothed=smoothed)
     if series is None:
         return False
 
     iters, ce_plot, ce_label = series
+    if max_iter is None and truncate_to_plateau:
+        max_iter = learning_plateau_iteration(model) + int(plateau_tail_iters)
+    if max_iter is not None:
+        end = int(max_iter)
+        keep = iters <= end
+        iters = iters[keep]
+        ce_plot = ce_plot[keep]
+        if iters.size == 0:
+            return False
     lw = 1.0 if compact else 1.2
     fs = 7 if compact else 8
     ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=lw, label=ce_label)
@@ -2339,6 +2358,8 @@ def plot_learning_curve_on_axes(
     ax.grid(True, linestyle=":", alpha=0.4)
     ax.set_ylim(*_tight_ylim(ce_plot, floor=0.0))
     ax.tick_params(labelsize=fs)
+    if max_iter is not None:
+        ax.set_xlim(0, int(max_iter))
 
     if loss_only:
         if show_legend:
@@ -2350,9 +2371,14 @@ def plot_learning_curve_on_axes(
 
     if "metric_iterations" in model and "metric_word_error_frac" in model:
         ax2 = ax.twinx()
+        metric_iters = np.asarray(model["metric_iterations"], dtype=int)
         metric_pct = 100.0 * np.asarray(model["metric_word_error_frac"], dtype=float)
+        if max_iter is not None:
+            keep = metric_iters <= int(max_iter)
+            metric_iters = metric_iters[keep]
+            metric_pct = metric_pct[keep]
         metric_line, = ax2.plot(
-            model["metric_iterations"],
+            metric_iters,
             metric_pct,
             color="darkorange",
             linewidth=lw,
@@ -2367,9 +2393,14 @@ def plot_learning_curve_on_axes(
         legend_labels.append(metric_line.get_label())
     elif "metric_iterations" in model and "metric_valid_vocab_letter_frac" in model:
         ax2 = ax.twinx()
+        metric_iters = np.asarray(model["metric_iterations"], dtype=int)
         metric_pct = 100.0 * (1.0 - np.asarray(model["metric_valid_vocab_letter_frac"], dtype=float))
+        if max_iter is not None:
+            keep = metric_iters <= int(max_iter)
+            metric_iters = metric_iters[keep]
+            metric_pct = metric_pct[keep]
         metric_line, = ax2.plot(
-            model["metric_iterations"],
+            metric_iters,
             metric_pct,
             color="darkorange",
             linewidth=lw,

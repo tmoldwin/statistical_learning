@@ -48,6 +48,9 @@ MICRO_CURRICULUM: tuple[str, ...] = (
     "three_word_ca_hub",
 )
 
+# Weight / training RNG seeds for multi-init trajectory panels.
+MICRO_CURRICULUM_INIT_SEEDS: tuple[int, ...] = (42, 137, 271, 409)
+
 _BASE_CONFIG: dict[str, dict] = {
     # Tiny 2D sandbox: 3 words, short corpus, fast training for transformer debugging.
     "three_word_overlap": dict(_MICRO_VOCAB_CONFIG),
@@ -270,10 +273,12 @@ def model_dir(name: str, model_type: str = "rnn") -> Path:
     return experiment_dir(name) / model_type
 
 
-def model_path(name: str, model_type: str = "rnn") -> Path:
+def model_path(name: str, model_type: str = "rnn", *, seed: int | None = None) -> Path:
     if model_type == "rnn":
-        return model_dir(name, model_type) / "model.npz"
-    return model_dir(name, model_type) / "model.pt"
+        fname = f"model_seed{seed}.npz" if seed is not None else "model.npz"
+        return model_dir(name, model_type) / fname
+    fname = f"model_seed{seed}.pt" if seed is not None else "model.pt"
+    return model_dir(name, model_type) / fname
 
 
 def model_config_path(name: str) -> Path:

@@ -1,0 +1,83 @@
+[
+  {
+    "regime": "two_word_disjoint",
+    "exp": "two_word_disjoint",
+    "words": [
+      "cat",
+      "mop"
+    ],
+    "dfa_gap": -0.03532128467376339,
+    "char_gap": 8.190216206594311,
+    "pos_gap": NaN,
+    "within_dfa_median": 8.541910713900947,
+    "between_dfa_median": 8.506589429227184
+  },
+  {
+    "regime": "two_word_pos_overlap",
+    "exp": "two_word_pos_overlap",
+    "words": [
+      "cub",
+      "nut"
+    ],
+    "dfa_gap": -0.21051762641426208,
+    "char_gap": 8.30049386955747,
+    "pos_gap": NaN,
+    "within_dfa_median": 8.8184440321237,
+    "between_dfa_median": 8.607926405709438
+  },
+  {
+    "regime": "two_word_prefix_branch",
+    "exp": "two_word_prefix_branch",
+    "words": [
+      "can",
+      "cat"
+    ],
+    "dfa_gap": 0.021872542905231995,
+    "char_gap": 8.926569100747189,
+    "pos_gap": NaN,
+    "within_dfa_median": 9.042468473057802,
+    "between_dfa_median": 9.064341015963034
+  },
+  {
+    "regime": "three_word_overlap",
+    "exp": "three_word_overlap",
+    "words": [
+      "cat",
+      "hat",
+      "mat"
+    ],
+    "dfa_gap": 0.07814901594736412,
+    "char_gap": 8.477727158143228,
+    "pos_gap": NaN,
+    "within_dfa_median": 8.694262669955876,
+    "between_dfa_median": 8.77241168590324
+  },
+  {
+    "regime": "three_word_permutation",
+    "exp": "three_word_permutation",
+    "words": [
+      "ate",
+      "eat",
+      "tea"
+    ],
+    "dfa_gap": -1.2148215118325014,
+    "char_gap": 2.1384531588002567,
+    "pos_gap": NaN,
+    "within_dfa_median": 6.06512791263086,
+    "between_dfa_median": 4.850306400798359
+  },
+  {
+    "regime": "three_word_ca_hub",
+    "exp": "three_word_ca_hub",
+    "words": [
+      "can",
+      "cat",
+      "cab"
+    ],
+    "dfa_gap": 0.010403967235081524,
+    "char_gap": 8.224945528876283,
+    "pos_gap": NaN,
+    "within_dfa_median": 8.584565967066245,
+    "between_dfa_median": 8.594969934301327
+  }
+]

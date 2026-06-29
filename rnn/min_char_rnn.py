@@ -69,6 +69,8 @@ parser.add_argument('--exp', default=None,
                     help='experiment name; loads word list for unspaced word-error metrics')
 parser.add_argument('--noise-std', type=float, default=None,
                     help='Gaussian noise std added to hidden state every timestep (train + sample)')
+parser.add_argument('--seed', type=int, default=42,
+                    help='RNG seed for weight initialization (default: 42)')
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -106,8 +108,8 @@ elif args.exp:
     timestep_noise_std = float(EXPERIMENT_CONFIG.get(args.exp, {}).get("timestep_noise_std", 0.0))
 else:
     timestep_noise_std = 0.0
-noise_rng = np.random.default_rng(0)
-init_rng = np.random.default_rng(0)
+noise_rng = np.random.default_rng(args.seed + 1)
+init_rng = np.random.default_rng(args.seed)
 
 # ----- model parameters -------------------------------------------------------
 dale_sign = None

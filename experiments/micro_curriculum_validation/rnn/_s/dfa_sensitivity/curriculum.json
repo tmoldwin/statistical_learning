@@ -1,0 +1,83 @@
+[
+  {
+    "regime": "two_word_disjoint",
+    "exp": "two_word_disjoint_s",
+    "words": [
+      "cat",
+      "mop"
+    ],
+    "dfa_gap": 4.377901614289691,
+    "char_gap": 4.36342449629246,
+    "pos_gap": 3.9121352750225244,
+    "within_dfa_median": 0.5307782946142692,
+    "between_dfa_median": 4.908679908903959
+  },
+  {
+    "regime": "two_word_pos_overlap",
+    "exp": "two_word_pos_overlap_s",
+    "words": [
+      "cub",
+      "nut"
+    ],
+    "dfa_gap": 4.816670134914626,
+    "char_gap": 4.816670134914626,
+    "pos_gap": 4.670037108872726,
+    "within_dfa_median": 0.4869688087623479,
+    "between_dfa_median": 5.303638943676974
+  },
+  {
+    "regime": "two_word_prefix_branch",
+    "exp": "two_word_prefix_branch_s",
+    "words": [
+      "can",
+      "cat"
+    ],
+    "dfa_gap": 4.6786085278541965,
+    "char_gap": 4.663133908940833,
+    "pos_gap": 4.5898516479837195,
+    "within_dfa_median": 0.5098738877376906,
+    "between_dfa_median": 5.188482415591887
+  },
+  {
+    "regime": "three_word_overlap",
+    "exp": "three_word_overlap_s",
+    "words": [
+      "cat",
+      "hat",
+      "mat"
+    ],
+    "dfa_gap": 4.446507769770557,
+    "char_gap": 4.4408741418106,
+    "pos_gap": 4.662481947510015,
+    "within_dfa_median": 0.5331249748414016,
+    "between_dfa_median": 4.979632744611958
+  },
+  {
+    "regime": "three_word_permutation",
+    "exp": "three_word_permutation_s",
+    "words": [
+      "ate",
+      "eat",
+      "tea"
+    ],
+    "dfa_gap": 9.066586927604613,
+    "char_gap": 6.44638535438946,
+    "pos_gap": 6.620539648218662,
+    "within_dfa_median": 0.4709204166996286,
+    "between_dfa_median": 9.537507344304242
+  },
+  {
+    "regime": "three_word_ca_hub",
+    "exp": "three_word_ca_hub_s",
+    "words": [
+      "can",
+      "cat",
+      "cab"
+    ],
+    "dfa_gap": 4.346727769634376,
+    "char_gap": 4.32500842829359,
+    "pos_gap": 4.2186172946174345,
+    "within_dfa_median": 0.520329721530515,
+    "between_dfa_median": 4.867057491164891
+  }
+]

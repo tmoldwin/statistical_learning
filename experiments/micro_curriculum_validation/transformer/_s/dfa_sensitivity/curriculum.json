@@ -1,0 +1,83 @@
+[
+  {
+    "regime": "two_word_disjoint",
+    "exp": "two_word_disjoint_s",
+    "words": [
+      "cat",
+      "mop"
+    ],
+    "dfa_gap": 8.145235602410423,
+    "char_gap": 8.187817698815028,
+    "pos_gap": 7.582290720822508,
+    "within_dfa_median": 0.41285587463801077,
+    "between_dfa_median": 8.558091477048434
+  },
+  {
+    "regime": "two_word_pos_overlap",
+    "exp": "two_word_pos_overlap_s",
+    "words": [
+      "cub",
+      "nut"
+    ],
+    "dfa_gap": 8.124000989728517,
+    "char_gap": 8.065105665516572,
+    "pos_gap": 7.791806532807116,
+    "within_dfa_median": 0.4779002418844295,
+    "between_dfa_median": 8.601901231612946
+  },
+  {
+    "regime": "two_word_prefix_branch",
+    "exp": "two_word_prefix_branch_s",
+    "words": [
+      "can",
+      "cat"
+    ],
+    "dfa_gap": 8.788314600870557,
+    "char_gap": 8.806661496182487,
+    "pos_gap": 8.84178826157369,
+    "within_dfa_median": 0.14508833259471957,
+    "between_dfa_median": 8.933402933465276
+  },
+  {
+    "regime": "three_word_overlap",
+    "exp": "three_word_overlap_s",
+    "words": [
+      "cat",
+      "hat",
+      "mat"
+    ],
+    "dfa_gap": 8.197387882766048,
+    "char_gap": 8.389819460549154,
+    "pos_gap": 8.322130488880337,
+    "within_dfa_median": 0.5350282447675757,
+    "between_dfa_median": 8.732416127533623
+  },
+  {
+    "regime": "three_word_permutation",
+    "exp": "three_word_permutation_s",
+    "words": [
+      "ate",
+      "eat",
+      "tea"
+    ],
+    "dfa_gap": 8.429265586977083,
+    "char_gap": 8.29944486142776,
+    "pos_gap": 7.554415061780089,
+    "within_dfa_median": 0.24649191042086102,
+    "between_dfa_median": 8.675757497397944
+  },
+  {
+    "regime": "three_word_ca_hub",
+    "exp": "three_word_ca_hub_s",
+    "words": [
+      "can",
+      "cat",
+      "cab"
+    ],
+    "dfa_gap": 8.196785696945652,
+    "char_gap": 8.222528133471561,
+    "pos_gap": 7.902903639529739,
+    "within_dfa_median": 0.5603769717541819,
+    "between_dfa_median": 8.757162668699834
+  }
+]

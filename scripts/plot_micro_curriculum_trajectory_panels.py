@@ -1,4 +1,4 @@
-"""Multi-panel figure: trained word trajectories for the micro curriculum."""
+"""Multi-panel figure: word trajectories across init seeds and curriculum regimes."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ if str(REPO_ROOT) not in sys.path:
 from experiment import (
     EXPERIMENT_CONFIG,
     MICRO_CURRICULUM,
+    MICRO_CURRICULUM_INIT_SEEDS,
     MODEL_TYPES,
-    input_path,
     micro_curriculum_repr_label,
     micro_curriculum_viz_dir,
     model_path,
@@ -26,13 +26,9 @@ from experiment import (
 from task import REGIMES
 from transformer.adapter import extract_transformer_activations
 from visualize import (
-    _corpus_vocab,
     _longest_vocabulary_word_length,
-    _plot_trained_word_examples,
     _square_data_limits,
-    _trained_word_examples,
     _trajectory_vocabulary_words,
-    corpus_segments,
     fit_pca_2d_with_evr,
     load_model_for_viz,
     run_forward_pass,
@@ -48,54 +44,114 @@ PANEL_TITLES: dict[str, str] = {
 }
 
 
+def _word_hidden(
+    model: dict,
+    snippet: str,
+    *,
+    model_type: str,
+) -> np.ndarray:
+    if model_type == "transformer":
+        return extract_transformer_activations(model, snippet).block_output
+    hidden, _ = run_forward_pass(model, snippet, model_type)
+    return hidden
+
+
+def _isolated_word_paths(
+    model: dict,
+    vocab_words: list[str],
+    *,
+    model_type: str,
+    max_word_len: int,
+) -> list[tuple[str, np.ndarray]]:
+    """Teacher-forced trajectories per word; PCA fit on stacked hidden states."""
+    word_hidden: list[np.ndarray] = []
+    words_in_order: list[str] = []
+    for word in sorted(set(vocab_words)):
+        snippet = word[:max_word_len]
+        if not snippet:
+            continue
+        word_hidden.append(_word_hidden(model, snippet, model_type=model_type))
+        words_in_order.append(word)
+    if not word_hidden:
+        return []
+    stacked = np.vstack(word_hidden)
+    _projected, mean, components, _evr = fit_pca_2d_with_evr(stacked)
+    paths: list[tuple[str, np.ndarray]] = []
+    for word, hidden in zip(words_in_order, word_hidden, strict=True):
+        z = (hidden - mean) @ components.T
+        paths.append((word, z))
+    return paths
+
+
+def _plot_word_paths(
+    ax: plt.Axes,
+    paths: list[tuple[str, np.ndarray]],
+    *,
+    cmap_name: str = "tab10",
+) -> list[np.ndarray]:
+    plotted: list[np.ndarray] = []
+    cmap = plt.get_cmap(cmap_name, max(len(paths), 1))
+    for i, (word, z) in enumerate(paths):
+        if len(z) < 1:
+            continue
+        plotted.append(z)
+        color = cmap(i)
+        ax.plot(z[:, 0], z[:, 1], color=color, linewidth=1.4, alpha=0.9, zorder=2)
+        ax.scatter(z[-1, 0], z[-1, 1], color=color, s=12, zorder=3)
+        ax.annotate(
+            word,
+            (z[-1, 0], z[-1, 1]),
+            textcoords="offset points",
+            xytext=(3, 3),
+            fontsize=6,
+            color=color,
+            fontweight="bold",
+        )
+    return plotted
+
+
 def _trajectory_panel(
     ax: plt.Axes,
     exp: str,
     *,
     model_type: str,
-    annotate_fontsize: float = 7.5,
-) -> None:
+    seed: int,
+    show_axis_labels: bool,
+) -> bool:
+    ckpt = model_path(exp, model_type, seed=seed)
+    if not ckpt.is_file():
+        ax.text(
+            0.5, 0.5, f"missing\nseed {seed}",
+            ha="center", va="center", transform=ax.transAxes, fontsize=7,
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        return False
+
     cfg = EXPERIMENT_CONFIG[exp]
     regime = cfg["regime"]
     words = REGIMES[regime]
-    spaced = bool(cfg.get("word_space", False))
-    text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
-    model = load_model_for_viz(str(model_path(exp, model_type)), model_type)
-    if model_type == "transformer":
-        hidden = extract_transformer_activations(model, text).block_output
-    else:
-        hidden, _ = run_forward_pass(model, text, model_type)
-
-    projected, _mean, _components, evr = fit_pca_2d_with_evr(hidden)
-    segments = corpus_segments(text, list(_corpus_vocab(text, words) or []), spaced=spaced)
-    vocab_words = _trajectory_vocabulary_words(text, words)
+    model = load_model_for_viz(str(ckpt), model_type)
+    vocab_words = _trajectory_vocabulary_words("", words)
     max_word_len = _longest_vocabulary_word_length(vocab_words)
-    examples = _trained_word_examples(segments, vocab_words)
-    paths = _plot_trained_word_examples(
-        ax,
-        projected,
-        examples,
-        max_word_len=max_word_len,
-        annotate_fontsize=annotate_fontsize,
+    paths = _isolated_word_paths(
+        model, vocab_words, model_type=model_type, max_word_len=max_word_len,
     )
-    limit_arrays = paths if paths else [projected]
-    xlim, ylim = _square_data_limits(*limit_arrays)
-
-    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
-    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
+    limit_arrays = _plot_word_paths(ax, paths) if paths else []
+    if limit_arrays:
+        xlim, ylim = _square_data_limits(*limit_arrays)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
     ax.set_aspect("equal", adjustable="box")
-    ax.set_xlabel(f"PC1 ({pc1:.0f}%)", fontsize=8)
-    ax.set_ylabel(f"PC2 ({pc2:.0f}%)", fontsize=8)
-    ax.tick_params(labelsize=7)
-    ax.grid(True, linestyle=":", alpha=0.35)
-    ax.axhline(0, color="lightgrey", linewidth=0.5, zorder=0)
-    ax.axvline(0, color="lightgrey", linewidth=0.5, zorder=0)
-
-    word_str = ", ".join(words)
-    tag = PANEL_TITLES.get(regime, regime)
-    ax.set_title(f"{word_str}\n({tag})", fontsize=9)
+    if show_axis_labels:
+        ax.set_xlabel("PC1", fontsize=7)
+        ax.set_ylabel("PC2", fontsize=7)
+    else:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+    ax.tick_params(labelsize=6)
+    ax.grid(True, linestyle=":", alpha=0.3)
+    return True
 
 
 def main() -> None:
@@ -111,50 +167,75 @@ def main() -> None:
         choices=list(MODEL_TYPES),
         help="which model checkpoints to plot (default: rnn)",
     )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=list(MICRO_CURRICULUM_INIT_SEEDS),
+        help="initialization seeds (rows)",
+    )
     args = parser.parse_args()
 
     spaced = not args.no_word_space
+    regimes = list(MICRO_CURRICULUM)
     exps = (
-        [spaced_experiment_name(r) for r in MICRO_CURRICULUM]
+        [spaced_experiment_name(r) for r in regimes]
         if spaced
-        else list(MICRO_CURRICULUM)
+        else regimes
     )
+    seeds = list(args.seeds)
     out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="trajectories")
-    out_path = out_dir / "panels.png"
-    if not any(model_path(exp, args.model_type).is_file() for exp in exps):
-        print(f"skip {out_path}: no {args.model_type} checkpoints for micro curriculum")
+    out_path = out_dir / "word_trajectories_by_init.png"
+
+    has_any = any(
+        model_path(exp, args.model_type, seed=seed).is_file()
+        for exp in exps
+        for seed in seeds
+    )
+    if not has_any:
+        print(f"skip {out_path}: no seeded {args.model_type} checkpoints for micro curriculum")
         return
 
-    n = len(exps)
-    ncols = 3
-    nrows = int(np.ceil(n / ncols))
-
+    nrows = len(seeds)
+    ncols = len(regimes)
     fig, axes = plt.subplots(
         nrows, ncols,
-        figsize=(4.2 * ncols, 4.0 * nrows),
+        figsize=(2.6 * ncols, 2.4 * nrows),
         constrained_layout=True,
+        squeeze=False,
     )
-    axes_flat = np.atleast_1d(axes).ravel()
 
-    for ax, exp in zip(axes_flat, exps, strict=False):
-        if not model_path(exp, args.model_type).is_file():
-            ax.set_visible(False)
-            ax.text(
-                0.5, 0.5, f"missing {args.model_type} model\n{exp}",
-                ha="center", va="center", transform=ax.transAxes,
+    for row, seed in enumerate(seeds):
+        for col, (regime, exp) in enumerate(zip(regimes, exps, strict=True)):
+            ax = axes[row, col]
+            show_axis_labels = col == 0
+            _trajectory_panel(
+                ax, exp,
+                model_type=args.model_type,
+                seed=seed,
+                show_axis_labels=show_axis_labels,
             )
-            continue
-        _trajectory_panel(ax, exp, model_type=args.model_type)
-
-    for ax in axes_flat[len(exps):]:
-        ax.set_visible(False)
+            if row == 0:
+                words = REGIMES[regime]
+                tag = PANEL_TITLES.get(regime, regime)
+                ax.set_title(f"{', '.join(words)}\n({tag})", fontsize=8)
+            if col == 0:
+                ax.text(
+                    -0.28, 0.5, f"seed {seed}",
+                    transform=ax.transAxes,
+                    rotation=90,
+                    va="center",
+                    ha="center",
+                    fontsize=8,
+                    fontweight="bold",
+                )
 
     spacing = "spaced" if spaced else "unspaced"
     repr_label = micro_curriculum_repr_label(args.model_type)
     fig.suptitle(
-        f"Micro curriculum: teacher-forced word trajectories "
+        f"Micro curriculum: isolated word trajectories by init "
         f"({spacing}, {args.model_type} {repr_label}, PCA)",
-        fontsize=12,
+        fontsize=11,
         y=1.02,
     )
 

@@ -106,6 +106,7 @@ def train(
     seed: int = 42,
     eval_interval: int | None = None,
     noise_std: float | None = None,
+    save_path: Path | None = None,
 ) -> None:
     cfg = EXPERIMENT_CONFIG[exp_name]
     regime = experiment_regime(exp_name)
@@ -265,7 +266,9 @@ def train(
 
     out_dir = model_dir(exp_name, "transformer")
     out_dir.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_path(exp_name, "transformer"))
+    checkpoint_path = save_path if save_path is not None else model_path(exp_name, "transformer")
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), checkpoint_path)
 
     with open(model_config_path(exp_name), "w", encoding="utf-8") as f:
         json.dump(model_cfg, f, indent=2)
@@ -293,7 +296,7 @@ def train(
     with open(training_meta_path(exp_name), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
 
-    print(f"Saved transformer to {model_path(exp_name, 'transformer')}")
+    print(f"Saved transformer to {checkpoint_path}")
 
 
 def main() -> None:
@@ -304,6 +307,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--noise-std", type=float, default=None,
                         help="override timestep_noise_std from experiment config")
+    parser.add_argument("--model", type=str, default=None,
+                        help="override checkpoint output path (default: experiments/<exp>/transformer/model.pt)")
     args = parser.parse_args()
     train(
         args.exp,
@@ -311,6 +316,7 @@ def main() -> None:
         seed=args.seed,
         eval_interval=args.eval_interval,
         noise_std=args.noise_std,
+        save_path=Path(args.model) if args.model else None,
     )
 
 

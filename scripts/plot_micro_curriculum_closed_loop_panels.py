@@ -16,6 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 from experiment import (
     EXPERIMENT_CONFIG,
     MICRO_CURRICULUM,
+    MICRO_CURRICULUM_INIT_SEEDS,
     MODEL_TYPES,
     input_path,
     micro_curriculum_repr_label,
@@ -270,19 +271,31 @@ def _closed_loop_panel(
     exp: str,
     *,
     model_type: str,
+    init_seed: int,
     steps: int | None,
     seed: str,
     rng_seed: int,
     n_components: int = 2,
-    annotate_fontsize: float = 7.5,
-) -> None:
+    annotate_fontsize: float = 6.5,
+    show_axis_labels: bool = True,
+    show_title: bool = True,
+) -> bool:
+    ckpt = model_path(exp, model_type, seed=init_seed)
+    if not ckpt.is_file():
+        missing_msg = f"missing\nseed {init_seed}"
+        if n_components == 3:
+            ax.text2D(0.5, 0.5, missing_msg, transform=ax.transAxes, ha="center", va="center", fontsize=7)
+        else:
+            ax.text(0.5, 0.5, missing_msg, ha="center", va="center", transform=ax.transAxes, fontsize=7)
+        return False
+
     cfg = EXPERIMENT_CONFIG[exp]
     regime = cfg["regime"]
     words = REGIMES[regime]
     spaced = bool(cfg.get("word_space", False))
     vocab = set(words)
     text = input_path(exp).read_text(encoding="utf-8")[: cfg["viz_length"]]
-    model = load_model_for_viz(str(model_path(exp, model_type)), model_type)
+    model = load_model_for_viz(str(ckpt), model_type)
     _disable_timestep_noise(model)
 
     hidden, output_probs = _teacher_forced_hidden(model, text, model_type)
@@ -357,81 +370,119 @@ def _closed_loop_panel(
     if n_components == 3:
         xlim, ylim, zlim = _cube_data_limits(z if len(z) else hidden)
         _apply_cube_limits_3d(ax, xlim, ylim, zlim)
-        ax.set_xlabel(f"PC1 ({pc1:.0f}%)", fontsize=8)
-        ax.set_ylabel(f"PC2 ({pc2:.0f}%)", fontsize=8)
-        ax.set_zlabel(f"PC3 ({pc3:.0f}%)", fontsize=8)
+        if show_axis_labels:
+            ax.set_xlabel(f"PC1 ({pc1:.0f}%)", fontsize=7)
+            ax.set_ylabel(f"PC2 ({pc2:.0f}%)", fontsize=7)
+            ax.set_zlabel(f"PC3 ({pc3:.0f}%)", fontsize=7)
     else:
         xlim, ylim = _square_data_limits(z if len(z) else hidden)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.set_aspect("equal", adjustable="box")
-        ax.set_xlabel(f"PC1 ({pc1:.0f}%)", fontsize=8)
-        ax.set_ylabel(f"PC2 ({pc2:.0f}%)", fontsize=8)
-        ax.axhline(0, color="lightgrey", linewidth=0.5, zorder=0)
-        ax.axvline(0, color="lightgrey", linewidth=0.5, zorder=0)
+        if show_axis_labels:
+            ax.set_xlabel(f"PC1 ({pc1:.0f}%)", fontsize=7)
+            ax.set_ylabel(f"PC2 ({pc2:.0f}%)", fontsize=7)
+            ax.axhline(0, color="lightgrey", linewidth=0.5, zorder=0)
+            ax.axvline(0, color="lightgrey", linewidth=0.5, zorder=0)
+        else:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
 
-    ax.tick_params(labelsize=7)
+    ax.tick_params(labelsize=6)
     ax.grid(True, linestyle=":", alpha=0.35)
 
-    word_str = ", ".join(words)
-    tag = PANEL_TITLES.get(regime, regime)
-    ax.set_title(f"{learn_line}\n{word_str}\n({tag}, {rollout_steps} steps)", fontsize=9)
+    if show_title:
+        word_str = ", ".join(words)
+        tag = PANEL_TITLES.get(regime, regime)
+        ax.set_title(
+            f"{learn_line}\n{word_str}\n({tag}, {rollout_steps} steps)",
+            fontsize=8,
+        )
+    return True
 
 
 def _write_panels(
     *,
     exps: list[str],
+    regimes: list[str],
+    init_seeds: list[int],
     model_type: str,
     steps: int | None,
     seed_char: str | None,
-    rng_seed: int,
     n_components: int,
     out_path: Path,
     suptitle: str,
 ) -> None:
-    valid_exps = [exp for exp in exps if model_path(exp, model_type).is_file()]
-    if not valid_exps:
-        print(f"skip {out_path}: no {model_type} checkpoints for micro curriculum")
+    has_any = any(
+        model_path(exp, model_type, seed=s).is_file()
+        for exp in exps
+        for s in init_seeds
+    )
+    if not has_any:
+        print(f"skip {out_path}: no seeded {model_type} checkpoints for micro curriculum")
         return
 
-    ncols = 3
-    nrows = int(np.ceil(len(exps) / ncols))
-    figsize = (4.5 * ncols, 4.2 * nrows) if n_components == 3 else (4.2 * ncols, 4.0 * nrows)
+    nrows = len(init_seeds)
+    ncols = len(exps)
+    figsize = (
+        (3.0 * ncols, 2.8 * nrows)
+        if n_components == 3
+        else (2.8 * ncols, 2.6 * nrows)
+    )
     fig = plt.figure(figsize=figsize, constrained_layout=True)
 
-    for i, exp in enumerate(exps):
-        if n_components == 3:
-            ax = fig.add_subplot(nrows, ncols, i + 1, projection="3d")
-        else:
-            ax = fig.add_subplot(nrows, ncols, i + 1)
-
-        if not model_path(exp, model_type).is_file():
-            ax.set_visible(False)
-            missing_msg = f"missing {model_type} model\n{exp}"
+    for row, init_seed in enumerate(init_seeds):
+        for col, (regime, exp) in enumerate(zip(regimes, exps, strict=True)):
+            idx = row * ncols + col + 1
             if n_components == 3:
-                ax.text2D(0.5, 0.5, missing_msg, transform=ax.transAxes, ha="center", va="center")
+                ax = fig.add_subplot(nrows, ncols, idx, projection="3d")
             else:
-                ax.text(0.5, 0.5, missing_msg, ha="center", va="center", transform=ax.transAxes)
-            continue
+                ax = fig.add_subplot(nrows, ncols, idx)
 
-        cfg = EXPERIMENT_CONFIG[exp]
-        words = REGIMES[cfg["regime"]]
-        spaced = bool(cfg.get("word_space", False))
-        seed = seed_char if seed_char is not None else _default_rollout_seed(words, spaced=spaced)
-        _closed_loop_panel(
-            ax, exp,
-            model_type=model_type,
-            steps=steps,
-            seed=seed,
-            rng_seed=rng_seed,
-            n_components=n_components,
-        )
-
-    for j in range(len(exps), nrows * ncols):
-        fig.add_subplot(nrows, ncols, j + 1).set_visible(False)
+            cfg = EXPERIMENT_CONFIG[exp]
+            words = REGIMES[cfg["regime"]]
+            spaced = bool(cfg.get("word_space", False))
+            rollout_seed = seed_char if seed_char is not None else _default_rollout_seed(words, spaced=spaced)
+            _closed_loop_panel(
+                ax, exp,
+                model_type=model_type,
+                init_seed=init_seed,
+                steps=steps,
+                seed=rollout_seed,
+                rng_seed=init_seed,
+                n_components=n_components,
+                show_axis_labels=col == 0,
+                show_title=False,
+            )
+            if row == 0:
+                word_str = ", ".join(words)
+                tag = PANEL_TITLES.get(regime, regime)
+                ax.set_title(f"{word_str}\n({tag})", fontsize=8)
+            if col == 0:
+                row_label = f"init {init_seed}"
+                if n_components == 3:
+                    ax.text2D(
+                        -0.12, 0.5, row_label,
+                        transform=ax.transAxes,
+                        rotation=90,
+                        va="center",
+                        ha="center",
+                        fontsize=8,
+                        fontweight="bold",
+                    )
+                else:
+                    ax.text(
+                        -0.30, 0.5, row_label,
+                        transform=ax.transAxes,
+                        rotation=90,
+                        va="center",
+                        ha="center",
+                        fontsize=8,
+                        fontweight="bold",
+                    )
 
     dim_tag = "3D PCA" if n_components == 3 else "PCA"
-    fig.suptitle(f"{suptitle} ({dim_tag})", fontsize=12, y=1.02)
+    fig.suptitle(f"{suptitle} ({dim_tag})", fontsize=11, y=1.02)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
@@ -451,7 +502,15 @@ def main() -> None:
         default=None,
         help="rollout seed text (default: space for spaced, first vocab letter otherwise)",
     )
-    parser.add_argument("--rng-seed", type=int, default=42)
+    parser.add_argument("--rng-seed", type=int, default=None,
+                        help="deprecated; rollout RNG now follows each init seed")
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=list(MICRO_CURRICULUM_INIT_SEEDS),
+        help="weight-init seeds (rows)",
+    )
     parser.add_argument(
         "--no-word-space",
         action="store_true",
@@ -474,11 +533,13 @@ def main() -> None:
     exps = list(MICRO_CURRICULUM) if args.no_word_space else [
         spaced_experiment_name(r) for r in MICRO_CURRICULUM
     ]
+    regimes = list(MICRO_CURRICULUM)
+    init_seeds = list(args.seeds)
     spaced = not args.no_word_space
     spacing = "unspaced" if args.no_word_space else "spaced"
     repr_label = micro_curriculum_repr_label(args.model_type)
     base_title = (
-        f"Micro curriculum: closed-loop trajectories "
+        f"Micro curriculum: closed-loop trajectories by init "
         f"({spacing}, {args.model_type} {repr_label}"
     )
     out_dir = micro_curriculum_viz_dir(spaced=spaced, model_type=args.model_type, kind="closed_loop")
@@ -486,23 +547,25 @@ def main() -> None:
     if args.dims in ("2", "both"):
         _write_panels(
             exps=exps,
+            regimes=regimes,
+            init_seeds=init_seeds,
             model_type=args.model_type,
             steps=args.steps,
             seed_char=args.seed_char,
-            rng_seed=args.rng_seed,
             n_components=2,
-            out_path=out_dir / "panels.png",
+            out_path=out_dir / "closed_loop_by_init.png",
             suptitle=base_title,
         )
     if args.dims in ("3", "both"):
         _write_panels(
             exps=exps,
+            regimes=regimes,
+            init_seeds=init_seeds,
             model_type=args.model_type,
             steps=args.steps,
             seed_char=args.seed_char,
-            rng_seed=args.rng_seed,
             n_components=3,
-            out_path=out_dir / "panels_3d.png",
+            out_path=out_dir / "closed_loop_by_init_3d.png",
             suptitle=base_title,
         )
 

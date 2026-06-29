@@ -1,10 +1,10 @@
 {
   "vocab_size": 4,
-  "n_embd": 12,
-  "pos_embd_dim": 12,
+  "n_embd": 32,
+  "pos_embd_dim": 32,
   "block_size": 8,
   "num_heads": 1,
-  "head_size": 12,
+  "head_size": 32,
   "n_layer": 1,
   "use_layernorm": true,
   "use_residual": true,
@@ -21,5 +21,5 @@
     "tea"
   ],
   "word_space": true,
-  "timestep_noise_std": 0.1
+  "timestep_noise_std": 0.05
 }

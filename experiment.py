@@ -57,6 +57,10 @@ _SIXTEEN_WORD_DEFAULTS: dict[str, object] = {
 # Active tasks — each name is both the folder under experiments/ and the CLI key.
 TASKS: dict[str, dict] = {
     "sixteen_word": dict(_SIXTEEN_WORD_DEFAULTS),
+    "sixteen_word_ns": {
+        **dict(_SIXTEEN_WORD_DEFAULTS),
+        "word_space": False,
+    },
 }
 
 # Backward-compatible alias used by training / visualization entry points.

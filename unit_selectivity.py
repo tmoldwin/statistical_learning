@@ -18,8 +18,9 @@ if TYPE_CHECKING:
     from visualize import CondensedView
 
 ANALYSIS_FEATURES = ("char", "position", "position_from_end", "dfa")
-ALL_CATEGORICAL_FEATURES = ANALYSIS_FEATURES
-LEXICAL_FEATURES = ANALYSIS_FEATURES
+SELECTIVITY_FEATURES = ("dfa", "prefix", "char", "position", "position_from_end")
+ALL_CATEGORICAL_FEATURES = SELECTIVITY_FEATURES
+LEXICAL_FEATURES = SELECTIVITY_FEATURES
 
 LEGACY_LEXICAL_FEATURES = (
     "prefix", "string", "dfa", "position", "char", "word_start", "word_end",
@@ -105,15 +106,20 @@ class TimestepLabels:
 
 @dataclass
 class SelectivityResult:
-    gap: dict[str, np.ndarray]
+    si: dict[str, np.ndarray]
+    peak_gap: dict[str, np.ndarray]
     eta2: dict[str, np.ndarray]
+    gap: dict[str, np.ndarray]
+    peak_label: dict[str, list[str]]
     target_prob_r: np.ndarray
     max_logit_r: np.ndarray
     entropy_r: np.ndarray
     best_predicted_char: list[str]
     primary_feature: list[str]
+    primary_category: list[str]
     primary_group: list[str]
     mixed: list[bool]
+    n_points: int = 0
 
 
 def _future_labels(text: str, n: int) -> tuple[list[str], list[str | None], list[str | None]]:
@@ -322,29 +328,96 @@ def _unit_eta2(
     return ss_between / ss_total
 
 
+def _unit_category_means(
+    unit_acts: np.ndarray,
+    labels: list,
+    valid_mask: list[bool] | None,
+) -> dict[Any, float]:
+    groups: dict[Any, list[float]] = defaultdict(list)
+    for i, lbl in enumerate(labels):
+        if valid_mask is not None and not valid_mask[i]:
+            continue
+        groups[lbl].append(float(unit_acts[i]))
+    return {lbl: float(np.mean(v)) for lbl, v in groups.items() if v}
+
+
+def _unit_peak_metrics(
+    unit_acts: np.ndarray,
+    labels: list,
+    valid_mask: list[bool] | None,
+) -> tuple[float, float, float, str | None]:
+    """
+    Peaked selectivity for one unit vs one feature.
+
+    Returns (selectivity_index, normalized_peak_gap, eta2, peak_category_label).
+    Categories are ranked by |mean − grand_mean| so inverted tuning counts.
+    """
+    means = _unit_category_means(unit_acts, labels, valid_mask)
+    if len(means) < 2:
+        return float("nan"), float("nan"), float("nan"), None
+
+    values = np.array([
+        float(unit_acts[i])
+        for i in range(len(labels))
+        if valid_mask is None or valid_mask[i]
+    ])
+    grand = float(values.mean())
+    scale = max(float(np.std(unit_acts)), 1e-9)
+
+    ranked = sorted(means.items(), key=lambda kv: abs(kv[1] - grand), reverse=True)
+    top_lbl, top_mean = ranked[0]
+    _, second_mean = ranked[1]
+    peak_gap_norm = (abs(top_mean - grand) - abs(second_mean - grand)) / scale
+
+    abs_devs = sorted((abs(m - grand) for m in means.values()), reverse=True)
+    r_max = abs_devs[0]
+    r_others = float(np.mean(abs_devs[1:])) if len(abs_devs) > 1 else 0.0
+    si = (r_max - r_others) / (r_max + r_others + 1e-9)
+
+    return si, peak_gap_norm, _unit_eta2(unit_acts, labels, valid_mask), str(top_lbl)
+
+
 def compute_unit_selectivity_matrix(
     activations: np.ndarray,
     labels: TimestepLabels,
     features: tuple[str, ...] = ALL_CATEGORICAL_FEATURES,
-) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
+) -> tuple[
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, list[str]],
+]:
     n_units = activations.shape[1]
-    gap: dict[str, np.ndarray] = {}
+    si: dict[str, np.ndarray] = {}
+    peak_gap: dict[str, np.ndarray] = {}
     eta2: dict[str, np.ndarray] = {}
+    gap: dict[str, np.ndarray] = {}
+    peak_label: dict[str, list[str]] = {}
     for feat in features:
         vals, mask = labels.feature_values(feat)
-        gap[feat] = np.array(
-            [_unit_gap_score(activations[:, u], vals, mask) for u in range(n_units)]
-        )
-        eta2[feat] = np.array(
-            [_unit_eta2(activations[:, u], vals, mask) for u in range(n_units)]
-        )
-    return gap, eta2
+        si[feat] = np.full(n_units, np.nan)
+        peak_gap[feat] = np.full(n_units, np.nan)
+        eta2[feat] = np.full(n_units, np.nan)
+        gap[feat] = np.full(n_units, np.nan)
+        labels_out: list[str] = [""] * n_units
+        for u in range(n_units):
+            s, pg, e2, pl = _unit_peak_metrics(activations[:, u], vals, mask)
+            si[feat][u] = s
+            peak_gap[feat][u] = pg
+            eta2[feat][u] = e2
+            gap[feat][u] = _unit_gap_score(activations[:, u], vals, mask)
+            labels_out[u] = pl or ""
+        peak_label[feat] = labels_out
+    return si, peak_gap, eta2, gap, peak_label
 
 
 def compute_prediction_correlation_scores(
     activations: np.ndarray,
     model: dict,
     text: str,
+    *,
+    next_chars: list[str] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
     n_units = activations.shape[1]
     n = activations.shape[0]
@@ -352,7 +425,10 @@ def compute_prediction_correlation_scores(
     logits = _next_char_logits(model, activations)
     chars = model["chars"]
 
-    targets = [text[(t + 1) % len(text)] for t in range(n)]
+    if next_chars is not None and len(next_chars) == n:
+        targets = list(next_chars)
+    else:
+        targets = [text[(t + 1) % len(text)] for t in range(n)]
     target_idx = np.array([chars.index(c) for c in targets])
     target_prob = probs[np.arange(n), target_idx]
 
@@ -386,12 +462,14 @@ def compute_prediction_correlation_scores(
 
 
 def _assign_primary_features(
-    gap: dict[str, np.ndarray],
+    si: dict[str, np.ndarray],
+    peak_label: dict[str, list[str]],
     features: tuple[str, ...] = ALL_CATEGORICAL_FEATURES,
-) -> tuple[list[str], list[str], list[bool]]:
-    feat_arr = np.stack([gap[f] for f in features], axis=1)
+) -> tuple[list[str], list[str], list[str], list[bool]]:
+    feat_arr = np.stack([si[f] for f in features], axis=1)
     n_units = feat_arr.shape[0]
     primary: list[str] = []
+    categories: list[str] = []
     groups: list[str] = []
     mixed: list[bool] = []
 
@@ -400,6 +478,7 @@ def _assign_primary_features(
         valid = np.isfinite(scores)
         if not valid.any():
             primary.append("none")
+            categories.append("")
             groups.append("none")
             mixed.append(False)
             continue
@@ -408,19 +487,17 @@ def _assign_primary_features(
         second = int(order[1]) if len(order) > 1 else top
         feat_name = features[top]
         primary.append(feat_name)
+        categories.append(peak_label.get(feat_name, [""] * n_units)[u])
         groups.append("lexical" if feat_name in LEXICAL_SET else "predictive")
         s0, s1 = scores[top], scores[second]
-        med = float(np.nanmedian(scores[valid]))
-        mad = float(np.nanmedian(np.abs(scores[valid] - med)))
-        thresh = med + mad
         mixed.append(
-            s0 >= thresh
-            and s1 >= thresh
+            s0 >= 0.35
+            and s1 >= 0.35
             and s1 >= 0.7 * s0
             and features[top] != features[second]
         )
 
-    return primary, groups, mixed
+    return primary, categories, groups, mixed
 
 
 def compute_selectivity(
@@ -429,21 +506,28 @@ def compute_selectivity(
     model: dict,
     text: str,
 ) -> SelectivityResult:
-    gap, eta2 = compute_unit_selectivity_matrix(activations, labels)
-    target_prob_r, max_logit_r, entropy_r, best_char = compute_prediction_correlation_scores(
-        activations, model, text,
+    si, peak_gap, eta2, gap, peak_label = compute_unit_selectivity_matrix(
+        activations, labels,
     )
-    primary, groups, mixed = _assign_primary_features(gap)
+    target_prob_r, max_logit_r, entropy_r, best_char = compute_prediction_correlation_scores(
+        activations, model, text, next_chars=labels.next_char,
+    )
+    primary, categories, groups, mixed = _assign_primary_features(si, peak_label)
     return SelectivityResult(
-        gap=gap,
+        si=si,
+        peak_gap=peak_gap,
         eta2=eta2,
+        gap=gap,
+        peak_label=peak_label,
         target_prob_r=target_prob_r,
         max_logit_r=max_logit_r,
         entropy_r=entropy_r,
         best_predicted_char=best_char,
         primary_feature=primary,
+        primary_category=categories,
         primary_group=groups,
         mixed=mixed,
+        n_points=activations.shape[0],
     )
 
 
@@ -532,12 +616,13 @@ def plot_selectivity_distributions(
     axes_flat = np.atleast_1d(axes).ravel()
     for i, feat in enumerate(ALL_CATEGORICAL_FEATURES):
         ax = axes_flat[i]
-        vals = result.gap[feat]
+        vals = result.si[feat]
         vals = vals[np.isfinite(vals)]
         ax.hist(vals, bins=20, color=FEATURE_COLORS.get(feat, "#888"), alpha=0.85, edgecolor="white")
         ax.set_title(FEATURE_DISPLAY[feat])
-        ax.set_xlabel("normalized gap")
+        ax.set_xlabel("selectivity index (peak vs rest)")
         ax.set_ylabel("units")
+        ax.set_xlim(0, 1.05)
     for j in range(n_feat, len(axes_flat)):
         axes_flat[j].axis("off")
     fig.suptitle(title, fontsize=11)
@@ -567,7 +652,7 @@ def plot_primary_feature_pie(
             autopct="%1.0f%%",
             startangle=90,
         )
-    axes[0].set_title("Primary feature (max gap)")
+    axes[0].set_title("Primary feature (max selectivity index)")
 
     grp_counts: dict[str, int] = defaultdict(int)
     for g in result.primary_group:
@@ -603,8 +688,8 @@ def plot_feature_mixture_scatter(
     ]
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.2), constrained_layout=True)
     for ax, (x_key, y_key, subtitle) in zip(axes, pairs):
-        x = result.gap[x_key] if x_key in result.gap else getattr(result, x_key)
-        y = result.gap[y_key] if y_key in result.gap else getattr(result, y_key)
+        x = result.si[x_key]
+        y = result.si[y_key]
         mask = np.isfinite(x) & np.isfinite(y)
         ax.scatter(x[mask], y[mask], s=12, alpha=0.5, c="#4c72b0")
         for u, is_mix in enumerate(result.mixed):
@@ -612,8 +697,10 @@ def plot_feature_mixture_scatter(
                 ax.scatter(
                     x[u], y[u], s=40, facecolors="none", edgecolors="crimson", linewidths=1.5,
                 )
-        ax.set_xlabel(FEATURE_DISPLAY.get(x_key, x_key) if x_key in result.gap else x_key)
-        ax.set_ylabel(FEATURE_DISPLAY.get(y_key, y_key) if y_key in result.gap else y_key)
+        ax.set_xlabel(FEATURE_DISPLAY.get(x_key, x_key))
+        ax.set_ylabel(FEATURE_DISPLAY.get(y_key, y_key))
+        ax.set_xlim(0, 1.05)
+        ax.set_ylim(0, 1.05)
         ax.set_title(subtitle)
         ax.grid(True, linestyle=":", alpha=0.35)
     fig.suptitle(title)
@@ -830,11 +917,21 @@ def _plot_unit_example_panel(
     )
 
 
-def _target_prob_array(model: dict, activations: np.ndarray, text: str) -> np.ndarray:
+def _target_prob_array(
+    model: dict,
+    activations: np.ndarray,
+    text: str,
+    *,
+    next_chars: list[str] | None = None,
+) -> np.ndarray:
     probs = _next_char_probabilities(model, activations)
-    targets = [text[(t + 1) % len(text)] for t in range(len(text))]
+    n = activations.shape[0]
+    if next_chars is not None and len(next_chars) == n:
+        targets = list(next_chars)
+    else:
+        targets = [text[(t + 1) % len(text)] for t in range(n)]
     target_idx = [model["chars"].index(c) for c in targets]
-    return probs[np.arange(len(text)), target_idx]
+    return probs[np.arange(n), target_idx]
 
 
 def plot_example_units_for_feature(
@@ -850,10 +947,12 @@ def plot_example_units_for_feature(
     automaton: MinimizedVocabAutomaton | None = None,
     k: int = 6,
 ) -> None:
-    units = _top_units(result.gap[feature], k=k)
+    units = _top_units(result.si[feature], k=k)
     if not units:
         return
-    target_prob = _target_prob_array(model, activations, text)
+    target_prob = _target_prob_array(
+        model, activations, text, next_chars=labels.next_char,
+    )
 
     fig, axes = plt.subplots(
         len(units), 2,
@@ -873,7 +972,10 @@ def plot_example_units_for_feature(
             target_prob=target_prob if feature in PREDICTION_SET else None,
             automaton=automaton,
         )
-    fig.suptitle(f"Top units for {FEATURE_DISPLAY[feature]} (normalized gap)", fontsize=11)
+    fig.suptitle(
+        f"Top units for {FEATURE_DISPLAY[feature]} (selectivity index)",
+        fontsize=11,
+    )
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -894,7 +996,9 @@ def plot_example_predictor_units(
     units = _top_units(np.abs(result.max_logit_r), k=k)
     if not units:
         return
-    target_prob = _target_prob_array(model, activations, text)
+    target_prob = _target_prob_array(
+        model, activations, text, next_chars=labels.next_char,
+    )
 
     fig, axes = plt.subplots(
         len(units), 2,
@@ -960,11 +1064,11 @@ def plot_example_mixed_units(
 ) -> None:
     mixed_units = [u for u, m in enumerate(result.mixed) if m]
     if not mixed_units:
-        score = result.gap["dfa"] + result.gap["position"]
+        score = result.si["dfa"] + result.si["position"]
         mixed_units = _top_units(score, k=k)
     else:
         scores = np.array([
-            result.gap["dfa"][u] + result.gap["position"][u] for u in mixed_units
+            result.si["dfa"][u] + result.si["position"][u] for u in mixed_units
         ])
         order = np.argsort(scores)[::-1]
         mixed_units = [mixed_units[i] for i in order[:k]]
@@ -982,12 +1086,12 @@ def plot_example_mixed_units(
         axes = np.array([axes])
     for row, u in enumerate(mixed_units):
         feat_scores = sorted(
-            ((f, result.gap[f][u]) for f in ANALYSIS_FEATURES),
+            ((f, result.si[f][u]) for f in ALL_CATEGORICAL_FEATURES),
             key=lambda x: -x[1] if np.isfinite(x[1]) else float("-inf"),
         )
         top_feats = [f for f, _ in feat_scores[:2]]
         while len(top_feats) < 2:
-            top_feats.append(ANALYSIS_FEATURES[len(top_feats)])
+            top_feats.append(ALL_CATEGORICAL_FEATURES[len(top_feats) % len(ALL_CATEGORICAL_FEATURES)])
         for col, feat in enumerate(top_feats):
             _plot_unit_example_panel(
                 axes[row, col * 2],
@@ -1177,18 +1281,126 @@ def plot_ica_by_feature(
     )
 
 
+def plot_unit_selectivity_summary(
+    result: SelectivityResult,
+    save_path: str,
+    *,
+    repr_label: str,
+) -> None:
+    """Population summary: peaked selectivity (SI), η², peak gap, primary features."""
+    feats = list(ALL_CATEGORICAL_FEATURES)
+    x = np.arange(len(feats))
+    colors = [FEATURE_COLORS.get(f, "#888") for f in feats]
+    tick = [FEATURE_DISPLAY.get(f, f) for f in feats]
+
+    fig, axes = plt.subplots(2, 3, figsize=(14.5, 8.0), constrained_layout=True)
+    fig.suptitle(
+        f"Unit selectivity summary ({repr_label}, n={result.n_points} points, "
+        f"{len(result.primary_feature)} units)",
+        fontsize=12,
+        y=1.02,
+    )
+
+    def _bar(ax, values, ylabel, ylim=None) -> None:
+        ax.bar(x, values, color=colors, edgecolor="0.2", linewidth=0.6)
+        ax.set_xticks(x)
+        ax.set_xticklabels(tick, rotation=35, ha="right", fontsize=8)
+        ax.set_ylabel(ylabel, fontsize=9)
+        ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+    si_med = [float(np.nanmedian(result.si[f])) for f in feats]
+    si_p90 = [float(np.nanpercentile(result.si[f], 90)) for f in feats]
+    _bar(axes[0, 0], si_med, "Median selectivity index", (0, 1.05))
+    axes[0, 0].set_title("Peaked tuning (top vs rest)")
+    for i, p in enumerate(si_p90):
+        axes[0, 0].text(i, si_med[i], f"p90={p:.2f}", ha="center", va="bottom", fontsize=6)
+
+    eta_med = [float(np.nanmedian(result.eta2[f])) for f in feats]
+    _bar(axes[0, 1], eta_med, "Median η²", (0, 1.05))
+    axes[0, 1].set_title("Overall labeled variance")
+
+    pg_med = [float(np.nanmedian(result.peak_gap[f])) for f in feats]
+    _bar(axes[0, 2], pg_med, "Median peak gap / σ(unit)")
+    axes[0, 2].set_title("Top − runner-up category")
+
+    frac_strong = [
+        float(np.mean(result.si[f] >= 0.5)) if np.isfinite(result.si[f]).any() else 0.0
+        for f in feats
+    ]
+    _bar(axes[1, 0], frac_strong, "Fraction of units", (0, 1.05))
+    axes[1, 0].set_title("Units with SI ≥ 0.5")
+
+    feat_counts: dict[str, int] = defaultdict(int)
+    for f in result.primary_feature:
+        if f != "none":
+            feat_counts[f] += 1
+    if feat_counts:
+        pf_feats = sorted(feat_counts, key=lambda k: -feat_counts[k])
+        px = np.arange(len(pf_feats))
+        axes[1, 1].bar(
+            px,
+            [feat_counts[f] for f in pf_feats],
+            color=[FEATURE_COLORS.get(f, "#888") for f in pf_feats],
+            edgecolor="0.2",
+            linewidth=0.6,
+        )
+        axes[1, 1].set_xticks(px)
+        axes[1, 1].set_xticklabels(
+            [FEATURE_DISPLAY.get(f, f) for f in pf_feats],
+            rotation=35, ha="right", fontsize=8,
+        )
+        axes[1, 1].set_ylabel("# units")
+        axes[1, 1].set_title("Primary feature (argmax SI)")
+        axes[1, 1].grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[1, 2]
+    for f in feats:
+        si_v = result.si[f]
+        e2 = result.eta2[f]
+        mask = np.isfinite(si_v) & np.isfinite(e2)
+        ax.scatter(
+            e2[mask], si_v[mask],
+            s=18, alpha=0.45, c=FEATURE_COLORS.get(f, "#888"), label=FEATURE_DISPLAY[f],
+        )
+    ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, alpha=0.35)
+    ax.set_xlabel("η²")
+    ax.set_ylabel("selectivity index")
+    ax.set_title("Per-unit SI vs η²")
+    ax.set_xlim(0, 1.05)
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=6, loc="lower right")
+    ax.grid(True, linestyle=":", alpha=0.35)
+
+    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
 def _save_summary_json(result: SelectivityResult, save_path: str, unit_labels: list[str]) -> None:
     payload = {
         "units": unit_labels,
-        "gap": {k: v.tolist() for k, v in result.gap.items()},
+        "n_points": result.n_points,
+        "si": {k: v.tolist() for k, v in result.si.items()},
+        "peak_gap": {k: v.tolist() for k, v in result.peak_gap.items()},
         "eta2": {k: v.tolist() for k, v in result.eta2.items()},
+        "gap": {k: v.tolist() for k, v in result.gap.items()},
+        "peak_label": result.peak_label,
         "target_prob_r": result.target_prob_r.tolist(),
         "max_logit_r": result.max_logit_r.tolist(),
         "entropy_r": result.entropy_r.tolist(),
         "best_predicted_char": result.best_predicted_char,
         "primary_feature": result.primary_feature,
+        "primary_category": result.primary_category,
         "primary_group": result.primary_group,
         "mixed": [bool(m) for m in result.mixed],
+        "population_median_si": {
+            f: float(np.nanmedian(result.si[f])) for f in ALL_CATEGORICAL_FEATURES
+        },
+        "population_median_eta2": {
+            f: float(np.nanmedian(result.eta2[f])) for f in ALL_CATEGORICAL_FEATURES
+        },
     }
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
@@ -1209,12 +1421,27 @@ def plot_unit_selectivity_suite(
     unit_labels: list[str] | None = None,
     label_words: list[str] | None = None,
     example_k: int = 6,
+    output_probs: np.ndarray | None = None,
 ) -> SelectivityResult | None:
+    os.makedirs(save_dir, exist_ok=True)
+
+    if condensed is None:
+        from visualize import condense_hidden_states_by_prefix
+
+        condensed = condense_hidden_states_by_prefix(
+            text, activations, output_probs, spaced=spaced, words=words,
+        )
+        print(
+            f"unit selectivity: auto-condensed to {len(condensed.labels)} prefixes "
+            f"(from {sum(condensed.counts)} timesteps)"
+        )
+
+    activations = condensed.hidden_states
+
     if activations.shape[0] < 2:
-        print("unit selectivity: need at least 2 timesteps")
+        print("unit selectivity: need at least 2 condensed points")
         return None
 
-    os.makedirs(save_dir, exist_ok=True)
     n_units = activations.shape[1]
     if unit_labels is None:
         unit_labels = [f"u{i}" for i in range(n_units)]
@@ -1226,11 +1453,18 @@ def plot_unit_selectivity_suite(
     )
     result = compute_selectivity(activations, labels, model, text)
 
+    plot_unit_selectivity_summary(
+        result,
+        os.path.join(save_dir, "unit_selectivity_summary.png"),
+        repr_label=repr_label,
+    )
     plot_selectivity_heatmap(
-        result.gap, ALL_CATEGORICAL_FEATURES,
-        os.path.join(save_dir, "selectivity_heatmap_gap.png"),
-        title=f"{repr_label} — normalized gap per unit",
+        result.si, ALL_CATEGORICAL_FEATURES,
+        os.path.join(save_dir, "selectivity_heatmap_si.png"),
+        title=f"{repr_label} — selectivity index (peak vs rest)",
         unit_labels=unit_labels,
+        vmin=0.0,
+        vmax=1.0,
     )
     plot_selectivity_heatmap(
         result.eta2, ALL_CATEGORICAL_FEATURES,
@@ -1239,6 +1473,18 @@ def plot_unit_selectivity_suite(
         unit_labels=unit_labels,
         vmin=0.0,
         vmax=1.0,
+    )
+    plot_selectivity_heatmap(
+        result.peak_gap, ALL_CATEGORICAL_FEATURES,
+        os.path.join(save_dir, "selectivity_heatmap_peak_gap.png"),
+        title=f"{repr_label} — normalized top − runner-up",
+        unit_labels=unit_labels,
+    )
+    plot_selectivity_heatmap(
+        result.gap, ALL_CATEGORICAL_FEATURES,
+        os.path.join(save_dir, "selectivity_heatmap_gap.png"),
+        title=f"{repr_label} — legacy pairwise gap",
+        unit_labels=unit_labels,
     )
     plot_prediction_encoding_heatmap(
         result,
@@ -1249,7 +1495,7 @@ def plot_unit_selectivity_suite(
     plot_selectivity_distributions(
         result,
         os.path.join(save_dir, "selectivity_distributions.png"),
-        title=f"{repr_label} — gap distributions",
+        title=f"{repr_label} — selectivity index distributions",
     )
     plot_primary_feature_pie(
         result,
@@ -1276,7 +1522,7 @@ def plot_unit_selectivity_suite(
         automaton=automaton,
     )
 
-    for feat in ANALYSIS_FEATURES:
+    for feat in ALL_CATEGORICAL_FEATURES:
         plot_example_units_for_feature(
             result, activations, labels, feat,
             os.path.join(save_dir, f"example_units_{feat}.png"),

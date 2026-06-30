@@ -7101,7 +7101,7 @@ def main() -> None:
             from unit_selectivity import plot_unit_selectivity_suite
 
             plot_unit_selectivity_suite(
-                cv.hidden_states if cv is not None else hidden_states,
+                hidden_states,
                 text,
                 automaton,
                 os.path.join(out_dir, "unit_selectivity"),
@@ -7114,6 +7114,7 @@ def main() -> None:
                     model.get("dale_sign"), model["hidden_size"],
                 ),
                 label_words=label_words if not spaced else None,
+                output_probs=output_probs,
             )
 
         if model["hidden_size"] == 2:

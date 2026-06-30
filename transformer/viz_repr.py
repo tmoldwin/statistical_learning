@@ -747,6 +747,7 @@ def plot_representation_suite(
             words=words,
             condensed=cv,
             repr_label=name,
+            output_probs=output_probs,
             unit_labels=[f"{dim}{i}" for i in range(spec.vectors.shape[1])],
         )
 

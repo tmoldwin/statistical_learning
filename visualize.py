@@ -85,6 +85,7 @@ from experiment import (
     experiment_uses_word_space,
     input_path,
     learning_dynamics_dir,
+    model_dir,
     model_path,
     plots_dir,
     shared_dir,
@@ -95,6 +96,7 @@ from transformer.viz_repr import run_transformer_visualization
 from viz_timing import VizTimer
 from readme_figures import (
     numbered_plot_path,
+    remove_flat_plot_files,
     remove_legacy_readme_plot_names,
     remove_shared_figures_from_model_plots,
 )
@@ -303,6 +305,7 @@ def plot_hidden_states_heatmap(
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
     words: list[str] | None = None,
+    cluster_units: bool = False,
 ):
     """Heatmap of a per-timestep vector representation over the sequence."""
     prefix_keys: list[str] | None = None
@@ -330,6 +333,65 @@ def plot_hidden_states_heatmap(
         vmin = 0.0 if use_relu else -1.0
         vmax = None if use_relu else 1.0
 
+    default_title = (
+        f"Hidden state activations ({act_label} output) over the input sequence"
+        if y_label == "hidden unit"
+        else f"{y_label} over the input sequence"
+    )
+    if cluster_units:
+        default_title += " · units hierarchically clustered"
+
+    if cluster_units:
+        unit_labels = [
+            f"h{i}" if y_label == "hidden unit" else f"{y_label}{i}"
+            for i in range(hidden_size)
+        ]
+        data = pd.DataFrame(
+            hidden_states.T,
+            index=unit_labels,
+            columns=x_labels,
+        )
+        grid = sns.clustermap(
+            data,
+            row_cluster=True,
+            col_cluster=False,
+            method="average",
+            metric="euclidean",
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            center=None if use_relu or use_raw else 0.0,
+            figsize=(max(12, length * 0.15), max(2.5, hidden_size * 0.35)),
+            dendrogram_ratio=(0.08, 0.0),
+            cbar_kws={"label": colorbar_label or (f"activation ({act_label})" if not use_raw else "value")},
+            xticklabels=True,
+            yticklabels=True,
+        )
+        if automaton is not None:
+            if prefix_keys is not None:
+                state_ids = _dfa_state_ids_for_prefixes(
+                    prefix_keys, automaton, spaced=spaced,
+                )
+            else:
+                state_ids = _dfa_state_ids_at_timesteps(
+                    text, automaton, spaced=spaced, words=words,
+                )
+            _color_tick_labels_by_state_ids(grid.ax_heatmap.get_xticklabels(), state_ids)
+            x_axis += " · tick color = min DFA state"
+        grid.ax_heatmap.set_xlabel(x_axis)
+        grid.ax_heatmap.set_ylabel(y_label)
+        grid.ax_heatmap.tick_params(axis="x", labelsize=7)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=8)
+        grid.fig.suptitle(
+            _condensed_plot_title(title or default_title, condensed),
+            y=1.02,
+            fontsize=11,
+        )
+        grid.savefig(save_path, dpi=150, bbox_inches="tight")
+        plt.close(grid.fig)
+        print(f"wrote {save_path}")
+        return
+
     fig, ax = plt.subplots(figsize=(max(12, length * 0.15),
                                     max(2.5, hidden_size * 0.35)))
     im = ax.imshow(
@@ -356,11 +418,6 @@ def plot_hidden_states_heatmap(
         x_axis += " · tick color = min DFA state"
     ax.set_xlabel(x_axis)
     ax.set_ylabel(y_label)
-    default_title = (
-        f"Hidden state activations ({act_label} output) over the input sequence"
-        if y_label == "hidden unit"
-        else f"{y_label} over the input sequence"
-    )
     ax.set_title(
         _condensed_plot_title(title or default_title, condensed)
     )
@@ -1856,18 +1913,21 @@ def _encode_frame_sequence(frame_paths: list[str], out_path: str, *, fps: int) -
     if shutil.which("ffmpeg"):
         frame_dir = os.path.dirname(frame_paths[0])
         pattern = os.path.join(frame_dir, "frame_%04d.png")
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-framerate", str(fps),
-                "-i", pattern,
-                "-pix_fmt", "yuv420p",
-                mp4_path,
-            ],
-            check=True,
-            capture_output=True,
-        )
-        return mp4_path
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-framerate", str(fps),
+                    "-i", pattern,
+                    "-pix_fmt", "yuv420p",
+                    mp4_path,
+                ],
+                check=True,
+                capture_output=True,
+            )
+            return mp4_path
+        except subprocess.CalledProcessError:
+            pass
 
     try:
         import imageio.v3 as iio
@@ -5862,7 +5922,7 @@ def main() -> None:
                 model, save_path=str(numbered_plot_path(out_dir, "weights_eigenspectra.png")),
             )
             plot_weight_dynamics_over_training(
-                model, os.path.join(out_dir, "weight_dynamics_over_training.png"),
+                model, str(numbered_plot_path(out_dir, "weight_dynamics_over_training.png")),
             )
     if not args.trajectories_only:
         with timer.section("learning_curve"):
@@ -5985,6 +6045,7 @@ def main() -> None:
             automaton=automaton,
             spaced=spaced,
             words=words,
+            cluster_units=True,
         )
 
         plot_output_probs(
@@ -6156,17 +6217,27 @@ def main() -> None:
     if args.exp and automaton is not None and not args.condensed and not is_transformer:
         dyn_dir = learning_dynamics_dir(args.exp, model_type)
         dyn_dir.mkdir(parents=True, exist_ok=True)
-        write_hidden_state_pca_learning_video(
-            model,
-            text,
-            save_path=str(dyn_dir / "hidden_state_pca.mp4"),
-            spaced=spaced,
-            automaton=automaton,
-        )
+        try:
+            write_hidden_state_pca_learning_video(
+                model,
+                text,
+                save_path=str(dyn_dir / "hidden_state_pca.mp4"),
+                spaced=spaced,
+                automaton=automaton,
+            )
+        except Exception as exc:
+            print(f"skip learning dynamics video: {exc}")
 
     if args.exp:
         remove_legacy_readme_plot_names(out_dir)
+        remove_flat_plot_files(out_dir)
         remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))
+        # Drop pre-refactor learning_dynamics/ sibling of plots/.
+        legacy_dyn = model_dir(args.exp, model_type) / "learning_dynamics"
+        if legacy_dyn.is_dir() and legacy_dyn != Path(out_dir) / "learning_dynamics":
+            import shutil
+            shutil.rmtree(legacy_dyn)
+            print(f"removed legacy {legacy_dyn}")
 
     timer.print_summary(title="Overall visualization timing")
 

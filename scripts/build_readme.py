@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from readme_figures import README_FIGURES, ReadmeFigure, SHARED_FIGURE_NUMBERS
+from readme_figures import README_FIGURES, ReadmeFigure, SHARED_FIGURE_NUMBERS, readme_figure_path
 from experiment import shared_dir
 
 EXP = ROOT / "experiments" / "ten_word_overlap_s"
@@ -37,7 +37,7 @@ def sync_figures() -> None:
         if fig.number in SHARED_FIGURE_NUMBERS:
             src = SRC_SHARED / fig.filename()
         else:
-            src = SRC_PLOTS / fig.filename()
+            src = readme_figure_path(SRC_PLOTS, fig)
         dest = FIGURES / fig.filename()
         if not src.is_file():
             raise FileNotFoundError(f"missing plot for README figure {fig.number}: {src}")

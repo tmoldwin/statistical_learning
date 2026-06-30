@@ -75,22 +75,29 @@ REGIMES: dict[str, list[str]] = {
         # 5-letter
         "front", "count", "storm",
     ],
-    # 16 real words: more suffix/prefix groups plus independents.
+    # 16 real words (primary task vocabulary).
+    "sixteen_word": [
+        "big", "dig", "fig", "pig",
+        "bog", "dog", "fog", "log",
+        "bum", "gum", "hum", "rum",
+        "red", "wed",
+        "fox", "box",
+    ],
+    # 16 real words: suffix/prefix overlap families (a/e vowels).
     "sixteen_word_overlap": [
-        # same suffix -at
         "cat", "hat", "mat", "rat",
-        # same suffix -et
         "met", "pet", "net",
-        # same suffix -an
         "can", "ban", "pan",
-        # same suffix -ar
         "car", "bar", "tar",
-        # same prefix an- (2 letters)
-        "ant", "and",
-        # same prefix be- (2 letters)
-        "bed", "bet",
-        # independent
-        "tea", "oil",
+        "ant", "bed", "bet",
+    ],
+    # 16 real words: disjoint inventory (i/o/u vowels); sanity-check vocab B.
+    "sixteen_word_ig_um": [
+        "big", "dig", "fig", "pig",
+        "bog", "dog", "fog", "log",
+        "bum", "gum", "hum", "rum",
+        "red", "wed",
+        "fox", "box",
     ],
     # 25 real words: extends sixteen_word_overlap with more overlap families.
     "twenty_five_word_overlap": [

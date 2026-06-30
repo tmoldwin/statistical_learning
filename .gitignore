@@ -9,7 +9,6 @@ venv/
 experiments/**/model.npz
 experiments/**/model.pt
 experiments/**/plots/
-experiments/**/learning_dynamics/
 experiments/**/input.txt
 experiments/**/shared/
 

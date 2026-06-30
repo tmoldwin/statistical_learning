@@ -1,18 +1,25 @@
-"""Experiment directory layout with separate RNN and Transformer outputs.
+"""Experiment layout: one task folder per run under experiments/<name>/.
 
 experiments/<name>/
-    input.txt                 # shared training corpus
-    shared/                   # vocabulary trie + DFA (model-agnostic)
+    input.txt
+    shared/                   # vocabulary trie + DFA SVGs
     rnn/
         model.npz
-        plots/                # RNN-specific analysis figures
-        learning_dynamics/
-    transformer/
+        plots/
+            training/
+            weights/
+            activations/
+            states/
+            trajectories/
+            unit_selectivity/
+            learning_dynamics/
+    transformer/              # optional
         model.pt
-        model_config.json
-        training_meta.json
-        plots/                # transformer-specific analysis figures
-        learning_dynamics/
+        plots/
+            ...
+
+Side-by-side comparison figures live under experiments/comparisons/<name>/.
+Archived runs are under experiments/old/.
 """
 
 from __future__ import annotations
@@ -21,248 +28,69 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent
 EXPERIMENTS_ROOT = REPO_ROOT / "experiments"
+COMPARISONS_ROOT = EXPERIMENTS_ROOT / "comparisons"
+OLD_EXPERIMENTS_ROOT = EXPERIMENTS_ROOT / "old"
 
 MODEL_TYPES = ("rnn", "transformer")
 
-_MICRO_VOCAB_CONFIG: dict[str, object] = {
-    "chars": 3_000,
-    "steps": 2_000,
-    "viz_length": 40,
-    "hidden_size": 12,
-    "sequence_length": 8,
-    "num_heads": 1,
-    "n_layer": 1,
-    "learning_rate": 0.05,
-    "eval_interval": 100,
-    "eval_iterations": 10,
-    "metric_rollout_len": 400,
-    "timestep_noise_std": 0.1,
-}
-
-# Ordered micro curriculum (spaced `_s` variants); see task.py REGIMES.
-MICRO_CURRICULUM: tuple[str, ...] = (
-    "two_word_disjoint",
-    "two_word_pos_overlap",
-    "two_word_prefix_branch",
-    "three_word_overlap",
-    "three_word_permutation",
-    "three_word_ca_hub",
-)
-
-MICRO_CURRICULUM_REGIME_LABELS: dict[str, str] = {
-    "two_word_disjoint": "disjoint",
-    "two_word_pos_overlap": "same 2nd letter",
-    "two_word_prefix_branch": "shared prefix",
-    "three_word_overlap": "suffix family",
-    "three_word_permutation": "permutation",
-    "three_word_ca_hub": "3-way ca hub",
-}
-
-# Weight / training RNG seeds for multi-init trajectory panels.
-MICRO_CURRICULUM_INIT_SEEDS: tuple[int, ...] = (42, 137, 271, 409)
-
-_BASE_CONFIG: dict[str, dict] = {
-    # Tiny 2D sandbox: 3 words, short corpus, fast training for transformer debugging.
-    "three_word_overlap": dict(_MICRO_VOCAB_CONFIG),
-    "three_word_permutation": {
-        **_MICRO_VOCAB_CONFIG,
-        "steps": 5_000,
-        "timestep_noise_std": 0.05,
-    },
-    **{
-        regime: dict(_MICRO_VOCAB_CONFIG)
-        for regime in MICRO_CURRICULUM
-        if regime not in ("three_word_overlap", "three_word_permutation")
-    },
-    "ten_word_overlap": {
-        "chars": 50_000,
-        "steps": 2_000,
-        "viz_length": 50,
-        "hidden_size": 128,
-        "pos_embd_dim": 24,
-        "sequence_length": 12,
-        "num_heads": 1,
-        "n_layer": 1,
-        "use_residual": False,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
-    },
-    "twelve_word_overlap": {
-        "chars": 150_000,
-        "steps": 40_000,
-        "viz_length": 60,
-        "hidden_size": 128,
-        "sequence_length": 20,
-        "learning_rate": 0.05,
-    },
-    "sixteen_word_overlap": {
-        "chars": 50_000,
-        "steps": 3_000,
-        "viz_length": 50,
-        "hidden_size": 128,
-        "pos_embd_dim": 24,
-        "sequence_length": 12,
-        "num_heads": 1,
-        "n_layer": 1,
-        "use_residual": False,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
-    },
-    "ten_word_mixed": {
-        "chars": 50_000,
-        "steps": 2_000,
-        "viz_length": 60,
-        "hidden_size": 128,
-        "pos_embd_dim": 24,
-        "sequence_length": 16,
-        "num_heads": 1,
-        "n_layer": 1,
-        "use_residual": False,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
-    },
-    "twenty_five_word_overlap": {
-        "chars": 150_000,
-        "steps": 25_000,
-        "viz_length": 80,
-        "hidden_size": 256,
-        "pos_embd_dim": 48,
-        "sequence_length": 12,
-        "num_heads": 1,
-        "n_layer": 1,
-        "use_residual": False,
-        "learning_rate": 0.04,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
-    },
-    "six_word_overlap": {"chars": 50_000, "steps": 1_500, "viz_length": 150},
-    "six_word_overlap_sin": {"chars": 50_000, "steps": 1_500, "viz_length": 150},
-    "ten_four_letter_overlap": {
-        "chars": 50_000,
-        "steps": 15_000,
-        "viz_length": 50,
-        "hidden_size": 32,
-        "sequence_length": 40,
-    },
-    "ten_four_letter_overlap_dale": {
-        "regime": "ten_four_letter_overlap",
-        "chars": 50_000,
-        "steps": 15_000,
-        "viz_length": 50,
-        "hidden_size": 50,
-        "dale": True,
-        "e_fraction": 0.8,
-        "sequence_length": 40,
-    },
-}
-
-# Transformer defaults aligned with RNN regimes (char-level LM).
-TRANSFORMER_DEFAULTS: dict[str, object] = {
-    "n_embd": 32,
-    "block_size": 12,
-    "num_heads": 1,
-    "head_size": 32,
-    "n_layer": 1,
-    "use_layernorm": True,
-    "use_residual": True,
-    "batch_size": 32,
-    "learning_rate": 1e-3,
-    "eval_interval": 500,
-    "eval_iterations": 50,
-}
-
-
-def spaced_experiment_name(regime: str) -> str:
-    return f"{regime}_s"
-
-
-def experiment_folder_name(regime: str, *, word_space: bool, dale: bool) -> str:
-    name = spaced_experiment_name(regime) if word_space else regime
-    return f"{name}_dale" if dale else name
-
-
-def _build_experiment_config() -> dict[str, dict]:
-    configs: dict[str, dict] = {}
-    for regime, cfg in _BASE_CONFIG.items():
-        task_regime = cfg.get("regime", regime)
-        dale = bool(cfg.get("dale", False))
-        for word_space in (False, True):
-            exp_name = experiment_folder_name(task_regime, word_space=word_space, dale=dale)
-            configs[exp_name] = {
-                **cfg,
-                "regime": task_regime,
-                "word_space": word_space,
-                "dale": dale,
-            }
-    return configs
-
-
-EXPERIMENT_CONFIG: dict[str, dict] = _build_experiment_config()
-
-
-def experiment_uses_word_space(name: str) -> bool:
-    return bool(EXPERIMENT_CONFIG.get(name, {}).get("word_space", False))
-
-
-MICRO_CURRICULUM_VALIDATION_ROOT = EXPERIMENTS_ROOT / "micro_curriculum_validation"
-
-MICRO_CURRICULUM_VIZ_KINDS: tuple[str, ...] = (
+COMPARISON_VIZ_KINDS: tuple[str, ...] = (
+    "learning_curves",
     "trajectories",
     "states",
-    "learning_curves",
-    "dfa_sensitivity",
     "unit_selectivity",
+    "dfa_sensitivity",
 )
 
-
-def micro_curriculum_validation_dir(*, spaced: bool, model_type: str = "rnn") -> Path:
-    """Base folder for micro-curriculum validation (<model_type>/_s|_ns)."""
-    if model_type not in MODEL_TYPES:
-        raise ValueError(f"model_type must be one of {MODEL_TYPES}, got {model_type!r}")
-    spacing = "_s" if spaced else "_ns"
-    return MICRO_CURRICULUM_VALIDATION_ROOT / model_type / spacing
-
-
-def micro_curriculum_viz_dir(
-    *,
-    spaced: bool,
-    model_type: str = "rnn",
-    kind: str,
-) -> Path:
-    """Typed subfolder under micro_curriculum_validation_dir (e.g. trajectories/)."""
-    if kind not in MICRO_CURRICULUM_VIZ_KINDS:
-        raise ValueError(
-            f"kind must be one of {MICRO_CURRICULUM_VIZ_KINDS}, got {kind!r}",
-        )
-    return micro_curriculum_validation_dir(spaced=spaced, model_type=model_type) / kind
-
-
-MICRO_CURRICULUM_REPR: dict[str, str] = {
-    "rnn": "hidden state",
-    "transformer": "block_output",
+_SIXTEEN_WORD_DEFAULTS: dict[str, object] = {
+    "regime": "sixteen_word",
+    "word_space": True,
+    "chars": 50_000,
+    "steps": 10_000,
+    "viz_length": 50,
+    "hidden_size": 50,
+    "sequence_length": 12,
+    "eval_interval": 50,
+    "eval_iterations": 20,
+    "metric_rollout_len": 1000,
 }
 
+# Active tasks — each name is both the folder under experiments/ and the CLI key.
+TASKS: dict[str, dict] = {
+    "sixteen_word": dict(_SIXTEEN_WORD_DEFAULTS),
+}
 
-def micro_curriculum_repr_label(model_type: str) -> str:
-    if model_type not in MICRO_CURRICULUM_REPR:
-        raise ValueError(f"model_type must be one of {tuple(MICRO_CURRICULUM_REPR)}")
-    return MICRO_CURRICULUM_REPR[model_type]
+# Backward-compatible alias used by training / visualization entry points.
+EXPERIMENT_CONFIG: dict[str, dict] = TASKS
+
+
+def comparison_dir(comparison_name: str, kind: str) -> Path:
+    if kind not in COMPARISON_VIZ_KINDS:
+        raise ValueError(f"kind must be one of {COMPARISON_VIZ_KINDS}, got {kind!r}")
+    return COMPARISONS_ROOT / comparison_name / kind
 
 
 def experiment_regime(name: str) -> str:
-    cfg = EXPERIMENT_CONFIG.get(name)
+    cfg = TASKS.get(name) or EXPERIMENT_CONFIG.get(name)
     if cfg and "regime" in cfg:
-        return cfg["regime"]
+        return str(cfg["regime"])
     base = name
     if base.endswith("_dale"):
         base = base[: -len("_dale")]
     if base.endswith("_s"):
         base = base[:-2]
     return base
+
+
+def experiment_uses_word_space(name: str) -> bool:
+    cfg = TASKS.get(name) or EXPERIMENT_CONFIG.get(name)
+    if cfg is not None:
+        return bool(cfg.get("word_space", False))
+    return name.endswith("_s")
+
+
+def spaced_experiment_name(regime: str) -> str:
+    """Legacy helper: spaced folder name for a regime (regime + '_s')."""
+    return f"{regime}_s"
 
 
 def experiment_dir(name: str) -> Path:
@@ -287,6 +115,14 @@ def model_path(name: str, model_type: str = "rnn", *, seed: int | None = None) -
     return model_dir(name, model_type) / fname
 
 
+def checkpoint_path(name: str, model_type: str = "rnn", *, seed: int | None = None) -> Path:
+    if seed is not None:
+        seeded = model_path(name, model_type, seed=seed)
+        if seeded.is_file():
+            return seeded
+    return model_path(name, model_type)
+
+
 def model_config_path(name: str) -> Path:
     return model_dir(name, "transformer") / "model_config.json"
 
@@ -304,11 +140,7 @@ def plots_dir(name: str, model_type: str = "rnn") -> Path:
 
 
 def learning_dynamics_dir(name: str, model_type: str = "rnn") -> Path:
-    return model_dir(name, model_type) / "learning_dynamics"
-
-
-def plot_path(name: str, plot_name: str, model_type: str = "rnn") -> Path:
-    return plots_dir(name, model_type) / plot_name
+    return plots_dir(name, model_type) / "learning_dynamics"
 
 
 def ensure_experiment_dirs(name: str, model_type: str = "rnn") -> None:

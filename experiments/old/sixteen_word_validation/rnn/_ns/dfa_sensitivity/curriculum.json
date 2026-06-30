@@ -1,0 +1,56 @@
+[
+  {
+    "regime": "sixteen_word_overlap",
+    "exp": "sixteen_word_overlap",
+    "words": [
+      "cat",
+      "hat",
+      "mat",
+      "rat",
+      "met",
+      "pet",
+      "net",
+      "can",
+      "ban",
+      "pan",
+      "car",
+      "bar",
+      "tar",
+      "ant",
+      "bed",
+      "bet"
+    ],
+    "dfa_gap": 2.6959501820489766,
+    "char_gap": 4.454157178485229,
+    "pos_gap": NaN,
+    "within_dfa_median": 5.182298374039352,
+    "between_dfa_median": 7.878248556088328
+  },
+  {
+    "regime": "sixteen_word_ig_um",
+    "exp": "sixteen_word_ig_um",
+    "words": [
+      "big",
+      "dig",
+      "fig",
+      "pig",
+      "bog",
+      "dog",
+      "fog",
+      "log",
+      "bum",
+      "gum",
+      "hum",
+      "rum",
+      "red",
+      "wed",
+      "fox",
+      "box"
+    ],
+    "dfa_gap": 9.746494440079621,
+    "char_gap": 5.011112667136772,
+    "pos_gap": NaN,
+    "within_dfa_median": 5.047228101934705,
+    "between_dfa_median": 14.793722542014326
+  }
+]

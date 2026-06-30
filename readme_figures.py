@@ -202,6 +202,35 @@ PLOT_BASENAME_TO_FIGURE: dict[str, ReadmeFigure] = {
     fig.plot_basename: fig for fig in README_FIGURES
 }
 
+# Logical subfolders under experiments/<task>/<model>/plots/.
+PLOT_SUBDIR: dict[str, str] = {
+    "vocabulary_trie.png": "vocabulary",
+    "vocabulary_min_dfa.png": "vocabulary",
+    "learning_curve.png": "training",
+    "samples_before_after.png": "training",
+    "weights.png": "weights",
+    "weights_eigenspectra.png": "weights",
+    "weight_dynamics_over_training.png": "weights",
+    "activation_heatmap.png": "activations",
+    "next_char_prob_sequence_heatmap.png": "activations",
+    "activation_by_input_char.png": "activations",
+    "activation_clustered_heatmap.png": "activations",
+    "embedding_panels_context.png": "states",
+    "dfa_and_embedding_pca.png": "states",
+    "next_char_regions_pca.png": "states",
+    "next_char_prob_panels_pca.png": "states",
+    "vector_field_grid_pca_no_input.png": "states",
+    "state_correlation_clustered_heatmap.png": "states",
+    "state_correlation_by_dfa_state.png": "states",
+    "dfa_state_distance_comparison.png": "states",
+    "state_trajectory_by_input.png": "states",
+    "state_trajectory_by_target.png": "states",
+    "word_trajectories_pca.png": "trajectories",
+    "word_trajectories_pca_3d.png": "trajectories",
+    "word_trajectories_pca_3d_trained.png": "trajectories",
+    "word_trajectories_pca_3d_closed_loop.png": "trajectories",
+}
+
 # Vocabulary structure figures depend only on the word list, not the model.
 SHARED_FIGURE_NUMBERS: frozenset[int] = frozenset({1, 2})
 
@@ -211,22 +240,51 @@ def is_shared_figure(plot_basename: str) -> bool:
     return fig is not None and fig.number in SHARED_FIGURE_NUMBERS
 
 
+def plot_subdir_for(plot_basename: str) -> str:
+    return PLOT_SUBDIR.get(plot_basename, "")
+
+
+def plot_category_dir(out_dir: str | Path, plot_basename: str) -> Path:
+    """Directory for a plot category under the task plots root."""
+    sub = plot_subdir_for(plot_basename)
+    root = Path(out_dir)
+    return root / sub if sub else root
+
+
+def readme_figure_path(plots_root: str | Path, fig: ReadmeFigure) -> Path:
+    """Resolved path for a numbered README figure inside categorized subfolders."""
+    return plot_category_dir(plots_root, fig.plot_basename) / fig.filename()
+
+
 def numbered_plot_path(out_dir: str | Path, plot_basename: str) -> Path:
-    """Path for a README figure inside an experiment plots directory."""
+    """Path for a plot inside the appropriate plots/ subfolder."""
+    root = plot_category_dir(out_dir, plot_basename)
+    root.mkdir(parents=True, exist_ok=True)
     fig = PLOT_BASENAME_TO_FIGURE.get(plot_basename)
     if fig is None:
-        return Path(out_dir) / plot_basename
-    return Path(out_dir) / fig.filename()
+        return root / plot_basename
+    return root / fig.filename()
 
 
 def remove_legacy_readme_plot_names(plots_dir: str | Path) -> None:
-    """Drop unnumbered README plot files once numbered copies exist."""
+    """Drop unnumbered or flat-root README plot files once categorized copies exist."""
     root = Path(plots_dir)
     for fig in README_FIGURES:
-        legacy = root / fig.plot_basename
-        numbered = root / fig.filename()
-        if numbered.is_file() and legacy.is_file() and legacy != numbered:
-            legacy.unlink()
+        numbered = readme_figure_path(root, fig)
+        for legacy in (root / fig.plot_basename, root / fig.filename()):
+            if numbered.is_file() and legacy.is_file() and legacy != numbered:
+                legacy.unlink()
+
+
+def remove_flat_plot_files(plots_dir: str | Path) -> None:
+    """Remove PNG/GIF/MP4/JSON left at plots/ root (pre-subfolder layout)."""
+    root = Path(plots_dir)
+    if not root.is_dir():
+        return
+    for path in root.iterdir():
+        if path.is_file() and path.suffix.lower() in {".png", ".gif", ".mp4", ".json"}:
+            path.unlink()
+            print(f"removed stale flat plot {path.relative_to(root)}")
 
 
 def remove_shared_figures_from_model_plots(

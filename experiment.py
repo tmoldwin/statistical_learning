@@ -17,6 +17,10 @@ experiments/<name>/
         model.pt
         plots/
             ...
+    rnn_dale/                 # optional Dale's-law RNN (ReLU + signed outgoing weights)
+        model.npz
+        plots/
+            ...
 
 Side-by-side comparison figures live under experiments/comparisons/<name>/.
 Archived runs are under experiments/old/.
@@ -31,7 +35,11 @@ EXPERIMENTS_ROOT = REPO_ROOT / "experiments"
 COMPARISONS_ROOT = EXPERIMENTS_ROOT / "comparisons"
 OLD_EXPERIMENTS_ROOT = EXPERIMENTS_ROOT / "old"
 
-MODEL_TYPES = ("rnn", "transformer")
+MODEL_TYPES = ("rnn", "rnn_dale", "transformer")
+
+DALE_RNN_DEFAULTS: dict[str, object] = {
+    "e_fraction": 0.8,
+}
 
 COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "learning_curves",
@@ -59,6 +67,7 @@ _MIXED_LENGTH_DEFAULTS: dict[str, object] = {
     "word_space": True,
     "chars": 50_000,
     "steps": 12_000,
+    "dale_steps": 24_000,
     "viz_length": 60,
     "hidden_size": 50,
     "sequence_length": 16,
@@ -123,6 +132,10 @@ def input_path(name: str) -> Path:
     return experiment_dir(name) / "input.txt"
 
 
+def model_uses_dale(model_type: str) -> bool:
+    return model_type == "rnn_dale"
+
+
 def model_dir(name: str, model_type: str = "rnn") -> Path:
     if model_type not in MODEL_TYPES:
         raise ValueError(f"model_type must be one of {MODEL_TYPES}, got {model_type!r}")
@@ -130,7 +143,7 @@ def model_dir(name: str, model_type: str = "rnn") -> Path:
 
 
 def model_path(name: str, model_type: str = "rnn", *, seed: int | None = None) -> Path:
-    if model_type == "rnn":
+    if model_type in ("rnn", "rnn_dale"):
         fname = f"model_seed{seed}.npz" if seed is not None else "model.npz"
         return model_dir(name, model_type) / fname
     fname = f"model_seed{seed}.pt" if seed is not None else "model.pt"

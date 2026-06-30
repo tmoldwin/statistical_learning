@@ -33,7 +33,7 @@ def main() -> None:
     parser.add_argument(
         "--models",
         nargs="+",
-        choices=["rnn", "transformer"],
+        choices=["rnn", "rnn_dale", "transformer"],
         default=["rnn"],
     )
     parser.add_argument("--skip-train", action="store_true")

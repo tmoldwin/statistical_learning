@@ -196,6 +196,15 @@ README_FIGURES: list[ReadmeFigure] = [
         "distances for each lexical factor. Prefix vs string isolates history from the "
         "current character. Diamond markers show medians; error bars show MAD.",
     ),
+    ReadmeFigure(
+        20, "feature_separation_summary", "feature_separation_summary.png",
+        "Six-panel comparison of feature separation metrics (centroid gap, silhouette, "
+        "multivariate η², pairwise within/between medians, shuffle z-scores, ratio p-values) "
+        "across lexical features on prefix-condensed hidden states.",
+        "Principled separation metrics that avoid all-pairs sampling bias. Centroid gap uses "
+        "group-balanced within spread and between-centroid distances. Label shuffles test "
+        "whether observed structure exceeds chance.",
+    ),
 ]
 
 PLOT_BASENAME_TO_FIGURE: dict[str, ReadmeFigure] = {
@@ -216,6 +225,7 @@ PLOT_SUBDIR: dict[str, str] = {
     "activation_by_input_char.png": "activations",
     "activation_clustered_heatmap.png": "activations",
     "embedding_panels_context.png": "states",
+    "embedding_panels_context_3d.png": "states",
     "dfa_and_embedding_pca.png": "states",
     "next_char_regions_pca.png": "states",
     "next_char_prob_panels_pca.png": "states",
@@ -223,6 +233,7 @@ PLOT_SUBDIR: dict[str, str] = {
     "state_correlation_clustered_heatmap.png": "states",
     "state_correlation_by_dfa_state.png": "states",
     "dfa_state_distance_comparison.png": "states",
+    "feature_separation_summary.png": "states",
     "state_trajectory_by_input.png": "states",
     "state_trajectory_by_target.png": "states",
     "word_trajectories_pca.png": "trajectories",

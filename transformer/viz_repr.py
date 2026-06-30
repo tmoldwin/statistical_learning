@@ -535,6 +535,7 @@ def plot_representation_suite(
     from visualize import (
         plot_dfa_grouped_state_correlation,
         plot_dfa_state_distance_comparison,
+        plot_feature_separation_summary,
         plot_hidden_states_clustermap,
         plot_hidden_states_correlation_clustermap,
         plot_pca_context_labels,
@@ -598,6 +599,19 @@ def plot_representation_suite(
                 condensed=cv,
                 repr_label=name,
             )
+            _plot(
+                "feature_separation_summary",
+                plot_feature_separation_summary,
+                text, spec.vectors, automaton,
+                save_path=_repr_plot_path(
+                    out_dir, spec.slug, "feature_separation_summary.png", condensed=condensed,
+                ),
+                spaced=spaced,
+                words=words,
+                condensed=cv,
+                output_probs=output_probs,
+                repr_label=name,
+            )
         return
 
     cv = _condense_representation(
@@ -645,7 +659,7 @@ def plot_representation_suite(
         plot_pca_context_labels,
         text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
-        spaced=spaced, automaton=automaton, condensed=cv,
+        spaced=spaced, automaton=automaton, condensed=cv, words=words,
     )
     _plot(
         "embedding_panels_context_3d",
@@ -653,7 +667,7 @@ def plot_representation_suite(
         text, spec.vectors, chars,
         save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
         spaced=spaced, automaton=automaton, condensed=cv,
-        repr_name=name,
+        repr_name=name, words=words,
     )
     if quick:
         return
@@ -703,6 +717,19 @@ def plot_representation_suite(
             spaced=spaced,
             words=words,
             condensed=cv,
+            repr_label=name,
+        )
+        _plot(
+            "feature_separation_summary",
+            plot_feature_separation_summary,
+            text, spec.vectors, automaton,
+            save_path=_repr_plot_path(
+                out_dir, spec.slug, "feature_separation_summary.png", condensed=condensed,
+            ),
+            spaced=spaced,
+            words=words,
+            condensed=cv,
+            output_probs=output_probs,
             repr_label=name,
         )
         from unit_selectivity import plot_unit_selectivity_suite

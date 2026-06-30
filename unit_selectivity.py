@@ -17,18 +17,22 @@ if TYPE_CHECKING:
     from vocab_diagrams import MinimizedVocabAutomaton
     from visualize import CondensedView
 
-LEXICAL_FEATURES = (
+ANALYSIS_FEATURES = ("char", "position", "position_from_end", "dfa")
+ALL_CATEGORICAL_FEATURES = ANALYSIS_FEATURES
+LEXICAL_FEATURES = ANALYSIS_FEATURES
+
+LEGACY_LEXICAL_FEATURES = (
     "prefix", "string", "dfa", "position", "char", "word_start", "word_end",
 )
 PREDICTION_FEATURES = ("next_char", "next_char_2", "next_bigram", "prediction_entropy")
-ALL_CATEGORICAL_FEATURES = LEXICAL_FEATURES + PREDICTION_FEATURES
 
 FEATURE_DISPLAY = {
+    "char": "current char",
+    "position": "position from beginning",
+    "position_from_end": "position from end",
+    "dfa": "DFA state",
     "prefix": "prefix",
     "string": "string",
-    "dfa": "DFA state",
-    "position": "word position",
-    "char": "current char",
     "word_start": "word start",
     "word_end": "word end",
     "next_char": "next char (+1)",
@@ -38,11 +42,12 @@ FEATURE_DISPLAY = {
 }
 
 FEATURE_COLORS = {
+    "char": "#55a868",
+    "position": "#8172b3",
+    "position_from_end": "#9372b3",
+    "dfa": "#4c72b0",
     "prefix": "#9467bd",
     "string": "#8c564b",
-    "dfa": "#4c72b0",
-    "position": "#8172b3",
-    "char": "#55a868",
     "word_start": "#17becf",
     "word_end": "#9edae5",
     "next_char": "#e377c2",
@@ -51,7 +56,7 @@ FEATURE_COLORS = {
     "prediction_entropy": "#ff7f0e",
 }
 
-LEXICAL_SET = frozenset(LEXICAL_FEATURES)
+LEXICAL_SET = frozenset(ANALYSIS_FEATURES)
 PREDICTION_SET = frozenset(PREDICTION_FEATURES)
 
 
@@ -62,6 +67,7 @@ class TimestepLabels:
     string: list[str]
     dfa: list[int]
     position: list[int | None]
+    position_from_end: list[int | None]
     word_start: list[str]
     word_end: list[str]
     next_char: list[str]
@@ -78,6 +84,8 @@ class TimestepLabels:
             return self.dfa, None
         if feature == "position":
             return self.position, [p is not None for p in self.position]
+        if feature == "position_from_end":
+            return self.position_from_end, [p is not None for p in self.position_from_end]
         if feature == "char":
             return self.chars, None
         if feature == "word_start":
@@ -156,6 +164,7 @@ def build_timestep_labels(
         dfa_state_for_prefix,
         in_word_prefix_at_position,
         in_word_prefix_before_current,
+        position_from_end_at_index,
         position_in_word_at_index,
         position_in_word_for_prefix_label,
         prefix_before_from_string_label,
@@ -167,8 +176,10 @@ def build_timestep_labels(
     bg: list[str | None] = []
     word_starts: list[str] = []
     word_ends: list[str] = []
+    position_from_end_ids: list[int | None] = []
 
     boundary_words = label_words if label_words is not None else words
+    vocab = _corpus_vocab(text, boundary_words)
 
     if condensed is not None:
         compare_chars = condensed.input_chars
@@ -176,6 +187,10 @@ def build_timestep_labels(
             dfa_state_for_prefix(l, automaton, spaced=spaced) for l in condensed.labels
         ]
         position_ids = [position_in_word_for_prefix_label(l) for l in condensed.labels]
+        position_from_end_ids = [
+            position_from_end_at_index(text, idx, spaced=spaced, vocab=vocab)
+            for idx in condensed.timestep_indices
+        ]
         string_labels = list(condensed.labels)
         prefix_labels = [prefix_before_from_string_label(l) for l in condensed.labels]
         next_char = list(condensed.next_chars)
@@ -188,7 +203,6 @@ def build_timestep_labels(
             nc2.append(next_char_2_full[idx] if idx < len(next_char_2_full) else None)
             bg.append(next_bigram_full[idx] if idx < len(next_bigram_full) else None)
     else:
-        vocab = _corpus_vocab(text, label_words if label_words is not None else words)
         n = len(text)
         compare_chars = list(text)
         state_ids = [
@@ -197,6 +211,9 @@ def build_timestep_labels(
         ]
         position_ids = [
             position_in_word_at_index(text, t, spaced=spaced, vocab=vocab) for t in range(n)
+        ]
+        position_from_end_ids = [
+            position_from_end_at_index(text, t, spaced=spaced, vocab=vocab) for t in range(n)
         ]
         string_labels = [
             in_word_prefix_at_position(text, t, spaced=spaced, vocab=vocab) for t in range(n)
@@ -227,6 +244,7 @@ def build_timestep_labels(
         string=string_labels,
         dfa=state_ids,
         position=position_ids,
+        position_from_end=position_from_end_ids,
         word_start=word_starts,
         word_end=word_ends,
         next_char=next_char if condensed is None else list(condensed.next_chars),
@@ -579,9 +597,9 @@ def plot_feature_mixture_scatter(
     title: str,
 ) -> None:
     pairs = [
-        ("dfa", "next_char", "DFA gap vs next-char gap"),
-        ("char", "next_char", "current char vs next char"),
-        ("prefix", "max_logit_r", "prefix gap vs max logit |r|"),
+        ("dfa", "position", "DFA vs position from beginning"),
+        ("char", "position_from_end", "current char vs position from end"),
+        ("position", "dfa", "position from beginning vs DFA"),
     ]
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.2), constrained_layout=True)
     for ax, (x_key, y_key, subtitle) in zip(axes, pairs):
@@ -942,11 +960,11 @@ def plot_example_mixed_units(
 ) -> None:
     mixed_units = [u for u, m in enumerate(result.mixed) if m]
     if not mixed_units:
-        score = result.gap["dfa"] + result.gap["next_char"]
+        score = result.gap["dfa"] + result.gap["position"]
         mixed_units = _top_units(score, k=k)
     else:
         scores = np.array([
-            result.gap["dfa"][u] + result.gap["next_char"][u] for u in mixed_units
+            result.gap["dfa"][u] + result.gap["position"][u] for u in mixed_units
         ])
         order = np.argsort(scores)[::-1]
         mixed_units = [mixed_units[i] for i in order[:k]]
@@ -963,7 +981,14 @@ def plot_example_mixed_units(
     if n == 1:
         axes = np.array([axes])
     for row, u in enumerate(mixed_units):
-        for col, feat in enumerate(("dfa", "next_char")):
+        feat_scores = sorted(
+            ((f, result.gap[f][u]) for f in ANALYSIS_FEATURES),
+            key=lambda x: -x[1] if np.isfinite(x[1]) else float("-inf"),
+        )
+        top_feats = [f for f, _ in feat_scores[:2]]
+        while len(top_feats) < 2:
+            top_feats.append(ANALYSIS_FEATURES[len(top_feats)])
+        for col, feat in enumerate(top_feats):
             _plot_unit_example_panel(
                 axes[row, col * 2],
                 axes[row, col * 2 + 1],
@@ -975,7 +1000,7 @@ def plot_example_mixed_units(
                 target_prob=None,
                 automaton=automaton,
             )
-    fig.suptitle("Mixed / lexical+predictive units", fontsize=11)
+    fig.suptitle("Mixed units (top two analysis features)", fontsize=11)
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -1251,7 +1276,7 @@ def plot_unit_selectivity_suite(
         automaton=automaton,
     )
 
-    for feat in ("dfa", "next_char", "char", "prefix", "position", "word_start", "word_end"):
+    for feat in ANALYSIS_FEATURES:
         plot_example_units_for_feature(
             result, activations, labels, feat,
             os.path.join(save_dir, f"example_units_{feat}.png"),

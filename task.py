@@ -75,6 +75,13 @@ REGIMES: dict[str, list[str]] = {
         # 5-letter
         "front", "count", "storm",
     ],
+    # 16 words, lengths 2–5 (4 per length); overlapping families.
+    "sixteen_word_mixed": [
+        "at", "be", "in", "on",
+        "cat", "hat", "bat", "mat",
+        "bake", "cake", "lake", "rake",
+        "plant", "slant", "grant", "chant",
+    ],
     # 16 real words (primary task vocabulary).
     "sixteen_word": [
         "big", "dig", "fig", "pig",

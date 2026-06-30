@@ -506,6 +506,50 @@ def position_in_word_at_index(
     return position_in_word_for_prefix_label(prefix)
 
 
+def word_length_at_index(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> int | None:
+    """Length of the word containing `index` (None on spaces / outside vocab)."""
+    if index < 0 or index >= len(text):
+        return None
+    if spaced:
+        if text[index] == " ":
+            return None
+        start = index
+        while start > 0 and text[start - 1] != " ":
+            start -= 1
+        end = index
+        while end < len(text) - 1 and text[end + 1] != " ":
+            end += 1
+        return end - start + 1
+    if vocab:
+        for start, end, word in segment_corpus_by_words(text, vocab):
+            if start <= index <= end:
+                return len(word)
+    return None
+
+
+def position_from_end_at_index(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> int | None:
+    """0-based distance from the current character to the word's last character."""
+    pos = position_in_word_at_index(text, index, spaced=spaced, vocab=vocab)
+    if pos is None:
+        return None
+    word_len = word_length_at_index(text, index, spaced=spaced, vocab=vocab)
+    if word_len is None:
+        return None
+    return word_len - 1 - pos
+
+
 def word_boundary_flags_at_index(
     text: str,
     index: int,
@@ -829,16 +873,31 @@ def _state_label_lines(prefix_set: set[str]) -> list[str]:
     compact = format_prefix_set(prefix_set)
     if len(shown) == 2 and len(compact) <= 16:
         return [compact]
+    if len(shown) > 6:
+        return shown[:5] + [f"…+{len(shown) - 5}"]
     return shown
 
 
 def _fit_state(prefix_set: set[str]) -> tuple[list[str], float]:
     """Choose line breaks and the smallest radius that still fits the label."""
+    import math
+
     lines = _state_label_lines(prefix_set)
-    line_step = LINE_H * (0.82 if len(lines) >= 5 else 0.88 if len(lines) >= 3 else 1.0)
-    w = max(len(line) for line in lines) * CHAR_W
-    h = len(lines) * line_step
-    r = max(MIN_NODE_R, w / 2 + STATE_PAD + 2, h / 2 + STATE_PAD + 2)
+    n_lines = len(lines)
+    line_step = _state_line_step(n_lines)
+    r = float(MIN_NODE_R)
+    for _ in range(4):
+        fs = _state_font_size(r, n_lines)
+        char_w = CHAR_W * (fs / 10.0) * 1.2
+        w = max((len(line) for line in lines), default=1) * char_w
+        h = n_lines * line_step
+        half_diag = math.hypot(w / 2.0, h / 2.0)
+        r = max(
+            MIN_NODE_R,
+            w / 2.0 + STATE_PAD + 6,
+            h / 2.0 + STATE_PAD + 6,
+            half_diag + STATE_PAD + 4,
+        )
     return lines, r
 
 
@@ -1318,6 +1377,12 @@ def vocabulary_for_experiment(exp_name: str) -> list[str]:
     return REGIMES[experiment_regime(exp_name)]
 
 
+def build_vocabulary_coverage_text(words: list[str], *, spaced: bool) -> str:
+    """One occurrence of each vocabulary word (sorted by length) for full DFA coverage."""
+    ordered = sorted(words, key=lambda w: (len(w), w))
+    if spaced:
+        return " ".join(ordered)
+    return "".join(ordered)
 def write_vocabulary_diagrams_for_experiment(exp_name: str) -> tuple[Path, Path]:
     """Write trie + min-DFA SVGs under experiments/<exp_name>/shared/."""
     return write_vocabulary_diagrams(

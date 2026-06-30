@@ -54,11 +54,29 @@ _SIXTEEN_WORD_DEFAULTS: dict[str, object] = {
     "metric_rollout_len": 1000,
 }
 
+_MIXED_LENGTH_DEFAULTS: dict[str, object] = {
+    "regime": "sixteen_word_mixed",
+    "word_space": True,
+    "chars": 50_000,
+    "steps": 12_000,
+    "viz_length": 60,
+    "hidden_size": 50,
+    "sequence_length": 16,
+    "eval_interval": 50,
+    "eval_iterations": 20,
+    "metric_rollout_len": 1000,
+}
+
 # Active tasks — each name is both the folder under experiments/ and the CLI key.
 TASKS: dict[str, dict] = {
     "sixteen_word": dict(_SIXTEEN_WORD_DEFAULTS),
     "sixteen_word_ns": {
         **dict(_SIXTEEN_WORD_DEFAULTS),
+        "word_space": False,
+    },
+    "sixteen_word_mixed": dict(_MIXED_LENGTH_DEFAULTS),
+    "sixteen_word_mixed_ns": {
+        **dict(_MIXED_LENGTH_DEFAULTS),
         "word_space": False,
     },
 }

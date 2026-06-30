@@ -67,11 +67,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -105,6 +107,7 @@ from rnn.rnn_dyn import activation_label, inject_timestep_noise, no_input_hidden
 from vocab_diagrams import (
     MinimizedVocabAutomaton,
     build_minimized_vocabulary_automaton,
+    build_vocabulary_coverage_text,
     dfa_state_at_position,
     dfa_state_for_prefix,
     dfa_state_label,
@@ -1602,20 +1605,17 @@ def pairwise_hidden_state_distance_groups(
     hidden_states: np.ndarray,
     state_ids: list[int],
     position_ids: list[int | None],
-    prefix_labels: list[str],
-    string_labels: list[str],
+    position_from_end_ids: list[int | None],
 ) -> dict[str, np.ndarray]:
-    """L2 distances (i < j) for within/between prefix, string, DFA, position, char, all pairs."""
+    """L2 distances (i < j) for within/between char, position, position-from-end, DFA, all pairs."""
     n = hidden_states.shape[0]
     groups: dict[str, list[float]] = {
-        "Within prefix": [],
-        "Between prefixes": [],
-        "Within string": [],
-        "Between strings": [],
         "Within DFA state": [],
         "Between DFA states": [],
         "Within word position": [],
         "Between word positions": [],
+        "Within position from end": [],
+        "Between positions from end": [],
         "Within char": [],
         "Between chars": [],
         "All pairs": [],
@@ -1624,14 +1624,6 @@ def pairwise_hidden_state_distance_groups(
         for j in range(i + 1, n):
             dist = float(np.linalg.norm(hidden_states[i] - hidden_states[j]))
             groups["All pairs"].append(dist)
-            if prefix_labels[i] == prefix_labels[j]:
-                groups["Within prefix"].append(dist)
-            else:
-                groups["Between prefixes"].append(dist)
-            if string_labels[i] == string_labels[j]:
-                groups["Within string"].append(dist)
-            else:
-                groups["Between strings"].append(dist)
             if state_ids[i] == state_ids[j]:
                 groups["Within DFA state"].append(dist)
             else:
@@ -1646,36 +1638,474 @@ def pairwise_hidden_state_distance_groups(
                     groups["Within word position"].append(dist)
                 else:
                     groups["Between word positions"].append(dist)
+            pei, pej = position_from_end_ids[i], position_from_end_ids[j]
+            if pei is not None and pej is not None:
+                if pei == pej:
+                    groups["Within position from end"].append(dist)
+                else:
+                    groups["Between positions from end"].append(dist)
     return {k: np.asarray(v) for k, v in groups.items()}
 
 
 PAIR_DISTANCE_CATEGORY_ORDER = (
-    "Within prefix",
-    "Between prefixes",
-    "Within string",
-    "Between strings",
     "Within DFA state",
     "Between DFA states",
     "Within word position",
     "Between word positions",
+    "Within position from end",
+    "Between positions from end",
     "Within char",
     "Between chars",
     "All pairs",
 )
 
 PAIR_DISTANCE_PALETTE = {
-    "Within prefix": "#9467bd",
-    "Between prefixes": "#c5b0d5",
-    "Within string": "#8c564b",
-    "Between strings": "#c49c94",
     "Within DFA state": "#4c72b0",
     "Between DFA states": "#dd8452",
     "Within word position": "#8172b3",
-    "Between word positions": "#9372b3",
+    "Between word positions": "#c5b0d5",
+    "Within position from end": "#9372b3",
+    "Between positions from end": "#b39ddb",
     "Within char": "#55a868",
     "Between chars": "#2ca02c",
     "All pairs": "#8c8c8c",
 }
+
+SEPARATION_FEATURES = (
+    "dfa", "prefix", "string", "char", "position", "position_from_end",
+)
+
+
+@dataclass
+class FeatureSeparationStats:
+    features: tuple[str, ...]
+    centroid_gap: dict[str, float]
+    within_spread: dict[str, float]
+    between_spread: dict[str, float]
+    silhouette: dict[str, float]
+    eta2: dict[str, float]
+    pairwise_within_median: dict[str, float]
+    pairwise_between_median: dict[str, float]
+    shuffle_z: dict[str, float]
+    shuffle_p: dict[str, float]
+    n_groups: dict[str, int]
+    n_points: dict[str, int]
+
+
+def _label_groups(
+    labels: list[Any],
+    valid_mask: list[bool] | None = None,
+) -> dict[Any, list[int]]:
+    groups: dict[Any, list[int]] = defaultdict(list)
+    for i, lbl in enumerate(labels):
+        if valid_mask is not None and not valid_mask[i]:
+            continue
+        groups[lbl].append(i)
+    return {lbl: idxs for lbl, idxs in groups.items() if idxs}
+
+
+def _centroid_separation_metrics(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> tuple[float, float, float]:
+    """Group-balanced centroid gap: mean between-centroid dist minus mean within spread."""
+    if len(group_map) < 2:
+        return float("nan"), float("nan"), float("nan")
+
+    centroids: dict[Any, np.ndarray] = {}
+    within_spreads: list[float] = []
+    for lbl, idxs in group_map.items():
+        pts = states[idxs]
+        centroid = pts.mean(axis=0)
+        centroids[lbl] = centroid
+        if len(idxs) >= 2:
+            within_spreads.append(float(np.linalg.norm(pts - centroid, axis=1).mean()))
+        else:
+            within_spreads.append(0.0)
+
+    within_spread = float(np.mean(within_spreads))
+    labels = list(group_map.keys())
+    between_dists = [
+        float(np.linalg.norm(centroids[labels[i]] - centroids[labels[j]]))
+        for i in range(len(labels))
+        for j in range(i + 1, len(labels))
+    ]
+    between_spread = float(np.mean(between_dists)) if between_dists else float("nan")
+    return between_spread - within_spread, within_spread, between_spread
+
+
+def _mean_silhouette(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> float:
+    if len(group_map) < 2:
+        return float("nan")
+
+    indices: list[int] = []
+    cluster_ids: list[int] = []
+    label_to_id = {lbl: k for k, lbl in enumerate(group_map)}
+    for lbl, idxs in group_map.items():
+        cid = label_to_id[lbl]
+        for i in idxs:
+            indices.append(i)
+            cluster_ids.append(cid)
+
+    n = len(indices)
+    if n < 2:
+        return float("nan")
+
+    pts = states[indices]
+    dists = np.linalg.norm(pts[:, None, :] - pts[None, :, :], axis=2)
+    silhouettes: list[float] = []
+    cluster_ids_arr = np.array(cluster_ids)
+    for i in range(n):
+        same = cluster_ids_arr == cluster_ids_arr[i]
+        same[i] = False
+        if not same.any():
+            continue
+        a_i = float(dists[i, same].mean())
+        other_clusters = [c for c in np.unique(cluster_ids_arr) if c != cluster_ids_arr[i]]
+        if not other_clusters:
+            continue
+        b_i = min(float(dists[i, cluster_ids_arr == c].mean()) for c in other_clusters)
+        denom = max(a_i, b_i)
+        silhouettes.append((b_i - a_i) / denom if denom > 0 else 0.0)
+
+    return float(np.mean(silhouettes)) if silhouettes else float("nan")
+
+
+def _multivariate_eta2(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> float:
+    if len(group_map) < 2:
+        return float("nan")
+
+    all_indices = [i for idxs in group_map.values() for i in idxs]
+    pts = states[all_indices]
+    grand_mean = pts.mean(axis=0)
+    ss_total = float(((pts - grand_mean) ** 2).sum())
+    if ss_total <= 0:
+        return 0.0
+    ss_between = sum(
+        len(idxs) * float(((states[idxs].mean(axis=0) - grand_mean) ** 2).sum())
+        for idxs in group_map.values()
+    )
+    return ss_between / ss_total
+
+
+def _pairwise_within_between_medians(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> tuple[float, float]:
+    indices: list[int] = []
+    labels: list[Any] = []
+    for lbl, idxs in group_map.items():
+        for i in idxs:
+            indices.append(i)
+            labels.append(lbl)
+
+    within: list[float] = []
+    between: list[float] = []
+    n = len(indices)
+    for a in range(n):
+        for b in range(a + 1, n):
+            dist = float(np.linalg.norm(states[indices[a]] - states[indices[b]]))
+            if labels[a] == labels[b]:
+                within.append(dist)
+            else:
+                between.append(dist)
+
+    within_med = float(np.median(within)) if within else float("nan")
+    between_med = float(np.median(between)) if between else float("nan")
+    return within_med, between_med
+
+
+def _label_shuffle_centroid_gap(
+    states: np.ndarray,
+    labels: list[Any],
+    valid_mask: list[bool] | None,
+    observed_gap: float,
+    *,
+    n_shuffle: int = 199,
+    rng: np.random.Generator | None = None,
+) -> tuple[float, float]:
+    rng = rng or np.random.default_rng(0)
+    valid_indices = [
+        i for i in range(len(labels))
+        if valid_mask is None or valid_mask[i]
+    ]
+    if len(valid_indices) < 2 or not np.isfinite(observed_gap):
+        return float("nan"), float("nan")
+
+    base_labels = [labels[i] for i in valid_indices]
+    null_gaps: list[float] = []
+    for _ in range(n_shuffle):
+        shuffled = list(base_labels)
+        rng.shuffle(shuffled)
+        group_map: dict[Any, list[int]] = defaultdict(list)
+        for idx, lbl in zip(valid_indices, shuffled):
+            group_map[lbl].append(idx)
+        gap, _, _ = _centroid_separation_metrics(states, dict(group_map))
+        if np.isfinite(gap):
+            null_gaps.append(gap)
+
+    if not null_gaps:
+        return float("nan"), float("nan")
+
+    null_arr = np.asarray(null_gaps, dtype=float)
+    z = float((observed_gap - null_arr.mean()) / (null_arr.std() + 1e-12))
+    p = float((np.sum(null_arr >= observed_gap) + 1) / (len(null_arr) + 1))
+    return z, p
+
+
+def _label_shuffle_pairwise_ratio_p(
+    states: np.ndarray,
+    labels: list[Any],
+    valid_mask: list[bool] | None,
+    observed_ratio: float,
+    *,
+    n_shuffle: int = 199,
+    rng: np.random.Generator | None = None,
+) -> float:
+    """One-sided p-value: fraction of shuffles with ratio <= observed (within closer than chance)."""
+    rng = rng or np.random.default_rng(1)
+    valid_indices = [
+        i for i in range(len(labels))
+        if valid_mask is None or valid_mask[i]
+    ]
+    if len(valid_indices) < 2 or not np.isfinite(observed_ratio):
+        return float("nan")
+
+    base_labels = [labels[i] for i in valid_indices]
+    null_ratios: list[float] = []
+    for _ in range(n_shuffle):
+        shuffled = list(base_labels)
+        rng.shuffle(shuffled)
+        group_map: dict[Any, list[int]] = defaultdict(list)
+        for idx, lbl in zip(valid_indices, shuffled):
+            group_map[lbl].append(idx)
+        w_med, b_med = _pairwise_within_between_medians(states, dict(group_map))
+        if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0:
+            null_ratios.append(w_med / b_med)
+
+    if not null_ratios:
+        return float("nan")
+
+    null_arr = np.asarray(null_ratios, dtype=float)
+    return float((np.sum(null_arr <= observed_ratio) + 1) / (len(null_arr) + 1))
+
+
+def compute_feature_separation_stats(
+    hidden_states: np.ndarray,
+    labels,
+    *,
+    features: tuple[str, ...] = SEPARATION_FEATURES,
+    n_shuffle: int = 199,
+    rng: np.random.Generator | None = None,
+) -> FeatureSeparationStats:
+    rng = rng or np.random.default_rng(0)
+    centroid_gap: dict[str, float] = {}
+    within_spread: dict[str, float] = {}
+    between_spread: dict[str, float] = {}
+    silhouette: dict[str, float] = {}
+    eta2: dict[str, float] = {}
+    pairwise_within_median: dict[str, float] = {}
+    pairwise_between_median: dict[str, float] = {}
+    shuffle_z: dict[str, float] = {}
+    shuffle_p: dict[str, float] = {}
+    n_groups: dict[str, int] = {}
+    n_points: dict[str, int] = {}
+
+    for feat in features:
+        vals, mask = labels.feature_values(feat)
+        group_map = _label_groups(vals, mask)
+        n_groups[feat] = len(group_map)
+        n_points[feat] = sum(len(v) for v in group_map.values())
+
+        gap, w_spread, b_spread = _centroid_separation_metrics(hidden_states, group_map)
+        centroid_gap[feat] = gap
+        within_spread[feat] = w_spread
+        between_spread[feat] = b_spread
+        silhouette[feat] = _mean_silhouette(hidden_states, group_map)
+        eta2[feat] = _multivariate_eta2(hidden_states, group_map)
+        w_med, b_med = _pairwise_within_between_medians(hidden_states, group_map)
+        pairwise_within_median[feat] = w_med
+        pairwise_between_median[feat] = b_med
+
+        z, _ = _label_shuffle_centroid_gap(
+            hidden_states, vals, mask, gap, n_shuffle=n_shuffle, rng=rng,
+        )
+        shuffle_z[feat] = z
+        ratio = w_med / b_med if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0 else float("nan")
+        shuffle_p[feat] = _label_shuffle_pairwise_ratio_p(
+            hidden_states, vals, mask, ratio, n_shuffle=n_shuffle, rng=rng,
+        )
+
+    return FeatureSeparationStats(
+        features=features,
+        centroid_gap=centroid_gap,
+        within_spread=within_spread,
+        between_spread=between_spread,
+        silhouette=silhouette,
+        eta2=eta2,
+        pairwise_within_median=pairwise_within_median,
+        pairwise_between_median=pairwise_between_median,
+        shuffle_z=shuffle_z,
+        shuffle_p=shuffle_p,
+        n_groups=n_groups,
+        n_points=n_points,
+    )
+
+
+def plot_feature_separation_summary(
+    text: str,
+    hidden_states: np.ndarray,
+    automaton: MinimizedVocabAutomaton,
+    save_path: str,
+    *,
+    spaced: bool = False,
+    words: list[str] | None = None,
+    label_words: list[str] | None = None,
+    condensed: CondensedView | None = None,
+    output_probs: np.ndarray | None = None,
+    repr_label: str = "hidden state",
+    n_shuffle: int = 199,
+) -> FeatureSeparationStats | None:
+    from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY, build_timestep_labels
+
+    if condensed is None:
+        condensed = condense_hidden_states_by_prefix(
+            text, hidden_states, output_probs, spaced=spaced, words=words,
+        )
+        hidden_states = condensed.hidden_states
+
+    if hidden_states.shape[0] < 2:
+        print("feature separation: need at least 2 points")
+        return None
+
+    ts_labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=condensed,
+    )
+    stats = compute_feature_separation_stats(
+        hidden_states, ts_labels, n_shuffle=n_shuffle,
+    )
+    feats = list(stats.features)
+    x = np.arange(len(feats))
+    colors = [FEATURE_COLORS.get(f, "#888888") for f in feats]
+    tick_labels = [FEATURE_DISPLAY.get(f, f) for f in feats]
+
+    fig, axes = plt.subplots(2, 3, figsize=(14, 7.5), constrained_layout=True)
+
+    ax = axes[0, 0]
+    vals = [stats.centroid_gap[f] for f in feats]
+    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
+    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel("between − within spread")
+    ax.set_title("Centroid gap (group-balanced)")
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[0, 1]
+    vals = [stats.silhouette[f] for f in feats]
+    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
+    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel("mean silhouette")
+    ax.set_title("Mean silhouette")
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[0, 2]
+    vals = [stats.eta2[f] for f in feats]
+    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel("η²")
+    ax.set_title("Multivariate η²")
+    ax.set_ylim(0.0, 1.05)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[1, 0]
+    width = 0.36
+    w_vals = [stats.pairwise_within_median[f] for f in feats]
+    b_vals = [stats.pairwise_between_median[f] for f in feats]
+    ax.bar(x - width / 2, w_vals, width, label="within", color="#4c72b0", alpha=0.85)
+    ax.bar(x + width / 2, b_vals, width, label="between", color="#dd8452", alpha=0.85)
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel(f"L2 distance ({repr_label})")
+    ax.set_title("Pairwise within vs between (median)")
+    ax.legend(fontsize=8, loc="upper right")
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[1, 1]
+    vals = [stats.shuffle_z[f] for f in feats]
+    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
+    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
+    ax.axhline(1.96, color="0.5", linewidth=0.8, linestyle="--", alpha=0.6)
+    ax.axhline(-1.96, color="0.5", linewidth=0.8, linestyle="--", alpha=0.6)
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel("z-score")
+    ax.set_title("Centroid gap vs label shuffle")
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    ax = axes[1, 2]
+    ratios = []
+    for f in feats:
+        w_med = stats.pairwise_within_median[f]
+        b_med = stats.pairwise_between_median[f]
+        ratios.append(w_med / b_med if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0 else float("nan"))
+    ax.bar(x, ratios, color=colors, edgecolor="white", linewidth=0.6)
+    ax.axhline(1.0, color="0.3", linewidth=0.8, linestyle=":")
+    ymax = float(np.nanmax(ratios)) if np.any(np.isfinite(ratios)) else 1.0
+    for i, (f, r) in enumerate(zip(feats, ratios)):
+        p = stats.shuffle_p[f]
+        if np.isfinite(p) and np.isfinite(r):
+            stars = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
+            label = f"p={p:.3f}{stars}"
+            ax.text(i, r + 0.02 * max(ymax, 0.01), label, ha="center", va="bottom", fontsize=7)
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
+    ax.set_ylabel("within / between")
+    ax.set_title("Pairwise ratio (shuffle p-value)")
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    title = f"Feature separation summary ({repr_label}, n={hidden_states.shape[0]} points)"
+    fig.suptitle(_condensed_plot_title(title, condensed), fontsize=12, y=1.02)
+    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+    json_path = str(Path(save_path).with_suffix(".json"))
+
+    def _json_float(v: float) -> float | None:
+        return None if isinstance(v, float) and not np.isfinite(v) else v
+
+    payload = {
+        "features": list(stats.features),
+        "centroid_gap": {k: _json_float(v) for k, v in stats.centroid_gap.items()},
+        "within_spread": {k: _json_float(v) for k, v in stats.within_spread.items()},
+        "between_spread": {k: _json_float(v) for k, v in stats.between_spread.items()},
+        "silhouette": {k: _json_float(v) for k, v in stats.silhouette.items()},
+        "eta2": {k: _json_float(v) for k, v in stats.eta2.items()},
+        "pairwise_within_median": {k: _json_float(v) for k, v in stats.pairwise_within_median.items()},
+        "pairwise_between_median": {k: _json_float(v) for k, v in stats.pairwise_between_median.items()},
+        "shuffle_z": {k: _json_float(v) for k, v in stats.shuffle_z.items()},
+        "shuffle_p": {k: _json_float(v) for k, v in stats.shuffle_p.items()},
+        "n_groups": stats.n_groups,
+        "n_points": stats.n_points,
+        "n_shuffle": n_shuffle,
+    }
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"wrote {json_path}")
+
+    return stats
 
 
 def plot_dfa_state_distance_comparison(
@@ -1690,6 +2120,14 @@ def plot_dfa_state_distance_comparison(
     repr_label: str = "hidden state",
 ) -> None:
     """Subsampled pairwise distances + median (diamond) ± MAD; y-axis clipped at 0."""
+    from vocab_diagrams import (
+        dfa_state_at_position,
+        dfa_state_for_prefix,
+        position_from_end_at_index,
+        position_in_word_at_index,
+        position_in_word_for_prefix_label,
+    )
+
     vocab = _corpus_vocab(text, words)
     if condensed is not None:
         hidden_states = condensed.hidden_states
@@ -1701,9 +2139,9 @@ def plot_dfa_state_distance_comparison(
         position_ids = [
             position_in_word_for_prefix_label(l) for l in condensed.labels
         ]
-        string_labels = list(condensed.labels)
-        prefix_labels = [
-            prefix_before_from_string_label(l) for l in condensed.labels
+        position_from_end_ids = [
+            position_from_end_at_index(text, idx, spaced=spaced, vocab=vocab)
+            for idx in condensed.timestep_indices
         ]
     else:
         compare_chars = list(text)
@@ -1716,12 +2154,8 @@ def plot_dfa_state_distance_comparison(
             position_in_word_at_index(text, t, spaced=spaced, vocab=vocab)
             for t in range(len(text))
         ]
-        string_labels = [
-            in_word_prefix_at_position(text, t, spaced=spaced, vocab=vocab)
-            for t in range(len(text))
-        ]
-        prefix_labels = [
-            in_word_prefix_before_current(text, t, spaced=spaced, vocab=vocab)
+        position_from_end_ids = [
+            position_from_end_at_index(text, t, spaced=spaced, vocab=vocab)
             for t in range(len(text))
         ]
     n = hidden_states.shape[0]
@@ -1730,7 +2164,7 @@ def plot_dfa_state_distance_comparison(
 
     by_label = pairwise_hidden_state_distance_groups(
         compare_chars, hidden_states, state_ids, position_ids,
-        prefix_labels, string_labels,
+        position_from_end_ids,
     )
     if len(by_label["Within DFA state"]) == 0 or len(by_label["Between DFA states"]) == 0:
         print("DFA distance comparison: need both within- and between-state pairs")
@@ -2732,6 +3166,13 @@ def _state_id_colors(state_ids: list[int]) -> dict[int, tuple]:
     return {state: cmap(i) for i, state in enumerate(unique)}
 
 
+def _dfa_automaton_state_colors(automaton: MinimizedVocabAutomaton) -> dict[int, tuple]:
+    """Stable color for every minimized-DFA state (not only those in a viz window)."""
+    all_states = sorted(automaton.dfa.states)
+    cmap = plt.get_cmap("tab20", max(len(all_states), 1))
+    return {state: cmap(i) for i, state in enumerate(all_states)}
+
+
 def _dfa_state_ids_for_prefixes(
     prefixes: list[str],
     automaton: MinimizedVocabAutomaton,
@@ -2920,27 +3361,117 @@ def _draw_annotation_groups(
     return list(label_positions.values())
 
 
+def _sorted_legend_categories(cat_to_color: dict) -> list:
+    def sort_key(c):
+        if isinstance(c, (int, np.integer)):
+            return (0, int(c))
+        if isinstance(c, str) and c.isdigit():
+            return (0, int(c))
+        return (1, str(c))
+
+    return sorted(cat_to_color.keys(), key=sort_key)
+
+
+def _dfa_compact_legend_label(state: int, automaton: MinimizedVocabAutomaton) -> str:
+    prefixes = automaton.state_prefixes.get(int(state), set())
+    if not prefixes:
+        return f"q{state}"
+    shown = sorted(prefixes, key=lambda p: (len(p), p))
+    if len(shown) == 1:
+        return shown[0]
+    if len(shown) <= 3:
+        return ", ".join(shown)
+    return f"{shown[0]} …+{len(shown) - 1}"
+
+
+def _add_feature_panel_legend(
+    ax,
+    cat_to_color: dict,
+    legend_labels: dict,
+    *,
+    title: str | None = None,
+    max_items: int = 24,
+    outside: bool = False,
+) -> None:
+    from matplotlib.patches import Patch
+
+    cats = _sorted_legend_categories(cat_to_color)
+    truncated = len(cats) > max_items
+    if truncated:
+        cats = cats[:max_items]
+    handles = [
+        Patch(
+            facecolor=cat_to_color[c],
+            edgecolor="#333333",
+            linewidth=0.4,
+            label=legend_labels.get(c, str(c)),
+        )
+        for c in cats
+    ]
+    if truncated:
+        handles.append(
+            Patch(facecolor="none", edgecolor="none", label="…"),
+        )
+    ncol = 1
+    if len(cats) > 10:
+        ncol = 2
+    elif len(cats) > 6:
+        ncol = 1
+    legend_kw: dict = {
+        "handles": handles,
+        "fontsize": 7,
+        "title_fontsize": 8,
+        "framealpha": 0.92,
+        "ncol": ncol,
+        "handlelength": 1.0,
+        "handletextpad": 0.4,
+        "borderpad": 0.35,
+    }
+    if title:
+        legend_kw["title"] = title
+    if outside:
+        legend_kw.update(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
+    else:
+        legend_kw.update(loc="upper right")
+    ax.legend(**legend_kw)
+
+
 def _add_dfa_state_color_legend(
-    ax, automaton: MinimizedVocabAutomaton, state_colors: dict[int, tuple]
+    ax,
+    automaton: MinimizedVocabAutomaton,
+    state_colors: dict[int, tuple],
+    *,
+    outside: bool = False,
+    compact: bool = False,
 ) -> None:
     handles = [
         Patch(
             facecolor=state_colors[state],
             edgecolor="#333333",
-            label=dfa_state_label(state, automaton),
+            linewidth=0.4,
+            label=(
+                _dfa_compact_legend_label(state, automaton)
+                if compact
+                else dfa_state_label(state, automaton)
+            ),
         )
         for state in sorted(state_colors)
     ]
-    ax.legend(
-        handles=handles,
-        title="min DFA state",
-        loc="upper left",
-        bbox_to_anchor=(1.01, 1.0),
-        fontsize=7,
-        title_fontsize=8,
-        framealpha=0.95,
-        borderaxespad=0.0,
-    )
+    legend_kw: dict = {
+        "handles": handles,
+        "title": "DFA state",
+        "fontsize": 7,
+        "title_fontsize": 8,
+        "framealpha": 0.92,
+        "handlelength": 1.0,
+        "handletextpad": 0.4,
+        "borderpad": 0.35,
+    }
+    if outside:
+        legend_kw.update(loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
+    else:
+        legend_kw.update(loc="upper left", bbox_to_anchor=(1.01, 1.0), borderaxespad=0.0)
+    ax.legend(**legend_kw)
 
 
 def add_dfa_state_annotations(
@@ -3023,6 +3554,66 @@ def add_dfa_state_annotations(
     if show_legend:
         _add_dfa_state_color_legend(ax, automaton, state_colors)
     return text_positions
+
+
+def add_dfa_state_annotations_3d(
+    ax,
+    text,
+    projected: np.ndarray,
+    automaton: MinimizedVocabAutomaton,
+    *,
+    spaced: bool,
+    state_colors: dict[int, tuple] | None = None,
+    point_size: float = 50,
+    leader_linewidth: float = 1.4,
+    annot_style: str = "leaders",
+    prefix_labels: list[str] | None = None,
+) -> None:
+    """3D scatter colored by DFA state with optional leader lines to prefix labels."""
+    n = len(prefix_labels) if prefix_labels is not None else len(text)
+    if prefix_labels is not None:
+        prefixes = prefix_labels
+        state_ids = [
+            dfa_state_for_prefix(p, automaton, spaced=spaced) for p in prefixes
+        ]
+    else:
+        state_ids = [
+            dfa_state_at_position(
+                text, i, automaton, spaced=spaced, vocab=_corpus_vocab(text),
+            ) for i in range(n)
+        ]
+        prefixes = [
+            prefix_annotation_label(text, i, spaced=spaced) for i in range(n)
+        ]
+    if state_colors is None:
+        state_colors = _dfa_automaton_state_colors(automaton)
+    point_colors = [state_colors[s] for s in state_ids]
+
+    annot_style = (annot_style or "leaders").lower()
+    if annot_style != "none":
+        ax.scatter(
+            projected[:, 0], projected[:, 1], projected[:, 2],
+            s=point_size, c=point_colors, edgecolors="black", linewidths=0.4,
+            depthshade=True, zorder=6,
+        )
+    if annot_style == "annots_only":
+        fs = max(7, int(CONTEXT_LABEL_FONTSIZE * 0.65))
+        for i, prefix in enumerate(prefixes):
+            label = "␣" if prefix == " " else prefix
+            ax.text(
+                projected[i, 0], projected[i, 1], projected[i, 2],
+                label, fontsize=fs, color=point_colors[i],
+                ha="center", va="center", zorder=10,
+            )
+    elif annot_style == "leaders":
+        _annotate_trajectory_labels(
+            ax, projected, prefixes,
+            label_colors=point_colors,
+            dedupe=True,
+            use_leaders=True,
+            leader_linewidth=leader_linewidth,
+            fontsize=8,
+        )
 
 
 def add_trigram_annotations(
@@ -3157,6 +3748,316 @@ def _plot_2d_hidden_state_labels_on_ax(
     ax.grid(True, linestyle=":", alpha=0.35)
 
 
+def _feature_point_colors_for_timesteps(
+    feat: str,
+    timestep_labels,
+    automaton: MinimizedVocabAutomaton | None,
+    n: int,
+) -> tuple[list, dict, dict]:
+    """Per-timestep RGBA colors and category maps for one analysis feature."""
+    from unit_selectivity import _panel_feature_colors
+
+    vals, mask = timestep_labels.feature_values(feat)
+    visible = [j for j in range(n) if mask is None or mask[j]]
+    cmap = plt.cm.tab20
+    if feat == "dfa" and automaton is not None:
+        state_colors = _dfa_automaton_state_colors(automaton)
+        cat_to_color = {int(s): state_colors[int(s)] for s in set(vals[j] for j in visible)}
+        from vocab_diagrams import dfa_state_label
+
+        legend_labels = {c: dfa_state_label(int(c), automaton) for c in cat_to_color}
+    else:
+        cat_to_color, legend_labels, _ = _panel_feature_colors(
+            feat, vals, visible, automaton, cmap,
+        )
+    point_colors: list = []
+    for j in range(n):
+        if mask is not None and not mask[j]:
+            point_colors.append("#bbbbbb")
+        elif feat == "dfa" and automaton is not None:
+            point_colors.append(cat_to_color[int(vals[j])])
+        else:
+            point_colors.append(cat_to_color[vals[j]])
+    return point_colors, cat_to_color, legend_labels
+
+
+def _add_panel_color_legend(
+    ax,
+    feat: str,
+    cat_to_color: dict,
+    legend_labels: dict,
+    automaton: MinimizedVocabAutomaton | None,
+    *,
+    feature_title: str,
+    outside: bool = False,
+) -> None:
+    if feat == "dfa" and automaton is not None:
+        _add_dfa_state_color_legend(
+            ax, automaton,
+            {int(c): cat_to_color[c] for c in cat_to_color},
+            outside=outside,
+            compact=True,
+        )
+    else:
+        _add_feature_panel_legend(
+            ax, cat_to_color, legend_labels,
+            title=feature_title,
+            outside=outside,
+        )
+
+
+def _annotate_feature_panel_within_axes(
+    ax,
+    projected: np.ndarray,
+    labels: list[str],
+    colors: list,
+    *,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    fontsize: float = 7.0,
+    max_labels: int = 24,
+) -> None:
+    """Deduplicated prefix labels at cluster centroids, clamped inside axis limits."""
+    from collections import defaultdict
+
+    buckets: dict[str, list[int]] = defaultdict(list)
+    for i, label in enumerate(labels):
+        if label:
+            buckets[label].append(i)
+    if not buckets:
+        return
+
+    xlo, xhi = xlim
+    ylo, yhi = ylim
+    margin_x = max((xhi - xlo) * 0.04, 1e-4)
+    margin_y = max((yhi - ylo) * 0.04, 1e-4)
+
+    def _clamp_xy(xy: np.ndarray) -> tuple[float, float]:
+        return (
+            float(np.clip(xy[0], xlo + margin_x, xhi - margin_x)),
+            float(np.clip(xy[1], ylo + margin_y, yhi - margin_y)),
+        )
+
+    items = sorted(buckets.items(), key=lambda kv: kv[1][0])
+    if len(items) > max_labels:
+        items = items[:max_labels]
+
+    for label, idxs in items:
+        centroid = projected[idxs].mean(axis=0)
+        x, y = _clamp_xy(centroid)
+        ax.text(
+            x, y, label,
+            fontsize=fontsize,
+            color=colors[idxs[0]],
+            ha="center",
+            va="center",
+            zorder=5,
+            clip_on=True,
+        )
+
+
+def _plot_2d_feature_colored_pca_panel(
+    ax,
+    projected: np.ndarray,
+    prefix_labels: list[str],
+    feat: str,
+    timestep_labels,
+    automaton: MinimizedVocabAutomaton | None,
+    *,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    annot_style: str = "leaders",
+) -> None:
+    n = projected.shape[0]
+    point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
+        feat, timestep_labels, automaton, n,
+    )
+    display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
+    annot_style = (annot_style or "compact").lower()
+
+    ax.scatter(
+        projected[:, 0], projected[:, 1],
+        s=70, c=point_colors, edgecolors="black", linewidths=0.35, zorder=3,
+    )
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    if annot_style == "compact":
+        _annotate_feature_panel_within_axes(
+            ax, projected, display_prefixes, point_colors,
+            xlim=xlim, ylim=ylim, fontsize=7,
+        )
+    elif annot_style == "annots_only":
+        for xy, prefix, color in zip(projected, display_prefixes, point_colors):
+            ax.text(
+                xy[0], xy[1], prefix,
+                fontsize=7, color=color, ha="center", va="center", zorder=5, clip_on=True,
+            )
+    elif annot_style == "leaders":
+        _annotate_trajectory_labels(
+            ax, projected, display_prefixes,
+            label_colors=point_colors,
+            dedupe=True,
+            use_leaders=True,
+            leader_linewidth=0.8,
+            fontsize=7,
+            label_offset_frac=0.06,
+            line_clearance_frac=0.03,
+        )
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+    ax.set_xlabel(xlabel, fontsize=8)
+    ax.set_ylabel(ylabel, fontsize=8)
+    ax.set_title(title, fontsize=11, pad=8)
+    ax.grid(True, linestyle=":", alpha=0.35)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.tick_params(top=False, right=False)
+    _add_panel_color_legend(
+        ax, feat, cat_to_color, legend_labels, automaton,
+        feature_title=title,
+        outside=False,
+    )
+
+
+def _plot_3d_feature_colored_pca_panel(
+    ax,
+    projected: np.ndarray,
+    prefix_labels: list[str],
+    feat: str,
+    timestep_labels,
+    automaton: MinimizedVocabAutomaton | None,
+    *,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    zlabel: str,
+    annot_style: str = "leaders",
+) -> None:
+    n = projected.shape[0]
+    point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
+        feat, timestep_labels, automaton, n,
+    )
+    display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
+    annot_style = (annot_style or "none").lower()
+    ax.scatter(
+        projected[:, 0], projected[:, 1], projected[:, 2],
+        s=55, c=point_colors, edgecolors="black", linewidths=0.35,
+        depthshade=True, zorder=6,
+    )
+    if annot_style == "leaders":
+        _annotate_trajectory_labels(
+            ax, projected, display_prefixes,
+            label_colors=point_colors,
+            dedupe=True,
+            use_leaders=True,
+            leader_linewidth=1.0,
+            fontsize=7,
+        )
+    elif annot_style == "annots_only":
+        for i, prefix in enumerate(display_prefixes):
+            ax.text(
+                projected[i, 0], projected[i, 1], projected[i, 2],
+                prefix, fontsize=7, color=point_colors[i],
+                ha="center", va="center", zorder=10,
+            )
+    ax.set_xlabel(xlabel, fontsize=8, labelpad=6)
+    ax.set_ylabel(ylabel, fontsize=8, labelpad=6)
+    ax.set_zlabel(zlabel, fontsize=8, labelpad=6)
+    ax.set_title(title, fontsize=11, pad=10)
+    ax.grid(True, linestyle=":", alpha=0.35)
+    _add_panel_color_legend(
+        ax, feat, cat_to_color, legend_labels, automaton,
+        feature_title=title,
+        outside=True,
+    )
+
+
+def _feature_pca_suptitle(
+    *,
+    repr_name: str | None,
+    words: list[str] | None,
+    chars,
+    condensed: CondensedView | None,
+    dim_label: str = "PCA",
+) -> str:
+    """Compact figure title: suptitle above per-panel feature titles."""
+    if words:
+        vocab_part = f"{len(words)}-word vocabulary ({', '.join(words)})"
+    else:
+        vocab_part = original_vocabulary_title(chars)
+    if repr_name:
+        base = f"{repr_name} · {dim_label} · {vocab_part}"
+    else:
+        base = f"{dim_label} of hidden states · {vocab_part}"
+    return _condensed_plot_title(base, condensed)
+
+
+def _feature_pca_figure_gridspec(
+    fig: plt.Figure,
+    nrows: int,
+    ncols: int,
+    *,
+    projection: str | None = None,
+) -> list:
+    """Subplot grid with headroom for a figure-level suptitle above panel titles."""
+    gs = fig.add_gridspec(
+        nrows, ncols,
+        top=0.90,
+        bottom=0.06,
+        left=0.05,
+        right=0.88 if projection == "3d" else 0.96,
+        wspace=0.18,
+        hspace=0.30,
+    )
+    axes = []
+    for i in range(nrows * ncols):
+        if projection == "3d":
+            axes.append(fig.add_subplot(gs[i // ncols, i % ncols], projection="3d"))
+        else:
+            axes.append(fig.add_subplot(gs[i // ncols, i % ncols]))
+    return axes
+
+
+def _pca_feature_panel_context(
+    text: str,
+    hidden_states: np.ndarray,
+    *,
+    spaced: bool,
+    automaton: MinimizedVocabAutomaton | None,
+    words: list[str] | None,
+    label_words: list[str] | None,
+    condensed: CondensedView | None,
+):
+    """Shared PCA projection + timestep labels for feature-colored state panels."""
+    from unit_selectivity import ANALYSIS_FEATURES, FEATURE_DISPLAY, build_timestep_labels
+
+    if automaton is None:
+        return None
+    if condensed is not None:
+        hidden_states = condensed.hidden_states
+        spaced = condensed.spaced
+    n = hidden_states.shape[0]
+    if n < 1:
+        return None
+    timestep_labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=condensed,
+    )
+    prefix_labels = timestep_labels.string
+    return {
+        "hidden_states": hidden_states,
+        "n": n,
+        "timestep_labels": timestep_labels,
+        "prefix_labels": prefix_labels,
+        "features": ANALYSIS_FEATURES,
+        "feature_display": FEATURE_DISPLAY,
+        "spaced": spaced,
+    }
+
+
 def plot_dimred_context_panels(
     text: str,
     hidden_states: np.ndarray,
@@ -3167,50 +4068,50 @@ def plot_dimred_context_panels(
     automaton: MinimizedVocabAutomaton | None = None,
     annot_style: str = "leaders",
     condensed: CondensedView | None = None,
+    words: list[str] | None = None,
+    label_words: list[str] | None = None,
 ) -> None:
-    """2D PCA of vectors with prefix / DFA annotations."""
+    """2×2 PCA panels colored by char, position, position-from-end, and DFA state."""
     _ = chars
-    if condensed is not None:
-        hidden_states = condensed.hidden_states
-        prefix_labels = condensed.labels
-        spaced = condensed.spaced
-    else:
-        prefix_labels = None
-    n = hidden_states.shape[0]
-    if n < 1:
+    ctx = _pca_feature_panel_context(
+        text, hidden_states,
+        spaced=spaced, automaton=automaton, words=words,
+        label_words=label_words, condensed=condensed,
+    )
+    if ctx is None:
+        print(f"skip {save_path}: need automaton and timesteps for feature-colored PCA")
         return
 
+    hidden_states = ctx["hidden_states"]
     pca_xy, _, _, evr = fit_pca_2d_with_evr(hidden_states)
     pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
     pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
+    xlabel = f"PC1 ({pc1:.1f}%)"
+    ylabel = f"PC2 ({pc2:.1f}%)"
+    pad_x = max((pca_xy[:, 0].max() - pca_xy[:, 0].min()) * 0.12, 0.08)
+    pad_y = max((pca_xy[:, 1].max() - pca_xy[:, 1].min()) * 0.12, 0.08)
+    xlim = (float(pca_xy[:, 0].min() - pad_x), float(pca_xy[:, 0].max() + pad_x))
+    ylim = (float(pca_xy[:, 1].min() - pad_y), float(pca_xy[:, 1].max() + pad_y))
 
-    ctx = prefix_axis_label(spaced=spaced, text=text)
-    if automaton is not None:
-        scheme = f"min DFA state · {ctx}"
-    else:
-        scheme = f"prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
-
-    fig, ax = plt.subplots(figsize=(14, 11), constrained_layout=True)
-    _plot_2d_hidden_state_labels_on_ax(
-        ax,
-        text,
-        pca_xy,
-        title=f"PCA (PC1 {pc1:.1f}%, PC2 {pc2:.1f}%)\n({scheme})",
-        xlabel=f"PC1 ({pc1:.1f}%)",
-        ylabel=f"PC2 ({pc2:.1f}%)",
-        spaced=spaced,
-        automaton=automaton,
-        annot_style=annot_style,
-        prefix_labels=prefix_labels,
-    )
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.tick_params(top=False, right=False)
+    fig = plt.figure(figsize=(22, 19))
+    axes = _feature_pca_figure_gridspec(fig, 2, 2)
+    for ax, feat in zip(axes, ctx["features"]):
+        _plot_2d_feature_colored_pca_panel(
+            ax, pca_xy, ctx["prefix_labels"], feat, ctx["timestep_labels"], automaton,
+            title=ctx["feature_display"].get(feat, feat),
+            xlabel=xlabel,
+            ylabel=ylabel,
+            xlim=xlim,
+            ylim=ylim,
+            annot_style="compact",
+        )
 
     fig.suptitle(
-        _condensed_plot_title(original_vocabulary_title(chars, text), condensed),
-        fontsize=12,
-        y=1.01,
+        _feature_pca_suptitle(
+            repr_name=None, words=words, chars=chars, condensed=condensed, dim_label="PCA",
+        ),
+        fontsize=13,
+        y=0.97,
     )
     fig.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -3235,7 +4136,7 @@ def _dfa_point_colors_for_pca(
     spaced: bool,
     automaton: MinimizedVocabAutomaton,
     prefix_labels: list[str] | None,
-) -> tuple[list[tuple], list[str], dict[int, tuple]]:
+) -> tuple[list[tuple], list[str], dict[int, tuple], list[int]]:
     if prefix_labels is not None:
         prefixes = prefix_labels
         state_ids = [
@@ -3250,9 +4151,9 @@ def _dfa_point_colors_for_pca(
         prefixes = [
             prefix_annotation_label(text, i, spaced=spaced) for i in range(n)
         ]
-    state_colors = _state_id_colors(state_ids)
+    state_colors = _dfa_automaton_state_colors(automaton)
     point_colors = [state_colors[s] for s in state_ids]
-    return point_colors, prefixes, state_colors
+    return point_colors, prefixes, state_colors, state_ids
 
 
 def _plot_3d_pca_scatter_with_labels(
@@ -3294,54 +4195,44 @@ def plot_dimred_context_panels_3d(
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
     repr_name: str = "hidden state",
+    annot_style: str = "leaders",
+    words: list[str] | None = None,
+    label_words: list[str] | None = None,
 ) -> None:
-    """3D PCA scatter with prefix labels (separate figure from the 2D panel)."""
-    if condensed is not None:
-        hidden_states = condensed.hidden_states
-        prefix_labels = condensed.labels
-        spaced = condensed.spaced
-    else:
-        prefix_labels = None
-    n = hidden_states.shape[0]
-    if n < 2 or hidden_states.shape[1] < 2:
+    """2×2 3D PCA panels colored by char, position, position-from-end, and DFA state."""
+    _ = chars
+    ctx = _pca_feature_panel_context(
+        text, hidden_states,
+        spaced=spaced, automaton=automaton, words=words,
+        label_words=label_words, condensed=condensed,
+    )
+    if ctx is None:
+        print(f"skip {save_path}: need automaton and timesteps for feature-colored PCA")
+        return
+    if ctx["n"] < 2 or ctx["hidden_states"].shape[1] < 2:
         return
 
-    pca_xyz, _, _, evr = fit_pca_3d_with_evr(hidden_states)
+    pca_xyz, _, _, evr = fit_pca_3d_with_evr(ctx["hidden_states"])
     xlabel, ylabel, zlabel = _pca_axis_labels(evr)
-    ctx = prefix_axis_label(spaced=spaced, text=text)
-    if automaton is not None:
-        scheme = f"min DFA state · {ctx}"
-    else:
-        scheme = f"prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
 
-    fig = plt.figure(figsize=(12, 10))
-    ax = fig.add_subplot(111, projection="3d")
-    if automaton is not None:
-        point_colors, prefixes, state_colors = _dfa_point_colors_for_pca(
-            text, n=n, spaced=spaced, automaton=automaton, prefix_labels=prefix_labels,
-        )
-        _plot_3d_pca_scatter_with_labels(
-            ax, pca_xyz, prefixes,
-            point_colors=point_colors,
-            title=f"{repr_name} · 3D PCA\n({scheme})",
-            xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
-        )
-        _add_dfa_state_color_legend(ax, automaton, state_colors)
-    else:
-        if prefix_labels is not None:
-            prefixes = prefix_labels
-        else:
-            prefixes = [context_label(text, i, spaced=spaced) for i in range(n)]
-        _plot_3d_pca_scatter_with_labels(
-            ax, pca_xyz, prefixes,
-            title=f"{repr_name} · 3D PCA\n({scheme})",
-            xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,
+    fig = plt.figure(figsize=(24, 21))
+    axes = _feature_pca_figure_gridspec(fig, 2, 2, projection="3d")
+    for ax, feat in zip(axes, ctx["features"]):
+        _plot_3d_feature_colored_pca_panel(
+            ax, pca_xyz, ctx["prefix_labels"], feat, ctx["timestep_labels"], automaton,
+            title=ctx["feature_display"].get(feat, feat),
+            xlabel=xlabel,
+            ylabel=ylabel,
+            zlabel=zlabel,
+            annot_style="none",
         )
 
     fig.suptitle(
-        _condensed_plot_title(original_vocabulary_title(chars, text), condensed),
-        fontsize=12,
-        y=0.98,
+        _feature_pca_suptitle(
+            repr_name=repr_name, words=words, chars=chars, condensed=condensed, dim_label="3D PCA",
+        ),
+        fontsize=13,
+        y=0.97,
     )
     fig.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -3605,8 +4496,10 @@ def plot_pca_context_labels(
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
+    words: list[str] | None = None,
+    label_words: list[str] | None = None,
 ):
-    """4-panel dim-reduction comparison with shared annotations/colors."""
+    """4-panel 2D PCA colored by analysis features."""
     plot_dimred_context_panels(
         text,
         hidden_states,
@@ -3614,8 +4507,10 @@ def plot_pca_context_labels(
         save_path,
         spaced=spaced,
         automaton=automaton,
-        annot_style="leaders",
+        annot_style="compact",
         condensed=condensed,
+        words=words,
+        label_words=label_words,
     )
 
 
@@ -3629,8 +4524,11 @@ def plot_pca_context_labels_3d(
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
     repr_name: str = "hidden state",
+    annot_style: str = "leaders",
+    words: list[str] | None = None,
+    label_words: list[str] | None = None,
 ):
-    """3D PCA scatter (companion to embedding_panels_context)."""
+    """4-panel 3D PCA colored by analysis features."""
     plot_dimred_context_panels_3d(
         text,
         hidden_states,
@@ -3640,6 +4538,9 @@ def plot_pca_context_labels_3d(
         automaton=automaton,
         condensed=condensed,
         repr_name=repr_name,
+        annot_style=annot_style,
+        words=words,
+        label_words=label_words,
     )
 
 
@@ -5109,7 +6010,7 @@ def plot_pca_dfa_analysis(
                 text, i, automaton, spaced=spaced, vocab=_corpus_vocab(text),
             ) for i in range(len(text))
         ]
-    state_colors = _state_id_colors(state_ids)
+    state_colors = _dfa_automaton_state_colors(automaton)
 
     fig, axes = plt.subplots(1, 2, figsize=(28, 11), constrained_layout=True)
     ax_dfa, ax_embed = axes[0], axes[1]
@@ -6073,6 +6974,28 @@ def main() -> None:
             spaced=spaced,
             automaton=automaton,
             condensed=cv,
+            words=words,
+            label_words=label_words if not spaced else None,
+        )
+
+        dfa_viz_text = text
+        dfa_viz_states = hidden_states
+        if automaton is not None and words:
+            dfa_viz_text = build_vocabulary_coverage_text(words, spaced=spaced)
+            dfa_viz_states, _ = run_forward_pass(model, dfa_viz_text, model_type)
+            print(
+                f"DFA figures: teacher-forced over full vocabulary coverage "
+                f"({len(dfa_viz_text)} chars, {len(words)} words)",
+            )
+        plot_pca_context_labels_3d(
+            dfa_viz_text, dfa_viz_states, model["chars"],
+            save_path=plot_path("embedding_panels_context_3d.png"),
+            spaced=spaced,
+            automaton=automaton,
+            condensed=None,
+            annot_style=args.dfa_annot_style,
+            words=words,
+            label_words=label_words if not spaced else None,
         )
 
         plot_pca_prediction_regions(
@@ -6085,7 +7008,7 @@ def main() -> None:
 
         if automaton is not None and words:
             plot_pca_dfa_analysis(
-                text, hidden_states, model["chars"], words,
+                dfa_viz_text, dfa_viz_states, model["chars"], words,
                 save_path=plot_path("dfa_and_embedding_pca.png"),
                 automaton=automaton,
                 model=model,
@@ -6165,6 +7088,15 @@ def main() -> None:
                 spaced=spaced,
                 words=words,
                 condensed=cv,
+            )
+            plot_feature_separation_summary(
+                text, hidden_states, automaton,
+                save_path=plot_path("feature_separation_summary.png"),
+                spaced=spaced,
+                words=words,
+                label_words=label_words if not spaced else None,
+                condensed=cv,
+                output_probs=output_probs,
             )
             from unit_selectivity import plot_unit_selectivity_suite
 

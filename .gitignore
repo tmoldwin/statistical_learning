@@ -7,8 +7,7 @@ venv/
 .cursor/
 
 # Generated experiment artifacts (run_experiments.py / visualize.py)
-experiments/**/model.npz
-experiments/**/model_seed*.npz
+*.npz
 experiments/**/model.pt
 experiments/**/plots/
 experiments/**/input.txt

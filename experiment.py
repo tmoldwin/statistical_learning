@@ -52,6 +52,22 @@ COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "dfa_sensitivity",
 )
 
+_SIX_WORD_NS_DEFAULTS: dict[str, object] = {
+    "regime": "six_word_overlap",
+    "word_space": False,
+    "chars": 30_000,
+    "steps": 25_000,
+    "target_word_error_frac": 0.03,
+    "early_stop_patience": 3,
+    "min_checkpoint_iter": 2_000,
+    "viz_length": 24,
+    "hidden_size": 50,
+    "sequence_length": 12,
+    "eval_interval": 50,
+    "eval_iterations": 20,
+    "metric_rollout_len": 500,
+}
+
 _SIXTEEN_WORD_NS_DEFAULTS: dict[str, object] = {
     "regime": "sixteen_word",
     "word_space": False,
@@ -104,6 +120,7 @@ _FIFTY_WORD_NS_DEFAULTS: dict[str, object] = {
 
 # Active tasks — each name is both the folder under experiments/ and the CLI key.
 TASKS: dict[str, dict] = {
+    "six_word_overlap_ns": dict(_SIX_WORD_NS_DEFAULTS),
     "sixteen_word": dict(_SIXTEEN_WORD_SPACED_DEFAULTS),
     "sixteen_word_ns": dict(_SIXTEEN_WORD_NS_DEFAULTS),
     "sixteen_word_mixed": dict(_MIXED_LENGTH_DEFAULTS),

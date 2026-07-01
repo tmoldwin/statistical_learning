@@ -12,6 +12,7 @@ import numpy as np
 from experiment import comparison_dir
 from viz.compare._data import TaskVizContext, load_task_viz_context
 from viz.compare.spec import ComparisonSpec
+from viz.compare.state_clusters import cluster_counts_hidden_and_pca, format_cluster_counts
 from viz.dimred import fit_jpca_components, fit_pca_2d_with_evr
 from visualize import (
     _closed_loop_summary_seed,
@@ -391,7 +392,19 @@ def plot_geometry_examples(
             panel = panel_lookup.get((task, run_seed), {"error": "missing"})
 
             if row_idx == 0:
-                ax.set_title(f"s{run_seed}", fontsize=8, fontweight="bold", pad=3)
+                try:
+                    ctx_counts = load_task_viz_context(
+                        task, model_type=spec.model_type, seed=run_seed,
+                    )
+                    _, pca_mean, pca_comp, _ = fit_pca_2d_with_evr(ctx_counts.hidden_states)
+                    pca_xy = (ctx_counts.hidden_states - pca_mean) @ pca_comp.T
+                    k_h, k_pca = cluster_counts_hidden_and_pca(
+                        ctx_counts.hidden_states, pca_xy,
+                    )
+                    head = f"s{run_seed}  {format_cluster_counts(k_h, k_pca)}"
+                except FileNotFoundError:
+                    head = f"s{run_seed}"
+                ax.set_title(head, fontsize=8, fontweight="bold", pad=3)
             if col_idx == 0:
                 ax.set_ylabel(spec.label_for(task), fontsize=8, fontweight="bold")
 
@@ -417,7 +430,8 @@ def plot_geometry_examples(
 
             _mean_loop, mean_loop_pc, _, _ = paths
             _plot_mean_loop_2d(ax, mean_loop_pc)
-            ax.set_xlabel(_panel_metric_oneline(panel), fontsize=5, labelpad=3, linespacing=1.15)
+            ax.set_xlabel("")
+            ax.tick_params(labelbottom=False)
 
     fig.suptitle(
         f"{spec.display_title}: closed-loop examples + metrics (PCA 2D, {spec.model_type})",

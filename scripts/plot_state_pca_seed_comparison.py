@@ -17,7 +17,8 @@ from task import corpus_for_experiment, label_extensions_for_experiment
 from unit_selectivity import FEATURE_DISPLAY
 from viz.compare._data import load_task_viz_context
 from viz.compare.spec import COMPARISON_PRESETS
-from viz.dimred import embed_axis_labels_2d, fit_embed_2d_with_evr
+from viz.compare.state_clusters import cluster_counts_hidden_and_pca, format_cluster_counts
+from viz.dimred import fit_embed_2d_with_evr
 from vocab_diagrams import build_minimized_vocabulary_automaton, select_analysis_window
 from visualize import (
     _embed_trajectories_for_text,
@@ -26,6 +27,18 @@ from visualize import (
 )
 
 _COLOR_ROWS = ("dfa", "position", "char")
+
+_COMPACT_ROW_LABELS = {"dfa": "DFA", "position": "position", "char": "char"}
+_TINY_ROW_LABELS = {"dfa": "DFA", "position": "pos", "char": "chr"}
+
+
+def _seed_grid_label_sizes(n_cols: int) -> tuple[float, float, dict[str, str], float]:
+    """Return (head_fs, row_fs, row_labels, hspace) scaled to column count."""
+    if n_cols <= 8:
+        return 9.0, 8.0, FEATURE_DISPLAY, 0.18
+    if n_cols <= 12:
+        return 7.0, 7.0, _COMPACT_ROW_LABELS, 0.28
+    return 6.0, 6.0, _TINY_ROW_LABELS, 0.34
 
 
 def _label_words_for_task(task: str, *, seed: int, spaced: bool, words: list[str]) -> list[str] | None:
@@ -65,22 +78,25 @@ def _seed_panel_data(
     trajs = _embed_trajectories_for_text(
         ctx.text, panel_ctx["hidden_states"], spaced=ctx.spaced, words=words,
     )
-    pca_xy, _, _, evr = fit_embed_2d_with_evr(
+    pca_xy, _, _, _ = fit_embed_2d_with_evr(
         panel_ctx["hidden_states"], method=embed_method, trajectories=trajs,
     )
-    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
     pad_x = max((pca_xy[:, 0].max() - pca_xy[:, 0].min()) * 0.06, 0.05)
     pad_y = max((pca_xy[:, 1].max() - pca_xy[:, 1].min()) * 0.06, 0.05)
     xlim = (float(pca_xy[:, 0].min() - pad_x), float(pca_xy[:, 0].max() + pad_x))
     ylim = (float(pca_xy[:, 1].min() - pad_y), float(pca_xy[:, 1].max() + pad_y))
+    k_h, k_pca = cluster_counts_hidden_and_pca(panel_ctx["hidden_states"], pca_xy)
+    n_steps = panel_ctx["n"]
+    path_indices = [list(range(n_steps))] if n_steps >= 2 else []
     return {
         "pca_xy": pca_xy,
         "panel_ctx": panel_ctx,
         "automaton": automaton,
-        "xlabel": xlabel,
-        "ylabel": ylabel,
         "xlim": xlim,
         "ylim": ylim,
+        "k_h": k_h,
+        "k_pca": k_pca,
+        "path_indices": path_indices,
     }
 
 
@@ -109,54 +125,49 @@ def plot_state_pca_seed_comparison(
 
     panel_w = 3.8 if n_cols <= 8 else (2.2 if n_cols <= 14 else 1.55)
     panel_h = 2.0 if n_cols <= 8 else 1.35
-    head_fs = 11 if n_cols <= 10 else 8
+    head_fs, row_fs, row_labels, hspace = _seed_grid_label_sizes(n_cols)
 
-    fig = plt.figure(figsize=(panel_w * n_cols + 0.7, panel_h * n_rows + 0.35))
-    gs = fig.add_gridspec(
-        n_rows + 1,
-        n_cols + 1,
-        height_ratios=[0.04] + [1.0] * n_rows,
-        width_ratios=[0.08] + [1.0] * n_cols,
-        hspace=0.08,
-        wspace=0.10,
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(panel_w * n_cols + 0.4, panel_h * n_rows + 0.5),
+        squeeze=False,
+        gridspec_kw={"hspace": hspace, "wspace": 0.10},
     )
 
-    for col_idx, seed in enumerate(run_seeds):
-        ax_head = fig.add_subplot(gs[0, col_idx + 1])
-        ax_head.axis("off")
-        ax_head.set_title(f"s{seed}", fontsize=head_fs, fontweight="bold", pad=4)
-
     for row_idx, feat in enumerate(_COLOR_ROWS):
-        ax_row = fig.add_subplot(gs[row_idx + 1, 0])
-        ax_row.axis("off")
-        ax_row.text(
-            0.5, 0.5, FEATURE_DISPLAY.get(feat, feat),
-            ha="center", va="center", fontsize=9, fontweight="bold", rotation=90,
-        )
-
         for col_idx, seed in enumerate(run_seeds):
-            ax = fig.add_subplot(gs[row_idx + 1, col_idx + 1])
+            ax = axes[row_idx, col_idx]
             data = seed_data[seed]
             ctx = data["panel_ctx"]
             _plot_2d_feature_colored_pca_panel(
                 ax, data["pca_xy"], ctx["prefix_labels"], feat, ctx["timestep_labels"],
                 data["automaton"],
                 title="",
-                xlabel=data["xlabel"] if row_idx == n_rows - 1 else "",
-                ylabel=data["ylabel"] if col_idx == 0 else "",
+                xlabel="",
+                ylabel="",
                 xlim=data["xlim"],
                 ylim=data["ylim"],
                 annot_style=annot_style,
                 show_legend=col_idx == n_cols - 1,
+                minimal_axes=True,
+                path_indices=data["path_indices"],
+                faint_paths=True,
             )
             if col_idx < n_cols - 1:
                 leg = ax.get_legend()
                 if leg is not None:
                     leg.remove()
-            if row_idx < n_rows - 1:
-                ax.set_xlabel("")
-            if col_idx > 0:
-                ax.set_ylabel("")
+            if row_idx == 0:
+                counts = format_cluster_counts(data["k_h"], data["k_pca"])
+                head = f"s{seed}\n{counts}" if n_cols > 10 else f"s{seed}  {counts}"
+                ax.set_title(head, fontsize=head_fs, fontweight="bold", pad=2)
+            if col_idx == 0:
+                ax.set_ylabel(
+                    row_labels.get(feat, feat),
+                    fontsize=row_fs,
+                    fontweight="bold",
+                )
 
     fig.suptitle(
         f"{task}: PCA hidden states by coloring × seed ({embed_method.upper()}, n={len(run_seeds)})",

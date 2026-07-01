@@ -4407,6 +4407,9 @@ def _plot_2d_feature_colored_pca_panel(
     ylim: tuple[float, float],
     annot_style: str = "leaders",
     show_legend: bool = True,
+    minimal_axes: bool = False,
+    path_indices: list[list[int]] | None = None,
+    faint_paths: bool = False,
 ) -> None:
     n = projected.shape[0]
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
@@ -4416,6 +4419,16 @@ def _plot_2d_feature_colored_pca_panel(
     point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
         feat, timestep_labels, automaton, n, bold=text_only,
     )
+
+    if faint_paths and path_indices:
+        for idxs in path_indices:
+            if len(idxs) < 2:
+                continue
+            _plot_label_gradient_path(
+                ax, projected[idxs], idxs, point_colors,
+                linewidth=0.85, alpha=0.50, zorder=1,
+                subdivisions=10, arrow_mutation_scale=7.0,
+            )
 
     if not text_only:
         ax.scatter(
@@ -4430,11 +4443,13 @@ def _plot_2d_feature_colored_pca_panel(
             xlim=xlim, ylim=ylim, fontsize=7,
         )
     elif annot_style == "annots_only":
+        label_stroke = path_effects.withStroke(linewidth=0.6, foreground="black")
         for xy, prefix, color in zip(projected, display_prefixes, point_colors):
             ax.text(
                 xy[0], xy[1], prefix,
-                fontsize=9, color=color, fontweight="bold",
+                fontsize=4, color=color, fontweight="bold",
                 ha="center", va="center", zorder=5, clip_on=True,
+                path_effects=[label_stroke, path_effects.Normal()],
             )
     elif annot_style == "leaders":
         _annotate_trajectory_labels(
@@ -4451,13 +4466,16 @@ def _plot_2d_feature_colored_pca_panel(
         pad_y = (ylim[1] - ylim[0]) * 0.04
         ax.set_xlim(xlim[0] - pad_x, xlim[1] + pad_x)
         ax.set_ylim(ylim[0] - pad_y, ylim[1] + pad_y)
-    ax.set_xlabel(xlabel, fontsize=8)
-    ax.set_ylabel(ylabel, fontsize=8)
+    ax.set_xlabel("" if minimal_axes else xlabel, fontsize=8)
+    ax.set_ylabel("" if minimal_axes else ylabel, fontsize=8)
     ax.set_title(title, fontsize=11, pad=8)
     ax.grid(True, linestyle=":", alpha=0.35)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.tick_params(top=False, right=False)
+    if minimal_axes:
+        ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+    else:
+        ax.tick_params(top=False, right=False)
     if show_legend:
         _add_panel_color_legend(
             ax, feat, cat_to_color, legend_labels, automaton,
@@ -5126,6 +5144,47 @@ def _step_path_colors(n_points: int, cmap_name: str = "viridis") -> list:
     return [_step_palette_rgba(i + 1) for i in range(n_points)]
 
 
+def _plot_label_gradient_path(
+    ax,
+    path: np.ndarray,
+    idxs: list[int],
+    point_colors: list,
+    *,
+    linewidth: float = 0.75,
+    alpha: float = 0.38,
+    zorder: int = 1,
+    subdivisions: int = 8,
+    arrow_mutation_scale: float = 7.0,
+) -> None:
+    """Draw a path with each edge shaded from its start label color to its end label color."""
+    if len(path) < 2:
+        return
+    mcolors = plt.matplotlib.colors
+    for i in range(len(path) - 1):
+        p0, p1 = path[i], path[i + 1]
+        c0 = np.array(mcolors.to_rgb(point_colors[idxs[i]]))
+        c1 = np.array(mcolors.to_rgb(point_colors[idxs[i + 1]]))
+        ts = np.linspace(0.0, 1.0, subdivisions + 1)
+        for k in range(subdivisions):
+            t_a, t_b = ts[k], ts[k + 1]
+            qa = p0 * (1.0 - t_a) + p1 * t_a
+            qb = p0 * (1.0 - t_b) + p1 * t_b
+            t_mid = 0.5 * (t_a + t_b)
+            col = tuple(c0 * (1.0 - t_mid) + c1 * t_mid)
+            ax.plot(
+                [qa[0], qb[0]], [qa[1], qb[1]],
+                color=col, linewidth=linewidth, alpha=alpha,
+                solid_capstyle="round", zorder=zorder,
+            )
+        _midsegment_arrowhead_2d(
+            ax, p0, p1,
+            color=tuple(0.5 * (c0 + c1)),
+            alpha=min(alpha + 0.14, 1.0),
+            zorder=zorder + 1,
+            mutation_scale=arrow_mutation_scale,
+        )
+
+
 # Trajectory word palette (user-specified).
 _TRAJECTORY_WORD_PALETTE: tuple[str, ...] = (
     "#000000",  # black
@@ -5344,12 +5403,10 @@ def _plot_step_colored_path_arrows(
             linestyle=linestyle, solid_capstyle="round", zorder=zorder,
         )
         if draw_arrows:
-            ax.quiver(
-                p0[0], p0[1],
-                p1[0] - p0[0], p1[1] - p0[1],
-                angles="xy", scale_units="xy", scale=1,
-                color=color, width=0.0042, headwidth=5.0, headlength=5.5,
-                alpha=min(seg_alpha + 0.12, 1.0), zorder=zorder + 1,
+            _midsegment_arrowhead_2d(
+                ax, p0, p1,
+                color=color, alpha=min(seg_alpha + 0.12, 1.0), zorder=zorder + 1,
+                mutation_scale=arrow_mutation_scale,
             )
 
 
@@ -5419,21 +5476,24 @@ def _plot_colored_path_arrows(
     linewidth: float = 1.6,
     alpha: float = 0.55,
     zorder: int = 2,
+    mutation_scale: float = 12.0,
+    head_frac: float = 0.22,
+    arrow_alpha_boost: float = 0.15,
 ) -> None:
-    """Colored trajectory line with arrowheads at each step showing travel direction."""
+    """Colored trajectory line with arrowheads centered on each segment."""
     if len(path) < 2:
         return
     ax.plot(
         path[:, 0], path[:, 1],
         color=color, linewidth=linewidth, alpha=alpha, solid_capstyle="round", zorder=zorder,
     )
-    ax.quiver(
-        path[:-1, 0], path[:-1, 1],
-        path[1:, 0] - path[:-1, 0], path[1:, 1] - path[:-1, 1],
-        angles="xy", scale_units="xy", scale=1,
-        color=color, width=0.0035, headwidth=4.5, headlength=5,
-        alpha=min(alpha + 0.15, 1.0), zorder=zorder + 1,
-    )
+    arrow_alpha = min(alpha + arrow_alpha_boost, 1.0)
+    for i in range(len(path) - 1):
+        _midsegment_arrowhead_2d(
+            ax, path[i], path[i + 1],
+            color=color, alpha=arrow_alpha, zorder=zorder + 1,
+            mutation_scale=mutation_scale, head_frac=head_frac,
+        )
 
 
 def _plot_colored_path_arrows_3d(

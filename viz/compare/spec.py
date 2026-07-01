@@ -8,6 +8,9 @@ from experiment import DEFAULT_SEED  # re-export for presets
 
 _COMPARISON_SEEDS = (42, 43, 44, 45, 46)
 
+# Seeds for geometry variability studies (avoid the 40s block used elsewhere).
+GEOMETRY_STATS_SEEDS = (1, 2, 3, 5, 7, 8, 11, 13, 17, 19, 23, 29, 31, 37, 53)
+
 _SIXTEEN_WORD_LENGTH_TASKS = (
     "sixteen_word_ns",
     "sixteen_word_four_letter_ns",

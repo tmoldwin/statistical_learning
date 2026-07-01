@@ -24,6 +24,8 @@ def main() -> None:
             "Examples:\n"
             "  python scripts/compare.py --preset sixteen_word_lengths_ns\n"
             "  python scripts/compare.py --preset sixteen_word_lengths_ns --seeds 42 43 44 --train\n"
+            "  python scripts/compare.py --preset sixteen_word_lengths_ns "
+            "--seeds 1 2 3 5 7 8 11 13 17 19 23 29 31 37 53 --train --kinds trajectory_geometry\n"
         ),
     )
     parser.add_argument("--preset", choices=sorted(COMPARISON_PRESETS))

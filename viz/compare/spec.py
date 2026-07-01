@@ -37,10 +37,16 @@ _FIFTY_WORD_LENGTH_LABELS = {
     "fifty_word_five_letter_ns": "5-letter",
 }
 
-_SIX_WORD_OVERLAP_TASKS = ("six_word_overlap_ns",)
+_SIX_WORD_OVERLAP_TASKS = (
+    "six_word_overlap_ns",
+    "six_word_four_letter_ns",
+    "six_word_five_letter_ns",
+)
 
 _SIX_WORD_OVERLAP_LABELS = {
-    "six_word_overlap_ns": "6-word (-at / co-)",
+    "six_word_overlap_ns": "3-letter",
+    "six_word_four_letter_ns": "4-letter",
+    "six_word_five_letter_ns": "5-letter",
 }
 
 
@@ -75,7 +81,7 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
         name="six_word_overlap_ns",
         tasks=_SIX_WORD_OVERLAP_TASKS,
         labels=dict(_SIX_WORD_OVERLAP_LABELS),
-        title="6-word overlap vocabulary (cat/hat/mat + con/cob/cot)",
+        title="6-word vocabularies (no spaces): 3 / 4 / 5-letter",
         seeds=GEOMETRY_STATS_SEEDS,
     ),
     "sixteen_word_lengths_ns": ComparisonSpec(

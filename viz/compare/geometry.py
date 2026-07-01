@@ -380,9 +380,9 @@ def plot_geometry_examples(
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(0.95 * n_cols + 0.4, 2.35 * n_rows + 0.6),
+        figsize=(0.95 * n_cols + 0.4, 1.45 * n_rows + 0.35),
         squeeze=False,
-        constrained_layout=True,
+        gridspec_kw={"hspace": 0.12, "wspace": 0.10},
     )
 
     for row_idx, task in enumerate(tasks):
@@ -422,7 +422,9 @@ def plot_geometry_examples(
     fig.suptitle(
         f"{spec.display_title}: closed-loop examples + metrics (PCA 2D, {spec.model_type})",
         fontsize=10,
+        y=0.995,
     )
+    fig.subplots_adjust(top=0.94)
     out_dir = comparison_dir(spec.name, "trajectories")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / outfile

@@ -121,6 +121,21 @@ _FIFTY_WORD_NS_DEFAULTS: dict[str, object] = {
 # Active tasks — each name is both the folder under experiments/ and the CLI key.
 TASKS: dict[str, dict] = {
     "six_word_overlap_ns": dict(_SIX_WORD_NS_DEFAULTS),
+    "six_word_four_letter_ns": {
+        **dict(_SIX_WORD_NS_DEFAULTS),
+        "regime": "six_word_four_letter",
+        "viz_length": 30,
+        "sequence_length": 16,
+    },
+    "six_word_five_letter_ns": {
+        **dict(_SIX_WORD_NS_DEFAULTS),
+        "regime": "six_word_five_letter",
+        "hidden_size": 64,
+        "learning_rate": 0.04,
+        "viz_length": 36,
+        "sequence_length": 20,
+        "steps": 35_000,
+    },
     "sixteen_word": dict(_SIXTEEN_WORD_SPACED_DEFAULTS),
     "sixteen_word_ns": dict(_SIXTEEN_WORD_NS_DEFAULTS),
     "sixteen_word_mixed": dict(_MIXED_LENGTH_DEFAULTS),

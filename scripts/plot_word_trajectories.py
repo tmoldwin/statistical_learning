@@ -139,7 +139,7 @@ def main() -> None:
                 outfile = Path(args.outfile)
             elif args.comparison_out and args.preset:
                 spec = COMPARISON_PRESETS[args.preset]
-                label = spec.label_for(task).replace(" ", "_")
+                label = task.replace("_ns", "").replace("_", "-")
                 sub = "3d" if args.dimensions == 3 else "2d"
                 name = embed_save_path(
                     f"word_trajectories_{label}_s{seed}_{sub}.png",

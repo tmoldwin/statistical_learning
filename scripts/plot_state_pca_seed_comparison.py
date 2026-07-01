@@ -69,8 +69,8 @@ def _seed_panel_data(
         panel_ctx["hidden_states"], method=embed_method, trajectories=trajs,
     )
     xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
-    pad_x = max((pca_xy[:, 0].max() - pca_xy[:, 0].min()) * 0.12, 0.08)
-    pad_y = max((pca_xy[:, 1].max() - pca_xy[:, 1].min()) * 0.12, 0.08)
+    pad_x = max((pca_xy[:, 0].max() - pca_xy[:, 0].min()) * 0.06, 0.05)
+    pad_y = max((pca_xy[:, 1].max() - pca_xy[:, 1].min()) * 0.06, 0.05)
     xlim = (float(pca_xy[:, 0].min() - pad_x), float(pca_xy[:, 0].max() + pad_x))
     ylim = (float(pca_xy[:, 1].min() - pad_y), float(pca_xy[:, 1].max() + pad_y))
     return {
@@ -90,7 +90,7 @@ def plot_state_pca_seed_comparison(
     seeds: tuple[int, ...],
     model_type: str = "rnn",
     embed_method: str = "pca",
-    annot_style: str = "compact",
+    annot_style: str = "annots_only",
     outfile: Path | None = None,
 ) -> Path:
     """Grid: rows = DFA / position / char coloring; columns = seeds."""
@@ -108,17 +108,17 @@ def plot_state_pca_seed_comparison(
     n_cols = len(run_seeds)
 
     panel_w = 3.8 if n_cols <= 8 else (2.2 if n_cols <= 14 else 1.55)
-    panel_h = 3.6 if n_cols <= 8 else 2.6
+    panel_h = 2.0 if n_cols <= 8 else 1.35
     head_fs = 11 if n_cols <= 10 else 8
 
-    fig = plt.figure(figsize=(panel_w * n_cols + 0.7, panel_h * n_rows + 0.5))
+    fig = plt.figure(figsize=(panel_w * n_cols + 0.7, panel_h * n_rows + 0.35))
     gs = fig.add_gridspec(
         n_rows + 1,
         n_cols + 1,
-        height_ratios=[0.06] + [1.0] * n_rows,
-        width_ratios=[0.10] + [1.0] * n_cols,
-        hspace=0.28,
-        wspace=0.22,
+        height_ratios=[0.04] + [1.0] * n_rows,
+        width_ratios=[0.08] + [1.0] * n_cols,
+        hspace=0.08,
+        wspace=0.10,
     )
 
     for col_idx, seed in enumerate(run_seeds):
@@ -147,6 +147,7 @@ def plot_state_pca_seed_comparison(
                 xlim=data["xlim"],
                 ylim=data["ylim"],
                 annot_style=annot_style,
+                show_legend=col_idx == n_cols - 1,
             )
             if col_idx < n_cols - 1:
                 leg = ax.get_legend()
@@ -183,7 +184,7 @@ def main() -> None:
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--model-type", default="rnn", choices=["rnn", "rnn_dale"])
     parser.add_argument("--embed-method", default="pca", choices=["pca", "jpca"])
-    parser.add_argument("--annot-style", default="compact", choices=["compact", "leaders", "annots_only"])
+    parser.add_argument("--annot-style", default="annots_only", choices=["compact", "leaders", "annots_only"])
     parser.add_argument("--comparison-out", action="store_true")
     args = parser.parse_args()
 
@@ -204,7 +205,7 @@ def main() -> None:
         outfile: Path | None = None
         if args.comparison_out and args.preset:
             spec = COMPARISON_PRESETS[args.preset]
-            label = spec.label_for(task).replace(" ", "_")
+            label = task.replace("_ns", "").replace("_", "-")
             name = f"state_pca_seeds_{label}_{args.embed_method}.png"
             outfile = comparison_dir(spec.name, "trajectories") / name
         print(plot_state_pca_seed_comparison(

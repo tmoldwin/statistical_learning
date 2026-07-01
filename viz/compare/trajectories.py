@@ -121,14 +121,15 @@ def plot_closed_loop_trajectories(
     base_name = outfile or ("closed_loop_3d.png" if is_3d else "closed_loop_2d.png")
     out_path = out_dir / embed_save_path(base_name, embed_method)
 
-    fig = plt.figure(figsize=(3.8 * n_seed_cols + 0.7, 4.0 * n_task_rows + 0.5))
+    row_h = 4.0 if is_3d else 2.35
+    fig = plt.figure(figsize=(3.8 * n_seed_cols + 0.7, row_h * n_task_rows + 0.35))
     gs = fig.add_gridspec(
         1 + n_task_rows,
         1 + n_seed_cols,
-        height_ratios=[0.07] + [1.0] * n_task_rows,
-        width_ratios=[0.09] + [1.0] * n_seed_cols,
-        hspace=0.32,
-        wspace=0.22,
+        height_ratios=[0.05] + [1.0] * n_task_rows,
+        width_ratios=[0.08] + [1.0] * n_seed_cols,
+        hspace=0.10,
+        wspace=0.10,
     )
 
     for col_idx, run_seed in enumerate(run_seeds):

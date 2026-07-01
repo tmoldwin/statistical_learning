@@ -73,9 +73,9 @@ def plot_init_vs_final(
     fig, axes = plt.subplots(
         n_panel_rows,
         len(seeds),
-        figsize=(1.15 * len(seeds) + 0.5, 1.55 * n_panel_rows + 0.5),
+        figsize=(1.15 * len(seeds) + 0.5, 1.25 * n_panel_rows + 0.35),
         squeeze=False,
-        constrained_layout=True,
+        gridspec_kw={"hspace": 0.12, "wspace": 0.08},
     )
 
     for row_idx, task in enumerate(tasks):

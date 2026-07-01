@@ -55,6 +55,16 @@ REGIMES: dict[str, list[str]] = {
         "cat", "hat", "mat",
         "con", "cob", "cot",
     ],
+    # 6 words: -ake suffix + -ank suffix (4-letter).
+    "six_word_four_letter": [
+        "bake", "cake", "lake",
+        "bank", "tank", "rank",
+    ],
+    # 6 words: -ight suffix + -ound suffix (5-letter).
+    "six_word_five_letter": [
+        "light", "night", "right",
+        "bound", "found", "hound",
+    ],
     # 6 words: one -at suffix family + one si- prefix family.
     "six_word_overlap_sin": [
         "sin", "six", "sir",

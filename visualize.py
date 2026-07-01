@@ -3268,7 +3268,7 @@ def build_pca_plane_grid(
     grid_x, grid_y = np.meshgrid(xs, ys)
     grid_coords = np.column_stack([grid_x.ravel(), grid_y.ravel()])
     grid_hidden = reconstruct_from_pca(grid_coords, mean, components)
-    return grid_x, grid_y, grid_hidden, projected, xlim, ylim, evr
+    return grid_x, grid_y, grid_hidden, projected, xlim, ylim, _evr
 
 
 def _rolling_median(y: np.ndarray, win: int) -> np.ndarray:
@@ -3682,6 +3682,16 @@ def trigram_sequence_colors(labels):
     unique_labels = sorted(set(labels))
     cmap = plt.get_cmap("tab10", max(len(unique_labels), 1))
     return {label: cmap(i) for i, label in enumerate(unique_labels)}
+
+
+def _bold_categorical_colors(categories) -> dict:
+    """High-contrast hex palette for text-only PCA labels."""
+    palette = _DIVERGENT_WORD_PALETTE + _TRAJECTORY_STEP_PALETTE
+    sorted_cats = sorted(categories, key=lambda x: (str(type(x)), str(x)))
+    return {
+        c: plt.matplotlib.colors.to_rgba(palette[i % len(palette)])
+        for i, c in enumerate(sorted_cats)
+    }
 
 
 def _state_id_colors(state_ids: list[int]) -> dict[int, tuple]:
@@ -4268,23 +4278,34 @@ def _feature_point_colors_for_timesteps(
     timestep_labels,
     automaton: MinimizedVocabAutomaton | None,
     n: int,
+    *,
+    bold: bool = False,
 ) -> tuple[list, dict, dict]:
     """Per-timestep RGBA colors and category maps for one analysis feature."""
     from unit_selectivity import _panel_feature_colors
 
     vals, mask = timestep_labels.feature_values(feat)
     visible = [j for j in range(n) if mask is None or mask[j]]
-    cmap = plt.cm.tab20
+    cmap = plt.get_cmap("Set1") if bold else plt.cm.tab20
     if feat == "dfa" and automaton is not None:
-        state_colors = _dfa_automaton_state_colors(automaton)
-        cat_to_color = {int(s): state_colors[int(s)] for s in set(vals[j] for j in visible)}
+        visible_states = sorted(set(int(vals[j]) for j in visible))
+        if bold:
+            cat_to_color = _bold_categorical_colors(visible_states)
+        else:
+            state_colors = _dfa_automaton_state_colors(automaton)
+            cat_to_color = {int(s): state_colors[int(s)] for s in visible_states}
         from vocab_diagrams import dfa_state_label
 
         legend_labels = {c: dfa_state_label(int(c), automaton) for c in cat_to_color}
     else:
-        cat_to_color, legend_labels, _ = _panel_feature_colors(
-            feat, vals, visible, automaton, cmap,
-        )
+        if bold:
+            visible_vals = sorted(set(vals[j] for j in visible), key=lambda x: (str(type(x)), str(x)))
+            cat_to_color = _bold_categorical_colors(visible_vals)
+            legend_labels = {c: str(c) for c in cat_to_color}
+        else:
+            cat_to_color, legend_labels, _ = _panel_feature_colors(
+                feat, vals, visible, automaton, cmap,
+            )
     point_colors: list = []
     for j in range(n):
         if mask is not None and not mask[j]:
@@ -4385,18 +4406,22 @@ def _plot_2d_feature_colored_pca_panel(
     xlim: tuple[float, float],
     ylim: tuple[float, float],
     annot_style: str = "leaders",
+    show_legend: bool = True,
 ) -> None:
     n = projected.shape[0]
-    point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
-        feat, timestep_labels, automaton, n,
-    )
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
     annot_style = (annot_style or "compact").lower()
+    text_only = annot_style == "annots_only"
 
-    ax.scatter(
-        projected[:, 0], projected[:, 1],
-        s=70, c=point_colors, edgecolors="black", linewidths=0.35, zorder=3,
+    point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
+        feat, timestep_labels, automaton, n, bold=text_only,
     )
+
+    if not text_only:
+        ax.scatter(
+            projected[:, 0], projected[:, 1],
+            s=70, c=point_colors, edgecolors="black", linewidths=0.35, zorder=3,
+        )
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     if annot_style == "compact":
@@ -4408,7 +4433,8 @@ def _plot_2d_feature_colored_pca_panel(
         for xy, prefix, color in zip(projected, display_prefixes, point_colors):
             ax.text(
                 xy[0], xy[1], prefix,
-                fontsize=7, color=color, ha="center", va="center", zorder=5, clip_on=True,
+                fontsize=9, color=color, fontweight="bold",
+                ha="center", va="center", zorder=5, clip_on=True,
             )
     elif annot_style == "leaders":
         _annotate_trajectory_labels(
@@ -4432,11 +4458,12 @@ def _plot_2d_feature_colored_pca_panel(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.tick_params(top=False, right=False)
-    _add_panel_color_legend(
-        ax, feat, cat_to_color, legend_labels, automaton,
-        feature_title=title,
-        outside=False,
-    )
+    if show_legend:
+        _add_panel_color_legend(
+            ax, feat, cat_to_color, legend_labels, automaton,
+            feature_title=title,
+            outside=False,
+        )
 
 
 def _plot_3d_feature_colored_pca_panel(
@@ -4459,11 +4486,12 @@ def _plot_3d_feature_colored_pca_panel(
     )
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
     annot_style = (annot_style or "none").lower()
-    ax.scatter(
-        projected[:, 0], projected[:, 1], projected[:, 2],
-        s=55, c=point_colors, edgecolors="black", linewidths=0.35,
-        depthshade=True, zorder=6,
-    )
+    if annot_style != "annots_only":
+        ax.scatter(
+            projected[:, 0], projected[:, 1], projected[:, 2],
+            s=55, c=point_colors, edgecolors="black", linewidths=0.35,
+            depthshade=True, zorder=6,
+        )
     if annot_style == "leaders":
         _annotate_trajectory_labels(
             ax, projected, display_prefixes,

@@ -71,6 +71,10 @@ parser.add_argument('--noise-std', type=float, default=None,
                     help='Gaussian noise std added to hidden state every timestep (train + sample)')
 parser.add_argument('--seed', type=int, default=42,
                     help='RNG seed for weight initialization (default: 42)')
+parser.add_argument(
+    '--target-word-error', type=float, default=None,
+    help='stop once mean word error is at or below this fraction (e.g. 0.03 = 3%%)',
+)
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -105,9 +109,23 @@ if args.noise_std is not None:
     timestep_noise_std = float(args.noise_std)
 elif args.exp:
     from experiment import EXPERIMENT_CONFIG
-    timestep_noise_std = float(EXPERIMENT_CONFIG.get(args.exp, {}).get("timestep_noise_std", 0.0))
+    _exp_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+    timestep_noise_std = float(_exp_cfg.get("timestep_noise_std", 0.0))
 else:
     timestep_noise_std = 0.0
+
+target_word_error: float | None = args.target_word_error
+if target_word_error is None and args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    _raw_target = EXPERIMENT_CONFIG.get(args.exp, {}).get("target_word_error_frac")
+    if _raw_target is not None:
+        target_word_error = float(_raw_target)
+early_stop_patience = 3
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    early_stop_patience = int(
+        EXPERIMENT_CONFIG.get(args.exp, {}).get("early_stop_patience", early_stop_patience)
+    )
 noise_rng = np.random.default_rng(args.seed + 1)
 init_rng = np.random.default_rng(args.seed)
 
@@ -449,7 +467,7 @@ def stochastic_word_validity_metrics(
 
 
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
-    """Fraction of words (split or segmented) not in the training vocabulary."""
+    """Fraction of in-vocab words; first/last tokens per rollout are dropped (edge trim)."""
     from vocab_diagrams import invalid_word_fraction as _invalid_word_fraction
 
     return _invalid_word_fraction(
@@ -545,14 +563,26 @@ def _append_weight_snapshot(iteration: int) -> None:
         weight_snap_violation_frac.append(0.0)
 
 
-# Ignore early rollouts before real learning (checkpoint only on 0% invalid-word rate).
+# Ignore early rollouts before real learning.
 MIN_CHECKPOINT_ITER = 8_000
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    MIN_CHECKPOINT_ITER = int(
+        EXPERIMENT_CONFIG.get(args.exp, {}).get("min_checkpoint_iter", MIN_CHECKPOINT_ITER)
+    )
 
 best_word_err = float("inf")
 best_valid_letter_frac = -1.0
 best_iter = -1
 best_state: dict[str, np.ndarray] | None = None
-zero_word_err_streak = 0
+target_met_streak = 0
+_legacy_zero_stop = target_word_error is None
+_stop_threshold = 0.0 if _legacy_zero_stop else target_word_error
+if not _legacy_zero_stop:
+    print(
+        f"early stop target: {100.0 * _stop_threshold:.2f}% word error "
+        f"({early_stop_patience} consecutive evals)",
+    )
 
 
 def snapshot_params() -> dict[str, np.ndarray]:
@@ -623,20 +653,27 @@ while iteration < max_iterations:
         and vocab_words
         and np.isfinite(word_err)
     ):
-        if word_err <= 1e-12:
-            best_word_err = 0.0
+        if word_err < best_word_err:
+            best_word_err = word_err
             best_valid_letter_frac = letter_frac
             best_iter = iteration
             best_state = copy.deepcopy(snapshot_params())
-        if iteration >= MIN_CHECKPOINT_ITER and word_err <= 1e-12:
-            zero_word_err_streak += 1
+        if word_err <= _stop_threshold:
+            target_met_streak += 1
         else:
-            zero_word_err_streak = 0
-        if zero_word_err_streak >= 3:
-            print(
-                f"early stop at iter {iteration}: "
-                "0 invalid vocabulary words for 300 iterations",
-            )
+            target_met_streak = 0
+        if target_met_streak >= early_stop_patience:
+            if _legacy_zero_stop:
+                print(
+                    f"early stop at iter {iteration}: "
+                    "0 invalid vocabulary words for 300 iterations",
+                )
+            else:
+                print(
+                    f"early stop at iter {iteration}: "
+                    f"word error <= {100.0 * _stop_threshold:.2f}% "
+                    f"for {early_stop_patience * 100} iterations",
+                )
             break
 
     if iteration == 0:
@@ -696,15 +733,36 @@ sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
 print('----\n %s \n----' % (sampled_text,))
 print('iter %d, loss: %f (done)' % (iteration, smooth_loss))
 
-if (
-    best_state is not None
-    and best_iter >= MIN_CHECKPOINT_ITER
-    and best_word_err <= 1e-12
-):
-    print(f"using checkpoint from iter {best_iter} (0% invalid vocabulary words)")
-    restore_params(best_state)
-else:
+if best_state is not None and best_iter >= MIN_CHECKPOINT_ITER:
+    use_best = (not _legacy_zero_stop) or best_word_err <= _stop_threshold
+    if use_best:
+        if _legacy_zero_stop:
+            print(f"using checkpoint from iter {best_iter} (0% invalid vocabulary words)")
+        elif best_word_err <= _stop_threshold:
+            print(
+                f"using checkpoint from iter {best_iter} "
+                f"({100.0 * best_word_err:.2f}% word error, target met)",
+            )
+        else:
+            print(
+                f"using checkpoint from iter {best_iter} "
+                f"({100.0 * best_word_err:.2f}% word error, best seen)",
+            )
+        restore_params(best_state)
+    elif _legacy_zero_stop:
+        print("keeping final weights (no 0% invalid-word checkpoint was reached)")
+    else:
+        print(
+            f"keeping final weights (target {100.0 * _stop_threshold:.2f}% word error "
+            "was not reached)",
+        )
+elif _legacy_zero_stop:
     print("keeping final weights (no 0% invalid-word checkpoint was reached)")
+else:
+    print(
+        f"keeping final weights (target {100.0 * _stop_threshold:.2f}% word error "
+        "was not reached)",
+    )
 
 final_rng = np.random.default_rng(METRIC_RNG_BASE + iteration)
 final_word_err, final_letter_valid, rollout_text = stochastic_word_validity_metrics(
@@ -717,11 +775,12 @@ demo_word_error_frac = invalid_word_fraction(rollout_text, vocab_words)
 
 print(
     f"final word error rate (mean over {METRIC_NUM_ROLLOUTS} rollouts × "
-    f"{METRIC_ROLLOUT_LEN} chars, stochastic): {100.0 * final_word_err:.2f}%",
+    f"{METRIC_ROLLOUT_LEN} chars, stochastic; edge tokens trimmed): "
+    f"{100.0 * final_word_err:.2f}%",
 )
 print(
-    f"final demo rollout ({len(rollout_text)} chars, seed {demo_rng_seed}): "
-    f"{100.0 * demo_word_error_frac:.2f}% invalid words",
+    f"final demo rollout ({len(rollout_text)} chars, seed {demo_rng_seed}; "
+    f"edge tokens trimmed): {100.0 * demo_word_error_frac:.2f}% invalid words",
 )
 print(f"final in-vocab letter fraction: {100.0 * final_letter_valid:.2f}%")
 if dale_law:

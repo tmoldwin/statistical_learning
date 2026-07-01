@@ -533,6 +533,7 @@ def plot_representation_suite(
 ) -> None:
     """RNN-parallel plot set for one transformer representation."""
     from visualize import (
+        _plot_embed_variants,
         plot_dfa_grouped_state_correlation,
         plot_dfa_state_distance_comparison,
         plot_feature_separation_summary,
@@ -557,6 +558,13 @@ def plot_representation_suite(
             return fn(*args, **kwargs)
         with timer.section(plot_name):
             return fn(*args, **kwargs)
+
+    def _plot_embed(plot_name: str, fn, base_save_path: str, **kwargs):
+        if timer is None:
+            _plot_embed_variants(fn, base_save_path, **kwargs)
+        else:
+            with timer.section(plot_name):
+                _plot_embed_variants(fn, base_save_path, **kwargs)
 
     if spec.lookup is not None:
         row_labels, table = _lookup_table_from_model(model, spec.lookup)
@@ -622,27 +630,19 @@ def plot_representation_suite(
     if trajectories_only:
         if not spec.is_readout or not words:
             return
-        _plot(
+        _plot_embed(
             "word_trajectories_pca",
             plot_space_to_space_trajectories,
-            text, spec.vectors,
-            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
-            model=None,
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
-            words=words,
+            _repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
+            text=text, hidden_states=spec.vectors,
+            model=None, spaced=spaced, automaton=automaton, condensed=cv, words=words,
         )
-        _plot(
+        _plot_embed(
             "word_trajectories_pca_3d",
             plot_space_to_space_trajectories_3d,
-            text, spec.vectors,
-            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
-            model=None,
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
-            words=words,
+            _repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
+            text=text, hidden_states=spec.vectors,
+            model=None, spaced=spaced, automaton=automaton, condensed=cv, words=words,
         )
         return
 
@@ -654,18 +654,18 @@ def plot_representation_suite(
         repr_name=name, dim_label=dim,
         automaton=automaton, spaced=spaced,
     )
-    _plot(
+    _plot_embed(
         "embedding_panels_context",
         plot_pca_context_labels,
-        text, spec.vectors, chars,
-        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+        _repr_plot_path(out_dir, spec.slug, "embedding_panels_context.png", condensed=condensed),
+        text=text, hidden_states=spec.vectors, chars=chars,
         spaced=spaced, automaton=automaton, condensed=cv, words=words,
     )
-    _plot(
+    _plot_embed(
         "embedding_panels_context_3d",
         plot_pca_context_labels_3d,
-        text, spec.vectors, chars,
-        save_path=_repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
+        _repr_plot_path(out_dir, spec.slug, "embedding_panels_context_3d.png", condensed=condensed),
+        text=text, hidden_states=spec.vectors, chars=chars,
         spaced=spaced, automaton=automaton, condensed=cv,
         repr_name=name, words=words,
     )
@@ -755,51 +755,41 @@ def plot_representation_suite(
         return
 
     if automaton is not None and words:
-        _plot(
+        _plot_embed(
             "dfa_and_embedding_pca",
             plot_pca_dfa_analysis,
-            text, spec.vectors, chars, words,
-            save_path=_repr_plot_path(out_dir, spec.slug, "dfa_and_embedding_pca.png", condensed=condensed),
-            automaton=automaton,
-            model=model,
-            spaced=spaced, condensed=cv,
-            repr_name=name,
+            _repr_plot_path(out_dir, spec.slug, "dfa_and_embedding_pca.png", condensed=condensed),
+            text=text, hidden_states=spec.vectors, chars=chars, words=words,
+            automaton=automaton, model=model, spaced=spaced, condensed=cv, repr_name=name,
         )
-    _plot(
+    _plot_embed(
         "next_char_regions_pca",
         plot_pca_prediction_regions,
-        model, text, spec.vectors, chars,
-        save_path=_repr_plot_path(out_dir, spec.slug, "next_char_regions_pca.png", condensed=condensed),
-        spaced=spaced, automaton=automaton, condensed=cv,
-        repr_name=name,
+        _repr_plot_path(out_dir, spec.slug, "next_char_regions_pca.png", condensed=condensed),
+        model=model, text=text, hidden_states=spec.vectors, chars=chars,
+        spaced=spaced, automaton=automaton, condensed=cv, repr_name=name,
     )
-    _plot(
+    _plot_embed(
         "next_char_prob_panels_pca",
         plot_pca_next_char_probability_panels,
-        model, text, spec.vectors, chars,
-        save_path=_repr_plot_path(out_dir, spec.slug, "next_char_prob_panels_pca.png", condensed=condensed),
+        _repr_plot_path(out_dir, spec.slug, "next_char_prob_panels_pca.png", condensed=condensed),
+        model=model, text=text, hidden_states=spec.vectors, chars=chars,
         spaced=spaced, automaton=automaton, condensed=cv,
     )
     if words:
-        _plot(
+        _plot_embed(
             "word_trajectories_pca",
             plot_space_to_space_trajectories,
-            text, spec.vectors,
-            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
-            model=None,
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
+            _repr_plot_path(out_dir, spec.slug, "word_trajectories_pca.png", condensed=condensed),
+            text=text, hidden_states=spec.vectors, model=None,
+            spaced=spaced, automaton=automaton, condensed=cv,
         )
-        _plot(
+        _plot_embed(
             "word_trajectories_pca_3d",
             plot_space_to_space_trajectories_3d,
-            text, spec.vectors,
-            save_path=_repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
-            model=None,
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
+            _repr_plot_path(out_dir, spec.slug, "word_trajectories_pca_3d.png", condensed=condensed),
+            text=text, hidden_states=spec.vectors, model=None,
+            spaced=spaced, automaton=automaton, condensed=cv,
         )
 
 

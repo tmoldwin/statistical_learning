@@ -52,13 +52,16 @@ COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "dfa_sensitivity",
 )
 
-_SIXTEEN_WORD_DEFAULTS: dict[str, object] = {
+_SIXTEEN_WORD_NS_DEFAULTS: dict[str, object] = {
     "regime": "sixteen_word",
-    "word_space": True,
+    "word_space": False,
     "chars": 50_000,
-    "steps": 10_000,
+    "steps": 50_000,
+    "target_word_error_frac": 0.03,
+    "early_stop_patience": 3,
+    "min_checkpoint_iter": 4_000,
     "viz_length": 50,
-    "hidden_size": 50,
+    "hidden_size": 100,
     "sequence_length": 12,
     "eval_interval": 50,
     "eval_iterations": 20,
@@ -79,41 +82,67 @@ _MIXED_LENGTH_DEFAULTS: dict[str, object] = {
     "metric_rollout_len": 1000,
 }
 
+_SIXTEEN_WORD_SPACED_DEFAULTS: dict[str, object] = {
+    **_SIXTEEN_WORD_NS_DEFAULTS,
+    "word_space": True,
+}
+
+_FIFTY_WORD_NS_DEFAULTS: dict[str, object] = {
+    "regime": "fifty_word",
+    "word_space": False,
+    "chars": 100_000,
+    "steps": 100_000,
+    "target_word_error_frac": 0.03,
+    "early_stop_patience": 3,
+    "viz_length": 151,  # 50 words × 3 chars + 1
+    "hidden_size": 150,
+    "sequence_length": 12,
+    "eval_interval": 50,
+    "eval_iterations": 20,
+    "metric_rollout_len": 1000,
+}
+
 # Active tasks — each name is both the folder under experiments/ and the CLI key.
 TASKS: dict[str, dict] = {
-    "sixteen_word": dict(_SIXTEEN_WORD_DEFAULTS),
-    "sixteen_word_ns": {
-        **dict(_SIXTEEN_WORD_DEFAULTS),
-        "word_space": False,
-    },
+    "sixteen_word": dict(_SIXTEEN_WORD_SPACED_DEFAULTS),
+    "sixteen_word_ns": dict(_SIXTEEN_WORD_NS_DEFAULTS),
     "sixteen_word_mixed": dict(_MIXED_LENGTH_DEFAULTS),
     "sixteen_word_mixed_ns": {
-        **dict(_MIXED_LENGTH_DEFAULTS),
-        "word_space": False,
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "sixteen_word_mixed",
+        "viz_length": 60,
+        "sequence_length": 16,
     },
     "sixteen_word_four_letter_ns": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "regime": "sixteen_word_four_letter",
-        "word_space": False,
-        "chars": 50_000,
-        "steps": 10_000,
         "viz_length": 64,
-        "hidden_size": 50,
         "sequence_length": 16,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
     },
     "sixteen_word_five_letter_ns": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "regime": "sixteen_word_five_letter",
-        "word_space": False,
-        "chars": 50_000,
-        "steps": 10_000,
+        "hidden_size": 128,
+        "learning_rate": 0.04,
         "viz_length": 81,
-        "hidden_size": 50,
-        "sequence_length": 20,
-        "eval_interval": 50,
-        "eval_iterations": 20,
-        "metric_rollout_len": 1000,
+        "sequence_length": 32,
+        "steps": 75_000,
+    },
+    "fifty_word_ns": dict(_FIFTY_WORD_NS_DEFAULTS),
+    "fifty_word_four_letter_ns": {
+        **dict(_FIFTY_WORD_NS_DEFAULTS),
+        "regime": "fifty_word_four_letter",
+        "viz_length": 201,  # 50 × 4 + 1
+        "sequence_length": 16,
+    },
+    "fifty_word_five_letter_ns": {
+        **dict(_FIFTY_WORD_NS_DEFAULTS),
+        "regime": "fifty_word_five_letter",
+        "hidden_size": 128,
+        "learning_rate": 0.04,
+        "viz_length": 251,  # 50 × 5 + 1
+        "sequence_length": 32,
+        "steps": 150_000,
     },
 }
 

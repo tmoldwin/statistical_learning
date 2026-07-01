@@ -71,6 +71,8 @@ def train_task(
             train_cmd.extend(["--sequence-length", str(cfg["sequence_length"])])
         if "learning_rate" in cfg:
             train_cmd.extend(["--learning-rate", str(cfg["learning_rate"])])
+        if "target_word_error_frac" in cfg:
+            train_cmd.extend(["--target-word-error", str(cfg["target_word_error_frac"])])
         if model_uses_dale(model_type) and "dale_steps" in cfg:
             steps = 500 if smoke else int(cfg["dale_steps"])
         else:

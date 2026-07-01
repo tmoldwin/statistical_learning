@@ -104,6 +104,45 @@ REGIMES: dict[str, list[str]] = {
         "batch", "catch", "hatch", "match",
         "cream", "dream", "gleam", "steam",
     ],
+    # 50 real 3-letter words; ten suffix families (5 words each).
+    "fifty_word": [
+        "cat", "hat", "mat", "rat", "bat",
+        "met", "pet", "net", "bet", "wet",
+        "can", "ban", "pan", "man", "tan",
+        "car", "bar", "tar", "far", "jar",
+        "big", "dig", "fig", "pig", "wig",
+        "bog", "dog", "fog", "log", "hog",
+        "bum", "gum", "hum", "rum", "sum",
+        "bun", "fun", "sun", "run", "gun",
+        "cap", "map", "tap", "nap", "lap",
+        "red", "wed", "bed", "fox", "box",
+    ],
+    # 50 real 4-letter words; ten suffix families (5 words each).
+    "fifty_word_four_letter": [
+        "bake", "cake", "lake", "rake", "sake",
+        "bank", "tank", "rank", "sank", "yank",
+        "late", "mate", "rate", "gate", "hate",
+        "cant", "pant", "rant", "want", "aunt",
+        "line", "mine", "pine", "wine", "fine",
+        "rock", "lock", "mock", "sock", "dock",
+        "feed", "need", "seed", "weed", "reed",
+        "bore", "core", "fore", "more", "wore",
+        "born", "corn", "horn", "torn", "worn",
+        "mile", "bile", "file", "pile", "tile",
+    ],
+    # 50 real 5-letter words; ten suffix families (5 words each).
+    "fifty_word_five_letter": [
+        "light", "night", "right", "sight", "fight",
+        "bound", "found", "hound", "pound", "round",
+        "batch", "catch", "hatch", "match", "patch",
+        "cream", "dream", "gleam", "steam", "scream",
+        "paint", "faint", "saint", "taint", "quaint",
+        "river", "liver", "diver", "giver", "quiver",
+        "press", "dress", "cress", "tress", "stress",
+        "sling", "cling", "fling", "swing", "sting",
+        "bunch", "lunch", "munch", "punch", "crunch",
+        "board", "hoard", "chord", "sword", "award",
+    ],
     # 16 real words: suffix/prefix overlap families (a/e vowels).
     "sixteen_word_overlap": [
         "cat", "hat", "mat", "rat",

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from experiment import DEFAULT_SEED  # re-export for presets
 
-_COMPARISON_SEEDS = (42, 43, 44)
+_COMPARISON_SEEDS = (42, 43, 44, 45, 46)
 
 _SIXTEEN_WORD_LENGTH_TASKS = (
     "sixteen_word_ns",
@@ -20,6 +20,18 @@ _SIXTEEN_WORD_LENGTH_LABELS = {
     "sixteen_word_four_letter_ns": "4-letter",
     "sixteen_word_five_letter_ns": "5-letter",
     "sixteen_word_mixed_ns": "mixed length",
+}
+
+_FIFTY_WORD_LENGTH_TASKS = (
+    "fifty_word_ns",
+    "fifty_word_four_letter_ns",
+    "fifty_word_five_letter_ns",
+)
+
+_FIFTY_WORD_LENGTH_LABELS = {
+    "fifty_word_ns": "3-letter",
+    "fifty_word_four_letter_ns": "4-letter",
+    "fifty_word_five_letter_ns": "5-letter",
 }
 
 
@@ -61,5 +73,11 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
         tasks=_SIXTEEN_WORD_LENGTH_TASKS,
         labels=dict(_SIXTEEN_WORD_LENGTH_LABELS),
         title="16-word vocabularies (no spaces): training",
+    ),
+    "fifty_word_lengths_ns": ComparisonSpec(
+        name="fifty_word_lengths_ns",
+        tasks=_FIFTY_WORD_LENGTH_TASKS,
+        labels=dict(_FIFTY_WORD_LENGTH_LABELS),
+        title="50-word vocabularies (no spaces): closed-loop trajectories",
     ),
 }

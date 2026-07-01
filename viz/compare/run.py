@@ -6,8 +6,10 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from viz.compare.learning_curves import plot_learning_curves
+from viz.compare.geometry import write_trajectory_geometry
 from viz.compare.spec import ComparisonSpec
 from viz.compare.trajectories import plot_closed_loop_trajectories
+from viz.dimred import EMBED_METHODS
 
 ComparisonFn = Callable[..., Path | list[Path]]
 
@@ -18,21 +20,43 @@ def _plot_closed_loop_both(
     seeds: tuple[int, ...] | None = None,
     **kwargs: object,
 ) -> list[Path]:
+    paths: list[Path] = []
+    for method in EMBED_METHODS:
+        paths.append(plot_closed_loop_trajectories(spec, dimensions=2, seeds=seeds, embed_method=method))
+        paths.append(plot_closed_loop_trajectories(spec, dimensions=3, seeds=seeds, embed_method=method))
+    return paths
+
+
+def _plot_closed_loop_2d_all(
+    spec: ComparisonSpec,
+    *,
+    seeds: tuple[int, ...] | None = None,
+    **kwargs: object,
+) -> list[Path]:
     return [
-        plot_closed_loop_trajectories(spec, dimensions=2, seeds=seeds),
-        plot_closed_loop_trajectories(spec, dimensions=3, seeds=seeds),
+        plot_closed_loop_trajectories(spec, dimensions=2, seeds=seeds, embed_method=method)
+        for method in EMBED_METHODS
+    ]
+
+
+def _plot_closed_loop_3d_all(
+    spec: ComparisonSpec,
+    *,
+    seeds: tuple[int, ...] | None = None,
+    **kwargs: object,
+) -> list[Path]:
+    return [
+        plot_closed_loop_trajectories(spec, dimensions=3, seeds=seeds, embed_method=method)
+        for method in EMBED_METHODS
     ]
 
 
 COMPARISON_KINDS: dict[str, ComparisonFn] = {
     "learning_curves": plot_learning_curves,
+    "trajectory_geometry": write_trajectory_geometry,
     "closed_loop_trajectories": _plot_closed_loop_both,
-    "closed_loop_trajectories_2d": lambda spec, **kw: plot_closed_loop_trajectories(
-        spec, dimensions=2, **kw,
-    ),
-    "closed_loop_trajectories_3d": lambda spec, **kw: plot_closed_loop_trajectories(
-        spec, dimensions=3, **kw,
-    ),
+    "closed_loop_trajectories_2d": _plot_closed_loop_2d_all,
+    "closed_loop_trajectories_3d": _plot_closed_loop_3d_all,
 }
 
 
@@ -55,7 +79,14 @@ def run_comparison(
             out = fn(spec, truncate_to_plateau=truncate_to_plateau, seeds=run_seeds)
             outputs.append(out)
             print(f"wrote {out}")
-        elif fn is _plot_closed_loop_both:
+        elif fn is write_trajectory_geometry:
+            out = fn(spec, seeds=run_seeds)
+            outputs.append(out)
+            print(f"wrote {out}")
+        elif fn in (_plot_closed_loop_both, _plot_closed_loop_2d_all, _plot_closed_loop_3d_all):
+            geom_path = write_trajectory_geometry(spec, seeds=run_seeds)
+            outputs.append(geom_path)
+            print(f"wrote {geom_path}")
             for path in fn(spec, seeds=run_seeds):
                 outputs.append(path)
                 print(f"wrote {path}")

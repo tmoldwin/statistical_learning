@@ -2720,26 +2720,44 @@ def plot_dfa_state_distance_comparison(
     print(f"wrote {save_path}")
 
 
-def fit_pca_2d(points):
-    """PCA fit: return 2D coords, mean, and (2, D) principal axes for reconstruction."""
-    mean = np.mean(points, axis=0)
-    centered = points - mean
-    _, _, vh = np.linalg.svd(centered, full_matrices=False)
-    components = vh[:2]
-    coords = centered @ components.T
-    return coords, mean, components
+from viz.dimred import (
+    EMBED_METHODS,
+    embed_axis_labels_2d,
+    embed_axis_labels_3d,
+    embed_dim_label,
+    embed_save_path,
+    fit_embed_2d_with_evr,
+    fit_embed_3d_with_evr,
+    fit_pca_2d,
+    fit_pca_2d_with_evr,
+    fit_pca_3d_with_evr,
+    trajectories_for_embed,
+    trajectories_from_segments,
+)
 
 
-def fit_pca_2d_with_evr(points):
-    """PCA fit + explained variance ratio for PC1/PC2."""
-    mean = np.mean(points, axis=0)
-    centered = points - mean
-    _, s, vh = np.linalg.svd(centered, full_matrices=False)
-    components = vh[:2]
-    coords = centered @ components.T
-    denom = float(np.sum(s * s)) if len(s) else 1.0
-    evr = (s[:2] * s[:2]) / denom if denom > 0 else np.array([0.0, 0.0])
-    return coords, mean, components, evr
+def _embed_trajectories_for_text(
+    text: str,
+    hidden_states: np.ndarray,
+    *,
+    spaced: bool,
+    words: list[str] | None,
+    word_path_indices: list[list[int]] | None = None,
+) -> list[np.ndarray]:
+    if word_path_indices is not None:
+        return trajectories_for_embed(hidden_states, word_path_indices=word_path_indices)
+    segments = corpus_segments(text, list(_corpus_vocab(text, words) or []), spaced=spaced)
+    return trajectories_for_embed(hidden_states, segments=segments)
+
+
+def _plot_embed_variants(plot_fn, base_save_path: str, **kwargs) -> None:
+    """Call a plot function for each linear embedding method (PCA and JPCA)."""
+    for method in EMBED_METHODS:
+        plot_fn(
+            save_path=embed_save_path(base_save_path, method),
+            embed_method=method,
+            **kwargs,
+        )
 
 
 def _normalize_hidden_rows(hidden: np.ndarray, *, eps: float = 1e-12) -> np.ndarray:
@@ -2767,23 +2785,6 @@ def _project_hidden_to_pca(
     if h.ndim == 1:
         return ((h.ravel() - mean) @ components.T).reshape(1, -1)
     return (h - mean) @ components.T
-
-
-def fit_pca_3d_with_evr(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """PCA fit + explained variance ratio for PC1/PC2/PC3."""
-    mean = np.mean(points, axis=0)
-    centered = points - mean
-    _, s, vh = np.linalg.svd(centered, full_matrices=False)
-    n_comp = min(3, points.shape[0], points.shape[1])
-    components = vh[:n_comp]
-    coords = centered @ components.T
-    if coords.shape[1] < 3:
-        coords = np.pad(coords, ((0, 0), (0, 3 - coords.shape[1])))
-    denom = float(np.sum(s * s)) if len(s) else 1.0
-    evr = np.zeros(3, dtype=float)
-    if denom > 0 and n_comp:
-        evr[:n_comp] = (s[:n_comp] * s[:n_comp]) / denom
-    return coords, mean, components, evr
 
 
 def fit_ica_2d(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -3236,9 +3237,13 @@ def build_pca_plane_grid(
     *,
     spaced: bool = False,
     prefix_labels: list[str] | None = None,
+    embed_method: str = "pca",
+    trajectories: list[np.ndarray] | None = None,
 ):
-    """PCA mesh and 2D-reconstructed hidden states on a grid covering data + labels."""
-    projected, mean, components = fit_pca_2d(hidden_states)
+    """Embedding mesh and 2D-reconstructed hidden states on a grid covering data + labels."""
+    projected, mean, components, _evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajectories,
+    )
     x_min, x_max = projected[:, 0].min(), projected[:, 0].max()
     y_min, y_max = projected[:, 1].min(), projected[:, 1].max()
     x_pad = max((x_max - x_min) * 0.12, 1e-3)
@@ -3263,7 +3268,7 @@ def build_pca_plane_grid(
     grid_x, grid_y = np.meshgrid(xs, ys)
     grid_coords = np.column_stack([grid_x.ravel(), grid_y.ravel()])
     grid_hidden = reconstruct_from_pca(grid_coords, mean, components)
-    return grid_x, grid_y, grid_hidden, projected, xlim, ylim
+    return grid_x, grid_y, grid_hidden, projected, xlim, ylim, evr
 
 
 def _rolling_median(y: np.ndarray, win: int) -> np.ndarray:
@@ -4583,8 +4588,9 @@ def plot_dimred_context_panels(
     condensed: CondensedView | None = None,
     words: list[str] | None = None,
     label_words: list[str] | None = None,
+    embed_method: str = "pca",
 ) -> None:
-    """2×2 PCA panels colored by char, position, position-from-end, and DFA state."""
+    """2×2 embedding panels colored by char, position, position-from-end, and DFA state."""
     _ = chars
     ctx = _pca_feature_panel_context(
         text, hidden_states,
@@ -4596,11 +4602,13 @@ def plot_dimred_context_panels(
         return
 
     hidden_states = ctx["hidden_states"]
-    pca_xy, _, _, evr = fit_pca_2d_with_evr(hidden_states)
-    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
-    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
-    xlabel = f"PC1 ({pc1:.1f}%)"
-    ylabel = f"PC2 ({pc2:.1f}%)"
+    trajs = _embed_trajectories_for_text(
+        text, hidden_states, spaced=ctx["spaced"], words=words,
+    )
+    pca_xy, _, _, evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
+    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
     pad_x = max((pca_xy[:, 0].max() - pca_xy[:, 0].min()) * 0.12, 0.08)
     pad_y = max((pca_xy[:, 1].max() - pca_xy[:, 1].min()) * 0.12, 0.08)
     xlim = (float(pca_xy[:, 0].min() - pad_x), float(pca_xy[:, 0].max() + pad_x))
@@ -4621,7 +4629,8 @@ def plot_dimred_context_panels(
 
     fig.suptitle(
         _feature_pca_suptitle(
-            repr_name=None, words=words, chars=chars, condensed=condensed, dim_label="PCA",
+            repr_name=None, words=words, chars=chars, condensed=condensed,
+            dim_label=embed_dim_label(embed_method),
         ),
         fontsize=13,
         y=0.97,
@@ -4711,8 +4720,9 @@ def plot_dimred_context_panels_3d(
     annot_style: str = "leaders",
     words: list[str] | None = None,
     label_words: list[str] | None = None,
+    embed_method: str = "pca",
 ) -> None:
-    """2×2 3D PCA panels colored by char, position, position-from-end, and DFA state."""
+    """2×2 3D embedding panels colored by char, position, position-from-end, and DFA state."""
     _ = chars
     ctx = _pca_feature_panel_context(
         text, hidden_states,
@@ -4725,8 +4735,13 @@ def plot_dimred_context_panels_3d(
     if ctx["n"] < 2 or ctx["hidden_states"].shape[1] < 2:
         return
 
-    pca_xyz, _, _, evr = fit_pca_3d_with_evr(ctx["hidden_states"])
-    xlabel, ylabel, zlabel = _pca_axis_labels(evr)
+    trajs = _embed_trajectories_for_text(
+        text, ctx["hidden_states"], spaced=ctx["spaced"], words=words,
+    )
+    pca_xyz, _, _, evr = fit_embed_3d_with_evr(
+        ctx["hidden_states"], method=embed_method, trajectories=trajs,
+    )
+    xlabel, ylabel, zlabel = embed_axis_labels_3d(evr, embed_method)
 
     fig = plt.figure(figsize=(24, 21))
     axes = _feature_pca_figure_gridspec(fig, 2, 2, projection="3d")
@@ -4742,7 +4757,8 @@ def plot_dimred_context_panels_3d(
 
     fig.suptitle(
         _feature_pca_suptitle(
-            repr_name=repr_name, words=words, chars=chars, condensed=condensed, dim_label="3D PCA",
+            repr_name=repr_name, words=words, chars=chars, condensed=condensed,
+            dim_label=f"3D {embed_dim_label(embed_method)}",
         ),
         fontsize=13,
         y=0.97,
@@ -5012,8 +5028,9 @@ def plot_pca_context_labels(
     words: list[str] | None = None,
     label_words: list[str] | None = None,
     annot_style: str = "leaders",
+    embed_method: str = "pca",
 ):
-    """4-panel 2D PCA colored by analysis features."""
+    """4-panel 2D embedding colored by analysis features."""
     plot_dimred_context_panels(
         text,
         hidden_states,
@@ -5025,6 +5042,7 @@ def plot_pca_context_labels(
         condensed=condensed,
         words=words,
         label_words=label_words,
+        embed_method=embed_method,
     )
 
 
@@ -5041,8 +5059,9 @@ def plot_pca_context_labels_3d(
     annot_style: str = "leaders",
     words: list[str] | None = None,
     label_words: list[str] | None = None,
+    embed_method: str = "pca",
 ):
-    """4-panel 3D PCA colored by analysis features."""
+    """4-panel 3D embedding colored by analysis features."""
     plot_dimred_context_panels_3d(
         text,
         hidden_states,
@@ -5055,6 +5074,7 @@ def plot_pca_context_labels_3d(
         annot_style=annot_style,
         words=words,
         label_words=label_words,
+        embed_method=embed_method,
     )
 
 
@@ -6679,8 +6699,9 @@ def plot_space_to_space_trajectories(
     annot_style: str = "leaders",
     condensed: CondensedView | None = None,
     words: list[str] | None = None,
+    embed_method: str = "pca",
 ):
-    """PCA plot of every hidden-state path from one space timestep to the next.
+    """Embedding plot of every hidden-state path from one space timestep to the next.
 
     If `model` is provided, draw the no-input recurrent vector field in PCA
     as a faint background quiver grid.
@@ -6693,9 +6714,12 @@ def plot_space_to_space_trajectories(
         if len(word_paths) < 1:
             return
         hidden_states = condensed.hidden_states
-        projected, mean, components, evr = fit_pca_2d_with_evr(hidden_states)
-        pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
-        pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
+        word_path_indices = [idxs for _word, idxs in word_paths]
+        trajs = trajectories_for_embed(hidden_states, word_path_indices=word_path_indices)
+        projected, mean, components, evr = fit_embed_2d_with_evr(
+            hidden_states, method=embed_method, trajectories=trajs,
+        )
+        xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
         cmap = plt.get_cmap("tab20", max(len(word_paths), 1))
         fig, ax = plt.subplots(figsize=(12, 10), constrained_layout=True)
         for i, (word, idxs) in enumerate(word_paths):
@@ -6711,11 +6735,12 @@ def plot_space_to_space_trajectories(
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.set_aspect("equal", adjustable="box")
-        ax.set_xlabel(f"PC1 ({pc1:.1f}%)")
-        ax.set_ylabel(f"PC2 ({pc2:.1f}%)")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
         ax.set_title(
             _condensed_plot_title(
-                f"Vocabulary word paths through trie prefixes ({len(word_paths)} words)",
+                f"Vocabulary word paths through trie prefixes ({len(word_paths)} words) · "
+                f"{embed_dim_label(embed_method)}",
                 condensed,
             )
         )
@@ -6730,11 +6755,11 @@ def plot_space_to_space_trajectories(
     if len(text) < 2 or not segments:
         return
 
-    projected2d, mean2d, components2d, evr2d = fit_pca_2d_with_evr(hidden_states)
-    pc1 = 100.0 * float(evr2d[0]) if len(evr2d) > 0 else 0.0
-    pc2 = 100.0 * float(evr2d[1]) if len(evr2d) > 1 else 0.0
-    xlabel2d = f"PC1 ({pc1:.1f}%)"
-    ylabel2d = f"PC2 ({pc2:.1f}%)"
+    trajs = trajectories_for_embed(hidden_states, segments=segments)
+    projected2d, mean2d, components2d, evr2d = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
+    xlabel2d, ylabel2d = embed_axis_labels_2d(evr2d, embed_method)
     vocab_words = _trajectory_vocabulary_words(text, words)
     max_word_len = _longest_vocabulary_word_length(vocab_words)
     if free_rollout_steps is None:
@@ -6930,7 +6955,7 @@ def plot_space_to_space_trajectories(
         ax.set_aspect("equal", adjustable="box")
 
     ax_paths.set_title(
-        f"Trained (observed) trajectories (PCA)\n"
+        f"Trained (observed) trajectories ({embed_dim_label(embed_method)})\n"
         f"{n_trained} vocabulary words · labels = in-word prefix"
     )
 
@@ -6964,16 +6989,21 @@ def plot_space_to_space_trajectories_3d(
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
     words: list[str] | None = None,
+    embed_method: str = "pca",
 ):
-    """3D PCA plot of hidden-state paths from one space timestep to the next."""
+    """3D embedding plot of hidden-state paths from one space timestep to the next."""
     if condensed is not None:
         words = condensed.words or _resolve_words(text) or []
         word_paths = _vocabulary_prefix_paths(words, condensed)
         if len(word_paths) < 1:
             return
         hidden_states = condensed.hidden_states
-        projected, _, _, evr = fit_pca_3d_with_evr(hidden_states)
-        xlabel, ylabel, zlabel = _pca_axis_labels(evr)
+        word_path_indices = [idxs for _word, idxs in word_paths]
+        trajs = trajectories_for_embed(hidden_states, word_path_indices=word_path_indices)
+        projected, _, _, evr = fit_embed_3d_with_evr(
+            hidden_states, method=embed_method, trajectories=trajs,
+        )
+        xlabel, ylabel, zlabel = embed_axis_labels_3d(evr, embed_method)
         cmap = plt.get_cmap("tab20", max(len(word_paths), 1))
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111, projection="3d")
@@ -6992,7 +7022,8 @@ def plot_space_to_space_trajectories_3d(
         ax.set_zlabel(zlabel)
         ax.set_title(
             _condensed_plot_title(
-                f"Vocabulary word paths through trie prefixes ({len(word_paths)} words) · 3D PCA",
+                f"Vocabulary word paths through trie prefixes ({len(word_paths)} words) · "
+                f"3D {embed_dim_label(embed_method)}",
                 condensed,
             )
         )
@@ -7007,8 +7038,11 @@ def plot_space_to_space_trajectories_3d(
     if len(text) < 2 or not segments:
         return
 
-    projected, mean, components, evr = fit_pca_3d_with_evr(hidden_states)
-    xlabel, ylabel, zlabel = _pca_axis_labels(evr)
+    trajs = trajectories_for_embed(hidden_states, segments=segments)
+    projected, mean, components, evr = fit_embed_3d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
+    xlabel, ylabel, zlabel = embed_axis_labels_3d(evr, embed_method)
     vocab_words = _trajectory_vocabulary_words(text, words)
     max_word_len = _longest_vocabulary_word_length(vocab_words)
     if free_rollout_steps is None:
@@ -7149,7 +7183,7 @@ def plot_space_to_space_trajectories_3d(
     ax_paths.set_zlabel(zlabel)
     ax_paths.grid(True, linestyle=":", alpha=0.35)
     ax_paths.set_title(
-        f"Trained (observed) trajectories (3D PCA)\n"
+        f"Trained (observed) trajectories (3D {embed_dim_label(embed_method)})\n"
         f"{n_trained} vocabulary words · labels = in-word prefix",
         fontsize=12,
     )
@@ -7167,18 +7201,22 @@ def plot_pca_vector_field(
     stride: int = 1,
     scale: float = 35.0,
     condensed: CondensedView | None = None,
+    embed_method: str = "pca",
 ) -> None:
-    """Grid vector field in PCA: z -> z' from no-input recurrent dynamics.
+    """Grid vector field in embedding space: z -> z' from no-input recurrent dynamics.
 
     We reconstruct h from each (PC1,PC2) grid point, apply one recurrent step with x=0,
-    then project back to PCA to get the vector z' - z.
+    then project back to the embedding to get the vector z' - z.
     """
     if condensed is not None:
         hidden_states = condensed.hidden_states
     if hidden_states.shape[0] < 3:
         return
 
-    projected, mean, components, evr = fit_pca_2d_with_evr(hidden_states)
+    trajs = trajectories_for_embed(hidden_states)
+    projected, mean, components, evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
     z = projected
 
     x_min, x_max = float(np.min(z[:, 0])), float(np.max(z[:, 0]))
@@ -7239,13 +7277,13 @@ def plot_pca_vector_field(
         zorder=3,
     )
 
-    pc1 = 100.0 * float(evr[0]) if len(evr) > 0 else 0.0
-    pc2 = 100.0 * float(evr[1]) if len(evr) > 1 else 0.0
-    ax.set_xlabel(f"PC1 ({pc1:.1f}%)")
-    ax.set_ylabel(f"PC2 ({pc2:.1f}%)")
+    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     ax.set_title(
         _condensed_plot_title(
-            "Vector field in PCA (grid; no-input recurrent dynamics)",
+            f"Vector field in {embed_dim_label(embed_method)} "
+            f"(grid; no-input recurrent dynamics)",
             condensed,
         )
     )
@@ -7273,8 +7311,9 @@ def plot_pca_dfa_analysis(
     condensed: CondensedView | None = None,
     repr_name: str | None = None,
     embedding: str | None = None,
+    embed_method: str = "pca",
 ):
-    """PCA beside the min-DFA with matching state colors."""
+    """Embedding beside the min-DFA with matching state colors."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -7284,15 +7323,20 @@ def plot_pca_dfa_analysis(
     if hidden_states.shape[0] < 2:
         return
 
-    projected, _, _, evr = fit_pca_2d_with_evr(hidden_states)
-    xlabel = f"PC1 ({100.0 * float(evr[0]):.1f}%)" if len(evr) > 0 else "PC1"
-    ylabel = f"PC2 ({100.0 * float(evr[1]):.1f}%)" if len(evr) > 1 else "PC2"
-    embed_title = "2D PCA"
-    embed_subtitle = (
-        f"variance explained: PC1 {100.0 * float(evr[0]):.1f}%, PC2 {100.0 * float(evr[1]):.1f}%"
-        if len(evr) > 1
-        else ""
+    trajs = trajectories_for_embed(hidden_states)
+    projected, _, _, evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
     )
+    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
+    embed_title = f"2D {embed_dim_label(embed_method)}"
+    if embed_method == "jpca":
+        embed_subtitle = f"rotation rate: ω={float(evr[0]):.3f}" if len(evr) else ""
+    else:
+        embed_subtitle = (
+            f"variance explained: PC1 {100.0 * float(evr[0]):.1f}%, PC2 {100.0 * float(evr[1]):.1f}%"
+            if len(evr) > 1
+            else ""
+        )
     if prefix_labels is not None:
         state_ids = [
             dfa_state_for_prefix(p, automaton, spaced=spaced) for p in prefix_labels
@@ -7363,8 +7407,9 @@ def plot_pca_prediction_regions(
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
     repr_name: str | None = None,
+    embed_method: str = "pca",
 ):
-    """PCA panels: argmax next-char regions and softmax entropy, with context labels."""
+    """Embedding panels: argmax next-char regions and softmax entropy, with context labels."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -7376,8 +7421,10 @@ def plot_pca_prediction_regions(
     if n_points < 2 or hidden_size < 1 or (len(text) == 0 and prefix_labels is None):
         return
 
-    grid_x, grid_y, grid_hidden, projected, xlim, ylim = build_pca_plane_grid(
+    trajs = _embed_trajectories_for_text(text, hidden_states, spaced=spaced, words=None)
+    grid_x, grid_y, grid_hidden, projected, xlim, ylim, evr = build_pca_plane_grid(
         text, hidden_states, grid_resolution, spaced=spaced, prefix_labels=prefix_labels,
+        embed_method=embed_method, trajectories=trajs,
     )
     probs = next_char_probabilities(model, grid_hidden)
     grid_pred = np.argmax(probs, axis=1).reshape(grid_resolution, grid_resolution)
@@ -7438,8 +7485,9 @@ def plot_pca_prediction_regions(
             ax, text, projected, spaced=spaced, automaton=automaton,
             prefix_labels=prefix_labels,
         )
-        ax.set_xlabel("PC1")
-        ax.set_ylabel("PC2")
+        axis_x, axis_y = embed_axis_labels_2d(evr, embed_method)
+        ax.set_xlabel(axis_x)
+        ax.set_ylabel(axis_y)
         ax.set_title(title)
         ax.grid(True, linestyle=":", alpha=0.35)
         if ax is axes[1]:
@@ -7454,7 +7502,7 @@ def plot_pca_prediction_regions(
         pca_ctx = "prefix after space" if spaced else prefix_axis_label(spaced=spaced, text=text)
     fig.suptitle(
         _condensed_plot_title(
-            f"PCA of {representation_label(model)} · {pca_ctx} · "
+            f"{embed_dim_label(embed_method)} of {representation_label(model)} · {pca_ctx} · "
             f"{original_vocabulary_title(chars, text)}",
             condensed,
         ),
@@ -7476,8 +7524,9 @@ def plot_pca_next_char_probability_panels(
     spaced: bool = False,
     automaton: MinimizedVocabAutomaton | None = None,
     condensed: CondensedView | None = None,
+    embed_method: str = "pca",
 ):
-    """One panel per vocab char: P(next = char) over the PCA plane (from softmax)."""
+    """One panel per vocab char: P(next = char) over the embedding plane (from softmax)."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -7489,8 +7538,10 @@ def plot_pca_next_char_probability_panels(
     if n_points < 2 or hidden_size < 1:
         return
 
-    grid_x, grid_y, grid_hidden, projected, xlim, ylim = build_pca_plane_grid(
+    trajs = _embed_trajectories_for_text(text, hidden_states, spaced=spaced, words=None)
+    grid_x, grid_y, grid_hidden, projected, xlim, ylim, evr = build_pca_plane_grid(
         text, hidden_states, grid_resolution, spaced=spaced, prefix_labels=prefix_labels,
+        embed_method=embed_method, trajectories=trajs,
     )
     probs = next_char_probabilities(model, grid_hidden)
 
@@ -7524,15 +7575,16 @@ def plot_pca_next_char_probability_panels(
     for ax in axes[vocab_size:]:
         ax.axis("off")
 
-    axes[0].set_ylabel("PC2")
-    axes[(nrows - 1) * ncols].set_xlabel("PC1")
+    axis_x, axis_y = embed_axis_labels_2d(evr, embed_method)
+    axes[0].set_ylabel(axis_y)
+    axes[(nrows - 1) * ncols].set_xlabel(axis_x)
     if nrows > 1:
         for row in range(1, nrows):
-            axes[row * ncols].set_ylabel("PC2")
+            axes[row * ncols].set_ylabel(axis_y)
         for col in range(1, ncols):
             bottom = min((nrows - 1) * ncols + col, vocab_size - 1)
             if bottom < vocab_size:
-                axes[bottom].set_xlabel("PC1")
+                axes[bottom].set_xlabel(axis_x)
 
     fig.colorbar(last_im, ax=axes[:vocab_size], label="probability", shrink=0.92)
     fig.suptitle(
@@ -8221,22 +8273,18 @@ def main() -> None:
         if words:
             traj_words = label_words if label_words is not None else words
             with timer.section("trajectories"):
-                plot_space_to_space_trajectories(
-                    text, hidden_states,
-                    save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca.png")),
-                    model=model,
-                    spaced=spaced,
-                    automaton=automaton,
-                    annot_style=args.dfa_annot_style,
-                    words=traj_words,
+                _plot_embed_variants(
+                    plot_space_to_space_trajectories,
+                    str(numbered_plot_path(out_dir, "word_trajectories_pca.png")),
+                    text=text, hidden_states=hidden_states, model=model,
+                    spaced=spaced, automaton=automaton,
+                    annot_style=args.dfa_annot_style, words=traj_words,
                 )
-                plot_space_to_space_trajectories_3d(
-                    text, hidden_states,
-                    save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca_3d.png")),
-                    model=model,
-                    spaced=spaced,
-                    automaton=automaton,
-                    words=traj_words,
+                _plot_embed_variants(
+                    plot_space_to_space_trajectories_3d,
+                    str(numbered_plot_path(out_dir, "word_trajectories_pca_3d.png")),
+                    text=text, hidden_states=hidden_states, model=model,
+                    spaced=spaced, automaton=automaton, words=traj_words,
                 )
                 if args.closed_loop_video:
                     traj_path = numbered_plot_path(out_dir, "word_trajectories_pca.png")
@@ -8301,13 +8349,11 @@ def main() -> None:
             )
 
         with timer.section("states_pca"):
-            plot_pca_context_labels(
-                text, hidden_states, model["chars"],
-                save_path=plot_path("embedding_panels_context.png"),
-                spaced=spaced,
-                automaton=automaton,
-                condensed=cv,
-                words=words,
+            _plot_embed_variants(
+                plot_pca_context_labels,
+                plot_path("embedding_panels_context.png"),
+                text=text, hidden_states=hidden_states, chars=model["chars"],
+                spaced=spaced, automaton=automaton, condensed=cv, words=words,
                 label_words=label_words if not spaced else None,
                 annot_style=args.dfa_annot_style,
             )
@@ -8321,73 +8367,59 @@ def main() -> None:
                     f"DFA figures: teacher-forced over full vocabulary coverage "
                     f"({len(dfa_viz_text)} chars, {len(words)} words)",
                 )
-            plot_pca_context_labels_3d(
-                dfa_viz_text, dfa_viz_states, model["chars"],
-                save_path=plot_path("embedding_panels_context_3d.png"),
-                spaced=spaced,
-                automaton=automaton,
-                condensed=None,
-                annot_style=args.dfa_annot_style,
-                words=words,
+            _plot_embed_variants(
+                plot_pca_context_labels_3d,
+                plot_path("embedding_panels_context_3d.png"),
+                text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
+                spaced=spaced, automaton=automaton, condensed=None,
+                annot_style=args.dfa_annot_style, words=words,
                 label_words=label_words if not spaced else None,
             )
 
-            plot_pca_prediction_regions(
-                model, text, hidden_states, model["chars"],
-                save_path=plot_path("next_char_regions_pca.png"),
-                spaced=spaced,
-                automaton=automaton,
-                condensed=cv,
+            _plot_embed_variants(
+                plot_pca_prediction_regions,
+                plot_path("next_char_regions_pca.png"),
+                model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
+                spaced=spaced, automaton=automaton, condensed=cv,
             )
 
             if automaton is not None and words:
-                plot_pca_dfa_analysis(
-                    dfa_viz_text, dfa_viz_states, model["chars"], words,
-                    save_path=plot_path("dfa_and_embedding_pca.png"),
-                    automaton=automaton,
-                    model=model,
-                    spaced=spaced,
-                    annot_style=args.dfa_annot_style,
-                    condensed=cv,
+                _plot_embed_variants(
+                    plot_pca_dfa_analysis,
+                    plot_path("dfa_and_embedding_pca.png"),
+                    text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
+                    words=words, automaton=automaton, model=model, spaced=spaced,
+                    annot_style=args.dfa_annot_style, condensed=cv,
                 )
 
-            plot_pca_next_char_probability_panels(
-                model, text, hidden_states, model["chars"],
-                save_path=plot_path("next_char_prob_panels_pca.png"),
-                spaced=spaced,
-                automaton=automaton,
-                condensed=cv,
+            _plot_embed_variants(
+                plot_pca_next_char_probability_panels,
+                plot_path("next_char_prob_panels_pca.png"),
+                model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
+                spaced=spaced, automaton=automaton, condensed=cv,
             )
 
-            plot_pca_vector_field(
-                text,
-                hidden_states,
-                model,
+            _plot_embed_variants(
+                plot_pca_vector_field,
                 plot_path("vector_field_grid_pca_no_input.png"),
-                condensed=cv,
+                text=text, hidden_states=hidden_states, model=model, condensed=cv,
             )
 
         if words:
             traj_words = label_words if label_words is not None else words
             with timer.section("trajectories"):
-                plot_space_to_space_trajectories(
-                    text, hidden_states,
-                    save_path=plot_path("word_trajectories_pca.png"),
-                    model=model,
-                    spaced=spaced,
-                    automaton=automaton,
-                    annot_style=args.dfa_annot_style,
-                    condensed=cv,
-                    words=traj_words,
+                _plot_embed_variants(
+                    plot_space_to_space_trajectories,
+                    plot_path("word_trajectories_pca.png"),
+                    text=text, hidden_states=hidden_states, model=model,
+                    spaced=spaced, automaton=automaton,
+                    annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,
                 )
-                plot_space_to_space_trajectories_3d(
-                    text, hidden_states,
-                    save_path=plot_path("word_trajectories_pca_3d.png"),
-                    model=model,
-                    spaced=spaced,
-                    automaton=automaton,
-                    condensed=cv,
-                    words=traj_words,
+                _plot_embed_variants(
+                    plot_space_to_space_trajectories_3d,
+                    plot_path("word_trajectories_pca_3d.png"),
+                    text=text, hidden_states=hidden_states, model=model,
+                    spaced=spaced, automaton=automaton, condensed=cv, words=traj_words,
                 )
                 if args.closed_loop_video:
                     traj_dir = plot_path("word_trajectories_pca.png")

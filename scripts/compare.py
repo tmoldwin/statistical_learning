@@ -67,17 +67,6 @@ def main() -> None:
         )
 
     seeds = tuple(args.seeds) if args.seeds else spec.seeds
-    missing = [
-        (task, seed)
-        for seed in seeds
-        for task in spec.tasks
-        if not checkpoint_path(task, args.model_type or spec.model_type, seed=seed).is_file()
-    ]
-    if missing:
-        print(
-            f"warning: {len(missing)} missing checkpoints "
-            f"(e.g. {missing[0][0]} seed {missing[0][1]}) — use --train"
-        )
     spec = ComparisonSpec(
         name=spec.name,
         tasks=spec.tasks,
@@ -90,6 +79,18 @@ def main() -> None:
 
     if args.train:
         train_comparison(spec, seeds=seeds, smoke=args.smoke)
+
+    missing = [
+        (task, seed)
+        for seed in seeds
+        for task in spec.tasks
+        if not checkpoint_path(task, spec.model_type, seed=seed).is_file()
+    ]
+    if missing:
+        print(
+            f"warning: {len(missing)} missing checkpoints "
+            f"(e.g. {missing[0][0]} seed {missing[0][1]}) — use --train"
+        )
 
     run_comparison(spec, args.kinds, seeds=seeds, truncate_to_plateau=args.truncate_to_plateau)
 

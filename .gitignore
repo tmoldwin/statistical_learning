@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+*.log
 .venv/
 venv/
 .idea/
@@ -7,6 +8,7 @@ venv/
 
 # Generated experiment artifacts (run_experiments.py / visualize.py)
 experiments/**/model.npz
+experiments/**/model_seed*.npz
 experiments/**/model.pt
 experiments/**/plots/
 experiments/**/input.txt

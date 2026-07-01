@@ -90,6 +90,20 @@ REGIMES: dict[str, list[str]] = {
         "red", "wed",
         "fox", "box",
     ],
+    # 16 real 4-letter words; four suffix families (-ake, -ank, -ate, -ant).
+    "sixteen_word_four_letter": [
+        "bake", "cake", "lake", "rake",
+        "bank", "tank", "rank", "sank",
+        "late", "mate", "rate", "gate",
+        "cant", "pant", "rant", "want",
+    ],
+    # 16 real 5-letter words; four suffix families (-ight, -ound, -atch, -ream).
+    "sixteen_word_five_letter": [
+        "light", "night", "right", "sight",
+        "bound", "found", "hound", "pound",
+        "batch", "catch", "hatch", "match",
+        "cream", "dream", "gleam", "steam",
+    ],
     # 16 real words: suffix/prefix overlap families (a/e vowels).
     "sixteen_word_overlap": [
         "cat", "hat", "mat", "rat",
@@ -140,6 +154,20 @@ LABEL_WORD_EXTENSIONS: dict[str, list[str]] = {
 
 def label_extensions_for_experiment(name: str) -> list[str]:
     return list(LABEL_WORD_EXTENSIONS.get(name, []))
+
+
+def corpus_for_experiment(exp_name: str, *, seed: int) -> str:
+    """Deterministic training corpus for an experiment folder and RNG seed."""
+    from experiment import TASKS, experiment_regime
+
+    cfg = TASKS[exp_name]
+    words = REGIMES[experiment_regime(exp_name)]
+    return generate_sequence(
+        words,
+        int(cfg["chars"]),
+        seed=seed,
+        word_space=bool(cfg.get("word_space", False)),
+    )
 
 
 def generate_sequence(

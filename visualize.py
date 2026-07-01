@@ -609,6 +609,7 @@ def _letter_seed_no_input_trajectory_pca(
     mean: np.ndarray,
     components: np.ndarray,
     hidden_size: int,
+    normalize_activity: bool = False,
 ) -> np.ndarray:
     """PCA path from zero init: feed ``seed_char``, then ``steps`` no-input steps."""
     W_hh = np.asarray(model["weights_hidden_to_hidden"])
@@ -617,12 +618,20 @@ def _letter_seed_no_input_trajectory_pca(
     h = _hidden_state_after_char(model, seed_char, hidden_size=hidden_size)
     noise_std = float(model.get("timestep_noise_std", 0.0))
     noise_rng = np.random.default_rng()
-    zs = [(h - mean) @ components.T]
+    zs = [
+        _project_hidden_to_pca(
+            h, mean, components, normalize_activity=normalize_activity,
+        )[0],
+    ]
     for _ in range(max(0, int(steps) - 1)):
         h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
         if noise_std > 0:
             h = inject_timestep_noise(h, noise_std, noise_rng)
-        zs.append((h - mean) @ components.T)
+        zs.append(
+            _project_hidden_to_pca(
+                h, mean, components, normalize_activity=normalize_activity,
+            )[0],
+        )
     return np.asarray(zs, dtype=float)
 
 
@@ -633,6 +642,7 @@ def _random_hidden_no_input_trajectory_pca(
     steps: int,
     mean: np.ndarray,
     components: np.ndarray,
+    normalize_activity: bool = False,
 ) -> np.ndarray:
     """PCA path from arbitrary hidden seed, then ``steps - 1`` no-input recurrent steps."""
     W_hh = np.asarray(model["weights_hidden_to_hidden"])
@@ -641,12 +651,20 @@ def _random_hidden_no_input_trajectory_pca(
     h = np.asarray(h0, dtype=float).ravel().copy()
     noise_std = float(model.get("timestep_noise_std", 0.0))
     noise_rng = np.random.default_rng()
-    zs = [(h - mean) @ components.T]
+    zs = [
+        _project_hidden_to_pca(
+            h, mean, components, normalize_activity=normalize_activity,
+        )[0],
+    ]
     for _ in range(max(0, int(steps) - 1)):
         h = no_input_hidden_step(h, W_hh, b_h, use_relu=use_relu)
         if noise_std > 0:
             h = inject_timestep_noise(h, noise_std, noise_rng)
-        zs.append((h - mean) @ components.T)
+        zs.append(
+            _project_hidden_to_pca(
+                h, mean, components, normalize_activity=normalize_activity,
+            )[0],
+        )
     return np.asarray(zs, dtype=float)
 
 
@@ -1235,17 +1253,24 @@ def _plot_mean_trajectory_overlay(
     path: np.ndarray | None,
     *,
     is_3d: bool,
-    linewidth: float = 2.8,
-    alpha: float = 0.95,
+    linewidth: float = 1.1,
+    alpha: float = 0.9,
     zorder: int = 8,
 ) -> None:
+    """Thin plain line for trial-averaged trajectories (no per-step arrows)."""
     if path is None or len(path) < 2:
         return
-    plot_fn = _plot_colored_path_arrows_3d if is_3d else _plot_colored_path_arrows
     if is_3d:
-        plot_fn(ax, path, _MEAN_TRAJECTORY_COLOR, linewidth=linewidth, alpha=alpha)
+        ax.plot(
+            path[:, 0], path[:, 1], path[:, 2],
+            color=_MEAN_TRAJECTORY_COLOR, linewidth=linewidth, alpha=alpha, zorder=zorder,
+        )
     else:
-        plot_fn(ax, path, _MEAN_TRAJECTORY_COLOR, linewidth=linewidth, alpha=alpha, zorder=zorder)
+        ax.plot(
+            path[:, 0], path[:, 1],
+            color=_MEAN_TRAJECTORY_COLOR, linewidth=linewidth, alpha=alpha,
+            solid_capstyle="round", zorder=zorder,
+        )
 
 
 def _word_start_segment_flags(
@@ -1276,12 +1301,15 @@ def _closed_loop_rollout_pca(
     components: np.ndarray,
     vocab_words: list[str],
     spaced: bool,
+    normalize_activity: bool = False,
 ) -> tuple[np.ndarray, list[str], list[str]]:
     """One stochastic closed-loop rollout projected into PCA space."""
     hidden, generated = rnn_closed_loop_rollout(
         model, seed_text=seed_text, steps=steps, rng=rng,
     )
-    gen_z = (hidden - mean) @ components.T
+    gen_z = _project_hidden_to_pca(
+        hidden, mean, components, normalize_activity=normalize_activity,
+    )
     seed_len = len(seed_text)
     n_states = len(gen_z)
     vocab = set(vocab_words)
@@ -1294,7 +1322,61 @@ def _closed_loop_rollout_pca(
     return gen_z, prefix_labels, word_at_step
 
 
-def _plot_segmented_closed_loop_rollout(
+def _segmented_rollout_styles(
+    prefix_labels: list[str],
+    word_at_step: list[str],
+    word_colors: dict[str, tuple],
+    n_segments: int,
+    *,
+    color_mode: str = "word",
+    max_word_len: int = 4,
+) -> tuple[list, list[str]]:
+    word_start = _word_start_segment_flags(prefix_labels, word_at_step)
+    gray = word_colors["␣"]
+    segment_colors: list = []
+    for i in range(n_segments):
+        if _is_return_to_baseline_segment(
+            prefix_labels[i], prefix_labels[i + 1], word_start=word_start[i],
+        ):
+            segment_colors.append(gray)
+        elif color_mode == "step":
+            plen = len(prefix_labels[i + 1]) if prefix_labels[i + 1] not in ("", "␣") else 1
+            segment_colors.append(_step_palette_rgba(min(plen, max_word_len)))
+        else:
+            segment_colors.append(word_colors.get(word_at_step[i + 1], word_colors["?"]))
+    segment_linestyles = [":" if is_start else "-" for is_start in word_start]
+    return segment_colors, segment_linestyles
+
+
+def _plot_return_to_start_segment(
+    ax,
+    path: np.ndarray,
+    *,
+    is_3d: bool = False,
+    linewidth: float = 1.2,
+    alpha: float = 0.75,
+    zorder: int = 2,
+) -> None:
+    """Gray dashed arrow from trajectory end back to its start."""
+    if len(path) < 2:
+        return
+    gray = _TRAJECTORY_RETURN_COLOR
+    p0, p1 = np.asarray(path[-1]), np.asarray(path[0])
+    if is_3d:
+        ax.plot(
+            [p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]],
+            color=gray, linestyle=":", linewidth=linewidth, alpha=alpha,
+        )
+        _midsegment_arrowhead_3d(ax, p0, p1, color=gray, alpha=alpha)
+    else:
+        ax.plot(
+            [p0[0], p1[0]], [p0[1], p1[1]],
+            color=gray, linestyle=":", linewidth=linewidth, alpha=alpha, zorder=zorder,
+        )
+        _midsegment_arrowhead_2d(ax, p0, p1, color=gray, alpha=alpha, zorder=zorder + 1)
+
+
+def _plot_segmented_vocab_rollout(
     ax,
     gen_z: np.ndarray,
     prefix_labels: list[str],
@@ -1302,27 +1384,22 @@ def _plot_segmented_closed_loop_rollout(
     *,
     word_colors: dict[str, tuple],
     vocab_words: list[str],
-    annotate: bool,
-    annotate_fontsize: float,
-    is_3d: bool,
+    annotate: bool = False,
+    annotate_fontsize: float = 9.0,
+    is_3d: bool = False,
     linewidth: float = 1.5,
     alpha: float = 0.78,
     unique_word_labels: bool = False,
+    color_mode: str = "word",
+    max_word_len: int = 4,
 ) -> None:
     if len(gen_z) < 2:
         return
     vocab = set(vocab_words)
-    word_start = _word_start_segment_flags(prefix_labels, word_at_step)
-    gray = word_colors["␣"]
-    segment_colors = [
-        gray
-        if _is_return_to_baseline_segment(
-            prefix_labels[i], prefix_labels[i + 1], word_start=word_start[i],
-        )
-        else word_colors.get(word_at_step[i + 1], word_colors["?"])
-        for i in range(len(gen_z) - 1)
-    ]
-    segment_linestyles = [":" if is_start else "-" for is_start in word_start]
+    segment_colors, segment_linestyles = _segmented_rollout_styles(
+        prefix_labels, word_at_step, word_colors, len(gen_z) - 1,
+        color_mode=color_mode, max_word_len=max_word_len,
+    )
     plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
     if is_3d:
         plot_path(
@@ -1355,6 +1432,35 @@ def _plot_segmented_closed_loop_rollout(
             use_leaders=True,
             leader_linewidth=0.4,
         )
+
+
+def _plot_segmented_closed_loop_rollout(
+    ax,
+    gen_z: np.ndarray,
+    prefix_labels: list[str],
+    word_at_step: list[str],
+    *,
+    word_colors: dict[str, tuple],
+    vocab_words: list[str],
+    annotate: bool,
+    annotate_fontsize: float,
+    is_3d: bool,
+    linewidth: float = 1.5,
+    alpha: float = 0.78,
+    unique_word_labels: bool = False,
+) -> None:
+    _plot_segmented_vocab_rollout(
+        ax, gen_z, prefix_labels, word_at_step,
+        word_colors=word_colors,
+        vocab_words=vocab_words,
+        annotate=annotate,
+        annotate_fontsize=annotate_fontsize,
+        is_3d=is_3d,
+        linewidth=linewidth,
+        alpha=alpha,
+        unique_word_labels=unique_word_labels,
+        color_mode="word",
+    )
 
 
 def rnn_closed_loop_rollout(
@@ -2634,6 +2740,33 @@ def fit_pca_2d_with_evr(points):
     denom = float(np.sum(s * s)) if len(s) else 1.0
     evr = (s[:2] * s[:2]) / denom if denom > 0 else np.array([0.0, 0.0])
     return coords, mean, components, evr
+
+
+def _normalize_hidden_rows(hidden: np.ndarray, *, eps: float = 1e-12) -> np.ndarray:
+    """Unit-normalize hidden activity: û = h / ||h|| (per row or 1D vector)."""
+    h = np.asarray(hidden, dtype=float)
+    if h.ndim == 1:
+        norm = max(float(np.linalg.norm(h)), eps)
+        return h / norm
+    norms = np.linalg.norm(h, axis=1, keepdims=True)
+    return h / np.maximum(norms, eps)
+
+
+def _project_hidden_to_pca(
+    hidden: np.ndarray,
+    mean: np.ndarray,
+    components: np.ndarray,
+    *,
+    normalize_activity: bool = False,
+    eps: float = 1e-12,
+) -> np.ndarray:
+    """Project hidden state(s) into PCA space, optionally after unit normalization."""
+    h = np.asarray(hidden, dtype=float)
+    if normalize_activity:
+        h = _normalize_hidden_rows(h, eps=eps)
+    if h.ndim == 1:
+        return ((h.ravel() - mean) @ components.T).reshape(1, -1)
+    return (h - mean) @ components.T
 
 
 def fit_pca_3d_with_evr(points: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -5022,7 +5155,7 @@ def _add_trajectory_word_legend(
     if include_mean:
         handles.append(
             plt.Line2D(
-                [0], [0], color=_MEAN_TRAJECTORY_COLOR, linewidth=2.8, label="mean trajectory",
+                [0], [0], color=_MEAN_TRAJECTORY_COLOR, linewidth=1.1, label="mean trajectory",
             )
         )
     handles.extend(
@@ -5437,8 +5570,10 @@ def _plot_trained_word_examples(
         paths.append(path)
         if is_3d:
             plot_path(ax, path, linewidth=1.8, alpha=0.72)
+            _plot_return_to_start_segment(ax, path, is_3d=True)
         else:
             plot_path(ax, path, linewidth=1.8, alpha=0.72, zorder=2)
+            _plot_return_to_start_segment(ax, path, is_3d=False, zorder=2)
         labels = _in_word_prefix_labels(seg, len(path))
         _annotate_trajectory_labels(
             ax, path, labels,
@@ -5483,8 +5618,10 @@ def _plot_trained_word_examples_grid(
         paths.append(path)
         if is_3d:
             plot_path(ax, path, linewidth=2.0, alpha=0.85)
+            _plot_return_to_start_segment(ax, path, is_3d=True)
         else:
             plot_path(ax, path, linewidth=2.0, alpha=0.85, zorder=2)
+            _plot_return_to_start_segment(ax, path, is_3d=False, zorder=2)
         labels = _in_word_prefix_labels(seg, len(path))
         _annotate_trajectory_labels(
             ax, path, labels,
@@ -5514,6 +5651,7 @@ def _teacher_forced_vocab_trajectories(
     mean: np.ndarray,
     components: np.ndarray,
     max_word_len: int,
+    normalize_activity: bool = False,
 ) -> list[tuple[str, np.ndarray, list[str]]]:
     """One teacher-forced trajectory per vocabulary word from its first character."""
     examples: list[tuple[str, np.ndarray, list[str]]] = []
@@ -5524,10 +5662,43 @@ def _teacher_forced_vocab_trajectories(
         hidden, _ = forward_pass(model, snippet)
         if hidden.shape[0] < 1:
             continue
-        z = (hidden - mean) @ components.T
+        z = _project_hidden_to_pca(
+            hidden, mean, components, normalize_activity=normalize_activity,
+        )
         labels = [snippet[: i + 1] for i in range(len(snippet))]
         examples.append((word, z, labels))
     return examples
+
+
+def _teacher_forced_vocab_cycle_pca(
+    model: dict,
+    vocab_words: list[str],
+    *,
+    mean: np.ndarray,
+    components: np.ndarray,
+    max_word_len: int,
+    normalize_activity: bool = False,
+) -> tuple[np.ndarray, list[str], list[str]]:
+    """Teacher-forced states for every vocab word, concatenated into one cycle."""
+    zs: list[np.ndarray] = []
+    prefix_labels: list[str] = []
+    word_at_step: list[str] = []
+    for word in sorted(set(vocab_words)):
+        snippet = word[:max_word_len]
+        if not snippet:
+            continue
+        hidden, _ = forward_pass(model, snippet)
+        if hidden.shape[0] < 1:
+            continue
+        z = _project_hidden_to_pca(
+            hidden, mean, components, normalize_activity=normalize_activity,
+        )
+        zs.append(z)
+        prefix_labels.extend([snippet[: i + 1] for i in range(len(snippet))])
+        word_at_step.extend([word] * len(z))
+    if not zs:
+        return np.zeros((0, 2)), [], []
+    return np.vstack(zs), prefix_labels, word_at_step
 
 
 def _plot_teacher_forced_vocab_on_axis(
@@ -5547,8 +5718,10 @@ def _plot_teacher_forced_vocab_on_axis(
         color = _trajectory_word_color(word, word_colors)
         if is_3d:
             plot_path(ax, z, color, linewidth=1.8, alpha=0.72)
+            _plot_return_to_start_segment(ax, z, is_3d=True)
         else:
             plot_path(ax, z, color, linewidth=1.8, alpha=0.72, zorder=2)
+            _plot_return_to_start_segment(ax, z, is_3d=False, zorder=2)
         end_labels = [""] * len(z)
         end_labels[-1] = word
         _annotate_trajectory_labels(
@@ -5591,8 +5764,10 @@ def _plot_teacher_forced_vocab_grid(
         paths.append(z)
         if is_3d:
             plot_path(ax, z, linewidth=2.0, alpha=0.85)
+            _plot_return_to_start_segment(ax, z, is_3d=True)
         else:
             plot_path(ax, z, linewidth=2.0, alpha=0.85, zorder=2)
+            _plot_return_to_start_segment(ax, z, is_3d=False, zorder=2)
         _annotate_trajectory_labels(
             ax, z, labels,
             colors=_step_path_colors(len(labels)), fontsize=annotate_fontsize,
@@ -5633,6 +5808,7 @@ def _plot_letter_seed_closed_loop_on_axis(
     max_rollouts: int | None = None,
     unique_word_labels: bool = False,
     average_trials: int = 0,
+    normalize_activity: bool = False,
 ) -> None:
     """Long closed-loop rollout(s); color by segmented vocabulary word."""
     seeds = seed_letters if max_rollouts is None else seed_letters[: max(1, int(max_rollouts))]
@@ -5652,6 +5828,7 @@ def _plot_letter_seed_closed_loop_on_axis(
                 components=components,
                 vocab_words=vocab_words,
                 spaced=spaced,
+                normalize_activity=normalize_activity,
             )
             if len(gen_z) < 1:
                 continue
@@ -5660,9 +5837,12 @@ def _plot_letter_seed_closed_loop_on_axis(
             trial_words.append(word_at_step)
         if not trial_z:
             continue
-        limit_arrays.append(trial_z[0])
+        z_plot = trial_z[0]
+        if z_plot.shape[0] < 2:
+            continue
+        limit_arrays.append(z_plot)
         _plot_segmented_closed_loop_rollout(
-            ax, trial_z[0], trial_prefix[0], trial_words[0],
+            ax, z_plot, trial_prefix[0], trial_words[0],
             word_colors=word_colors,
             vocab_words=vocab_words,
             annotate=annotate and n_trials == 1,
@@ -5777,6 +5957,7 @@ def _plot_trajectory_internal_panel(
     hidden_size: int,
     *,
     is_3d: bool,
+    normalize_activity: bool = False,
 ) -> list[np.ndarray]:
     paths: list[np.ndarray] = []
     plot_fn = _plot_colored_path_arrows_3d if is_3d else _plot_colored_path_arrows
@@ -5789,6 +5970,7 @@ def _plot_trajectory_internal_panel(
             mean=mean,
             components=components,
             hidden_size=hidden_size,
+            normalize_activity=normalize_activity,
         )
         if zs.shape[0] < 2:
             continue
@@ -5796,8 +5978,10 @@ def _plot_trajectory_internal_panel(
         color = seed_colors[seed_char]
         if is_3d:
             plot_fn(ax, zs, color, linewidth=1.2, alpha=0.50)
+            _plot_return_to_start_segment(ax, zs, is_3d=True)
         else:
             plot_fn(ax, zs, color, linewidth=1.2, alpha=0.50, zorder=3)
+            _plot_return_to_start_segment(ax, zs, is_3d=False, zorder=3)
         _annotate_trajectory_labels(
             ax, zs[:1], [seed_char],
             colors=[color], fontsize=9.0,
@@ -5806,6 +5990,8 @@ def _plot_trajectory_internal_panel(
     if avg is not None:
         paths.append(avg)
         _plot_mean_trajectory_overlay(ax, avg, is_3d=is_3d)
+        if not is_3d:
+            _plot_return_to_start_segment(ax, avg, is_3d=False, zorder=4)
     return paths
 
 
@@ -5821,14 +6007,33 @@ def _plot_trajectory_trained_panel(
     *,
     word_colors: dict[str, tuple],
     is_3d: bool,
+    normalize_activity: bool = False,
 ) -> tuple[list[np.ndarray], int]:
     if model is not None:
+        cycle_z, prefix_labels, word_at_step = _teacher_forced_vocab_cycle_pca(
+            model, vocab_words, mean=mean, components=components,
+            max_word_len=max_word_len, normalize_activity=normalize_activity,
+        )
+        paths: list[np.ndarray] = []
+        if len(cycle_z) >= 2:
+            _plot_segmented_vocab_rollout(
+                ax, cycle_z, prefix_labels, word_at_step,
+                word_colors=word_colors,
+                vocab_words=vocab_words,
+                is_3d=is_3d,
+                color_mode="word",
+                max_word_len=max_word_len,
+            )
+            paths.append(cycle_z)
         trained_tf = _teacher_forced_vocab_trajectories(
-            model, vocab_words, mean=mean, components=components, max_word_len=max_word_len,
+            model, vocab_words, mean=mean, components=components,
+            max_word_len=max_word_len, normalize_activity=normalize_activity,
         )
-        paths = _plot_teacher_forced_vocab_on_axis(
-            ax, trained_tf, word_colors=word_colors, annotate_fontsize=9.5, is_3d=is_3d,
-        )
+        word_paths = [z for _, z, _ in trained_tf if len(z) >= 1]
+        avg = _position_aligned_average_trajectory(word_paths)
+        if avg is not None:
+            paths.append(avg)
+            _plot_mean_trajectory_overlay(ax, avg, is_3d=is_3d)
         return paths, len(trained_tf)
     trained_examples = _trained_word_examples(segments, vocab_words)
     paths = _plot_trained_word_examples(
@@ -5872,6 +6077,7 @@ def _plot_trajectory_internal_panel_step_colored(
         _plot_step_colored_path_arrows(
             ax, zs, linewidth=1.4, alpha=0.55, zorder=3,
         )
+        _plot_return_to_start_segment(ax, zs, is_3d=False, zorder=3)
         _annotate_trajectory_labels(
             ax, zs[:1], [seed_char],
             colors=_step_path_colors(1), fontsize=9.0,
@@ -5880,6 +6086,7 @@ def _plot_trajectory_internal_panel_step_colored(
     if avg is not None:
         paths.append(avg)
         _plot_mean_trajectory_overlay(ax, avg, is_3d=False)
+        _plot_return_to_start_segment(ax, avg, is_3d=False, zorder=4)
     return paths
 
 
@@ -5892,6 +6099,7 @@ def _plot_trajectory_random_internal_panel(
     components: np.ndarray,
     *,
     is_3d: bool,
+    normalize_activity: bool = False,
 ) -> list[np.ndarray]:
     paths: list[np.ndarray] = []
     plot_fn = _plot_colored_path_arrows_3d if is_3d else _plot_colored_path_arrows
@@ -5899,13 +6107,23 @@ def _plot_trajectory_random_internal_panel(
     for i, h0 in enumerate(hidden_seeds):
         zs = _random_hidden_no_input_trajectory_pca(
             model, h0=h0, steps=steps, mean=mean, components=components,
+            normalize_activity=normalize_activity,
         )
         if zs.shape[0] < 2:
             continue
         paths.append(zs)
-        plot_fn(
-            ax, zs, seed_colors[i], linewidth=1.8, alpha=0.52, zorder=3,
-        )
+        if is_3d:
+            plot_fn(ax, zs, seed_colors[i], linewidth=1.8, alpha=0.52)
+            _plot_return_to_start_segment(ax, zs, is_3d=True)
+        else:
+            plot_fn(ax, zs, seed_colors[i], linewidth=1.8, alpha=0.52, zorder=3)
+            _plot_return_to_start_segment(ax, zs, is_3d=False, zorder=3)
+    avg = _same_length_average_trajectory(paths)
+    if avg is not None:
+        paths.append(avg)
+        _plot_mean_trajectory_overlay(ax, avg, is_3d=is_3d)
+        if not is_3d:
+            _plot_return_to_start_segment(ax, avg, is_3d=False, zorder=4)
     return paths
 
 
@@ -5928,6 +6146,7 @@ def _plot_trajectory_random_internal_panel_step_colored(
         _plot_step_colored_path_arrows(
             ax, zs, linewidth=1.6, alpha=0.55, zorder=2, draw_arrows=True,
         )
+        _plot_return_to_start_segment(ax, zs, is_3d=False, zorder=2)
     return paths
 
 
@@ -5967,12 +6186,32 @@ def _plot_trajectory_trained_panel_step_colored(
     max_word_len: int,
 ) -> tuple[list[np.ndarray], int]:
     if model is not None:
+        word_colors = _vocab_word_colors(vocab_words)
+        cycle_z, prefix_labels, word_at_step = _teacher_forced_vocab_cycle_pca(
+            model, vocab_words, mean=mean, components=components,
+            max_word_len=max_word_len,
+        )
+        paths: list[np.ndarray] = []
+        if len(cycle_z) >= 2:
+            _plot_segmented_vocab_rollout(
+                ax, cycle_z, prefix_labels, word_at_step,
+                word_colors=word_colors,
+                vocab_words=vocab_words,
+                is_3d=False,
+                color_mode="step",
+                max_word_len=max_word_len,
+            )
+            paths.append(cycle_z)
         trained_tf = _teacher_forced_vocab_trajectories(
-            model, vocab_words, mean=mean, components=components, max_word_len=max_word_len,
+            model, vocab_words, mean=mean, components=components,
+            max_word_len=max_word_len,
         )
-        paths = _plot_teacher_forced_vocab_step_colored_on_axis(
-            ax, trained_tf, annotate_fontsize=9.5,
-        )
+        word_paths = [z for _, z, _ in trained_tf if len(z) >= 1]
+        avg = _position_aligned_average_trajectory(word_paths)
+        if avg is not None:
+            paths.append(avg)
+            _plot_mean_trajectory_overlay(ax, avg, is_3d=False)
+            _plot_return_to_start_segment(ax, avg, is_3d=False, zorder=4)
         return paths, len(trained_tf)
     trained_examples = _trained_word_examples(segments, vocab_words)
     paths = _plot_trained_word_examples(
@@ -5997,14 +6236,16 @@ def _plot_trajectory_closed_loop_step_colored_panel(
     max_word_len: int,
 ) -> None:
     """Closed-loop rollout colored by in-word step; black mean overlay."""
+    word_colors = _vocab_word_colors(vocab_words)
     seeds = seed_letters[: max(1, len(seed_letters))]
     for seed_idx, seed_char in enumerate(seeds):
         trial_z: list[np.ndarray] = []
         trial_prefix: list[list[str]] = []
+        trial_words: list[list[str]] = []
         n_trials = _CLOSED_LOOP_AVERAGE_TRIALS
         for trial in range(n_trials):
             rng = np.random.default_rng(int(closed_loop_seed) + seed_idx * 1000 + trial)
-            gen_z, prefix_labels, _word_at_step = _closed_loop_rollout_pca(
+            gen_z, prefix_labels, word_at_step = _closed_loop_rollout_pca(
                 model,
                 seed_text=seed_char,
                 steps=steps,
@@ -6018,27 +6259,25 @@ def _plot_trajectory_closed_loop_step_colored_panel(
                 continue
             trial_z.append(gen_z)
             trial_prefix.append(prefix_labels)
+            trial_words.append(word_at_step)
         if not trial_z:
             continue
         limit_arrays.append(trial_z[0])
-        seg_colors = _in_word_step_segment_colors(trial_prefix[0], max_word_len)
-        _plot_step_colored_path_arrows(
-            ax, trial_z[0],
-            linewidth=1.6, alpha=0.30, zorder=2,
-            segment_colors=seg_colors,
-        )
-        labels = [
-            p if p not in ("", "␣") else "␣"
-            for p in trial_prefix[0]
-        ]
-        _annotate_trajectory_labels(
-            ax, trial_z[0], labels,
-            colors=_step_path_colors(len(labels)), fontsize=8.0,
+        _plot_segmented_vocab_rollout(
+            ax, trial_z[0], trial_prefix[0], trial_words[0],
+            word_colors=word_colors,
+            vocab_words=vocab_words,
+            is_3d=False,
+            linewidth=1.6,
+            alpha=0.30,
+            color_mode="step",
+            max_word_len=max_word_len,
         )
         avg_z = _same_length_average_trajectory(trial_z)
         if avg_z is not None:
             limit_arrays.append(avg_z)
             _plot_mean_trajectory_overlay(ax, avg_z, is_3d=False)
+            _plot_return_to_start_segment(ax, avg_z, is_3d=False, zorder=4)
 
 
 def _plot_trajectory_closed_loop_panel(
@@ -6058,6 +6297,7 @@ def _plot_trajectory_closed_loop_panel(
     max_rollouts: int | None = 1,
     unique_word_labels: bool = True,
     average_trials: int = _CLOSED_LOOP_AVERAGE_TRIALS,
+    normalize_activity: bool = False,
 ) -> None:
     _plot_letter_seed_closed_loop_on_axis(
         ax, model,
@@ -6076,6 +6316,7 @@ def _plot_trajectory_closed_loop_panel(
         max_rollouts=max_rollouts,
         unique_word_labels=unique_word_labels,
         average_trials=average_trials,
+        normalize_activity=normalize_activity,
     )
 
 
@@ -6360,6 +6601,7 @@ def _style_trajectory_row_2d(
     mean: np.ndarray,
     components: np.ndarray,
     fig,
+    draw_vector_field: bool = True,
 ) -> None:
     for ax_idx, ax in enumerate(axes):
         if limit_arrays_per_axis is not None:
@@ -6372,7 +6614,7 @@ def _style_trajectory_row_2d(
         if not arrays:
             continue
         xlim, ylim = _square_data_limits(*arrays, padding_frac=0.12)
-        if model is not None:
+        if model is not None and draw_vector_field:
             grid_resolution = 26
             xs = np.linspace(xlim[0], xlim[1], grid_resolution)
             ys = np.linspace(ylim[0], ylim[1], grid_resolution)
@@ -6515,7 +6757,7 @@ def plot_space_to_space_trajectories(
             reference_states=hidden_states,
         )
 
-        fig = plt.figure(figsize=(38, 20))
+        fig = plt.figure(figsize=(38, 19))
         gs = fig.add_gridspec(2, 4, height_ratios=[1.0, 1.0], hspace=0.28, wspace=0.16)
         ax_letter_2d = fig.add_subplot(gs[0, 0])
         ax_random_2d = fig.add_subplot(gs[0, 1])
@@ -6641,7 +6883,7 @@ def plot_space_to_space_trajectories(
             f"color = in-word step"
         )
 
-        fig.subplots_adjust(left=0.03, right=0.88, bottom=0.05, top=0.94)
+        fig.subplots_adjust(left=0.03, right=0.88, bottom=0.04, top=0.96)
         fig.savefig(save_path, dpi=200, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {save_path}")
@@ -6812,6 +7054,7 @@ def plot_space_to_space_trajectories_3d(
             rollout_paths.append(zs)
             main_limits.append(zs)
             _plot_step_colored_path_arrows_3d(ax_free, zs, linewidth=1.2, alpha=0.45)
+            _plot_return_to_start_segment(ax_free, zs, is_3d=True)
             _annotate_trajectory_labels(
                 ax_free, zs, [seed_char] * len(zs),
                 colors=_step_path_colors(len(zs)), fontsize=9.0,
@@ -7788,11 +8031,14 @@ def plot_output_probs(
 
 def resolve_paths(args):
     """Return (model_path, input_path, out_dir, model_type) from --exp or explicit paths."""
+    from experiment import checkpoint_path, input_path, plots_dir, ensure_experiment_dirs
+
     model_type = getattr(args, "model_type", "rnn")
+    seed = getattr(args, "seed", None)
     if args.exp:
         ensure_experiment_dirs(args.exp, model_type)
         return (
-            str(model_path(args.exp, model_type)),
+            str(checkpoint_path(args.exp, model_type, seed=seed)),
             str(input_path(args.exp)),
             str(plots_dir(args.exp, model_type)),
             model_type,
@@ -7822,6 +8068,12 @@ def main() -> None:
                         help="experiment name under experiments/<exp>/")
     parser.add_argument("--model-type", default="rnn", choices=["rnn", "rnn_dale", "transformer"],
                         help="which model subdirectory to visualize (default: rnn)")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="RNG seed (loads model_seed<N>.npz; regenerates corpus from seed)",
+    )
     parser.add_argument("--model", default="model.npz")
     parser.add_argument("--input", default="input.txt")
     parser.add_argument("--length", type=int, default=50,
@@ -7897,44 +8149,51 @@ def main() -> None:
                 save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
             )
 
-    with open(input_file, "r") as f:
-        full_text = f.read()
-    spaced = corpus_uses_word_spacing(full_text, args.exp)
-    words = vocabulary_for_experiment(args.exp) if args.exp else infer_task_words(full_text)
-    if words and not spaced:
-        from task import label_extensions_for_experiment
-        from vocab_diagrams import select_analysis_window
+    with timer.section("prepare_corpus"):
+        if args.exp and args.seed is not None:
+            from task import corpus_for_experiment
 
-        extensions = label_extensions_for_experiment(args.exp) if args.exp else []
-        win_start, text, label_words = select_analysis_window(
-            full_text, words, args.length, spaced=spaced, extensions=extensions,
-        )
-        if win_start:
-            print(f"analysis window starts at corpus offset {win_start}")
-        aux = [w for w in label_words if w not in words]
-        if aux:
-            print(f"label vocabulary includes {len(aux)} extra 4–5 letter words: {aux[:8]}{'...' if len(aux) > 8 else ''}")
-    else:
-        text = full_text[: args.length]
-        label_words = None
-    print(f"running forward pass over {len(text)} characters of {input_file}")
+            full_text = corpus_for_experiment(args.exp, seed=args.seed)
+            print(f"corpus from seed {args.seed} ({len(full_text):,} chars)")
+        else:
+            with open(input_file, "r") as f:
+                full_text = f.read()
+        spaced = corpus_uses_word_spacing(full_text, args.exp)
+        words = vocabulary_for_experiment(args.exp) if args.exp else infer_task_words(full_text)
+        if words and not spaced:
+            from task import label_extensions_for_experiment
+            from vocab_diagrams import select_analysis_window
 
-    global _VIS_WORDS, _VIS_LABEL_WORDS
-    _VIS_WORDS = words
-    _VIS_LABEL_WORDS = label_words if label_words is not None else words
-    automaton = build_minimized_vocabulary_automaton(words) if words else None
-    if automaton is not None:
-        print(
-            "PCA point colors: minimized DFA state after in-word prefix since last space"
-            if spaced
-            else "PCA point colors: minimized DFA state after in-word prefix (vocab boundaries)"
-        )
-    elif spaced:
-        print("annotation mode: prefix after space (e.g. h, ha, hat; ' ' on spaces)")
-    elif words:
-        print("annotation mode: in-word prefix via vocabulary word boundaries")
+            extensions = label_extensions_for_experiment(args.exp) if args.exp else []
+            win_start, text, label_words = select_analysis_window(
+                full_text, words, args.length, spaced=spaced, extensions=extensions,
+            )
+            if win_start:
+                print(f"analysis window starts at corpus offset {win_start}")
+            aux = [w for w in label_words if w not in words]
+            if aux:
+                print(f"label vocabulary includes {len(aux)} extra 4–5 letter words: {aux[:8]}{'...' if len(aux) > 8 else ''}")
+        else:
+            text = full_text[: args.length]
+            label_words = None
+        print(f"running forward pass over {len(text)} characters of {input_file}")
 
-    targets = list(text[1:]) + [text[0]]
+        global _VIS_WORDS, _VIS_LABEL_WORDS
+        _VIS_WORDS = words
+        _VIS_LABEL_WORDS = label_words if label_words is not None else words
+        automaton = build_minimized_vocabulary_automaton(words) if words else None
+        if automaton is not None:
+            print(
+                "PCA point colors: minimized DFA state after in-word prefix since last space"
+                if spaced
+                else "PCA point colors: minimized DFA state after in-word prefix (vocab boundaries)"
+            )
+        elif spaced:
+            print("annotation mode: prefix after space (e.g. h, ha, hat; ' ' on spaces)")
+        elif words:
+            print("annotation mode: in-word prefix via vocabulary word boundaries")
+
+        targets = list(text[1:]) + [text[0]]
 
     if is_transformer:
         print(
@@ -7957,37 +8216,40 @@ def main() -> None:
             )
         output_probs = acts.output_probs
     elif args.trajectories_only:
-        hidden_states, output_probs = run_forward_pass(model, text, model_type)
+        with timer.section("forward_pass"):
+            hidden_states, output_probs = run_forward_pass(model, text, model_type)
         if words:
             traj_words = label_words if label_words is not None else words
-            plot_space_to_space_trajectories(
-                text, hidden_states,
-                save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca.png")),
-                model=model,
-                spaced=spaced,
-                automaton=automaton,
-                annot_style=args.dfa_annot_style,
-                words=traj_words,
-            )
-            plot_space_to_space_trajectories_3d(
-                text, hidden_states,
-                save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca_3d.png")),
-                model=model,
-                spaced=spaced,
-                automaton=automaton,
-                words=traj_words,
-            )
-            if args.closed_loop_video:
-                traj_path = numbered_plot_path(out_dir, "word_trajectories_pca.png")
-                write_closed_loop_trajectory_video(
-                    model,
-                    hidden_states,
-                    save_path=str(traj_path.parent / "closed_loop_trajectory.gif"),
-                    vocab_words=traj_words,
+            with timer.section("trajectories"):
+                plot_space_to_space_trajectories(
+                    text, hidden_states,
+                    save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca.png")),
+                    model=model,
                     spaced=spaced,
+                    automaton=automaton,
+                    annot_style=args.dfa_annot_style,
+                    words=traj_words,
                 )
+                plot_space_to_space_trajectories_3d(
+                    text, hidden_states,
+                    save_path=str(numbered_plot_path(out_dir, "word_trajectories_pca_3d.png")),
+                    model=model,
+                    spaced=spaced,
+                    automaton=automaton,
+                    words=traj_words,
+                )
+                if args.closed_loop_video:
+                    traj_path = numbered_plot_path(out_dir, "word_trajectories_pca.png")
+                    write_closed_loop_trajectory_video(
+                        model,
+                        hidden_states,
+                        save_path=str(traj_path.parent / "closed_loop_trajectory.gif"),
+                        vocab_words=traj_words,
+                        spaced=spaced,
+                    )
     else:
-        hidden_states, output_probs = run_forward_pass(model, text, model_type)
+        with timer.section("forward_pass"):
+            hidden_states, output_probs = run_forward_pass(model, text, model_type)
         act_label = activation_label(use_relu=bool(model.get("use_relu", False)))
 
         condensed_view = None
@@ -8006,214 +8268,222 @@ def main() -> None:
 
         cv = condensed_view
 
-        plot_hidden_states_heatmap(
-            text, hidden_states,
-            save_path=plot_path("activation_heatmap.png"),
-            act_label=act_label,
-            condensed=cv,
-            exp_name=args.exp,
-            automaton=automaton,
-            spaced=spaced,
-            words=words,
-            cluster_units=True,
-        )
-
-        plot_output_probs(
-            text, output_probs, model["chars"],
-            save_path=plot_path("next_char_prob_sequence_heatmap.png"),
-            condensed=cv,
-            exp_name=args.exp,
-            automaton=automaton,
-            spaced=spaced,
-            words=words,
-        )
-
-        plot_per_char_hidden_state_heatmaps(
-            text, hidden_states, model["chars"],
-            save_path=plot_path("activation_by_input_char.png"),
-            cluster_rows=not args.no_cluster_per_char,
-            spaced=spaced,
-            condensed=cv,
-            automaton=automaton,
-        )
-
-        plot_pca_context_labels(
-            text, hidden_states, model["chars"],
-            save_path=plot_path("embedding_panels_context.png"),
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
-            words=words,
-            label_words=label_words if not spaced else None,
-            annot_style=args.dfa_annot_style,
-        )
-
-        dfa_viz_text = text
-        dfa_viz_states = hidden_states
-        if automaton is not None and words:
-            dfa_viz_text = build_vocabulary_coverage_text(words, spaced=spaced)
-            dfa_viz_states, _ = run_forward_pass(model, dfa_viz_text, model_type)
-            print(
-                f"DFA figures: teacher-forced over full vocabulary coverage "
-                f"({len(dfa_viz_text)} chars, {len(words)} words)",
-            )
-        plot_pca_context_labels_3d(
-            dfa_viz_text, dfa_viz_states, model["chars"],
-            save_path=plot_path("embedding_panels_context_3d.png"),
-            spaced=spaced,
-            automaton=automaton,
-            condensed=None,
-            annot_style=args.dfa_annot_style,
-            words=words,
-            label_words=label_words if not spaced else None,
-        )
-
-        plot_pca_prediction_regions(
-            model, text, hidden_states, model["chars"],
-            save_path=plot_path("next_char_regions_pca.png"),
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
-        )
-
-        if automaton is not None and words:
-            plot_pca_dfa_analysis(
-                dfa_viz_text, dfa_viz_states, model["chars"], words,
-                save_path=plot_path("dfa_and_embedding_pca.png"),
+        with timer.section("activations"):
+            plot_hidden_states_heatmap(
+                text, hidden_states,
+                save_path=plot_path("activation_heatmap.png"),
+                act_label=act_label,
+                condensed=cv,
+                exp_name=args.exp,
                 automaton=automaton,
-                model=model,
                 spaced=spaced,
+                words=words,
+                cluster_units=True,
+            )
+
+            plot_output_probs(
+                text, output_probs, model["chars"],
+                save_path=plot_path("next_char_prob_sequence_heatmap.png"),
+                condensed=cv,
+                exp_name=args.exp,
+                automaton=automaton,
+                spaced=spaced,
+                words=words,
+            )
+
+            plot_per_char_hidden_state_heatmaps(
+                text, hidden_states, model["chars"],
+                save_path=plot_path("activation_by_input_char.png"),
+                cluster_rows=not args.no_cluster_per_char,
+                spaced=spaced,
+                condensed=cv,
+                automaton=automaton,
+            )
+
+        with timer.section("states_pca"):
+            plot_pca_context_labels(
+                text, hidden_states, model["chars"],
+                save_path=plot_path("embedding_panels_context.png"),
+                spaced=spaced,
+                automaton=automaton,
+                condensed=cv,
+                words=words,
+                label_words=label_words if not spaced else None,
                 annot_style=args.dfa_annot_style,
+            )
+
+            dfa_viz_text = text
+            dfa_viz_states = hidden_states
+            if automaton is not None and words:
+                dfa_viz_text = build_vocabulary_coverage_text(words, spaced=spaced)
+                dfa_viz_states, _ = run_forward_pass(model, dfa_viz_text, model_type)
+                print(
+                    f"DFA figures: teacher-forced over full vocabulary coverage "
+                    f"({len(dfa_viz_text)} chars, {len(words)} words)",
+                )
+            plot_pca_context_labels_3d(
+                dfa_viz_text, dfa_viz_states, model["chars"],
+                save_path=plot_path("embedding_panels_context_3d.png"),
+                spaced=spaced,
+                automaton=automaton,
+                condensed=None,
+                annot_style=args.dfa_annot_style,
+                words=words,
+                label_words=label_words if not spaced else None,
+            )
+
+            plot_pca_prediction_regions(
+                model, text, hidden_states, model["chars"],
+                save_path=plot_path("next_char_regions_pca.png"),
+                spaced=spaced,
+                automaton=automaton,
+                condensed=cv,
+            )
+
+            if automaton is not None and words:
+                plot_pca_dfa_analysis(
+                    dfa_viz_text, dfa_viz_states, model["chars"], words,
+                    save_path=plot_path("dfa_and_embedding_pca.png"),
+                    automaton=automaton,
+                    model=model,
+                    spaced=spaced,
+                    annot_style=args.dfa_annot_style,
+                    condensed=cv,
+                )
+
+            plot_pca_next_char_probability_panels(
+                model, text, hidden_states, model["chars"],
+                save_path=plot_path("next_char_prob_panels_pca.png"),
+                spaced=spaced,
+                automaton=automaton,
+                condensed=cv,
+            )
+
+            plot_pca_vector_field(
+                text,
+                hidden_states,
+                model,
+                plot_path("vector_field_grid_pca_no_input.png"),
                 condensed=cv,
             )
 
         if words:
             traj_words = label_words if label_words is not None else words
-            plot_space_to_space_trajectories(
-                text, hidden_states,
-                save_path=plot_path("word_trajectories_pca.png"),
-                model=model,
-                spaced=spaced,
-                automaton=automaton,
-                annot_style=args.dfa_annot_style,
-                condensed=cv,
-                words=traj_words,
-            )
-            plot_space_to_space_trajectories_3d(
-                text, hidden_states,
-                save_path=plot_path("word_trajectories_pca_3d.png"),
-                model=model,
-                spaced=spaced,
-                automaton=automaton,
-                condensed=cv,
-                words=traj_words,
-            )
-            if args.closed_loop_video:
-                traj_dir = plot_path("word_trajectories_pca.png")
-                traj_dir = os.path.dirname(traj_dir)
-                write_closed_loop_trajectory_video(
-                    model,
-                    hidden_states,
-                    save_path=os.path.join(traj_dir, "closed_loop_trajectory.gif"),
-                    vocab_words=traj_words,
+            with timer.section("trajectories"):
+                plot_space_to_space_trajectories(
+                    text, hidden_states,
+                    save_path=plot_path("word_trajectories_pca.png"),
+                    model=model,
                     spaced=spaced,
+                    automaton=automaton,
+                    annot_style=args.dfa_annot_style,
+                    condensed=cv,
+                    words=traj_words,
+                )
+                plot_space_to_space_trajectories_3d(
+                    text, hidden_states,
+                    save_path=plot_path("word_trajectories_pca_3d.png"),
+                    model=model,
+                    spaced=spaced,
+                    automaton=automaton,
+                    condensed=cv,
+                    words=traj_words,
+                )
+                if args.closed_loop_video:
+                    traj_dir = plot_path("word_trajectories_pca.png")
+                    traj_dir = os.path.dirname(traj_dir)
+                    write_closed_loop_trajectory_video(
+                        model,
+                        hidden_states,
+                        save_path=os.path.join(traj_dir, "closed_loop_trajectory.gif"),
+                        vocab_words=traj_words,
+                        spaced=spaced,
+                    )
+
+        with timer.section("states_correlation"):
+            plot_hidden_states_clustermap(
+                text, hidden_states, model["chars"],
+                save_path=plot_path("activation_clustered_heatmap.png"),
+                exp_name=args.exp,
+                condensed=cv,
+                automaton=automaton,
+                spaced=spaced,
+            )
+
+            plot_hidden_states_correlation_clustermap(
+                text, hidden_states, model["chars"],
+                save_path=plot_path("state_correlation_clustered_heatmap.png"),
+                spaced=spaced,
+                automaton=automaton,
+                words=words,
+                condensed=cv,
+            )
+
+            if automaton is not None:
+                plot_dfa_grouped_state_correlation(
+                    text,
+                    hidden_states,
+                    save_path=plot_path("state_correlation_by_dfa_state.png"),
+                    spaced=spaced,
+                    automaton=automaton,
+                    condensed=cv,
+                )
+                plot_dfa_state_distance_comparison(
+                    text, hidden_states, automaton,
+                    save_path=plot_path("dfa_state_distance_comparison.png"),
+                    spaced=spaced,
+                    words=words,
+                    condensed=cv,
+                )
+                plot_feature_separation_summary(
+                    text, hidden_states, automaton,
+                    save_path=plot_path("feature_separation_summary.png"),
+                    spaced=spaced,
+                    words=words,
+                    label_words=label_words if not spaced else None,
+                    condensed=cv,
+                    output_probs=output_probs,
                 )
 
-        plot_pca_next_char_probability_panels(
-            model, text, hidden_states, model["chars"],
-            save_path=plot_path("next_char_prob_panels_pca.png"),
-            spaced=spaced,
-            automaton=automaton,
-            condensed=cv,
-        )
-
-        plot_pca_vector_field(
-            text,
-            hidden_states,
-            model,
-            plot_path("vector_field_grid_pca_no_input.png"),
-            condensed=cv,
-        )
-
-        plot_hidden_states_clustermap(
-            text, hidden_states, model["chars"],
-            save_path=plot_path("activation_clustered_heatmap.png"),
-            exp_name=args.exp,
-            condensed=cv,
-            automaton=automaton,
-            spaced=spaced,
-        )
-
-        plot_hidden_states_correlation_clustermap(
-            text, hidden_states, model["chars"],
-            save_path=plot_path("state_correlation_clustered_heatmap.png"),
-            spaced=spaced,
-            automaton=automaton,
-            words=words,
-            condensed=cv,
-        )
-
         if automaton is not None:
-            plot_dfa_grouped_state_correlation(
-                text,
-                hidden_states,
-                save_path=plot_path("state_correlation_by_dfa_state.png"),
-                spaced=spaced,
-                automaton=automaton,
-                condensed=cv,
-            )
-            plot_dfa_state_distance_comparison(
-                text, hidden_states, automaton,
-                save_path=plot_path("dfa_state_distance_comparison.png"),
-                spaced=spaced,
-                words=words,
-                condensed=cv,
-            )
-            plot_feature_separation_summary(
-                text, hidden_states, automaton,
-                save_path=plot_path("feature_separation_summary.png"),
-                spaced=spaced,
-                words=words,
-                label_words=label_words if not spaced else None,
-                condensed=cv,
-                output_probs=output_probs,
-            )
             from unit_selectivity import plot_unit_selectivity_suite
 
-            plot_unit_selectivity_suite(
-                hidden_states,
-                text,
-                automaton,
-                os.path.join(out_dir, "unit_selectivity"),
-                model=model,
-                spaced=spaced,
-                words=words,
-                condensed=cv,
-                repr_label="RNN hidden state",
-                unit_labels=hidden_unit_labels(
-                    model.get("dale_sign"), model["hidden_size"],
-                ),
-                label_words=label_words if not spaced else None,
-                output_probs=output_probs,
-            )
+            with timer.section("unit_selectivity"):
+                plot_unit_selectivity_suite(
+                    hidden_states,
+                    text,
+                    automaton,
+                    os.path.join(out_dir, "unit_selectivity"),
+                    model=model,
+                    spaced=spaced,
+                    words=words,
+                    condensed=cv,
+                    repr_label="RNN hidden state",
+                    unit_labels=hidden_unit_labels(
+                        model.get("dale_sign"), model["hidden_size"],
+                    ),
+                    label_words=label_words if not spaced else None,
+                    output_probs=output_probs,
+                )
 
         if model["hidden_size"] == 2:
-            plot_state_trajectory(
-                hidden_states,
-                color_by_chars=list(text) if cv is None else cv.input_chars,
-                chars=model["chars"],
-                title=f"Hidden state trajectory over {len(text)} chars (colored by INPUT char)",
-                save_path=plot_path("state_trajectory_by_input.png"),
-                condensed=cv,
-            )
-            plot_state_trajectory(
-                hidden_states,
-                color_by_chars=targets if cv is None else cv.next_chars,
-                chars=model["chars"],
-                title=f"Hidden state trajectory over {len(text)} chars (colored by TARGET / next char)",
-                save_path=plot_path("state_trajectory_by_target.png"),
-                condensed=cv,
-            )
+            with timer.section("state_trajectories_2d"):
+                plot_state_trajectory(
+                    hidden_states,
+                    color_by_chars=list(text) if cv is None else cv.input_chars,
+                    chars=model["chars"],
+                    title=f"Hidden state trajectory over {len(text)} chars (colored by INPUT char)",
+                    save_path=plot_path("state_trajectory_by_input.png"),
+                    condensed=cv,
+                )
+                plot_state_trajectory(
+                    hidden_states,
+                    color_by_chars=targets if cv is None else cv.next_chars,
+                    chars=model["chars"],
+                    title=f"Hidden state trajectory over {len(text)} chars (colored by TARGET / next char)",
+                    save_path=plot_path("state_trajectory_by_target.png"),
+                    condensed=cv,
+                )
 
     correct = np.sum(np.argmax(output_probs, axis=1) ==
                      np.array([model["chars"].index(c) for c in targets]))
@@ -8221,11 +8491,12 @@ def main() -> None:
           f"{correct}/{len(text)} = {100*correct/len(text):.1f}%")
 
     if words and args.exp:
-        shared = shared_dir(args.exp)
-        shared.mkdir(parents=True, exist_ok=True)
-        trie_path, dfa_path = write_vocabulary_diagrams(words, shared)
-        print(f"wrote {trie_path}")
-        print(f"wrote {dfa_path}")
+        with timer.section("vocab_diagrams"):
+            shared = shared_dir(args.exp)
+            shared.mkdir(parents=True, exist_ok=True)
+            trie_path, dfa_path = write_vocabulary_diagrams(words, shared)
+            print(f"wrote {trie_path}")
+            print(f"wrote {dfa_path}")
 
     if (
         args.learning_dynamics_video
@@ -8237,26 +8508,28 @@ def main() -> None:
         dyn_dir = learning_dynamics_dir(args.exp, model_type)
         dyn_dir.mkdir(parents=True, exist_ok=True)
         try:
-            write_hidden_state_pca_learning_video(
-                model,
-                text,
-                save_path=str(dyn_dir / "hidden_state_pca.mp4"),
-                spaced=spaced,
-                automaton=automaton,
-            )
+            with timer.section("learning_dynamics_video"):
+                write_hidden_state_pca_learning_video(
+                    model,
+                    text,
+                    save_path=str(dyn_dir / "hidden_state_pca.mp4"),
+                    spaced=spaced,
+                    automaton=automaton,
+                )
         except Exception as exc:
             print(f"skip learning dynamics video: {exc}")
 
     if args.exp:
-        remove_legacy_readme_plot_names(out_dir)
-        remove_flat_plot_files(out_dir)
-        remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))
-        # Drop pre-refactor learning_dynamics/ sibling of plots/.
-        legacy_dyn = model_dir(args.exp, model_type) / "learning_dynamics"
-        if legacy_dyn.is_dir() and legacy_dyn != Path(out_dir) / "learning_dynamics":
-            import shutil
-            shutil.rmtree(legacy_dyn)
-            print(f"removed legacy {legacy_dyn}")
+        with timer.section("cleanup"):
+            remove_legacy_readme_plot_names(out_dir)
+            remove_flat_plot_files(out_dir)
+            remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))
+            # Drop pre-refactor learning_dynamics/ sibling of plots/.
+            legacy_dyn = model_dir(args.exp, model_type) / "learning_dynamics"
+            if legacy_dyn.is_dir() and legacy_dyn != Path(out_dir) / "learning_dynamics":
+                import shutil
+                shutil.rmtree(legacy_dyn)
+                print(f"removed legacy {legacy_dyn}")
 
     timer.print_summary(title="Overall visualization timing")
 

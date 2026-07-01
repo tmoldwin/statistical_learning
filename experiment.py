@@ -37,6 +37,9 @@ OLD_EXPERIMENTS_ROOT = EXPERIMENTS_ROOT / "old"
 
 MODEL_TYPES = ("rnn", "rnn_dale", "transformer")
 
+# Default seed for single-run workflows (input.txt + model.npz).
+DEFAULT_SEED = 42
+
 DALE_RNN_DEFAULTS: dict[str, object] = {
     "e_fraction": 0.8,
 }
@@ -87,6 +90,30 @@ TASKS: dict[str, dict] = {
     "sixteen_word_mixed_ns": {
         **dict(_MIXED_LENGTH_DEFAULTS),
         "word_space": False,
+    },
+    "sixteen_word_four_letter_ns": {
+        "regime": "sixteen_word_four_letter",
+        "word_space": False,
+        "chars": 50_000,
+        "steps": 10_000,
+        "viz_length": 64,
+        "hidden_size": 50,
+        "sequence_length": 16,
+        "eval_interval": 50,
+        "eval_iterations": 20,
+        "metric_rollout_len": 1000,
+    },
+    "sixteen_word_five_letter_ns": {
+        "regime": "sixteen_word_five_letter",
+        "word_space": False,
+        "chars": 50_000,
+        "steps": 10_000,
+        "viz_length": 81,
+        "hidden_size": 50,
+        "sequence_length": 20,
+        "eval_interval": 50,
+        "eval_iterations": 20,
+        "metric_rollout_len": 1000,
     },
 }
 
@@ -156,6 +183,29 @@ def checkpoint_path(name: str, model_type: str = "rnn", *, seed: int | None = No
         if seeded.is_file():
             return seeded
     return model_path(name, model_type)
+
+
+def seeds_for_task(name: str, model_type: str = "rnn") -> set[int]:
+    """RNG seeds with a saved checkpoint for this task."""
+    found: set[int] = set()
+    if model_path(name, model_type).is_file():
+        found.add(DEFAULT_SEED)
+    if model_type in ("rnn", "rnn_dale"):
+        pattern = "model_seed*.npz"
+    else:
+        pattern = "model_seed*.pt"
+    for path in model_dir(name, model_type).glob(pattern):
+        found.add(int(path.stem.removeprefix("model_seed")))
+    return found
+
+
+def common_seeds(tasks: tuple[str, ...], model_type: str = "rnn") -> tuple[int, ...]:
+    """Seeds that have checkpoints for every task in the comparison."""
+    per_task = [seeds_for_task(task, model_type) for task in tasks]
+    if not per_task:
+        return (DEFAULT_SEED,)
+    shared = set.intersection(*per_task)
+    return tuple(sorted(shared)) if shared else (DEFAULT_SEED,)
 
 
 def model_config_path(name: str) -> Path:

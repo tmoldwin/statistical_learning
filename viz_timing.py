@@ -11,6 +11,7 @@ class VizTimer:
 
     def __init__(self) -> None:
         self._times: dict[str, float] = {}
+        self._started = time.perf_counter()
 
     @contextmanager
     def section(self, name: str):
@@ -26,6 +27,10 @@ class VizTimer:
     @property
     def total(self) -> float:
         return sum(self._times.values())
+
+    @property
+    def wall_clock(self) -> float:
+        return time.perf_counter() - self._started
 
     def merge(self, other: VizTimer) -> None:
         for name, seconds in other._times.items():
@@ -44,3 +49,7 @@ class VizTimer:
         if len(ranked) > top_n:
             rest = sum(seconds for _, seconds in ranked[top_n:])
             print(f"  {rest:6.2f}s       ... {len(ranked) - top_n} more sections")
+        untracked = self.wall_clock - total
+        if untracked >= 0.05:
+            print(f"  {untracked:6.2f}s       (untracked: imports, first matplotlib draw, etc.)")
+        print(f"  {self.wall_clock:6.2f}s       wall clock")

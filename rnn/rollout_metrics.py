@@ -7,8 +7,8 @@ import numpy as np
 from rnn.rnn_dyn import rnn_hidden_step, stable_softmax
 from vocab_diagrams import invalid_word_fraction, segment_corpus_by_words
 
-METRIC_ROLLOUT_LEN = 3_000
-METRIC_NUM_ROLLOUTS = 5
+METRIC_ROLLOUT_LEN = 500
+METRIC_NUM_ROLLOUTS = 2
 METRIC_RNG_BASE = 42
 
 
@@ -72,15 +72,19 @@ def stochastic_word_validity_metrics(
     use_relu: bool,
     timestep_noise_std: float,
     rng: np.random.Generator,
+    rollout_len: int | None = None,
+    num_rollouts: int | None = None,
 ) -> tuple[float, float, str]:
+    rollout_len = METRIC_ROLLOUT_LEN if rollout_len is None else rollout_len
+    num_rollouts = METRIC_NUM_ROLLOUTS if num_rollouts is None else num_rollouts
     word_errs: list[float] = []
     letter_fracs: list[float] = []
     first_text = ""
-    for r in range(METRIC_NUM_ROLLOUTS):
+    for r in range(num_rollouts):
         rollout_rng = np.random.default_rng(int(rng.integers(0, 2**31 - 1)))
         text = _sample_rollout(
             weights, hidden_size=hidden_size, vocab_size=vocab_size,
-            index_to_char=index_to_char, seed_index=seed_index, num_chars=METRIC_ROLLOUT_LEN,
+            index_to_char=index_to_char, seed_index=seed_index, num_chars=rollout_len,
             use_relu=use_relu, timestep_noise_std=timestep_noise_std, rng=rollout_rng,
         )
         if r == 0:

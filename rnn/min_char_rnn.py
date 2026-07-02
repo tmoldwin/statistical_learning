@@ -128,11 +128,16 @@ if target_word_error is None and args.exp:
     if _raw_target is not None:
         target_word_error = float(_raw_target)
 early_stop_patience = 3
+eval_interval = 100
+metric_rollout_len = 1000
+metric_num_rollouts = 2
 if args.exp:
     from experiment import EXPERIMENT_CONFIG
-    early_stop_patience = int(
-        EXPERIMENT_CONFIG.get(args.exp, {}).get("early_stop_patience", early_stop_patience)
-    )
+    _exp_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+    early_stop_patience = int(_exp_cfg.get("early_stop_patience", early_stop_patience))
+    eval_interval = int(_exp_cfg.get("eval_interval", eval_interval))
+    metric_rollout_len = int(_exp_cfg.get("metric_rollout_len", metric_rollout_len))
+    metric_num_rollouts = int(_exp_cfg.get("metric_num_rollouts", metric_num_rollouts))
 noise_rng = np.random.default_rng(args.seed + 1)
 init_rng = np.random.default_rng(args.seed)
 
@@ -530,8 +535,8 @@ WEIGHT_SNAP_EVERY = 100
 WEIGHT_SNAP_ULTRA_UNTIL = 300
 WEIGHT_SNAP_DENSE_EVERY = 3
 WEIGHT_SNAP_DENSE_UNTIL = 1_200
-METRIC_ROLLOUT_LEN = 3_000
-METRIC_NUM_ROLLOUTS = 5
+METRIC_ROLLOUT_LEN = metric_rollout_len
+METRIC_NUM_ROLLOUTS = metric_num_rollouts
 METRIC_RNG_BASE = 42
 
 
@@ -642,8 +647,8 @@ while iteration < max_iterations:
   input_indices  = [char_to_index[char] for char in text[data_pointer    : data_pointer + sequence_length    ]]
   target_indices = [char_to_index[char] for char in text[data_pointer + 1: data_pointer + sequence_length + 1]]
 
-  # Every 100 iterations, draw a short sample from the model to see what it's learning.
-  if iteration % 100 == 0:
+  # Periodic rollout metrics for early stopping and learning-curve logging.
+  if iteration % eval_interval == 0:
     sampled_indices = sample(previous_hidden_state, input_indices[0], 50)
     sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
     print('----\n %s \n----' % (sampled_text,))
@@ -681,7 +686,7 @@ while iteration < max_iterations:
                 print(
                     f"early stop at iter {iteration}: "
                     f"word error <= {100.0 * _stop_threshold:.2f}% "
-                    f"for {early_stop_patience * 100} iterations",
+                    f"for {early_stop_patience * eval_interval} training steps",
                 )
             break
 

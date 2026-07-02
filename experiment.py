@@ -164,6 +164,9 @@ TASKS: dict[str, dict] = {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "hidden_size": 500,
         "learning_rate": 0.04,
+        "eval_interval": 500,
+        "metric_rollout_len": 500,
+        "metric_num_rollouts": 2,
     },
     "sixteen_word_mixed_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -172,6 +175,9 @@ TASKS: dict[str, dict] = {
         "learning_rate": 0.04,
         "viz_length": 60,
         "sequence_length": 16,
+        "eval_interval": 500,
+        "metric_rollout_len": 500,
+        "metric_num_rollouts": 2,
     },
     "sixteen_word_four_letter_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -180,6 +186,9 @@ TASKS: dict[str, dict] = {
         "learning_rate": 0.04,
         "viz_length": 64,
         "sequence_length": 16,
+        "eval_interval": 500,
+        "metric_rollout_len": 500,
+        "metric_num_rollouts": 2,
     },
     "sixteen_word_five_letter_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -189,6 +198,9 @@ TASKS: dict[str, dict] = {
         "viz_length": 81,
         "sequence_length": 32,
         "steps": 75_000,
+        "eval_interval": 500,
+        "metric_rollout_len": 500,
+        "metric_num_rollouts": 2,
     },
     "fifty_word_ns": dict(_FIFTY_WORD_NS_DEFAULTS),
     "fifty_word_four_letter_ns": {

@@ -32,7 +32,7 @@ for f in "$LOGDIR"/*.out; do
   elif grep -q 'word error' "$f" 2>/dev/null; then
     we="$(grep 'word error' "$f" 2>/dev/null | tail -1 | sed -n 's/.*(\([0-9.]*\)% word error.*/\1/p')"
   fi
-  if [[ "$state" == RUN || "$state" == START ]]; then
+  if [[ "$state" != DONE && "$state" != FAIL ]]; then
     printf '%-32s %5s %6s %8s %8s %10s\n' "$job" "$seed" "$state" "$iter" "$loss" "$we"
   fi
 done

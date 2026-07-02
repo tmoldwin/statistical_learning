@@ -40,7 +40,7 @@ def slurm_counts(user: str = "toviah.moldwin") -> tuple[int, int]:
     return count(), count("PENDING")
 
 
-def tail_text(path: Path, n: int = 4000) -> str:
+def tail_text(path: Path, n: int = 256_000) -> str:
     if not path.is_file():
         return ""
     data = path.read_bytes()

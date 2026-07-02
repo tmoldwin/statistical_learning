@@ -39,8 +39,15 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from experiment import DEFAULT_SEED, TASKS, checkpoint_path
-from viz.compare.run import COMPARISON_KINDS
 from viz.compare.spec import COMPARISON_PRESETS, ComparisonSpec
+
+COMPARISON_KINDS = (
+    "learning_curves",
+    "trajectory_geometry",
+    "closed_loop_trajectories",
+    "closed_loop_trajectories_2d",
+    "closed_loop_trajectories_3d",
+)
 
 
 @dataclass(frozen=True)

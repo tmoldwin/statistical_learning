@@ -27,6 +27,7 @@ param(
     [string]$RemoteUser = "toviah.moldwin",
 
     [switch]$Push,
+    [switch]$SetupDeps,
     [switch]$SyncCheckpoints,
     [switch]$Pull,
     [switch]$Smoke,
@@ -45,9 +46,15 @@ function Invoke-MobaSsh([string]$Command) {
     if ($LASTEXITCODE -ne 0) { throw "SSH failed: $cmd" }
 }
 
-function Invoke-MobaScp([string]$Source, [string]$Dest) {
-    & $MobaBash -lc "scp -C -j '$Source' '$Dest'"
-    if ($LASTEXITCODE -ne 0) { throw "SCP failed: $Source -> $Dest" }
+function Invoke-MobaScpUp([string]$LocalFile, [string]$RemotePath) {
+    $local = ($LocalFile -replace "\\", "/")
+    & $MobaBash -lc "ssh $RemoteHost -p 22 -C -j 'cat > $RemotePath' < '$local'"
+    if ($LASTEXITCODE -ne 0) { throw "upload failed: $LocalFile -> $RemotePath" }
+}
+
+function Invoke-MobaScpDown([string]$RemoteGlob, [string]$LocalDir) {
+    $local = ($LocalDir -replace "\\", "/")
+    & $MobaBash -lc "ssh $RemoteHost -p 22 -C -j 'cat $RemoteGlob' > '$local' 2>/dev/null || true"
 }
 
 function Build-ClusterArgs() {
@@ -79,7 +86,10 @@ if ($Push) {
 
 Write-Host ">> remote setup" -ForegroundColor Cyan
 Invoke-MobaSsh "mkdir -p ~/code && if [ ! -d ~/$RemoteRepo/.git ]; then git clone https://github.com/tmoldwin/statistical_learning.git ~/$RemoteRepo; fi"
-Invoke-MobaSsh "cd ~/$RemoteRepo && git pull && python3 -m pip install --user -q -r requirements.txt || true"
+Invoke-MobaSsh "cd ~/$RemoteRepo && git pull"
+if ($SetupDeps) {
+    Invoke-MobaSsh "cd ~/$RemoteRepo && python3 -m pip install --user -q -r requirements.txt || true"
+}
 
 if ($SyncCheckpoints) {
     Write-Host ">> sync local checkpoints" -ForegroundColor Cyan
@@ -88,9 +98,10 @@ if ($SyncCheckpoints) {
         $glob = if ($task -eq "*") { "$RepoRoot\experiments\*\rnn\model_seed*.npz" } else { "$RepoRoot\experiments\$task\rnn\model_seed*.npz" }
         Get-ChildItem $glob -ErrorAction SilentlyContinue | ForEach-Object {
             $t = $_.Directory.Parent.Name
-            Invoke-MobaSsh "mkdir -p ~/$RemoteRepo/experiments/$t/rnn"
+            $remoteRnn = "/ems/elsc-labs/segev-i/toviah.moldwin/$RemoteRepo/experiments/$t/rnn"
+            Invoke-MobaSsh "mkdir -p $remoteRnn"
             Write-Host "  $($_.Name) -> $t"
-            Invoke-MobaScp $_.FullName "${RemoteUser}@${RemoteHost}:$RemoteRepo/experiments/$t/rnn/"
+            Invoke-MobaScpUp $_.FullName "$remoteRnn/$($_.Name)"
         }
     }
 }
@@ -100,20 +111,14 @@ Write-Host ">> $clusterCmd" -ForegroundColor Cyan
 Invoke-MobaSsh "cd ~/$RemoteRepo && $clusterCmd"
 
 if ($Pull) {
-    Write-Host ">> pull results" -ForegroundColor Cyan
+    Write-Host ">> pull results (use MobaXterm SFTP for full trees)" -ForegroundColor Cyan
     $cmpName = if ($Preset) { $Preset } elseif ($Name) { $Name } else { $null }
     if ($cmpName) {
         $localCmp = Join-Path $RepoRoot "experiments\comparisons\$cmpName"
         New-Item -ItemType Directory -Force -Path $localCmp | Out-Null
-        Invoke-MobaScp "-r ${RemoteUser}@${RemoteHost}:$RemoteRepo/experiments/comparisons/$cmpName/*" $localCmp
-    }
-    if ($Tasks) {
-        foreach ($task in ($Tasks -split ",")) {
-            $task = $task.Trim()
-            $localRnn = Join-Path $RepoRoot "experiments\$task\rnn"
-            New-Item -ItemType Directory -Force -Path $localRnn | Out-Null
-            Invoke-MobaScp "${RemoteUser}@${RemoteHost}:$RemoteRepo/experiments/$task/rnn/model_seed*.npz" $localRnn
-        }
+        Invoke-MobaSsh "cd ~/$RemoteRepo/experiments/comparisons/$cmpName && tar czf - ." | ForEach-Object { }
+        # tar-over-ssh is fragile on Windows; list remote files for manual pull
+        Invoke-MobaSsh "ls -la ~/$RemoteRepo/experiments/comparisons/$cmpName 2>/dev/null || echo '(not ready yet)'"
     }
 }
 

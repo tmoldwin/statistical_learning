@@ -179,6 +179,7 @@ def main() -> None:
         loss_t.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
         optimizer.step()
+        h = h.detach()
 
         loss_val = float(loss_t.detach().cpu())
         if np.isfinite(loss_val):

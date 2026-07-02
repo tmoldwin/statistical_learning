@@ -174,10 +174,17 @@ def plot_closed_loop_trajectories(
                 )
             except FileNotFoundError:
                 ax.set_visible(False)
-                ax.text(
-                    0.5, 0.5, f"no model\nseed {run_seed}",
-                    ha="center", va="center", transform=ax.transAxes, fontsize=9,
-                )
+                msg = f"no model\nseed {run_seed}"
+                if is_3d:
+                    ax.text2D(
+                        0.5, 0.5, msg,
+                        transform=ax.transAxes, ha="center", va="center", fontsize=9,
+                    )
+                else:
+                    ax.text(
+                        0.5, 0.5, msg,
+                        ha="center", va="center", transform=ax.transAxes, fontsize=9,
+                    )
                 continue
 
             _plot_task_closed_loop_panel(

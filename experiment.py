@@ -163,11 +163,13 @@ TASKS: dict[str, dict] = {
     "sixteen_word_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "hidden_size": 500,
+        "learning_rate": 0.04,
     },
     "sixteen_word_mixed_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "regime": "sixteen_word_mixed",
         "hidden_size": 500,
+        "learning_rate": 0.04,
         "viz_length": 60,
         "sequence_length": 16,
     },
@@ -175,6 +177,7 @@ TASKS: dict[str, dict] = {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "regime": "sixteen_word_four_letter",
         "hidden_size": 500,
+        "learning_rate": 0.04,
         "viz_length": 64,
         "sequence_length": 16,
     },

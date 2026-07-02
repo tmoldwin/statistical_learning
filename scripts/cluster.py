@@ -43,6 +43,7 @@ from viz.compare.spec import COMPARISON_PRESETS, ComparisonSpec
 
 COMPARISON_KINDS = (
     "learning_curves",
+    "learning_summary",
     "trajectory_geometry",
     "closed_loop_trajectories",
     "closed_loop_trajectories_2d",
@@ -224,7 +225,7 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument(
     "--kinds",
     nargs="+",
-    default=["trajectory_geometry", "closed_loop_trajectories", "learning_curves"],
+    default=["trajectory_geometry", "closed_loop_trajectories", "learning_curves", "learning_summary"],
     choices=sorted(COMPARISON_KINDS),
   )
   parser.add_argument("--truncate-to-plateau", action="store_true")

@@ -16,7 +16,7 @@ param(
     [string]$Tasks = "",
     [string]$Seeds = "",
     [string]$ModelType = "rnn",
-    [string]$Kinds = "trajectory_geometry,closed_loop_trajectories,learning_curves",
+    [string]$Kinds = "trajectory_geometry,closed_loop_trajectories,learning_curves,learning_summary",
 
     [string]$Partition = "ss.q",
     [string]$Time = "04:00:00",

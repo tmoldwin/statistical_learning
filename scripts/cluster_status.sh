@@ -3,7 +3,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="${REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 LOG_GLOB="${1:-sixteen_word_lengths_ns_h500_*}"
-LOGDIR="$(ls -dt "$REPO/cluster_logs/$LOG_GLOB" 2>/dev/null | head -1 || true)"
+LOGDIR="$(ls -dt "$REPO/cluster_logs"/$LOG_GLOB 2>/dev/null | head -1 || true)"
 if [[ -z "$LOGDIR" ]]; then echo "no log dir under $REPO/cluster_logs/$LOG_GLOB"; exit 1; fi
 USER_NAME="${USER:-toviah.moldwin}"
 running="$(squeue -u "$USER_NAME" -h 2>/dev/null | wc -l)"

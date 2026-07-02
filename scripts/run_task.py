@@ -37,6 +37,7 @@ def train_task(
     model_type: str = "rnn",
     multi_seed: bool = False,
     save_snapshots: bool = False,
+    device: str = "cpu",
 ) -> None:
     cfg = TASKS[name]
     regime = experiment_regime(name)
@@ -55,13 +56,23 @@ def train_task(
 
     if model_type in ("rnn", "rnn_dale"):
         model_out = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
+        use_dale = model_uses_dale(model_type) or bool(cfg.get("dale"))
+        use_gpu = device in ("cuda", "gpu", "auto")
+        if use_gpu and use_dale:
+            print("warning: Dale training has no GPU trainer; using CPU (min_char_rnn.py)")
+            use_gpu = False
+        if use_gpu and save_snapshots:
+            raise ValueError("GPU trainer does not support --save-snapshots")
+        train_script = "rnn/torch_char_rnn.py" if use_gpu else "rnn/min_char_rnn.py"
         train_cmd = [
-            sys.executable, "rnn/min_char_rnn.py",
+            sys.executable, train_script,
             "--input", str(corpus_out),
             "--model", str(model_out),
             "--exp", name,
             "--seed", str(seed),
         ]
+        if use_gpu:
+            train_cmd.extend(["--device", "cuda" if device == "gpu" else device])
         if "hidden_size" in cfg:
             train_cmd.extend(["--hidden-size", str(cfg["hidden_size"])])
         if model_uses_dale(model_type) or cfg.get("dale"):
@@ -144,6 +155,12 @@ def main() -> None:
         help="record weight snapshots during training (large model files; "
              "only needed for learning-dynamics videos/analysis)",
     )
+    parser.add_argument(
+        "--device",
+        default="cpu",
+        choices=["cpu", "cuda", "auto"],
+        help="training device for RNN tasks (cuda uses rnn/torch_char_rnn.py)",
+    )
     args = parser.parse_args()
 
     write_vocabulary_diagrams_for_experiment(args.task)
@@ -161,6 +178,7 @@ def main() -> None:
                     model_type=model_type,
                     multi_seed=multi_seed,
                     save_snapshots=args.save_snapshots,
+                    device=args.device,
                 )
             if not args.skip_viz and not multi_seed:
                 visualize_task(

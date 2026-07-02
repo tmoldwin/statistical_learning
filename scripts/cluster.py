@@ -105,6 +105,7 @@ def train_command(
   model_type: str,
   smoke: bool,
   repo_dir: Path,
+  device: str = "cpu",
 ) -> str:
   py = shlex.quote(sys.executable)
   cmd = [
@@ -112,6 +113,7 @@ def train_command(
     "--models", model_type,
     "--seeds", str(seed),
     "--skip-viz",
+    "--device", device,
   ]
   if smoke:
     cmd.append("--smoke")
@@ -130,6 +132,8 @@ def submit_jobs(
   smoke: bool,
   log_dir: Path,
   dry_run: bool,
+  device: str = "cpu",
+  gpus: int = 0,
 ) -> int:
   log_dir.mkdir(parents=True, exist_ok=True)
   submitted = 0
@@ -137,7 +141,9 @@ def submit_jobs(
     run_name = f"{task}_s{seed}"
     job_name = f"sl_{run_name}"[:64]
     output_log = log_dir / f"{run_name}.out"
-    wrap = train_command(task, seed, model_type=plan.model_type, smoke=smoke, repo_dir=repo_dir)
+    wrap = train_command(
+      task, seed, model_type=plan.model_type, smoke=smoke, repo_dir=repo_dir, device=device,
+    )
     sbatch = [
       "sbatch",
       f"--job-name={job_name}",
@@ -145,8 +151,10 @@ def submit_jobs(
       f"--time={walltime}",
       f"--mem={mem}",
       f"--output={output_log}",
-      f"--wrap={wrap}",
     ]
+    if gpus > 0:
+      sbatch.append(f"--gres=gpu:{gpus}")
+    sbatch.append(f"--wrap={wrap}")
     line = " ".join(shlex.quote(part) for part in sbatch)
     print(line)
     if not dry_run:
@@ -234,6 +242,18 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--partition", default=os.environ.get("PARTITION", "ss.q"))
   parser.add_argument("--time", dest="walltime", default=os.environ.get("TIME", "04:00:00"))
   parser.add_argument("--mem", default=os.environ.get("MEM", "8G"))
+  parser.add_argument(
+    "--device",
+    default=os.environ.get("DEVICE", "cpu"),
+    choices=["cpu", "cuda", "auto"],
+    help="RNN trainer device (cuda → rnn/torch_char_rnn.py on GPU)",
+  )
+  parser.add_argument(
+    "--gpu",
+    action="store_true",
+    help="shorthand: --device cuda --partition ss.gpu --gres 1",
+  )
+  parser.add_argument("--gpus", type=int, default=0, help="SLURM --gres=gpu:N (default 0)")
   parser.add_argument("--log-dir", type=Path, help="defaults to cluster_logs/<comparison>_<timestamp>/")
   parser.add_argument("--smoke", action="store_true")
   parser.add_argument("--force", action="store_true", help="submit even if checkpoint exists")
@@ -245,6 +265,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
   parser = build_parser()
   args = parser.parse_args()
+  if args.gpu:
+    args.device = "cuda"
+    if args.partition == os.environ.get("PARTITION", "ss.q"):
+      args.partition = "ss.gpu"
+    if args.gpus == 0:
+      args.gpus = 1
   plan = resolve_plan(args)
   jobs = iter_jobs(plan, skip_existing=not args.force)
 
@@ -277,6 +303,8 @@ def main() -> None:
         smoke=args.smoke,
         log_dir=log_dir,
         dry_run=args.dry_run,
+        device=args.device,
+        gpus=args.gpus,
       )
       print(f"submitted {submitted} jobs → {log_dir}")
 

@@ -5,7 +5,7 @@
 #   .\scripts\run_cluster.ps1 -Action submit -Preset sixteen_word_lengths_ns_h500
 #   .\scripts\run_cluster.ps1 -Action all -Preset sixteen_word_lengths_ns_h500 -Partition ss.cpu -Time 04:00:00
 #   .\scripts\run_cluster.ps1 -Action submit -Tasks sixteen_word_ns_h500 -Seeds 1,2,3,5,7
-#   .\scripts\run_cluster.ps1 -Action all -Preset sixteen_word_lengths_ns_h500 -SyncCheckpoints -Pull
+#   .\scripts\run_cluster.ps1 -Action submit -Preset sixteen_word_lengths_ns_h500 -Gpu -Force
 
 param(
     [ValidateSet("plan", "submit", "wait", "plot", "all")]
@@ -32,7 +32,9 @@ param(
     [switch]$Pull,
     [switch]$Smoke,
     [switch]$Force,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$Gpu,
+    [string]$Device = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -70,11 +72,15 @@ function Build-ClusterArgs() {
     if ($Smoke) { $parts += "--smoke" }
     if ($Force) { $parts += "--force" }
     if ($DryRun) { $parts += "--dry-run" }
+    if ($Gpu) { $parts += "--gpu" }
+    if ($Device) { $parts += @("--device", $Device) }
   $parts += @("--partition", $Partition, "--time", $Time, "--mem", $Mem)
     return ($parts -join " ")
 }
 
 Set-Location $RepoRoot
+
+if ($Gpu -and $Partition -eq "ss.q") { $Partition = "ss.gpu" }
 
 if ($Push) {
     Write-Host ">> git push" -ForegroundColor Cyan

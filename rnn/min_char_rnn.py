@@ -18,6 +18,8 @@ Recurrence (forward):
   output_probs[t]  = softmax(output_logits[t])
   loss_at_t        = -log(output_probs[t][target_index])
 """
+from __future__ import annotations
+
 import argparse
 import copy
 import os

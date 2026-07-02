@@ -16,3 +16,7 @@ experiments/**/plots/
 experiments/**/input.txt
 experiments/**/shared/
 
+# Local download / scratch artifacts
+*.tar.gz
+h500_checkpoints.tar.gz
+

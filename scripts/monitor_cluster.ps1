@@ -1,32 +1,45 @@
-# Poll cluster job status for a sweep. Run in a loop or once.
+# Auto-poll cluster sweep status. Agent or user can leave this running.
 param(
     [string]$RemoteHost = "loginserver.elsc.huji.ac.il",
     [string]$RemoteRepo = "code/statistical_learning",
     [string]$LogGlob = "sixteen_word_lengths_ns_h500_*",
-    [int]$IntervalSec = 120,
+    [int]$IntervalSec = 60,
     [switch]$Once
 )
 
+$ErrorActionPreference = "Continue"
 $MobaBash = Join-Path $env:APPDATA "MobaXterm\slash\mx86_64b\bin\bash.exe"
-if (-not (Test-Path $MobaBash)) { throw "MobaXterm bash not found" }
+if (-not (Test-Path $MobaBash)) { throw "MobaXterm bash not found at $MobaBash" }
 
-function Get-ClusterStatus {
-    $cmd = @"
-echo === `$(date -Iseconds) ===
-RUNNING=`$(squeue -u toviah.moldwin -h | wc -l)
-PENDING=`$(squeue -u toviah.moldwin -t PENDING -h 2>/dev/null | wc -l)
-SEED_CKPTS=`$(find ~/$RemoteRepo/experiments -name 'model_seed*.npz' 2>/dev/null | wc -l)
-DONE=`$(grep -l 'saved trained model' ~/$RemoteRepo/cluster_logs/$LogGlob/*.out 2>/dev/null | wc -l)
-FAILED=`$(grep -l Traceback ~/$RemoteRepo/cluster_logs/$LogGlob/*.out 2>/dev/null | wc -l)
-PROGRESS=`$(grep -h '^iter ' ~/$RemoteRepo/cluster_logs/$LogGlob/*.out 2>/dev/null | tail -1)
-echo "running=$RUNNING pending=$PENDING checkpoints=$SEED_CKPTS done=$DONE failed=$FAILED"
-echo "latest: $PROGRESS"
-"@
-    & $MobaBash -lc "ssh $RemoteHost -p 22 -C -j '$($cmd -replace "'", "'\\''")'" 2>$null | Select-String -Pattern '===|running=|latest:'
+function Invoke-MobaSsh([string]$Command) {
+    $cmd = ($Command -replace "`r?`n", " " -replace "\s+", " ").Trim()
+    $escaped = $cmd -replace "'", "'\\''"
+    & $MobaBash -lc "ssh $RemoteHost -p 22 -o ConnectTimeout=15 -C -j '$escaped'" 2>&1
 }
 
-do {
-    Get-ClusterStatus
+function Show-ClusterStatus {
+    $remote = "cd ~/$RemoteRepo && git pull -q 2>/dev/null; bash scripts/cluster_status.sh $LogGlob"
+    $raw = Invoke-MobaSsh $remote
+    $skip = '(elsc\.huji|LoginServer|PRODUCTION|WARNING|Hostname:|Please exercise|^\s*[_|]|^System\.Management|^From https|^Already up|^Updating |^Fast-forward|^ )'
+    foreach ($line in @($raw)) {
+        if ($line -and $line -notmatch $skip) {
+            Write-Host $line
+        }
+    }
+}
+
+if (-not $Once) {
+    Write-Host ""
+    Write-Host "Cluster monitor - $RemoteHost - every ${IntervalSec}s (Ctrl+C to stop)" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+while ($true) {
+    if (-not $Once) {
+        Write-Host "--- $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ---" -ForegroundColor DarkGray
+    }
+    Show-ClusterStatus
+    Write-Host ""
     if ($Once) { break }
     Start-Sleep -Seconds $IntervalSec
-} while ($true)
+}

@@ -661,6 +661,7 @@ while iteration < max_iterations:
     metric_iters.append(iteration)
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
+    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%")
 
     if (
         iteration >= MIN_CHECKPOINT_ITER

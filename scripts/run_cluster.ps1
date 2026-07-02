@@ -18,7 +18,7 @@ param(
     [string]$ModelType = "rnn",
     [string]$Kinds = "trajectory_geometry,closed_loop_trajectories,learning_curves",
 
-    [string]$Partition = "ss.cpu",
+    [string]$Partition = "ss.q",
     [string]$Time = "04:00:00",
     [string]$Mem = "8G",
 

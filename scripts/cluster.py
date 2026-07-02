@@ -230,7 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--truncate-to-plateau", action="store_true")
 
   parser.add_argument("--repo-dir", type=Path, default=REPO_ROOT)
-  parser.add_argument("--partition", default=os.environ.get("PARTITION", "ss.cpu"))
+  parser.add_argument("--partition", default=os.environ.get("PARTITION", "ss.q"))
   parser.add_argument("--time", dest="walltime", default=os.environ.get("TIME", "04:00:00"))
   parser.add_argument("--mem", default=os.environ.get("MEM", "8G"))
   parser.add_argument("--log-dir", type=Path, help="defaults to cluster_logs/<comparison>_<timestamp>/")

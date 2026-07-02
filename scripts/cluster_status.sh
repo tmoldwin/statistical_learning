@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
-REPO="${REPO:-$HOME/code/statistical_learning}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="${REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 LOG_GLOB="${1:-sixteen_word_lengths_ns_h500_*}"
 LOGDIR="$(ls -dt "$REPO/cluster_logs/$LOG_GLOB" 2>/dev/null | head -1 || true)"
-if [[ -z "$LOGDIR" ]]; then echo "no log dir"; exit 1; fi
-running="$(squeue -u "${USER:-toviah.moldwin}" -h 2>/dev/null | wc -l)"
-pending="$(squeue -u "${USER:-toviah.moldwin}" -t PENDING -h 2>/dev/null | wc -l)"
+if [[ -z "$LOGDIR" ]]; then echo "no log dir under $REPO/cluster_logs/$LOG_GLOB"; exit 1; fi
+USER_NAME="${USER:-toviah.moldwin}"
+running="$(squeue -u "$USER_NAME" -h 2>/dev/null | wc -l)"
+pending="$(squeue -u "$USER_NAME" -t PENDING -h 2>/dev/null | wc -l)"
 echo "=== $(date -Iseconds) === ${LOGDIR##*/}"
 echo "queue: running=$running pending=$pending"
 done_n=0; fail_n=0; run_n=0; start_n=0
-printf '%-32s %5s %6s %8s %8s %10s
-' JOB SEED STATE ITER LOSS WORD_ERR%
+printf '%-32s %5s %6s %8s %8s %10s\n' JOB SEED STATE ITER LOSS WORD_ERR%
 for f in "$LOGDIR"/*.out; do
   [[ -f "$f" ]] || continue
   base="${f##*/}"; base="${base%.out}"; seed="${base##*_s}"; job="${base%_s*}"
@@ -32,8 +33,8 @@ for f in "$LOGDIR"/*.out; do
     we="$(grep 'word error' "$f" 2>/dev/null | tail -1 | sed -n 's/.*(\([0-9.]*\)% word error.*/\1/p')"
   fi
   if [[ "$state" == RUN || "$state" == START ]]; then
-    printf '%-32s %5s %6s %8s %8s %10s
-' "$job" "$seed" "$state" "$iter" "$loss" "$we"
+    printf '%-32s %5s %6s %8s %8s %10s\n' "$job" "$seed" "$state" "$iter" "$loss" "$we"
   fi
 done
-echo ---; echo "active: run=$run_n starting=$start_n | finished: done=$done_n fail=$fail_n"
+echo "---"
+echo "active: run=$run_n starting=$start_n | finished: done=$done_n fail=$fail_n"

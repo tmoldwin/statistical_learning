@@ -114,7 +114,7 @@ elif args.exp:
 else:
     timestep_noise_std = 0.0
 
-target_word_error: float | None = args.target_word_error
+target_word_error = args.target_word_error
 if target_word_error is None and args.exp:
     from experiment import EXPERIMENT_CONFIG
     _raw_target = EXPERIMENT_CONFIG.get(args.exp, {}).get("target_word_error_frac")

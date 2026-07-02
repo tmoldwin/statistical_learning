@@ -48,7 +48,7 @@ class VanillaCharRNN(torch.nn.Module):
             x = F.one_hot(input_indices[t], self.vocab_size).to(h.dtype).unsqueeze(1)
             h = torch.tanh(self.W_ih @ x + self.W_hh @ h + self.bias_h)
             logits = self.W_ho @ h + self.bias_o
-            total_loss = total_loss + F.cross_entropy(logits.squeeze(1), target_indices[t:t + 1])
+            total_loss = total_loss + F.cross_entropy(logits.squeeze(1), target_indices[t])
         return total_loss, h
 
     def numpy_weights(self) -> dict[str, np.ndarray]:

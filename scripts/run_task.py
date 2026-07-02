@@ -36,6 +36,7 @@ def train_task(
     seed: int = DEFAULT_SEED,
     model_type: str = "rnn",
     multi_seed: bool = False,
+    save_snapshots: bool = False,
 ) -> None:
     cfg = TASKS[name]
     regime = experiment_regime(name)
@@ -73,6 +74,8 @@ def train_task(
             train_cmd.extend(["--learning-rate", str(cfg["learning_rate"])])
         if "target_word_error_frac" in cfg:
             train_cmd.extend(["--target-word-error", str(cfg["target_word_error_frac"])])
+        if save_snapshots:
+            train_cmd.append("--save-snapshots")
         if model_uses_dale(model_type) and "dale_steps" in cfg:
             steps = 500 if smoke else int(cfg["dale_steps"])
         else:
@@ -136,6 +139,11 @@ def main() -> None:
         help="train multiple seeds; saves model_seed<N>.npz (and model.npz for seed 42)",
     )
     parser.add_argument("--trajectories-only", action="store_true")
+    parser.add_argument(
+        "--save-snapshots", action="store_true",
+        help="record weight snapshots during training (large model files; "
+             "only needed for learning-dynamics videos/analysis)",
+    )
     args = parser.parse_args()
 
     write_vocabulary_diagrams_for_experiment(args.task)
@@ -152,6 +160,7 @@ def main() -> None:
                     seed=seed,
                     model_type=model_type,
                     multi_seed=multi_seed,
+                    save_snapshots=args.save_snapshots,
                 )
             if not args.skip_viz and not multi_seed:
                 visualize_task(

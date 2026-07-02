@@ -77,6 +77,11 @@ parser.add_argument(
     '--target-word-error', type=float, default=None,
     help='stop once mean word error is at or below this fraction (e.g. 0.03 = 3%%)',
 )
+parser.add_argument(
+    '--save-snapshots', action='store_true',
+    help='record weight snapshots during training (large files; only needed '
+         'for learning-dynamics videos/analysis)',
+)
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -531,6 +536,8 @@ METRIC_RNG_BASE = 42
 
 
 def _should_record_weight_snapshot(iteration: int) -> bool:
+    if not args.save_snapshots:
+        return False
     if iteration % WEIGHT_SNAP_EVERY == 0:
         return True
     if iteration <= WEIGHT_SNAP_ULTRA_UNTIL:
@@ -620,7 +627,7 @@ demo_rng_seed = 0
 demo_seed_char = " " if (" " in char_to_index) else text[0]
 
 while iteration < max_iterations:
-  if iteration == 0:
+  if iteration == 0 and args.save_snapshots:
     _append_weight_snapshot(0)
 
   # Step the data pointer through the corpus in chunks of `sequence_length`.
@@ -799,6 +806,18 @@ model_out = args.model
 model_out_parent = os.path.dirname(model_out)
 if model_out_parent:
     os.makedirs(model_out_parent, exist_ok=True)
+# Weight-snapshot history is only saved with --save-snapshots; it dominates
+# file size (GBs for large models) and is only needed for learning-dynamics
+# videos/analysis, which can be regenerated on demand by retraining.
+snapshot_arrays = {}
+if args.save_snapshots:
+    snapshot_arrays = dict(
+        weight_snap_iterations=np.array(weight_snap_iters, dtype=np.int32),
+        weight_snap_outgoing=np.array(weight_snap_outgoing, dtype=np.float32),
+        weight_snap_bias_hidden=np.array(weight_snap_bias_hidden, dtype=np.float32),
+        weight_snap_bias_output=np.array(weight_snap_bias_output, dtype=np.float32),
+        weight_snap_violation_frac=np.array(weight_snap_violation_frac, dtype=np.float64),
+    )
 np.savez(
     model_out,
     weights_input_to_hidden=weights_input_to_hidden,
@@ -817,11 +836,6 @@ np.savez(
     metric_word_error_frac=np.array(metric_word_error_frac, dtype=np.float64),
     best_metric_iter=np.array(best_iter, dtype=np.int32),
     best_metric_word_error_frac=np.array(best_word_err, dtype=np.float64),
-    weight_snap_iterations=np.array(weight_snap_iters, dtype=np.int32),
-    weight_snap_outgoing=np.array(weight_snap_outgoing, dtype=np.float64),
-    weight_snap_bias_hidden=np.array(weight_snap_bias_hidden, dtype=np.float64),
-    weight_snap_bias_output=np.array(weight_snap_bias_output, dtype=np.float64),
-    weight_snap_violation_frac=np.array(weight_snap_violation_frac, dtype=np.float64),
     vocab_words=np.array(sorted(vocab_words)),
     sample_before=np.array(sample_before_text if sample_before_text is not None else ""),
     sample_after=np.array(sample_after_text if sample_after_text is not None else ""),
@@ -836,5 +850,6 @@ np.savez(
     e_fraction=np.array(e_fraction),
     dale_sign=np.array(dale_sign if dale_sign is not None else []),
     timestep_noise_std=np.array(timestep_noise_std, dtype=np.float64),
+    **snapshot_arrays,
 )
 print(f'saved trained model to {model_out}')

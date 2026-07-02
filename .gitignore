@@ -7,7 +7,10 @@ venv/
 .cursor/
 
 # Generated experiment artifacts (run_experiments.py / visualize.py)
-*.npz
+# .npz model files are stored via Git LFS (see .gitattributes). They contain
+# only final weights + training curves (~MBs). Don't commit models trained
+# with --save-snapshots (weight-snapshot history, can be GBs); run
+# scripts/strip_npz_snapshots.py first.
 experiments/**/model.pt
 experiments/**/plots/
 experiments/**/input.txt

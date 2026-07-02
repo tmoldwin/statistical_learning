@@ -7,6 +7,7 @@ from pathlib import Path
 
 from viz.compare.learning_curves import plot_learning_curves
 from viz.compare.geometry import write_trajectory_geometry
+from viz.compare.shape_quantification import plot_shape_quantification
 from viz.compare.spec import ComparisonSpec
 from viz.compare.trajectories import plot_closed_loop_trajectories
 from viz.dimred import EMBED_METHODS
@@ -54,6 +55,7 @@ def _plot_closed_loop_3d_all(
 COMPARISON_KINDS: dict[str, ComparisonFn] = {
     "learning_curves": plot_learning_curves,
     "trajectory_geometry": write_trajectory_geometry,
+    "shape_quantification": plot_shape_quantification,
     "closed_loop_trajectories": _plot_closed_loop_both,
     "closed_loop_trajectories_2d": _plot_closed_loop_2d_all,
     "closed_loop_trajectories_3d": _plot_closed_loop_3d_all,
@@ -83,6 +85,10 @@ def run_comparison(
             out = fn(spec, seeds=run_seeds)
             outputs.append(out)
             print(f"wrote {out}")
+        elif fn is plot_shape_quantification:
+            out = fn(spec, seeds=run_seeds)
+            if out is not None:
+                outputs.append(out)
         elif fn in (_plot_closed_loop_both, _plot_closed_loop_2d_all, _plot_closed_loop_3d_all):
             geom_path = write_trajectory_geometry(spec, seeds=run_seeds)
             outputs.append(geom_path)

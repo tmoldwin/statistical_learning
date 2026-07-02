@@ -181,10 +181,11 @@ def load_model(path: str = "model.npz"):
     if "dale_sign" in data.files:
         ds = data["dale_sign"]
         model["dale_sign"] = ds if len(ds) else None
-    if "weight_snap_iterations" in data.files:
+    if "weight_snap_iterations" in data.files and "weight_snap_outgoing" in data.files:
         model["weight_snap_iterations"] = data["weight_snap_iterations"]
         model["weight_snap_outgoing"] = data["weight_snap_outgoing"]
-        model["weight_snap_violation_frac"] = data["weight_snap_violation_frac"]
+        if "weight_snap_violation_frac" in data.files:
+            model["weight_snap_violation_frac"] = data["weight_snap_violation_frac"]
     if "weight_snap_bias_hidden" in data.files:
         model["weight_snap_bias_hidden"] = data["weight_snap_bias_hidden"]
     if "weight_snap_bias_output" in data.files:
@@ -3062,7 +3063,7 @@ def write_hidden_state_pca_learning_video(
 ) -> None:
     """Animate hidden states in the final-model PCA basis over the learning phase."""
     if "weight_snap_outgoing" not in model:
-        print(f"skip {save_path}: re-run min-char-rnn.py to record weight snapshots")
+        print(f"skip {save_path}: re-run training with --save-snapshots to record weight snapshots")
         return
 
     snaps = np.asarray(model["weight_snap_outgoing"], dtype=float)
@@ -7907,7 +7908,7 @@ def _plot_ei_block_panel(ax, data, iters, title: str) -> object | None:
 def plot_weight_dynamics_over_training(model, save_path: str) -> None:
     """Eight weight heatmaps over training: 4× W_xh + 4× W_hh (EE/EI/IE/II)."""
     if "weight_snap_outgoing" not in model:
-        print(f"skip {save_path}: re-run min-char-rnn.py to record weight snapshots")
+        print(f"skip {save_path}: re-run training with --save-snapshots to record weight snapshots")
         return
 
     snaps = np.asarray(model["weight_snap_outgoing"], dtype=float)

@@ -109,7 +109,7 @@ def train_command(
   cmd = [
     py, "scripts/run_task.py", task,
     "--models", model_type,
-    "--seed", str(seed),
+    "--seeds", str(seed),
     "--skip-viz",
   ]
   if smoke:

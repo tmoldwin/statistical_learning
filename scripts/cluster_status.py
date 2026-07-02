@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sweep status: per-task rollup + running job iter/word-error from logs, NPZ, or .progress files."""
+"""Per-seed sweep status with word accuracy from NPZ, progress files, or logs."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
 from experiment import REPO_ROOT, checkpoint_path
 from viz.compare.spec import COMPARISON_PRESETS
 
-OK_THRESHOLD = 0.15  # word error fraction
+OK_THRESHOLD = 0.15
 
 
 def latest_log_dir(glob_pat: str) -> Path | None:
@@ -36,11 +36,10 @@ def slurm_counts(user: str = "toviah.moldwin") -> tuple[int, int]:
         except (subprocess.CalledProcessError, FileNotFoundError):
             return 0
         return len([ln for ln in out.splitlines() if ln.strip()])
-
     return count(), count("PENDING")
 
 
-def tail_text(path: Path, n: int = 256_000) -> str:
+def tail_text(path: Path, n: int = 512_000) -> str:
     if not path.is_file():
         return ""
     data = path.read_bytes()
@@ -49,9 +48,13 @@ def tail_text(path: Path, n: int = 256_000) -> str:
     return data.decode("utf-8", errors="replace")
 
 
+def word_err_to_acc(word_err_pct: float) -> float:
+    return 100.0 - word_err_pct
+
+
 def parse_log(log_path: Path) -> dict:
     text = tail_text(log_path)
-    info = {"state": "RUN", "iter": None, "loss": None, "word_err": None, "best": None}
+    info: dict = {"state": "RUN", "iter": None, "word_err": None, "best_we": None}
     if "saved trained model" in text:
         info["state"] = "DONE"
     elif "Traceback" in text:
@@ -59,12 +62,12 @@ def parse_log(log_path: Path) -> dict:
     elif ">> /usr/bin/python3 rnn/" not in text:
         info["state"] = "WAIT"
 
-    m = re.findall(r"^iter (\d+), loss: ([0-9.]+)", text, re.M)
+    m = re.findall(r"^iter (\d+), loss:", text, re.M)
     if m:
-        info["iter"] = int(m[-1][0])
-        info["loss"] = float(m[-1][1])
+        info["iter"] = int(m[-1])
     mm = re.findall(r"metric iter (\d+), word_err: ([0-9.]+)%", text, re.M)
     if mm:
+        info["iter"] = int(mm[-1][0])
         info["word_err"] = float(mm[-1][1])
     elif info["state"] == "DONE":
         fm = re.search(r"final word error rate[^:]*: ([0-9.]+)%", text)
@@ -72,7 +75,7 @@ def parse_log(log_path: Path) -> dict:
             info["word_err"] = float(fm.group(1))
     bm = re.search(r"checkpoint from iter \d+ \(([0-9.]+)% word error", text)
     if bm:
-        info["best"] = float(bm.group(1))
+        info["best_we"] = float(bm.group(1))
     return info
 
 
@@ -83,10 +86,7 @@ def read_progress(progress_path: Path) -> dict | None:
     parts = line.split("\t")
     if len(parts) < 2:
         return None
-    out = {"iter": int(parts[0]), "word_err": float(parts[1]) * 100.0}
-    if len(parts) > 2:
-        out["loss"] = float(parts[2])
-    return out
+    return {"iter": int(parts[0]), "word_err": float(parts[1]) * 100.0}
 
 
 def read_npz(npz_path: Path) -> dict:
@@ -94,40 +94,38 @@ def read_npz(npz_path: Path) -> dict:
     final_we = float(d["metric_word_error_frac"][-1]) * 100.0
     best_we = float(d["best_metric_word_error_frac"]) * 100.0
     last_iter = int(d["metric_iterations"][-1]) if len(d["metric_iterations"]) else -1
-    return {"state": "DONE", "iter": last_iter, "word_err": final_we, "best": best_we}
-
-
-def fmt_pct(x: float | None) -> str:
-    return f"{x:.1f}" if x is not None else "-"
-
-
-def fmt_iter(x: int | None) -> str:
-    return str(x) if x is not None else "-"
+    return {"state": "DONE", "iter": last_iter, "word_err": final_we, "best_we": best_we}
 
 
 def job_status(task: str, seed: int, log_dir: Path | None) -> dict:
     ckpt = checkpoint_path(task, "rnn", seed=seed)
     progress = ckpt.parent / f"{ckpt.stem}.progress"
-    log_path = log_dir / f"{task}_s{seed}.out" if log_dir else Path("/dev/null")
+    log_path = log_dir / f"{task}_s{seed}.out" if log_dir else None
 
-    info = parse_log(log_path) if log_dir else {"state": "?", "iter": None, "loss": None, "word_err": None, "best": None}
-
-    prog = read_progress(progress)
-    if prog and info["state"] not in ("DONE", "FAIL"):
-        info.update(prog)
-        info["state"] = "RUN"
-
-    if info["state"] == "DONE" and ckpt.is_file():
+    if ckpt.is_file():
         try:
             info = read_npz(ckpt)
         except Exception:
-            pass
-    elif info["state"] == "DONE" and not ckpt.is_file():
-        info["state"] = "DONE?"
+            info = {"state": "DONE", "iter": None, "word_err": None, "best_we": None}
+    else:
+        info = parse_log(log_path) if log_path else {"state": "WAIT", "iter": None, "word_err": None, "best_we": None}
+        prog = read_progress(progress)
+        if prog:
+            info.update(prog)
+            if info["state"] not in ("FAIL",):
+                info["state"] = "RUN"
 
     info["seed"] = seed
-    info["ok"] = info.get("word_err") is not None and info["word_err"] / 100.0 < OK_THRESHOLD
+    we = info.get("word_err")
+    info["acc"] = word_err_to_acc(we) if we is not None else None
+    best_we = info.get("best_we")
+    info["best_acc"] = word_err_to_acc(best_we) if best_we is not None else None
+    info["ok"] = we is not None and we / 100.0 < OK_THRESHOLD
     return info
+
+
+def fmt_acc(acc: float | None) -> str:
+    return f"{acc:.1f}%" if acc is not None else "  --"
 
 
 def main() -> None:
@@ -139,10 +137,12 @@ def main() -> None:
     spec = COMPARISON_PRESETS[args.preset]
     log_dir = latest_log_dir(args.log_glob)
     running, pending = slurm_counts()
-
     batch = log_dir.name if log_dir else "?"
+
     print(f"=== {datetime.now().isoformat(timespec='seconds')} === {batch}")
     print(f"slurm: running={running} pending={pending}")
+    print(f"acc = 100% - invalid_word_rate  |  ok threshold: word_err < {OK_THRESHOLD*100:.0f}%")
+    print()
 
     total_done = total_fail = total_ok = 0
     total = len(spec.tasks) * len(spec.seeds)
@@ -153,32 +153,19 @@ def main() -> None:
         done = sum(r["state"] == "DONE" for r in rows)
         fail = sum(r["state"] == "FAIL" for r in rows)
         ok = sum(r.get("ok") for r in rows if r["state"] == "DONE")
-        run_rows = [r for r in rows if r["state"] not in ("DONE", "FAIL")]
         total_done += done
         total_fail += fail
         total_ok += ok
 
-        running_bits = []
-        for r in run_rows:
-            if r["iter"] is not None and r.get("word_err") is not None:
-                running_bits.append(f"s{r['seed']}@{r['iter']}/{fmt_pct(r['word_err'])}%")
-            elif r["iter"] is not None:
-                running_bits.append(f"s{r['seed']}@{r['iter']}")
-            else:
-                running_bits.append(f"s{r['seed']}?")
+        print(f"{label}  ({done}/{len(spec.seeds)} done, {ok} ok, {fail} fail)")
+        print(f"  {'seed':>5} {'state':>6} {'iter':>7} {'acc':>8} {'best_acc':>9}")
+        for r in rows:
+            st = r["state"][:6]
+            it = str(r["iter"]) if r["iter"] is not None else "--"
+            print(f"  {r['seed']:5d} {st:>6} {it:>7} {fmt_acc(r.get('acc')):>8} {fmt_acc(r.get('best_acc')):>9}")
+        print()
 
-        run_str = ", ".join(running_bits) if running_bits else "(none)"
-        print(f"{label:12s}  done {done:2d}/{len(spec.seeds)}  ok {ok:2d}  fail {fail}  |  running: {run_str}")
-
-        # Detail for running jobs with any signal
-        detail = [r for r in run_rows if r["iter"] is not None or r.get("word_err") is not None]
-        if detail:
-            print(f"  {'seed':>5} {'iter':>7} {'word_err%':>10} {'best%':>8}")
-            for r in detail:
-                print(f"  {r['seed']:5d} {fmt_iter(r['iter']):>7} {fmt_pct(r.get('word_err')):>10} {fmt_pct(r.get('best')):>8}")
-
-    print("---")
-    print(f"sweep: done {total_done}/{total}  ok(<15% err) {total_ok}  fail {total_fail}")
+    print(f"sweep: {total_done}/{total} done  |  {total_ok} ok  |  {total_fail} fail")
 
 
 if __name__ == "__main__":

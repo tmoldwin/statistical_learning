@@ -14,15 +14,14 @@ if (-not (Test-Path $MobaBash)) { throw "MobaXterm bash not found at $MobaBash" 
 function Invoke-MobaSsh([string]$Command) {
     $cmd = ($Command -replace "`r?`n", " " -replace "\s+", " ").Trim()
     $escaped = $cmd -replace "'", "'\\''"
-    & $MobaBash -lc "ssh $RemoteHost -p 22 -o ConnectTimeout=15 -C -j '$escaped'" 2>&1
+    & $MobaBash -lc "ssh $RemoteHost -p 22 -o ConnectTimeout=15 -o LogLevel=ERROR -C -j '$escaped'" 2>$null
 }
 
 function Show-ClusterStatus {
     $remote = "cd ~/$RemoteRepo && git pull -q 2>/dev/null; python3 scripts/cluster_status.py --log-glob $LogGlob"
     $raw = Invoke-MobaSsh $remote
-    $skip = '(elsc\.huji|LoginServer|PRODUCTION|WARNING|Hostname:|Please exercise|^\s*[_|]|^System\.Management|^From https|^Already up|^Updating |^Fast-forward|^ )'
     foreach ($line in @($raw)) {
-        if ($line -and $line -notmatch $skip) {
+        if ($line -and $line -notmatch '^(From |Already |Updating |Fast-forward|\s*\* )') {
             Write-Host $line
         }
     }

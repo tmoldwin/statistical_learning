@@ -662,6 +662,11 @@ while iteration < max_iterations:
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
     print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%")
+    progress_path = Path(args.model).parent / f"{Path(args.model).stem}.progress"
+    progress_path.write_text(
+        f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
+        encoding="utf-8",
+    )
 
     if (
         iteration >= MIN_CHECKPOINT_ITER

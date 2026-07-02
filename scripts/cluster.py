@@ -118,7 +118,7 @@ def train_command(
   if smoke:
     cmd.append("--smoke")
   inner = " ".join(shlex.quote(part) for part in cmd)
-  return f"cd {shlex.quote(str(repo_dir))} && {inner}"
+  return f"export PYTHONUNBUFFERED=1 && cd {shlex.quote(str(repo_dir))} && {inner}"
 
 
 def submit_jobs(

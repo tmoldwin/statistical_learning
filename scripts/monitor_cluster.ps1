@@ -18,7 +18,7 @@ function Invoke-MobaSsh([string]$Command) {
 }
 
 function Show-ClusterStatus {
-    $remote = "cd ~/$RemoteRepo && git pull -q 2>/dev/null; bash scripts/cluster_status.sh $LogGlob"
+    $remote = "cd ~/$RemoteRepo && git pull -q 2>/dev/null; python3 scripts/cluster_status.py --log-glob $LogGlob"
     $raw = Invoke-MobaSsh $remote
     $skip = '(elsc\.huji|LoginServer|PRODUCTION|WARNING|Hostname:|Please exercise|^\s*[_|]|^System\.Management|^From https|^Already up|^Updating |^Fast-forward|^ )'
     foreach ($line in @($raw)) {

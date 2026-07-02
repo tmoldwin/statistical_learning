@@ -160,6 +160,33 @@ TASKS: dict[str, dict] = {
         "sequence_length": 32,
         "steps": 75_000,
     },
+    "sixteen_word_ns_h500": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "hidden_size": 500,
+    },
+    "sixteen_word_mixed_ns_h500": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "sixteen_word_mixed",
+        "hidden_size": 500,
+        "viz_length": 60,
+        "sequence_length": 16,
+    },
+    "sixteen_word_four_letter_ns_h500": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "sixteen_word_four_letter",
+        "hidden_size": 500,
+        "viz_length": 64,
+        "sequence_length": 16,
+    },
+    "sixteen_word_five_letter_ns_h500": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "sixteen_word_five_letter",
+        "hidden_size": 500,
+        "learning_rate": 0.04,
+        "viz_length": 81,
+        "sequence_length": 32,
+        "steps": 75_000,
+    },
     "fifty_word_ns": dict(_FIFTY_WORD_NS_DEFAULTS),
     "fifty_word_four_letter_ns": {
         **dict(_FIFTY_WORD_NS_DEFAULTS),

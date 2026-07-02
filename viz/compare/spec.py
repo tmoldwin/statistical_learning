@@ -25,6 +25,20 @@ _SIXTEEN_WORD_LENGTH_LABELS = {
     "sixteen_word_mixed_ns": "mixed length",
 }
 
+_SIXTEEN_WORD_LENGTH_TASKS_H500 = (
+    "sixteen_word_ns_h500",
+    "sixteen_word_four_letter_ns_h500",
+    "sixteen_word_five_letter_ns_h500",
+    "sixteen_word_mixed_ns_h500",
+)
+
+_SIXTEEN_WORD_LENGTH_LABELS_H500 = {
+    "sixteen_word_ns_h500": "3-letter",
+    "sixteen_word_four_letter_ns_h500": "4-letter",
+    "sixteen_word_five_letter_ns_h500": "5-letter",
+    "sixteen_word_mixed_ns_h500": "mixed length",
+}
+
 _FIFTY_WORD_LENGTH_TASKS = (
     "fifty_word_ns",
     "fifty_word_four_letter_ns",
@@ -95,6 +109,13 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
         tasks=_SIXTEEN_WORD_LENGTH_TASKS,
         labels=dict(_SIXTEEN_WORD_LENGTH_LABELS),
         title="16-word vocabularies (no spaces): training",
+    ),
+    "sixteen_word_lengths_ns_h500": ComparisonSpec(
+        name="sixteen_word_lengths_ns_h500",
+        tasks=_SIXTEEN_WORD_LENGTH_TASKS_H500,
+        labels=dict(_SIXTEEN_WORD_LENGTH_LABELS_H500),
+        title="16-word vocabularies (no spaces, 500 units): closed-loop trajectories",
+        seeds=GEOMETRY_STATS_SEEDS,
     ),
     "fifty_word_lengths_ns": ComparisonSpec(
         name="fifty_word_lengths_ns",

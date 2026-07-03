@@ -65,9 +65,7 @@ def _checkpoint_training_stats(
         return None
     final_we = float(data["metric_word_error_frac"][-1]) * 100.0
     best_we = float(data["best_metric_word_error_frac"]) * 100.0
-    if "metric_eval_ce" in data.files and len(data["metric_eval_ce"]):
-        final_ce = float(data["metric_eval_ce"][-1])
-    elif "loss_smooth" in data.files:
+    if "loss_smooth" in data.files:
         seq = float(data["sequence_length"]) if "sequence_length" in data.files else 1.0
         final_ce = float(data["loss_smooth"][-1]) / max(seq, 1.0)
     else:
@@ -95,7 +93,7 @@ def plot_learning_summary(
     metric_specs = (
         ("final_word_err_pct", "final % OOV chars"),
         ("best_word_err_pct", "best % OOV chars"),
-        ("final_ce", "final eval CE / char"),
+        ("final_ce", "final cross-entropy / char"),
         ("final_iter", "training iterations"),
     )
     groups_by_key: dict[str, list[tuple[list[float], list[int]]]] = {

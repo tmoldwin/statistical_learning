@@ -17,11 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiment import experiment_regime
-from rnn.rollout_metrics import (
-    METRIC_RNG_BASE,
-    stochastic_word_validity_metrics,
-    teacher_forced_eval_ce,
-)
+from rnn.rollout_metrics import METRIC_RNG_BASE, stochastic_word_validity_metrics
 from task import REGIMES
 from vocab_diagrams import invalid_word_fraction
 
@@ -149,7 +145,6 @@ def main() -> None:
     metric_iters: list[int] = []
     metric_valid_letter_frac: list[float] = []
     metric_word_error_frac: list[float] = []
-    metric_eval_ce: list[float] = []
 
     best_word_err = float("inf")
     best_iter = -1
@@ -211,20 +206,9 @@ def main() -> None:
                 corpus_text=text,
                 prompt_len=sequence_length,
             )
-            eval_ce = teacher_forced_eval_ce(
-                weights,
-                hidden_size=hidden_size,
-                vocab_size=vocab_size,
-                char_to_index=char_to_index,
-                corpus_text=text,
-                use_relu=False,
-                rng=metric_rng,
-                burn_in=sequence_length,
-            )
             metric_iters.append(iteration)
             metric_valid_letter_frac.append(letter_frac)
             metric_word_error_frac.append(word_err)
-            metric_eval_ce.append(eval_ce)
 
             if iteration >= min_checkpoint_iter and vocab_words and np.isfinite(word_err):
                 if word_err < best_word_err:
@@ -318,7 +302,6 @@ def main() -> None:
         metric_iterations=np.array(metric_iters, dtype=np.int32),
         metric_valid_vocab_letter_frac=np.array(metric_valid_letter_frac, dtype=np.float64),
         metric_word_error_frac=np.array(metric_word_error_frac, dtype=np.float64),
-        metric_eval_ce=np.array(metric_eval_ce, dtype=np.float64),
         best_metric_iter=np.array(best_iter, dtype=np.int32),
         best_metric_word_error_frac=np.array(best_word_err, dtype=np.float64),
         vocab_words=np.array(sorted(vocab_words)),

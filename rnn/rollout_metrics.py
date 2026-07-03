@@ -66,61 +66,6 @@ def _stochastic_rollout(
     return "".join(index_to_char[i] for i in indices)
 
 
-def teacher_forced_eval_ce(
-    weights: dict[str, np.ndarray],
-    *,
-    hidden_size: int,
-    vocab_size: int,
-    char_to_index: dict[str, int],
-    corpus_text: str,
-    use_relu: bool,
-    rng: np.random.Generator,
-    segment_len: int = 200,
-    burn_in: int = 8,
-    num_segments: int = 4,
-    timestep_noise_std: float = 0.0,
-) -> float:
-    """Teacher-forced cross-entropy (nats/char) on random corpus segments from a zero state.
-
-    The recorded training loss runs on a hidden state carried across the whole
-    corpus; a multistable RNN can predict well along that privileged trajectory
-    while being far worse from any fresh state. Starting from zero state (with a
-    short burn-in, like the rollout metric) measures the model as it is actually
-    used, so this curve moves together with the OOV rollout metric.
-    """
-    w_ih = weights["weights_input_to_hidden"]
-    w_hh = weights["weights_hidden_to_hidden"]
-    w_ho = weights["weights_hidden_to_output"]
-    b_h = weights["bias_hidden"]
-    b_o = weights["bias_output"]
-
-    total = 0.0
-    count = 0
-    span = segment_len + burn_in + 1
-    for _ in range(num_segments):
-        if len(corpus_text) <= span:
-            start = 0
-        else:
-            start = int(rng.integers(0, len(corpus_text) - span))
-        segment = corpus_text[start : start + span]
-        hidden_state = np.zeros((hidden_size, 1))
-        input_one_hot = np.zeros((vocab_size, 1))
-        input_one_hot[char_to_index[segment[0]]] = 1
-        for t in range(1, len(segment)):
-            hidden_state, _ = rnn_hidden_step(
-                hidden_state, input_one_hot, w_ih, w_hh, b_h,
-                use_relu=use_relu, timestep_noise_std=timestep_noise_std, noise_rng=rng,
-            )
-            probs = stable_softmax(w_ho @ hidden_state + b_o)
-            target = char_to_index[segment[t]]
-            if t > burn_in:
-                total += -np.log(max(float(probs[target, 0]), 1e-12))
-                count += 1
-            input_one_hot = np.zeros((vocab_size, 1))
-            input_one_hot[target] = 1
-    return (total / count) if count else float("nan")
-
-
 def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str], *, use_word_segmentation: bool) -> float:
     if not vocab:
         return float("nan")

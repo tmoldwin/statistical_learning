@@ -47,7 +47,6 @@ from rnn.rnn_dyn import (
     stable_softmax,
 )
 from experiment import experiment_regime
-from rnn.rollout_metrics import teacher_forced_eval_ce
 from task import REGIMES
 from vocab_diagrams import corpus_middle_snippet, invalid_word_fraction, oov_char_fraction, segment_corpus_by_words
 
@@ -494,35 +493,6 @@ def rollout_word_validity_metrics(
 stochastic_word_validity_metrics = rollout_word_validity_metrics
 
 
-def eval_ce_per_char(rng: np.random.Generator) -> float:
-    """Teacher-forced CE (nats/char) from zero state on random corpus segments.
-
-    The smoothed training loss rides on a hidden state carried across the whole
-    corpus; a multistable RNN can predict well along that trajectory while being
-    far worse from a fresh state (which is what the rollout metric, and any real
-    use of the checkpoint, sees). This eval CE is the honest learning curve.
-    """
-    return teacher_forced_eval_ce(
-        {
-            "weights_input_to_hidden": weights_input_to_hidden,
-            "weights_hidden_to_hidden": weights_hidden_to_hidden,
-            "weights_hidden_to_output": weights_hidden_to_output,
-            "bias_hidden": bias_hidden,
-            "bias_output": bias_output,
-        },
-        hidden_size=hidden_size,
-        vocab_size=vocab_size,
-        char_to_index=char_to_index,
-        corpus_text=text,
-        use_relu=use_relu,
-        rng=rng,
-        segment_len=METRIC_ROLLOUT_LEN,
-        burn_in=sequence_length,
-        num_segments=METRIC_NUM_ROLLOUTS,
-        timestep_noise_std=timestep_noise_std,
-    )
-
-
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
     """Fraction of in-vocab words; first/last tokens per rollout are dropped (edge trim)."""
     from vocab_diagrams import invalid_word_fraction as _invalid_word_fraction
@@ -570,7 +540,6 @@ loss_window = []
 metric_iters = []
 metric_valid_letter_frac = []
 metric_word_error_frac = []
-metric_eval_ce: list[float] = []
 metric_rollout_samples: list[str] = []
 
 weight_snap_iters: list[int] = []
@@ -711,13 +680,11 @@ while iteration < max_iterations:
     word_err, letter_frac, rollout_text = stochastic_word_validity_metrics(
         metric_seed, vocab_words, rng=metric_rng,
     )
-    eval_ce = eval_ce_per_char(metric_rng)
     metric_iters.append(iteration)
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
-    metric_eval_ce.append(eval_ce)
     metric_rollout_samples.append(rollout_text[:METRIC_ROLLOUT_LEN])
-    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%, eval CE: {eval_ce:.3f}/char")
+    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%")
     progress_path = Path(args.model).parent / f"{Path(args.model).stem}.progress"
     progress_path.write_text(
         f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
@@ -911,7 +878,6 @@ np.savez(
     metric_iterations=np.array(metric_iters, dtype=np.int32),
     metric_valid_vocab_letter_frac=np.array(metric_valid_letter_frac, dtype=np.float64),
     metric_word_error_frac=np.array(metric_word_error_frac, dtype=np.float64),
-    metric_eval_ce=np.array(metric_eval_ce, dtype=np.float64),
     metric_rollout_samples=np.array(metric_rollout_samples, dtype=f"U{METRIC_ROLLOUT_LEN}"),
     best_metric_iter=np.array(best_iter, dtype=np.int32),
     best_metric_word_error_frac=np.array(best_word_err, dtype=np.float64),

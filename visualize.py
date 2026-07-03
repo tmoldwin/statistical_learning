@@ -148,8 +148,6 @@ def load_model(path: str = "model.npz"):
         model["metric_valid_vocab_letter_frac"] = data["metric_valid_vocab_letter_frac"]
     if "metric_word_error_frac" in data.files:
         model["metric_word_error_frac"] = data["metric_word_error_frac"]
-    if "metric_eval_ce" in data.files:
-        model["metric_eval_ce"] = data["metric_eval_ce"]
     if "metric_rollout_samples" in data.files:
         model["metric_rollout_samples"] = [str(s) for s in data["metric_rollout_samples"]]
     if "vocab_words" in data.files:
@@ -3329,16 +3327,6 @@ def _learning_curve_series(
     smoothed: bool = False,
     sequence_length: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray, str] | None:
-    # Prefer the eval CE (teacher-forced from zero state, same conditions as the
-    # rollout metric). The smoothed training loss rides on a hidden state carried
-    # across the whole corpus and can sit at the entropy floor while the model is
-    # far worse from any fresh state (multistable RNNs), so it is not an honest
-    # learning curve.
-    if "metric_eval_ce" in model and "metric_iterations" in model:
-        eval_ce = np.asarray(model["metric_eval_ce"], dtype=float)
-        eval_iters = np.asarray(model["metric_iterations"], dtype=int)
-        if eval_ce.size == eval_iters.size and eval_ce.size > 0:
-            return eval_iters, eval_ce, "eval cross-entropy / char"
     if "loss_iterations" not in model:
         return None
     iters = np.asarray(model["loss_iterations"], dtype=int)

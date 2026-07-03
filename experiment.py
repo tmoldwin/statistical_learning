@@ -103,6 +103,22 @@ _SIXTEEN_WORD_SPACED_DEFAULTS: dict[str, object] = {
     "word_space": True,
 }
 
+_MICRO_CURRICULUM_NS_DEFAULTS: dict[str, object] = {
+    "word_space": False,
+    "chars": 20_000,
+    "steps": 15_000,
+    "target_word_error_frac": 0.03,
+    "early_stop_patience": 3,
+    "min_checkpoint_iter": 1_000,
+    "viz_length": 18,
+    "demo_snippet_len": 80,
+    "hidden_size": 100,
+    "sequence_length": 8,
+    "eval_interval": 50,
+    "eval_iterations": 20,
+    "metric_rollout_len": 200,
+}
+
 _FIFTY_WORD_NS_DEFAULTS: dict[str, object] = {
     "regime": "fifty_word",
     "word_space": False,
@@ -166,7 +182,7 @@ TASKS: dict[str, dict] = {
         "learning_rate": 0.04,
         "eval_interval": 500,
         "metric_rollout_len": 500,
-        "metric_num_rollouts": 2,
+        "metric_num_rollouts": 1,
     },
     "sixteen_word_mixed_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -177,7 +193,7 @@ TASKS: dict[str, dict] = {
         "sequence_length": 16,
         "eval_interval": 500,
         "metric_rollout_len": 500,
-        "metric_num_rollouts": 2,
+        "metric_num_rollouts": 1,
     },
     "sixteen_word_four_letter_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -188,7 +204,7 @@ TASKS: dict[str, dict] = {
         "sequence_length": 16,
         "eval_interval": 500,
         "metric_rollout_len": 500,
-        "metric_num_rollouts": 2,
+        "metric_num_rollouts": 1,
     },
     "sixteen_word_five_letter_ns_h500": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
@@ -200,7 +216,7 @@ TASKS: dict[str, dict] = {
         "steps": 75_000,
         "eval_interval": 500,
         "metric_rollout_len": 500,
-        "metric_num_rollouts": 2,
+        "metric_num_rollouts": 1,
     },
     "fifty_word_ns": dict(_FIFTY_WORD_NS_DEFAULTS),
     "fifty_word_four_letter_ns": {
@@ -217,6 +233,34 @@ TASKS: dict[str, dict] = {
         "viz_length": 251,  # 50 × 5 + 1
         "sequence_length": 32,
         "steps": 150_000,
+    },
+    "two_word_disjoint_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "two_word_disjoint",
+        "viz_length": 12,
+    },
+    "two_word_pos_overlap_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "two_word_pos_overlap",
+        "viz_length": 12,
+    },
+    "two_word_prefix_branch_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "two_word_prefix_branch",
+        "viz_length": 12,
+    },
+    "three_word_overlap_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "three_word_overlap",
+    },
+    "three_word_permutation_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "three_word_permutation",
+        "timestep_noise_std": 0.05,
+    },
+    "three_word_ca_hub_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "three_word_ca_hub",
     },
 }
 

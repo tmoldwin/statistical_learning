@@ -47,8 +47,9 @@ from rnn.rnn_dyn import (
     stable_softmax,
 )
 from experiment import experiment_regime
+from rnn.rollout_metrics import teacher_forced_eval_ce
 from task import REGIMES
-from vocab_diagrams import invalid_word_fraction, segment_corpus_by_words
+from vocab_diagrams import corpus_middle_snippet, invalid_word_fraction, oov_char_fraction, segment_corpus_by_words
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--steps', type=int, default=2000,
@@ -130,7 +131,7 @@ if target_word_error is None and args.exp:
 early_stop_patience = 3
 eval_interval = 100
 metric_rollout_len = 1000
-metric_num_rollouts = 2
+metric_num_rollouts = 4
 if args.exp:
     from experiment import EXPERIMENT_CONFIG
     _exp_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
@@ -344,7 +345,7 @@ def argmax_sample(hidden_state, seed_index, num_chars_to_sample):
   return sampled_indices
 
 
-def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
+def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int, *, noise_std: float | None = None):
   """
   Deterministic sampling, conditioned on a prompt sequence.
   We "teacher-force" the prompt by feeding its characters as the next inputs,
@@ -353,6 +354,8 @@ def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
   """
   if not prompt_text:
     return []
+  eval_noise = timestep_noise_std if noise_std is None else noise_std
+  metric_noise_rng = noise_rng if eval_noise > 0 else None
   hidden_state = np.zeros((hidden_size, 1))
   input_one_hot = np.zeros((vocab_size, 1))
   input_one_hot[char_to_index[prompt_text[0]]] = 1
@@ -363,8 +366,8 @@ def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
-        timestep_noise_std=timestep_noise_std,
-        noise_rng=noise_rng,
+        timestep_noise_std=eval_noise,
+        noise_rng=metric_noise_rng,
     )
     # Advance input to the true next prompt char.
     input_one_hot = np.zeros((vocab_size, 1))
@@ -377,8 +380,8 @@ def argmax_sample_with_prompt(prompt_text: str, num_chars_to_sample: int):
         hidden_state, input_one_hot,
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
         use_relu=use_relu,
-        timestep_noise_std=timestep_noise_std,
-        noise_rng=noise_rng,
+        timestep_noise_std=eval_noise,
+        noise_rng=metric_noise_rng,
     )
     logits = np.dot(weights_hidden_to_output, hidden_state) + bias_output
     probs = stable_softmax(logits)
@@ -455,27 +458,69 @@ def sample_from_seed_char(seed_char: str, num_chars_to_sample: int, *, rng: np.r
   return sampled_indices
 
 
-def stochastic_word_validity_metrics(
+def rollout_word_validity_metrics(
     seed_index: int,
     vocab: set[str],
     *,
     rng: np.random.Generator,
 ) -> tuple[float, float, str]:
-    """Mean invalid-word rate and in-vocab letter frac over several long rollouts."""
-    word_errs: list[float] = []
+    """Mean OOV-char fraction over stochastic rollouts warm-started from corpus prefixes.
+
+    Teacher-forcing a random corpus prompt puts the rollout on the same state
+    distribution as the teacher-forced CE, so both learning curves track the
+    same model behavior. Sampling at temperature 1 matches the (stochastic)
+    data distribution; greedy decoding would collapse to a single cycle.
+    Char-level scoring (fraction of chars outside vocab words) matches the
+    green/red text coloring and is robust to long invalid stretches.
+    """
+    char_errs: list[float] = []
     letter_fracs: list[float] = []
-    first_text = ""
+    example_text = ""
     for r in range(METRIC_NUM_ROLLOUTS):
-        h0 = np.zeros((hidden_size, 1))
-        indices = sample(h0, seed_index, METRIC_ROLLOUT_LEN, rng=rng)
-        text = "".join(index_to_char[i] for i in indices)
+        if text and sequence_length > 0 and len(text) > sequence_length:
+            start = int(rng.integers(0, len(text) - sequence_length))
+            prompt = text[start : start + sequence_length]
+        else:
+            prompt = index_to_char[seed_index]
+        indices = sample_with_prompt(prompt, METRIC_ROLLOUT_LEN, rng=rng)
+        rollout = "".join(index_to_char[i] for i in indices)
         if r == 0:
-            first_text = text
-        word_errs.append(invalid_word_fraction(text, vocab))
-        letter_fracs.append(valid_vocab_letter_fraction(text, vocab))
-    word_err = float(np.nanmean(word_errs))
-    letter_frac = float(np.nanmean(letter_fracs))
-    return word_err, letter_frac, first_text
+            example_text = rollout
+        char_errs.append(oov_char_fraction(rollout, vocab, spaced=not use_word_segmentation))
+        letter_fracs.append(valid_vocab_letter_fraction(rollout, vocab))
+    return float(np.nanmean(char_errs)), float(np.nanmean(letter_fracs)), example_text
+
+
+stochastic_word_validity_metrics = rollout_word_validity_metrics
+
+
+def eval_ce_per_char(rng: np.random.Generator) -> float:
+    """Teacher-forced CE (nats/char) from zero state on random corpus segments.
+
+    The smoothed training loss rides on a hidden state carried across the whole
+    corpus; a multistable RNN can predict well along that trajectory while being
+    far worse from a fresh state (which is what the rollout metric, and any real
+    use of the checkpoint, sees). This eval CE is the honest learning curve.
+    """
+    return teacher_forced_eval_ce(
+        {
+            "weights_input_to_hidden": weights_input_to_hidden,
+            "weights_hidden_to_hidden": weights_hidden_to_hidden,
+            "weights_hidden_to_output": weights_hidden_to_output,
+            "bias_hidden": bias_hidden,
+            "bias_output": bias_output,
+        },
+        hidden_size=hidden_size,
+        vocab_size=vocab_size,
+        char_to_index=char_to_index,
+        corpus_text=text,
+        use_relu=use_relu,
+        rng=rng,
+        segment_len=METRIC_ROLLOUT_LEN,
+        burn_in=sequence_length,
+        num_segments=METRIC_NUM_ROLLOUTS,
+        timestep_noise_std=timestep_noise_std,
+    )
 
 
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
@@ -525,6 +570,8 @@ loss_window = []
 metric_iters = []
 metric_valid_letter_frac = []
 metric_word_error_frac = []
+metric_eval_ce: list[float] = []
+metric_rollout_samples: list[str] = []
 
 weight_snap_iters: list[int] = []
 weight_snap_outgoing: list[np.ndarray] = []
@@ -622,9 +669,15 @@ def restore_params(state: dict[str, np.ndarray]) -> None:
 sample_before_text = None
 sample_after_text = None
 
-# Fixed-length snippets for samples_before_after.png (same length as viz window).
-DEMO_SNIPPET_LEN = 50
-demo_snippet = text[:DEMO_SNIPPET_LEN]
+# Fixed-length snippets for samples_before_after.png and learning-curve rollouts.
+DEMO_SNIPPET_LEN = 80
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    _snippet_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+    DEMO_SNIPPET_LEN = int(
+        _snippet_cfg.get("demo_snippet_len", _snippet_cfg.get("viz_length", DEMO_SNIPPET_LEN))
+    )
+demo_snippet = corpus_middle_snippet(text, DEMO_SNIPPET_LEN)
 demo_before = None
 demo_after = None
 demo_word_error_frac = float("nan")
@@ -658,10 +711,13 @@ while iteration < max_iterations:
     word_err, letter_frac, rollout_text = stochastic_word_validity_metrics(
         metric_seed, vocab_words, rng=metric_rng,
     )
+    eval_ce = eval_ce_per_char(metric_rng)
     metric_iters.append(iteration)
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
-    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%")
+    metric_eval_ce.append(eval_ce)
+    metric_rollout_samples.append(rollout_text[:METRIC_ROLLOUT_LEN])
+    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%, eval CE: {eval_ce:.3f}/char")
     progress_path = Path(args.model).parent / f"{Path(args.model).stem}.progress"
     progress_path.write_text(
         f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
@@ -674,10 +730,19 @@ while iteration < max_iterations:
         and np.isfinite(word_err)
     ):
         if word_err < best_word_err:
-            best_word_err = word_err
-            best_valid_letter_frac = letter_frac
-            best_iter = iteration
-            best_state = copy.deepcopy(snapshot_params())
+            # Confirm with an independent eval before trusting a new best: the
+            # rollout metric is noisy/bimodal mid-training and a single lucky
+            # eval must not decide which weights get checkpointed.
+            confirm_rng = np.random.default_rng(METRIC_RNG_BASE + iteration + 1_000_003)
+            confirm_err, _, _ = stochastic_word_validity_metrics(
+                metric_seed, vocab_words, rng=confirm_rng,
+            )
+            confirmed_err = max(word_err, confirm_err)
+            if confirmed_err < best_word_err:
+                best_word_err = confirmed_err
+                best_valid_letter_frac = letter_frac
+                best_iter = iteration
+                best_state = copy.deepcopy(snapshot_params())
         if word_err <= _stop_threshold:
             target_met_streak += 1
         else:
@@ -794,8 +859,8 @@ demo_after = rollout_text[:DEMO_SNIPPET_LEN]
 demo_word_error_frac = invalid_word_fraction(rollout_text, vocab_words)
 
 print(
-    f"final word error rate (mean over {METRIC_NUM_ROLLOUTS} rollouts × "
-    f"{METRIC_ROLLOUT_LEN} chars, stochastic; edge tokens trimmed): "
+    f"final OOV-char rate (mean over {METRIC_NUM_ROLLOUTS} stochastic rollouts × "
+    f"{METRIC_ROLLOUT_LEN} chars, corpus-conditioned; boundary chars trimmed): "
     f"{100.0 * final_word_err:.2f}%",
 )
 print(
@@ -839,12 +904,15 @@ np.savez(
     chars=np.array(unique_chars),
     hidden_size=np.array(hidden_size),
     vocab_size=np.array(vocab_size),
+    sequence_length=np.array(sequence_length, dtype=np.int32),
     loss_iterations=np.array(loss_iterations, dtype=np.int32),
     loss_smooth=np.array(loss_smooth, dtype=np.float64),
     loss_window=np.array(loss_window, dtype=np.float64),
     metric_iterations=np.array(metric_iters, dtype=np.int32),
     metric_valid_vocab_letter_frac=np.array(metric_valid_letter_frac, dtype=np.float64),
     metric_word_error_frac=np.array(metric_word_error_frac, dtype=np.float64),
+    metric_eval_ce=np.array(metric_eval_ce, dtype=np.float64),
+    metric_rollout_samples=np.array(metric_rollout_samples, dtype=f"U{METRIC_ROLLOUT_LEN}"),
     best_metric_iter=np.array(best_iter, dtype=np.int32),
     best_metric_word_error_frac=np.array(best_word_err, dtype=np.float64),
     vocab_words=np.array(sorted(vocab_words)),

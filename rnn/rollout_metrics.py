@@ -5,34 +5,52 @@ from __future__ import annotations
 import numpy as np
 
 from rnn.rnn_dyn import rnn_hidden_step, stable_softmax
-from vocab_diagrams import invalid_word_fraction, segment_corpus_by_words
+from vocab_diagrams import oov_char_fraction, segment_corpus_by_words
 
 METRIC_ROLLOUT_LEN = 500
-METRIC_NUM_ROLLOUTS = 2
+METRIC_NUM_ROLLOUTS = 4
 METRIC_RNG_BASE = 42
 
 
-def _sample_rollout(
+def _stochastic_rollout(
     weights: dict[str, np.ndarray],
     *,
     hidden_size: int,
     vocab_size: int,
+    char_to_index: dict[str, int],
     index_to_char: dict[int, str],
-    seed_index: int,
+    prompt: str,
     num_chars: int,
     use_relu: bool,
     timestep_noise_std: float,
     rng: np.random.Generator,
 ) -> str:
+    """Teacher-force ``prompt`` from zero state, then sample ``num_chars`` at temperature 1.
+
+    Warm-starting from corpus context puts the rollout on the same state
+    distribution as the teacher-forced cross-entropy, so the two learning
+    curves measure the same model behavior (prediction vs. generation).
+    """
     w_ih = weights["weights_input_to_hidden"]
     w_hh = weights["weights_hidden_to_hidden"]
     w_ho = weights["weights_hidden_to_output"]
     b_h = weights["bias_hidden"]
     b_o = weights["bias_output"]
 
+    if not prompt:
+        return ""
+
     hidden_state = np.zeros((hidden_size, 1))
     input_one_hot = np.zeros((vocab_size, 1))
-    input_one_hot[seed_index] = 1
+    input_one_hot[char_to_index[prompt[0]]] = 1
+    for ch_next in prompt[1:]:
+        hidden_state, _ = rnn_hidden_step(
+            hidden_state, input_one_hot, w_ih, w_hh, b_h,
+            use_relu=use_relu, timestep_noise_std=timestep_noise_std, noise_rng=rng,
+        )
+        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot[char_to_index[ch_next]] = 1
+
     indices: list[int] = []
     for _ in range(num_chars):
         hidden_state, _ = rnn_hidden_step(
@@ -41,11 +59,66 @@ def _sample_rollout(
         )
         logits = w_ho @ hidden_state + b_o
         probs = stable_softmax(logits)
-        next_index = int(rng.choice(range(vocab_size), p=probs.ravel()))
+        next_index = int(rng.choice(vocab_size, p=probs.ravel()))
+        indices.append(next_index)
         input_one_hot = np.zeros((vocab_size, 1))
         input_one_hot[next_index] = 1
-        indices.append(next_index)
     return "".join(index_to_char[i] for i in indices)
+
+
+def teacher_forced_eval_ce(
+    weights: dict[str, np.ndarray],
+    *,
+    hidden_size: int,
+    vocab_size: int,
+    char_to_index: dict[str, int],
+    corpus_text: str,
+    use_relu: bool,
+    rng: np.random.Generator,
+    segment_len: int = 200,
+    burn_in: int = 8,
+    num_segments: int = 4,
+    timestep_noise_std: float = 0.0,
+) -> float:
+    """Teacher-forced cross-entropy (nats/char) on random corpus segments from a zero state.
+
+    The recorded training loss runs on a hidden state carried across the whole
+    corpus; a multistable RNN can predict well along that privileged trajectory
+    while being far worse from any fresh state. Starting from zero state (with a
+    short burn-in, like the rollout metric) measures the model as it is actually
+    used, so this curve moves together with the OOV rollout metric.
+    """
+    w_ih = weights["weights_input_to_hidden"]
+    w_hh = weights["weights_hidden_to_hidden"]
+    w_ho = weights["weights_hidden_to_output"]
+    b_h = weights["bias_hidden"]
+    b_o = weights["bias_output"]
+
+    total = 0.0
+    count = 0
+    span = segment_len + burn_in + 1
+    for _ in range(num_segments):
+        if len(corpus_text) <= span:
+            start = 0
+        else:
+            start = int(rng.integers(0, len(corpus_text) - span))
+        segment = corpus_text[start : start + span]
+        hidden_state = np.zeros((hidden_size, 1))
+        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot[char_to_index[segment[0]]] = 1
+        for t in range(1, len(segment)):
+            hidden_state, _ = rnn_hidden_step(
+                hidden_state, input_one_hot, w_ih, w_hh, b_h,
+                use_relu=use_relu, timestep_noise_std=timestep_noise_std, noise_rng=rng,
+            )
+            probs = stable_softmax(w_ho @ hidden_state + b_o)
+            target = char_to_index[segment[t]]
+            if t > burn_in:
+                total += -np.log(max(float(probs[target, 0]), 1e-12))
+                count += 1
+            input_one_hot = np.zeros((vocab_size, 1))
+            input_one_hot[target] = 1
+    return (total / count) if count else float("nan")
 
 
 def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str], *, use_word_segmentation: bool) -> float:
@@ -60,35 +133,60 @@ def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str], *, use_word_
     return (valid_letters / total_letters) if total_letters > 0 else float("nan")
 
 
-def stochastic_word_validity_metrics(
+def rollout_word_validity_metrics(
     weights: dict[str, np.ndarray],
     *,
     hidden_size: int,
     vocab_size: int,
     index_to_char: dict[int, str],
+    char_to_index: dict[str, int],
     seed_index: int,
     vocab: set[str],
     use_word_segmentation: bool,
     use_relu: bool,
-    timestep_noise_std: float,
     rng: np.random.Generator,
+    corpus_text: str = "",
+    prompt_len: int = 0,
     rollout_len: int | None = None,
     num_rollouts: int | None = None,
+    timestep_noise_std: float = 0.0,
 ) -> tuple[float, float, str]:
+    """
+    Mean out-of-vocabulary character fraction over stochastic rollouts
+    warm-started from random corpus prefixes (teacher-forced). Returned text is
+    one example rollout (r=0). Only boundary-truncatable chars are trimmed.
+    """
     rollout_len = METRIC_ROLLOUT_LEN if rollout_len is None else rollout_len
     num_rollouts = METRIC_NUM_ROLLOUTS if num_rollouts is None else num_rollouts
     word_errs: list[float] = []
     letter_fracs: list[float] = []
-    first_text = ""
+    example_text = ""
+    spaced = not use_word_segmentation
+
     for r in range(num_rollouts):
-        rollout_rng = np.random.default_rng(int(rng.integers(0, 2**31 - 1)))
-        text = _sample_rollout(
-            weights, hidden_size=hidden_size, vocab_size=vocab_size,
-            index_to_char=index_to_char, seed_index=seed_index, num_chars=rollout_len,
-            use_relu=use_relu, timestep_noise_std=timestep_noise_std, rng=rollout_rng,
+        if corpus_text and prompt_len > 0 and len(corpus_text) > prompt_len:
+            start = int(rng.integers(0, len(corpus_text) - prompt_len))
+            prompt = corpus_text[start : start + prompt_len]
+        else:
+            prompt = index_to_char[seed_index]
+        text = _stochastic_rollout(
+            weights,
+            hidden_size=hidden_size,
+            vocab_size=vocab_size,
+            char_to_index=char_to_index,
+            index_to_char=index_to_char,
+            prompt=prompt,
+            num_chars=rollout_len,
+            use_relu=use_relu,
+            timestep_noise_std=timestep_noise_std,
+            rng=rng,
         )
         if r == 0:
-            first_text = text
-        word_errs.append(invalid_word_fraction(text, vocab, spaced=not use_word_segmentation, trim_edges=True))
+            example_text = text
+        word_errs.append(oov_char_fraction(text, vocab, spaced=spaced))
         letter_fracs.append(valid_vocab_letter_fraction(text, vocab, use_word_segmentation=use_word_segmentation))
-    return float(np.nanmean(word_errs)), float(np.nanmean(letter_fracs)), first_text
+    return float(np.nanmean(word_errs)), float(np.nanmean(letter_fracs)), example_text
+
+
+# Backward-compatible alias
+stochastic_word_validity_metrics = rollout_word_validity_metrics

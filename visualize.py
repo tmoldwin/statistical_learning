@@ -126,7 +126,7 @@ from vocab_diagrams import (
 
 
 def load_model(path: str = "model.npz"):
-    data = np.load(path, allow_pickle=False)
+    data = np.load(path, allow_pickle=True)
     model = {
         "weights_input_to_hidden":  data["weights_input_to_hidden"],
         "weights_hidden_to_hidden": data["weights_hidden_to_hidden"],
@@ -137,6 +137,8 @@ def load_model(path: str = "model.npz"):
         "hidden_size":              int(data["hidden_size"]),
         "vocab_size":               int(data["vocab_size"]),
     }
+    if "sequence_length" in data.files:
+        model["sequence_length"] = int(data["sequence_length"])
     if "loss_iterations" in data.files:
         model["loss_iterations"] = data["loss_iterations"]
         model["loss_smooth"] = data["loss_smooth"]
@@ -144,6 +146,12 @@ def load_model(path: str = "model.npz"):
     if "metric_iterations" in data.files:
         model["metric_iterations"] = data["metric_iterations"]
         model["metric_valid_vocab_letter_frac"] = data["metric_valid_vocab_letter_frac"]
+    if "metric_word_error_frac" in data.files:
+        model["metric_word_error_frac"] = data["metric_word_error_frac"]
+    if "metric_eval_ce" in data.files:
+        model["metric_eval_ce"] = data["metric_eval_ce"]
+    if "metric_rollout_samples" in data.files:
+        model["metric_rollout_samples"] = [str(s) for s in data["metric_rollout_samples"]]
     if "vocab_words" in data.files:
         model["vocab_words"] = [str(w) for w in data["vocab_words"]]
     if "sample_before" in data.files:
@@ -3319,21 +3327,40 @@ def _learning_curve_series(
     model,
     *,
     smoothed: bool = False,
+    sequence_length: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray, str] | None:
+    # Prefer the eval CE (teacher-forced from zero state, same conditions as the
+    # rollout metric). The smoothed training loss rides on a hidden state carried
+    # across the whole corpus and can sit at the entropy floor while the model is
+    # far worse from any fresh state (multistable RNNs), so it is not an honest
+    # learning curve.
+    if "metric_eval_ce" in model and "metric_iterations" in model:
+        eval_ce = np.asarray(model["metric_eval_ce"], dtype=float)
+        eval_iters = np.asarray(model["metric_iterations"], dtype=int)
+        if eval_ce.size == eval_iters.size and eval_ce.size > 0:
+            return eval_iters, eval_ce, "eval cross-entropy / char"
     if "loss_iterations" not in model:
         return None
     iters = np.asarray(model["loss_iterations"], dtype=int)
+    seq_len = sequence_length
+    if seq_len is None:
+        seq_len = int(model["sequence_length"]) if "sequence_length" in model else None
     if smoothed and "loss_smooth" in model:
-        return iters, np.asarray(model["loss_smooth"], dtype=float), "cross-entropy"
-    if "loss_window" in model:
-        return iters, np.asarray(model["loss_window"], dtype=float), "cross-entropy"
-    if "loss_smooth" in model:
-        return (
-            iters,
-            np.asarray(model["loss_smooth"], dtype=float),
-            "cross-entropy (smoothed; re-train for raw loss)",
-        )
-    return None
+        ce = np.asarray(model["loss_smooth"], dtype=float)
+    elif "loss_window" in model:
+        ce = np.asarray(model["loss_window"], dtype=float)
+    elif "loss_smooth" in model:
+        ce = np.asarray(model["loss_smooth"], dtype=float)
+        label = "cross-entropy / char (smoothed; re-train for raw loss)"
+        if seq_len and seq_len > 0:
+            ce = ce / seq_len
+        return iters, ce, label
+    else:
+        return None
+    label = "cross-entropy / char"
+    if seq_len and seq_len > 0:
+        ce = ce / seq_len
+    return iters, ce, label
 
 
 def plot_learning_curve_on_axes(
@@ -3350,9 +3377,10 @@ def plot_learning_curve_on_axes(
     max_iter: int | None = None,
     truncate_to_plateau: bool = False,
     plateau_tail_iters: int = 200,
+    sequence_length: int | None = None,
 ) -> bool:
     """Plot cross-entropy (and optional rollout metric) on ax. Returns False if no history."""
-    series = _learning_curve_series(model, smoothed=smoothed)
+    series = _learning_curve_series(model, smoothed=smoothed, sequence_length=sequence_length)
     if series is None:
         return False
 
@@ -3371,7 +3399,7 @@ def plot_learning_curve_on_axes(
     ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=lw, label=ce_label)
     ax.set_xlabel("iteration", fontsize=fs)
     if show_ylabel:
-        ax.set_ylabel("cross-entropy", fontsize=fs)
+        ax.set_ylabel(ce_label, fontsize=fs)
     if title is not None:
         ax.set_title(title, fontsize=fs + 1 if compact else 10)
     ax.grid(True, linestyle=":", alpha=0.4)
@@ -3388,6 +3416,7 @@ def plot_learning_curve_on_axes(
     legend_lines = [ce_line]
     legend_labels = [ce_label]
 
+    metric_line = None
     if "metric_iterations" in model and "metric_word_error_frac" in model:
         ax2 = ax.twinx()
         metric_iters = np.asarray(model["metric_iterations"], dtype=int)
@@ -3402,14 +3431,8 @@ def plot_learning_curve_on_axes(
             color="darkorange",
             linewidth=lw,
             alpha=0.9,
-            label="% invalid words",
+            label="% chars outside vocab (avg)",
         )
-        if show_metric_ylabel:
-            ax2.set_ylabel("% invalid words", fontsize=fs)
-        ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
-        ax2.tick_params(labelsize=fs)
-        legend_lines.append(metric_line)
-        legend_labels.append(metric_line.get_label())
     elif "metric_iterations" in model and "metric_valid_vocab_letter_frac" in model:
         ax2 = ax.twinx()
         metric_iters = np.asarray(model["metric_iterations"], dtype=int)
@@ -3426,8 +3449,10 @@ def plot_learning_curve_on_axes(
             alpha=0.9,
             label="% letters OOV",
         )
+
+    if metric_line is not None:
         if show_metric_ylabel:
-            ax2.set_ylabel("% letters OOV", fontsize=fs)
+            ax2.set_ylabel(metric_line.get_label(), fontsize=fs)
         ax2.set_ylim(*_tight_ylim(metric_pct, floor=0.0, ceiling=100.0))
         ax2.tick_params(labelsize=fs)
         legend_lines.append(metric_line)

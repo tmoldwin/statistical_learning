@@ -63,6 +63,24 @@ _SIX_WORD_OVERLAP_LABELS = {
     "six_word_five_letter_ns": "5-letter",
 }
 
+_MICRO_CURRICULUM_TASKS = (
+    "two_word_disjoint_ns",
+    "two_word_pos_overlap_ns",
+    "two_word_prefix_branch_ns",
+    "three_word_overlap_ns",
+    "three_word_permutation_ns",
+    "three_word_ca_hub_ns",
+)
+
+_MICRO_CURRICULUM_LABELS = {
+    "two_word_disjoint_ns": "disjoint",
+    "two_word_pos_overlap_ns": "same 2nd letter",
+    "two_word_prefix_branch_ns": "shared prefix",
+    "three_word_overlap_ns": "suffix family",
+    "three_word_permutation_ns": "permutation",
+    "three_word_ca_hub_ns": "3-way ca hub",
+}
+
 
 @dataclass
 class ComparisonSpec:
@@ -122,5 +140,16 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
         tasks=_FIFTY_WORD_LENGTH_TASKS,
         labels=dict(_FIFTY_WORD_LENGTH_LABELS),
         title="50-word vocabularies (no spaces): closed-loop trajectories",
+    ),
+    "micro_curriculum_ns": ComparisonSpec(
+        name="micro_curriculum_ns",
+        tasks=_MICRO_CURRICULUM_TASKS,
+        labels=dict(_MICRO_CURRICULUM_LABELS),
+        title="Micro curriculum (no spaces, 100 units): closed-loop trajectories",
+        row_groups=(
+            _MICRO_CURRICULUM_TASKS[:3],
+            _MICRO_CURRICULUM_TASKS[3:],
+        ),
+        seeds=GEOMETRY_STATS_SEEDS,
     ),
 }

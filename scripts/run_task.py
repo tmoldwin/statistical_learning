@@ -56,6 +56,7 @@ def train_task(
 
     if model_type in ("rnn", "rnn_dale"):
         model_out = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
+        model_out.parent.mkdir(parents=True, exist_ok=True)
         use_dale = model_uses_dale(model_type) or bool(cfg.get("dale"))
         use_gpu = device in ("cuda", "gpu", "auto")
         if use_gpu and use_dale:

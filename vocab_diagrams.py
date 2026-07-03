@@ -309,6 +309,29 @@ def segment_corpus_by_words(text: str, vocab: set[str]) -> list[tuple[int, int, 
     return segs
 
 
+def corpus_middle_snippet(text: str, length: int) -> str:
+    """Fixed-length slice centered in the corpus (for display, not training windows)."""
+    if length <= 0 or not text:
+        return text
+    if len(text) <= length:
+        return text
+    start = (len(text) - length) // 2
+    return text[start : start + length]
+
+
+def corpus_region_snippet(text: str, length: int, region: str) -> str:
+    """Fixed-length corpus excerpt: beginning, middle, or end."""
+    if length <= 0 or not text:
+        return text
+    if len(text) <= length:
+        return text
+    if region == "begin":
+        return text[:length]
+    if region == "end":
+        return text[-length:]
+    return corpus_middle_snippet(text, length)
+
+
 def segmented_word_tokens(
     text: str,
     vocab: set[str],
@@ -343,6 +366,58 @@ def invalid_word_fraction(
         return float("nan")
     bad = sum(1 for t in tokens if t not in vocab)
     return bad / len(tokens)
+
+
+def oov_char_fraction(
+    sampled_text: str,
+    vocab: set[str],
+    *,
+    spaced: bool = False,
+    edge_trim_chars: int | None = None,
+) -> float:
+    """Fraction of characters not inside an in-vocabulary word.
+
+    Character-level scoring is robust to long garbage stretches (a 100-char
+    noise run counts as 100 bad chars, not one bad token). Only the outermost
+    ``max_word_len - 1`` chars per edge are excluded — the maximal span that
+    can belong to a word truncated by the rollout boundary.
+    """
+    if not vocab or not sampled_text:
+        return float("nan")
+    n = len(sampled_text)
+    if edge_trim_chars is None:
+        edge_trim_chars = max(len(w) for w in vocab) - 1
+
+    valid = [False] * n
+    countable = [True] * n
+    if spaced:
+        i = 0
+        while i < n:
+            if sampled_text[i] == " ":
+                countable[i] = False
+                i += 1
+                continue
+            j = i
+            while j < n and sampled_text[j] != " ":
+                j += 1
+            ok = sampled_text[i:j] in vocab
+            for k in range(i, j):
+                valid[k] = ok
+            i = j
+    else:
+        for start, end, word in segment_corpus_by_words(sampled_text, vocab):
+            ok = word in vocab
+            for k in range(start, end + 1):
+                valid[k] = ok
+
+    lo, hi = edge_trim_chars, n - edge_trim_chars
+    if hi - lo <= 0:
+        lo, hi = 0, n
+    total = sum(1 for k in range(lo, hi) if countable[k])
+    if total == 0:
+        return float("nan")
+    bad = sum(1 for k in range(lo, hi) if countable[k] and not valid[k])
+    return bad / total
 
 
 def word_start_at_index(text: str, index: int, vocab: set[str]) -> int | None:

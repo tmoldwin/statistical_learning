@@ -12,6 +12,7 @@ import numpy as np
 from experiment import comparison_dir
 from viz.plot_layout import (
     apply_category_tick_labels,
+    condition_bar_colors,
     finalize_grid_figure,
     hide_x_tick_labels,
     save_figure,
@@ -45,6 +46,12 @@ _SUMMARY_METRICS: tuple[tuple[str, str, str], ...] = (
     ("pca_2d", "closure_gap_over_diameter", "closure/diam\n(PCA 2D)"),
     ("pca_2d", "bbox_aspect", "bbox aspect\n(PCA 2D)"),
     ("jpca", "omega", "jPCA rate"),
+    ("shape", "polygon_score", "polygon score"),
+    ("shape", "polygon_order", "polygon order m*"),
+    ("shape", "circularity", "circularity"),
+    ("shape", "n_corners", "n corners"),
+    ("shape", "word_spread_over_diameter", "word spread\n/ diam"),
+    ("shape", "within_word_spread_over_diameter", "within-word\nspread / diam"),
 )
 
 
@@ -77,6 +84,44 @@ def _flatten_state_space_metrics(paired: dict[str, dict[str, float]]) -> dict[st
                 continue
             out[f"{scope}_{key}"] = float(val)
     return out
+
+
+def _shape_metrics_block(
+    ctx: TaskVizContext,
+    mean_loop_pc: np.ndarray,
+    pca_mean: np.ndarray,
+    pca_components: np.ndarray,
+) -> dict[str, float]:
+    """Polygon readout + word spread on the mean closed loop in PCA 2D."""
+    from viz.compare.shape_quantification import (
+        labeled_word_trajectories,
+        loop_shape_metrics,
+        word_spread_metrics,
+    )
+
+    nan_block = {
+        "polygon_order": float("nan"),
+        "polygon_score": float("nan"),
+        "n_corners": float("nan"),
+        "circularity": float("nan"),
+        "word_spread_over_diameter": float("nan"),
+        "within_word_spread_over_diameter": float("nan"),
+    }
+    shape = loop_shape_metrics(mean_loop_pc)
+    if shape.get("error"):
+        return nan_block
+
+    labeled = labeled_word_trajectories(ctx)
+    labeled_pc = [(w, (t - pca_mean) @ pca_components.T) for w, t in labeled]
+    spread = word_spread_metrics(labeled_pc, shape["outline_xy"])
+    return {
+        "polygon_order": float(shape["polygon_order"]),
+        "polygon_score": float(shape["polygon_score"]),
+        "n_corners": float(shape["n_corners"]),
+        "circularity": float(shape["circularity"]),
+        "word_spread_over_diameter": float(spread["word_spread_over_diameter"]),
+        "within_word_spread_over_diameter": float(spread["within_word_spread_over_diameter"]),
+    }
 
 
 def _mean_min_point_distance(path_a: np.ndarray, path_b: np.ndarray) -> float:
@@ -236,6 +281,7 @@ def compute_panel_geometry(
     state_space = _flatten_state_space_metrics(
         paired_state_space_metrics(ctx.hidden_states, mean_loop),
     )
+    shape = _shape_metrics_block(ctx, mean_loop_pc, pca_mean, pca_components)
 
     return {
         "task": ctx.task,
@@ -264,6 +310,7 @@ def compute_panel_geometry(
             "omega": jpca_omega,
         },
         "state_space": state_space,
+        "shape": shape,
     }
 
 
@@ -309,34 +356,39 @@ def _plot_metric_by_condition(
     condition_labels: list[str],
     *,
     ylabel: str,
-    seed_colors: dict[int, tuple],
+    seed_colors: dict[int, tuple] | None = None,
     show_xticks: bool = True,
 ) -> float:
+    del seed_colors  # bar summaries aggregate over seeds
     positions = np.arange(len(groups))
-    box_data = [g[0] for g in groups]
-    ax.boxplot(
-        box_data,
-        positions=positions,
-        widths=0.45,
-        patch_artist=True,
-        showfliers=False,
-        medianprops={"color": "black", "linewidth": 1.2},
-        boxprops={"facecolor": "#e8e8e8", "edgecolor": "#666666", "linewidth": 1.0},
-        whiskerprops={"color": "#666666", "linewidth": 1.0},
-        capprops={"color": "#666666", "linewidth": 1.0},
+    means: list[float] = []
+    errs: list[float] = []
+    for vals, _seed_ids in groups:
+        if vals:
+            arr = np.asarray(vals, dtype=float)
+            means.append(float(np.mean(arr)))
+            n = len(arr)
+            errs.append(float(np.std(arr, ddof=1) / np.sqrt(n)) if n > 1 else 0.0)
+        else:
+            means.append(float("nan"))
+            errs.append(0.0)
+    colors = condition_bar_colors(len(groups))
+    bars = ax.bar(
+        positions,
+        means,
+        yerr=errs,
+        width=0.62,
+        color=colors,
+        edgecolor="#333333",
+        linewidth=0.8,
+        capsize=3,
+        error_kw={"elinewidth": 1.0, "ecolor": "#333333", "capthick": 1.0},
+        zorder=2,
     )
-    jitter_rng = np.random.default_rng(0)
-    for i, (vals, seed_ids) in enumerate(groups):
-        if not vals:
-            continue
-        jitter = jitter_rng.uniform(-0.1, 0.1, size=len(vals))
-        for xoff, y, seed in zip(jitter, vals, seed_ids):
-            ax.scatter(
-                i + xoff, y,
-                s=36, alpha=0.9, zorder=3,
-                color=seed_colors.get(seed, "C0"),
-                edgecolors="white", linewidths=0.6,
-            )
+    for bar, mean in zip(bars, means):
+        if not np.isfinite(mean):
+            bar.set_alpha(0.0)
+            bar.set_edgecolor("none")
     if show_xticks:
         bottom_pad = apply_category_tick_labels(
             ax, condition_labels, fontsize=8, positions=list(positions),
@@ -345,7 +397,7 @@ def _plot_metric_by_condition(
         hide_x_tick_labels(ax)
         bottom_pad = 0.08
     set_ylabel_multiline(ax, ylabel, fontsize=8)
-    ax.grid(True, axis="y", linestyle=":", alpha=0.4)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.4, zorder=0)
     return bottom_pad
 
 
@@ -481,22 +533,17 @@ def plot_trajectory_geometry_summary(
     seeds: tuple[int, ...] | None = None,
     outfile: str = "geometry_summary.png",
 ) -> Path:
-    """Box-and-whisker by condition; points = individual seeds."""
+    """Bar plot of mean ± SEM by condition (across seeds)."""
     run_seeds = seeds if seeds is not None else spec.seeds
     tasks = tuple(spec.tasks)
     condition_labels = [spec.label_for(t) for t in tasks]
-
-    seed_colors = {
-        int(s): plt.cm.tab20(i % 20)
-        for i, s in enumerate(run_seeds)
-    }
 
     n_metrics = len(_SUMMARY_METRICS)
     n_cols = 3
     n_rows = int(np.ceil(n_metrics / n_cols))
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(4.2 * n_cols, 3.6 * n_rows),
+        figsize=(4.6 * n_cols, 3.6 * n_rows),
         squeeze=False,
     )
     bottom_pad = 0.10
@@ -508,7 +555,6 @@ def plot_trajectory_geometry_summary(
             groups,
             condition_labels,
             ylabel=label,
-            seed_colors=seed_colors,
             show_xticks=(row == n_rows - 1),
         )
         bottom_pad = max(bottom_pad, pad)
@@ -553,6 +599,13 @@ def write_trajectory_geometry(
                     "task": task,
                     "seed": run_seed,
                     "error": "missing checkpoint",
+                })
+                continue
+            except KeyError:
+                panels.append({
+                    "task": task,
+                    "seed": run_seed,
+                    "error": "checkpoint vocab mismatch (retrain task)",
                 })
                 continue
             panels.append(compute_panel_geometry(ctx))

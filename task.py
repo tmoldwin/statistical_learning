@@ -85,12 +85,13 @@ REGIMES: dict[str, list[str]] = {
         # 5-letter
         "front", "count", "storm",
     ],
-    # 16 words, lengths 2–5 (4 per length); overlapping families.
+    # 16 words, lengths 3–7 (3–4 words per length); overlapping families.
     "sixteen_word_mixed": [
-        "at", "be", "in", "on",
         "cat", "hat", "bat", "mat",
-        "bake", "cake", "lake", "rake",
-        "plant", "slant", "grant", "chant",
+        "bake", "lake", "rank", "gate",
+        "light", "bound", "dream", "steam",
+        "nation", "moment",
+        "lightly", "station",
     ],
     # 16 real words (primary task vocabulary).
     "sixteen_word": [
@@ -113,6 +114,20 @@ REGIMES: dict[str, list[str]] = {
         "bound", "found", "hound", "pound",
         "batch", "catch", "hatch", "match",
         "cream", "dream", "gleam", "steam",
+    ],
+    # 16 real 6-letter words; four suffix families (-ation, -ought, -ster, -ment).
+    "sixteen_word_six_letter": [
+        "nation", "ration", "action", "motion",
+        "bought", "fought", "sought", "taught",
+        "master", "faster", "sister", "mister",
+        "moment", "cement", "talent", "patent",
+    ],
+    # 16 real 7-letter words; four suffix families (-ingly, -ation, -ounded, -owing).
+    "sixteen_word_seven_letter": [
+        "lightly", "tightly", "nightly", "rightly",
+        "caution", "section", "fiction", "mention",
+        "bounded", "founded", "rounded", "wounded",
+        "blowing", "flowing", "growing", "showing",
     ],
     # 50 real 3-letter words; ten suffix families (5 words each).
     "fifty_word": [

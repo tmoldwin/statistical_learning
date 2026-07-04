@@ -86,7 +86,7 @@ def plot_learning_summary(
     *,
     seeds: tuple[int, ...] | None = None,
 ) -> Path:
-    """Box plots of final training outcomes by condition; points = seeds."""
+    """Bar plots of final training outcomes by condition; error bars = SEM across seeds."""
     run_seeds = seeds if seeds is not None else spec.seeds
     tasks = tuple(spec.tasks)
     condition_labels = [spec.label_for(t) for t in tasks]

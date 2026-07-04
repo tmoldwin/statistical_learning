@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 
 
 def rotation_for_tick_labels(labels: list[str], *, n_positions: int | None = None) -> tuple[int, str]:
@@ -64,6 +65,20 @@ def finalize_grid_figure(
     if suptitle:
         fig.suptitle(suptitle, fontsize=suptitle_fontsize, y=0.985)
     fig.subplots_adjust(top=top, bottom=bottom, hspace=hspace, wspace=wspace)
+
+
+def condition_bar_colors(n: int) -> list[tuple[float, float, float, float]]:
+    """Distinct qualitative colors for ``n`` condition bars."""
+    if n <= 0:
+        return []
+    palette = (
+        "#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B",
+        "#EECA3B", "#B279A2", "#FF9DA6", "#9D755D", "#BAB0AC",
+    )
+    if n <= len(palette):
+        return [to_rgba(palette[i]) for i in range(n)]
+    cmap = plt.get_cmap("tab20")
+    return [cmap(i % 20) for i in range(n)]
 
 
 def save_figure(fig, path, *, dpi: int = 160) -> None:

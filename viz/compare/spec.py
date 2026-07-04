@@ -15,6 +15,8 @@ _SIXTEEN_WORD_LENGTH_TASKS = (
     "sixteen_word_ns",
     "sixteen_word_four_letter_ns",
     "sixteen_word_five_letter_ns",
+    "sixteen_word_six_letter_ns",
+    "sixteen_word_seven_letter_ns",
     "sixteen_word_mixed_ns",
 )
 
@@ -22,13 +24,17 @@ _SIXTEEN_WORD_LENGTH_LABELS = {
     "sixteen_word_ns": "3-letter",
     "sixteen_word_four_letter_ns": "4-letter",
     "sixteen_word_five_letter_ns": "5-letter",
-    "sixteen_word_mixed_ns": "mixed length",
+    "sixteen_word_six_letter_ns": "6-letter",
+    "sixteen_word_seven_letter_ns": "7-letter",
+    "sixteen_word_mixed_ns": "all lengths",
 }
 
 _SIXTEEN_WORD_LENGTH_TASKS_H500 = (
     "sixteen_word_ns_h500",
     "sixteen_word_four_letter_ns_h500",
     "sixteen_word_five_letter_ns_h500",
+    "sixteen_word_six_letter_ns_h500",
+    "sixteen_word_seven_letter_ns_h500",
     "sixteen_word_mixed_ns_h500",
 )
 
@@ -36,7 +42,9 @@ _SIXTEEN_WORD_LENGTH_LABELS_H500 = {
     "sixteen_word_ns_h500": "3-letter",
     "sixteen_word_four_letter_ns_h500": "4-letter",
     "sixteen_word_five_letter_ns_h500": "5-letter",
-    "sixteen_word_mixed_ns_h500": "mixed length",
+    "sixteen_word_six_letter_ns_h500": "6-letter",
+    "sixteen_word_seven_letter_ns_h500": "7-letter",
+    "sixteen_word_mixed_ns_h500": "all lengths",
 }
 
 _FIFTY_WORD_LENGTH_TASKS = (

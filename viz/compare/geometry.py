@@ -10,9 +10,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from experiment import comparison_dir
+from viz.plot_layout import (
+    apply_category_tick_labels,
+    finalize_grid_figure,
+    hide_x_tick_labels,
+    save_figure,
+    set_ylabel_multiline,
+)
 from viz.compare._data import TaskVizContext, load_task_viz_context
 from viz.compare.spec import ComparisonSpec
 from viz.compare.state_clusters import cluster_counts_hidden_and_pca, format_cluster_counts
+from viz.compare.state_space_metrics import paired_state_space_metrics, variance_top_k_frac
 from viz.dimred import fit_jpca_components, fit_pca_2d_with_evr
 from visualize import (
     _closed_loop_summary_seed,
@@ -28,12 +36,15 @@ _GEOMETRY_TRIALS = 8
 _ROLLOUT_SEED = 0
 
 _SUMMARY_METRICS: tuple[tuple[str, str, str], ...] = (
-    ("full_space", "gap_over_diameter", "closure / diam (ℝᴴ)"),
-    ("full_space", "planarity_top2", "planarity top-2 (ℝᴴ)"),
-    ("full_space", "turn_regularity", "turn regularity (ℝᴴ)"),
-    ("pca_2d", "closure_gap_over_diameter", "closure / diam (PCA)"),
-    ("pca_2d", "bbox_aspect", "bbox aspect (PCA)"),
-    ("jpca", "omega", "jPCA ω"),
+    ("full_space", "gap_over_diameter", "closure/diam\n(full hidden)"),
+    ("full_space", "planarity_top2", "top-2 PC var\n(full hidden)"),
+    ("full_space", "turn_regularity", "turn regularity\n(full hidden)"),
+    ("state_space", "corpus_effective_dim", "eff. dim.\n(corpus)"),
+    ("state_space", "corpus_mean_abs_corr", "mean |r|\n(corpus)"),
+    ("state_space", "loop_effective_dim", "eff. dim.\n(loop)"),
+    ("pca_2d", "closure_gap_over_diameter", "closure/diam\n(PCA 2D)"),
+    ("pca_2d", "bbox_aspect", "bbox aspect\n(PCA 2D)"),
+    ("jpca", "omega", "jPCA rate"),
 )
 
 
@@ -54,17 +65,18 @@ def _closure_metrics(path: np.ndarray) -> dict[str, float]:
 
 def _planarity_top2(points: np.ndarray) -> float:
     """Fraction of variance in the top two principal components of ``points``."""
-    points = np.asarray(points, dtype=float)
-    if points.shape[0] < 3:
-        return float("nan")
-    centered = points - points.mean(axis=0)
-    _, s, _ = np.linalg.svd(centered, full_matrices=False)
-    var = s * s
-    total = float(var.sum())
-    if total <= 1e-12:
-        return float("nan")
-    n = min(2, len(var))
-    return float(var[:n].sum() / total)
+    return variance_top_k_frac(points, 2)
+
+
+def _flatten_state_space_metrics(paired: dict[str, dict[str, float]]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for scope in ("corpus", "loop"):
+        block = paired.get(scope, {})
+        for key, val in block.items():
+            if key in ("n_points", "n_dims"):
+                continue
+            out[f"{scope}_{key}"] = float(val)
+    return out
 
 
 def _mean_min_point_distance(path_a: np.ndarray, path_b: np.ndarray) -> float:
@@ -221,6 +233,9 @@ def compute_panel_geometry(
     pc_closure = _closure_metrics(mean_loop_pc)
     full_turns = _turning_angle_stats(mean_loop)
     pc_turns = _turning_angle_stats(mean_loop_pc)
+    state_space = _flatten_state_space_metrics(
+        paired_state_space_metrics(ctx.hidden_states, mean_loop),
+    )
 
     return {
         "task": ctx.task,
@@ -248,6 +263,7 @@ def compute_panel_geometry(
         "jpca": {
             "omega": jpca_omega,
         },
+        "state_space": state_space,
     }
 
 
@@ -294,7 +310,8 @@ def _plot_metric_by_condition(
     *,
     ylabel: str,
     seed_colors: dict[int, tuple],
-) -> None:
+    show_xticks: bool = True,
+) -> float:
     positions = np.arange(len(groups))
     box_data = [g[0] for g in groups]
     ax.boxplot(
@@ -320,10 +337,16 @@ def _plot_metric_by_condition(
                 color=seed_colors.get(seed, "C0"),
                 edgecolors="white", linewidths=0.6,
             )
-    ax.set_xticks(positions)
-    ax.set_xticklabels(condition_labels, fontsize=9)
-    ax.set_ylabel(ylabel, fontsize=9)
+    if show_xticks:
+        bottom_pad = apply_category_tick_labels(
+            ax, condition_labels, fontsize=8, positions=list(positions),
+        )
+    else:
+        hide_x_tick_labels(ax)
+        bottom_pad = 0.08
+    set_ylabel_multiline(ax, ylabel, fontsize=8)
     ax.grid(True, axis="y", linestyle=":", alpha=0.4)
+    return bottom_pad
 
 
 def _fmt_metric(v: float, *, decimals: int = 2) -> str:
@@ -336,12 +359,16 @@ def _panel_metric_oneline(panel: dict[str, Any]) -> str:
     if panel.get("error"):
         return str(panel["error"])
     return (
-        f"ℝᴴ {_fmt_metric(_metric_value(panel, 'full_space', 'gap_over_diameter'))}  "
+        f"H gap {_fmt_metric(_metric_value(panel, 'full_space', 'gap_over_diameter'))}  "
         f"plan {_fmt_metric(_metric_value(panel, 'full_space', 'planarity_top2'))}  "
         f"turn {_fmt_metric(_metric_value(panel, 'full_space', 'turn_regularity'))}\n"
-        f"PCA {_fmt_metric(_metric_value(panel, 'pca_2d', 'closure_gap_over_diameter'))}  "
+        f"dim c {_fmt_metric(_metric_value(panel, 'state_space', 'corpus_effective_dim'))}  "
+        f"|r| c {_fmt_metric(_metric_value(panel, 'state_space', 'corpus_mean_abs_corr'))}  "
+        f"dim l {_fmt_metric(_metric_value(panel, 'state_space', 'loop_effective_dim'))}  "
+        f"|r| l {_fmt_metric(_metric_value(panel, 'state_space', 'loop_mean_abs_corr'))}\n"
+        f"PCA gap {_fmt_metric(_metric_value(panel, 'pca_2d', 'closure_gap_over_diameter'))}  "
         f"asp {_fmt_metric(_metric_value(panel, 'pca_2d', 'bbox_aspect'))}  "
-        f"ω {_fmt_metric(_metric_value(panel, 'jpca', 'omega'), decimals=0)}"
+        f"jPCA {_fmt_metric(_metric_value(panel, 'jpca', 'omega'), decimals=0)}"
     )
 
 
@@ -464,27 +491,44 @@ def plot_trajectory_geometry_summary(
         for i, s in enumerate(run_seeds)
     }
 
+    n_metrics = len(_SUMMARY_METRICS)
+    n_cols = 3
+    n_rows = int(np.ceil(n_metrics / n_cols))
     fig, axes = plt.subplots(
-        2, 3,
-        figsize=(12.0, 6.8),
-        constrained_layout=True,
+        n_rows, n_cols,
+        figsize=(4.2 * n_cols, 3.6 * n_rows),
         squeeze=False,
     )
-    for ax, (section, key, label) in zip(axes.ravel(), _SUMMARY_METRICS):
+    bottom_pad = 0.10
+    for idx, (ax, (section, key, label)) in enumerate(zip(axes.ravel(), _SUMMARY_METRICS)):
+        row = idx // n_cols
         groups = _values_by_condition(panels, tasks, run_seeds, section, key)
-        _plot_metric_by_condition(
-            ax, groups, condition_labels, ylabel=label, seed_colors=seed_colors,
+        pad = _plot_metric_by_condition(
+            ax,
+            groups,
+            condition_labels,
+            ylabel=label,
+            seed_colors=seed_colors,
+            show_xticks=(row == n_rows - 1),
         )
+        bottom_pad = max(bottom_pad, pad)
+    for ax in axes.ravel()[len(_SUMMARY_METRICS):]:
+        ax.axis("off")
 
-    fig.suptitle(
-        f"{spec.display_title}: closed-loop geometry ({spec.model_type}, n={len(run_seeds)} seeds)",
-        fontsize=11,
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"{spec.display_title}: closed-loop geometry "
+            f"({spec.model_type}, n={len(run_seeds)} seeds)"
+        ),
+        bottom=bottom_pad,
+        top=0.92,
+        hspace=0.42,
     )
     out_dir = comparison_dir(spec.name, "trajectories")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / outfile
-    fig.savefig(out_path, dpi=160, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, out_path, dpi=160)
     return out_path
 
 

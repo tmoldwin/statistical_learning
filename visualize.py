@@ -148,6 +148,8 @@ def load_model(path: str = "model.npz"):
         model["metric_valid_vocab_letter_frac"] = data["metric_valid_vocab_letter_frac"]
     if "metric_word_error_frac" in data.files:
         model["metric_word_error_frac"] = data["metric_word_error_frac"]
+    if "metric_val_ce" in data.files:
+        model["metric_val_ce"] = data["metric_val_ce"]
     if "metric_rollout_samples" in data.files:
         model["metric_rollout_samples"] = [str(s) for s in data["metric_rollout_samples"]]
     if "vocab_words" in data.files:
@@ -3348,6 +3350,8 @@ def _learning_curve_series(
     label = "cross-entropy / char"
     if seq_len and seq_len > 0:
         ce = ce / seq_len
+    if "metric_val_ce" in model and "metric_iterations" in model:
+        label = "train cross-entropy / char"
     return iters, ce, label
 
 
@@ -3385,13 +3389,38 @@ def plot_learning_curve_on_axes(
     lw = 1.0 if compact else 1.2
     fs = 7 if compact else 8
     ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=lw, label=ce_label)
+    legend_lines = [ce_line]
+    legend_labels = [ce_label]
+    val_line = None
+    if not loss_only and "metric_val_ce" in model and "metric_iterations" in model:
+        val_iters = np.asarray(model["metric_iterations"], dtype=int)
+        val_ce = np.asarray(model["metric_val_ce"], dtype=float)
+        if max_iter is not None:
+            keep = val_iters <= int(max_iter)
+            val_iters = val_iters[keep]
+            val_ce = val_ce[keep]
+        if val_iters.size:
+            val_line, = ax.plot(
+                val_iters,
+                val_ce,
+                color="seagreen",
+                linewidth=lw,
+                alpha=0.9,
+                label="val cross-entropy / char",
+            )
+            legend_lines.append(val_line)
+            legend_labels.append(val_line.get_label())
     ax.set_xlabel("iteration", fontsize=fs)
     if show_ylabel:
-        ax.set_ylabel(ce_label, fontsize=fs)
+        ylabel = "cross-entropy / char" if val_line is not None else ce_label
+        ax.set_ylabel(ylabel, fontsize=fs)
     if title is not None:
         ax.set_title(title, fontsize=fs + 1 if compact else 10)
     ax.grid(True, linestyle=":", alpha=0.4)
-    ax.set_ylim(*_tight_ylim(ce_plot, floor=0.0))
+    ce_for_ylim = ce_plot
+    if val_line is not None:
+        ce_for_ylim = np.concatenate([ce_plot, val_ce])
+    ax.set_ylim(*_tight_ylim(ce_for_ylim, floor=0.0))
     ax.tick_params(labelsize=fs)
     if max_iter is not None:
         ax.set_xlim(0, int(max_iter))
@@ -3400,9 +3429,6 @@ def plot_learning_curve_on_axes(
         if show_legend:
             ax.legend(loc="upper right", fontsize=fs)
         return True
-
-    legend_lines = [ce_line]
-    legend_labels = [ce_label]
 
     metric_line = None
     if "metric_iterations" in model and "metric_word_error_frac" in model:
@@ -3418,6 +3444,7 @@ def plot_learning_curve_on_axes(
             metric_pct,
             color="darkorange",
             linewidth=lw,
+            linestyle="--",
             alpha=0.9,
             label="% chars outside vocab (avg)",
         )
@@ -3434,6 +3461,7 @@ def plot_learning_curve_on_axes(
             metric_pct,
             color="darkorange",
             linewidth=lw,
+            linestyle="--",
             alpha=0.9,
             label="% letters OOV",
         )

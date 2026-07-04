@@ -319,6 +319,18 @@ def corpus_middle_snippet(text: str, length: int) -> str:
     return text[start : start + length]
 
 
+def split_corpus_train_val(text: str, train_ratio: float = 0.9) -> tuple[str, str]:
+    """Chronological train/validation split (first ``train_ratio`` for training)."""
+    if not text or train_ratio <= 0.0:
+        return "", text
+    if train_ratio >= 1.0:
+        return text, ""
+    split = int(train_ratio * len(text))
+    split = max(split, 1)
+    split = min(split, len(text) - 1)
+    return text[:split], text[split:]
+
+
 def corpus_region_snippet(text: str, length: int, region: str) -> str:
     """Fixed-length corpus excerpt: beginning, middle, or end."""
     if length <= 0 or not text:

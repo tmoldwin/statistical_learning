@@ -39,6 +39,7 @@ from rnn.rnn_dyn import (
     hidden_activation,
     hidden_activation_backward,
     inject_timestep_noise,
+    apply_dropout,
     dale_violation_fraction,
     init_dale_weights,
     recurrent_pre_activation,
@@ -48,7 +49,13 @@ from rnn.rnn_dyn import (
 )
 from experiment import experiment_regime
 from task import REGIMES
-from vocab_diagrams import corpus_middle_snippet, invalid_word_fraction, oov_char_fraction, segment_corpus_by_words
+from vocab_diagrams import (
+    corpus_middle_snippet,
+    invalid_word_fraction,
+    oov_char_fraction,
+    segment_corpus_by_words,
+    split_corpus_train_val,
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--steps', type=int, default=2000,
@@ -71,6 +78,10 @@ parser.add_argument('--exp', default=None,
                     help='experiment name; loads word list for unspaced word-error metrics')
 parser.add_argument('--noise-std', type=float, default=None,
                     help='Gaussian noise std added to hidden state every timestep (train + sample)')
+parser.add_argument('--dropout', type=float, default=None,
+                    help='hidden dropout rate during training (default: from --exp config, else 0)')
+parser.add_argument('--l2-lambda', type=float, default=None,
+                    help='L2 weight decay on recurrent and output weights (default: from --exp config, else 0)')
 parser.add_argument('--seed', type=int, default=42,
                     help='RNG seed for weight initialization (default: 42)')
 parser.add_argument(
@@ -86,9 +97,18 @@ args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
 text = open(args.input, 'r').read()                 # entire training corpus as one string
+train_ratio = 0.9
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    train_ratio = float(EXPERIMENT_CONFIG.get(args.exp, {}).get("train_ratio", train_ratio))
+train_text, val_text = split_corpus_train_val(text, train_ratio)
 unique_chars = list(set(text))                       # character vocabulary (order is arbitrary)
-text_length, vocab_size = len(text), len(unique_chars)
-print('data has %d characters, %d unique.' % (text_length, vocab_size))
+text_length = len(train_text)
+print('data has %d characters, %d unique.' % (len(text), len(unique_chars)))
+print('train %d chars (%.0f%%), val %d chars.' % (
+    len(train_text), 100.0 * train_ratio, len(val_text),
+))
+vocab_size = len(unique_chars)
 char_to_index = { char: i for i, char in enumerate(unique_chars) }  # str -> int id
 index_to_char = { i: char for i, char in enumerate(unique_chars) }  # int id -> str
 
@@ -121,6 +141,18 @@ elif args.exp:
 else:
     timestep_noise_std = 0.0
 
+dropout_rate = 0.0
+l2_lambda = 0.0
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    _reg_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+    dropout_rate = float(_reg_cfg.get("dropout", dropout_rate))
+    l2_lambda = float(_reg_cfg.get("l2_lambda", l2_lambda))
+if args.dropout is not None:
+    dropout_rate = float(args.dropout)
+if args.l2_lambda is not None:
+    l2_lambda = float(args.l2_lambda)
+
 target_word_error = args.target_word_error
 if target_word_error is None and args.exp:
     from experiment import EXPERIMENT_CONFIG
@@ -139,6 +171,7 @@ if args.exp:
     metric_rollout_len = int(_exp_cfg.get("metric_rollout_len", metric_rollout_len))
     metric_num_rollouts = int(_exp_cfg.get("metric_num_rollouts", metric_num_rollouts))
 noise_rng = np.random.default_rng(args.seed + 1)
+dropout_rng = np.random.default_rng(args.seed + 2)
 init_rng = np.random.default_rng(args.seed)
 
 # ----- model parameters -------------------------------------------------------
@@ -165,6 +198,10 @@ else:
 
 if timestep_noise_std > 0:
     print(f"timestep noise std: {timestep_noise_std}")
+if dropout_rate > 0:
+    print(f"hidden dropout: {dropout_rate}")
+if l2_lambda > 0:
+    print(f"L2 lambda: {l2_lambda}")
 
 bias_hidden = np.zeros((hidden_size, 1))
 bias_output = np.zeros((vocab_size, 1))
@@ -188,14 +225,13 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
   """
   # Per-timestep caches kept around so we can reuse the activations during backprop.
   # Indexed by t (the time step within this window). hidden_states[-1] holds the carried-over state.
-  inputs_one_hot, hidden_states, pre_activations, output_logits, output_probs = {}, {}, {}, {}, {}
+  inputs_one_hot, hidden_states, raw_hidden, pre_activations, output_logits, output_probs = {}, {}, {}, {}, {}, {}
+  dropout_masks: dict[int, np.ndarray | None] = {}
   hidden_states[-1] = np.copy(previous_hidden_state)
   loss = 0
 
   # ----- forward pass: t = 0, 1, ..., sequence_length - 1 ---------------------
   for t in range(len(input_indices)):
-    # One-hot encode the input char so weights_input_to_hidden @ inputs_one_hot[t]
-    # effectively selects column input_indices[t] of weights_input_to_hidden.
     inputs_one_hot[t] = np.zeros((vocab_size, 1))
     inputs_one_hot[t][input_indices[t]] = 1
 
@@ -203,17 +239,28 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
         inputs_one_hot[t], hidden_states[t - 1],
         weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
     )
-    hidden_states[t] = hidden_activation(pre_activations[t], use_relu=use_relu)
-    hidden_states[t] = inject_timestep_noise(hidden_states[t], timestep_noise_std, noise_rng)
+    raw_hidden[t] = hidden_activation(pre_activations[t], use_relu=use_relu)
+    raw_hidden[t] = inject_timestep_noise(raw_hidden[t], timestep_noise_std, noise_rng)
+    if dropout_rate > 0.0:
+        hidden_states[t], dropout_masks[t] = apply_dropout(
+            raw_hidden[t], dropout_rate, dropout_rng,
+        )
+    else:
+        hidden_states[t] = raw_hidden[t]
+        dropout_masks[t] = None
 
-    # Read out logits, then softmax to get a probability distribution over the vocab.
     output_logits[t] = np.dot(weights_hidden_to_output, hidden_states[t]) + bias_output
     output_probs[t] = stable_softmax(output_logits[t]).reshape(-1, 1)
 
-    # Cross-entropy: penalize the negative log-probability the model assigned to the correct next char.
-    # If the model is surprised (prob of target is small), the loss is large; if prob ~ 1, loss ~ 0.
     p = float(output_probs[t][target_indices[t], 0])
     loss += -np.log(max(p, 1e-12))
+
+  if l2_lambda > 0.0:
+    loss += l2_lambda * (
+        float(np.sum(weights_input_to_hidden ** 2))
+        + float(np.sum(weights_hidden_to_hidden ** 2))
+        + float(np.sum(weights_hidden_to_output ** 2))
+    )
 
   # ----- backward pass: BPTT, t = sequence_length - 1, ..., 0 -----------------
   # We need d(loss)/d(param) for every learnable parameter. Each parameter is shared
@@ -254,9 +301,12 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
     # Sum both -> the *total* gradient flowing back into hidden_states[t].
     grad_hidden = np.dot(weights_hidden_to_output.T, grad_output) + grad_hidden_next
 
-    # ---- (4) backprop through the hidden nonlinearity ----------------------
+    mask = dropout_masks[t]
+    if mask is not None:
+        grad_hidden = grad_hidden * mask / (1.0 - dropout_rate)
+
     grad_hidden_raw = hidden_activation_backward(
-        grad_hidden, pre_activations[t], hidden_states[t], use_relu=use_relu,
+        grad_hidden, pre_activations[t], raw_hidden[t], use_relu=use_relu,
     )
 
     # ---- (5) push that into the pre-activation parameters ------------------
@@ -284,6 +334,11 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
   for grad in [grad_weights_input_to_hidden, grad_weights_hidden_to_hidden,
                grad_weights_hidden_to_output, grad_bias_hidden, grad_bias_output]:
     np.clip(grad, -5, 5, out=grad)
+
+  if l2_lambda > 0.0:
+    grad_weights_input_to_hidden += 2.0 * l2_lambda * weights_input_to_hidden
+    grad_weights_hidden_to_hidden += 2.0 * l2_lambda * weights_hidden_to_hidden
+    grad_weights_hidden_to_output += 2.0 * l2_lambda * weights_hidden_to_output
 
   return (loss,
           grad_weights_input_to_hidden, grad_weights_hidden_to_hidden, grad_weights_hidden_to_output,
@@ -435,7 +490,7 @@ def sample_with_prompt(prompt_text: str, num_chars_to_sample: int, *, rng: np.ra
 def sample_from_seed_char(seed_char: str, num_chars_to_sample: int, *, rng: np.random.Generator):
   """Stochastic sampling from zero state, seeded by a single character."""
   if seed_char not in char_to_index:
-    seed_char = text[0]
+    seed_char = train_text[0]
   hidden_state = np.zeros((hidden_size, 1))
   input_one_hot = np.zeros((vocab_size, 1))
   input_one_hot[char_to_index[seed_char]] = 1
@@ -476,9 +531,9 @@ def rollout_word_validity_metrics(
     letter_fracs: list[float] = []
     example_text = ""
     for r in range(METRIC_NUM_ROLLOUTS):
-        if text and sequence_length > 0 and len(text) > sequence_length:
-            start = int(rng.integers(0, len(text) - sequence_length))
-            prompt = text[start : start + sequence_length]
+        if train_text and sequence_length > 0 and len(train_text) > sequence_length:
+            start = int(rng.integers(0, len(train_text) - sequence_length))
+            prompt = train_text[start : start + sequence_length]
         else:
             prompt = index_to_char[seed_index]
         indices = sample_with_prompt(prompt, METRIC_ROLLOUT_LEN, rng=rng)
@@ -491,6 +546,61 @@ def rollout_word_validity_metrics(
 
 
 stochastic_word_validity_metrics = rollout_word_validity_metrics
+
+
+def forward_window_loss(
+    input_indices: list[int],
+    target_indices: list[int],
+    previous_hidden_state: np.ndarray,
+    *,
+    training: bool,
+) -> tuple[float, np.ndarray]:
+    """Teacher-forced CE over one BPTT window; returns (loss, last hidden state)."""
+    hidden_prev = np.copy(previous_hidden_state)
+    loss = 0.0
+    for t in range(len(input_indices)):
+        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot[input_indices[t]] = 1
+        pre = recurrent_pre_activation(
+            input_one_hot, hidden_prev,
+            weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
+        )
+        hidden = hidden_activation(pre, use_relu=use_relu)
+        hidden = inject_timestep_noise(hidden, timestep_noise_std, noise_rng)
+        if training and dropout_rate > 0.0:
+            hidden, _ = apply_dropout(hidden, dropout_rate, dropout_rng)
+        logits = np.dot(weights_hidden_to_output, hidden) + bias_output
+        probs = stable_softmax(logits)
+        p = float(probs[target_indices[t], 0])
+        loss += -np.log(max(p, 1e-12))
+        hidden_prev = hidden
+    return loss, hidden_prev
+
+
+def validation_ce_per_char() -> float:
+    """Teacher-forced CE (nats/char) on the held-out val split, carried hidden state."""
+    if len(val_text) <= sequence_length:
+        return float("nan")
+    hidden = np.zeros((hidden_size, 1))
+    ptr = 0
+    total_loss = 0.0
+    n_chars = 0
+    while ptr + sequence_length + 1 <= len(val_text):
+        input_indices = [
+            char_to_index[char]
+            for char in val_text[ptr : ptr + sequence_length]
+        ]
+        target_indices = [
+            char_to_index[char]
+            for char in val_text[ptr + 1 : ptr + sequence_length + 1]
+        ]
+        loss, hidden = forward_window_loss(
+            input_indices, target_indices, hidden, training=False,
+        )
+        total_loss += loss
+        n_chars += sequence_length
+        ptr += sequence_length
+    return (total_loss / n_chars) if n_chars else float("nan")
 
 
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
@@ -540,6 +650,7 @@ loss_window = []
 metric_iters = []
 metric_valid_letter_frac = []
 metric_word_error_frac = []
+metric_val_ce: list[float] = []
 metric_rollout_samples: list[str] = []
 
 weight_snap_iters: list[int] = []
@@ -646,12 +757,12 @@ if args.exp:
     DEMO_SNIPPET_LEN = int(
         _snippet_cfg.get("demo_snippet_len", _snippet_cfg.get("viz_length", DEMO_SNIPPET_LEN))
     )
-demo_snippet = corpus_middle_snippet(text, DEMO_SNIPPET_LEN)
+demo_snippet = corpus_middle_snippet(train_text, DEMO_SNIPPET_LEN)
 demo_before = None
 demo_after = None
 demo_word_error_frac = float("nan")
 demo_rng_seed = 0
-demo_seed_char = " " if (" " in char_to_index) else text[0]
+demo_seed_char = " " if (" " in char_to_index) else train_text[0]
 
 while iteration < max_iterations:
   if iteration == 0 and args.save_snapshots:
@@ -659,15 +770,14 @@ while iteration < max_iterations:
 
   # Step the data pointer through the corpus in chunks of `sequence_length`.
   # If we run off the end (or we're on iteration 0), reset the hidden state and wrap to the start.
-  if data_pointer + sequence_length + 1 >= len(text) or iteration == 0:
+  if data_pointer + sequence_length + 1 >= len(train_text) or iteration == 0:
     previous_hidden_state = np.zeros((hidden_size, 1))   # reset RNN memory across wraps
     data_pointer = 0
 
-  # Inputs and targets are the same window, shifted by one char.
-  # For each t in [0, sequence_length), the model sees text[data_pointer + t]
-  # and must predict text[data_pointer + t + 1].
-  input_indices  = [char_to_index[char] for char in text[data_pointer    : data_pointer + sequence_length    ]]
-  target_indices = [char_to_index[char] for char in text[data_pointer + 1: data_pointer + sequence_length + 1]]
+  # For each t in [0, sequence_length), the model sees train_text[data_pointer + t]
+  # and must predict train_text[data_pointer + t + 1].
+  input_indices  = [char_to_index[char] for char in train_text[data_pointer    : data_pointer + sequence_length    ]]
+  target_indices = [char_to_index[char] for char in train_text[data_pointer + 1: data_pointer + sequence_length + 1]]
 
   # Periodic rollout metrics for early stopping and learning-curve logging.
   if iteration % eval_interval == 0:
@@ -680,11 +790,16 @@ while iteration < max_iterations:
     word_err, letter_frac, rollout_text = stochastic_word_validity_metrics(
         metric_seed, vocab_words, rng=metric_rng,
     )
+    val_ce = validation_ce_per_char()
     metric_iters.append(iteration)
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
+    metric_val_ce.append(val_ce)
     metric_rollout_samples.append(rollout_text[:METRIC_ROLLOUT_LEN])
-    print(f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%")
+    print(
+        f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%, "
+        f"val CE: {val_ce:.3f}/char",
+    )
     progress_path = Path(args.model).parent / f"{Path(args.model).stem}.progress"
     progress_path.write_text(
         f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
@@ -780,7 +895,7 @@ while iteration < max_iterations:
     _append_weight_snapshot(iteration)
 
 # Final sample after training finishes, plus the last smoothed loss.
-sampled_indices = sample(previous_hidden_state, char_to_index[text[0]], 50)
+sampled_indices = sample(previous_hidden_state, char_to_index[train_text[0]], 50)
 sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
 print('----\n %s \n----' % (sampled_text,))
 print('iter %d, loss: %f (done)' % (iteration, smooth_loss))
@@ -878,6 +993,8 @@ np.savez(
     metric_iterations=np.array(metric_iters, dtype=np.int32),
     metric_valid_vocab_letter_frac=np.array(metric_valid_letter_frac, dtype=np.float64),
     metric_word_error_frac=np.array(metric_word_error_frac, dtype=np.float64),
+    metric_val_ce=np.array(metric_val_ce, dtype=np.float64),
+    train_ratio=np.array(train_ratio, dtype=np.float64),
     metric_rollout_samples=np.array(metric_rollout_samples, dtype=f"U{METRIC_ROLLOUT_LEN}"),
     best_metric_iter=np.array(best_iter, dtype=np.int32),
     best_metric_word_error_frac=np.array(best_word_err, dtype=np.float64),
@@ -895,6 +1012,8 @@ np.savez(
     e_fraction=np.array(e_fraction),
     dale_sign=np.array(dale_sign if dale_sign is not None else []),
     timestep_noise_std=np.array(timestep_noise_std, dtype=np.float64),
+    dropout_rate=np.array(dropout_rate, dtype=np.float64),
+    l2_lambda=np.array(l2_lambda, dtype=np.float64),
     **snapshot_arrays,
 )
 print(f'saved trained model to {model_out}')

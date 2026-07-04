@@ -121,6 +121,7 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
         tasks=_SIXTEEN_WORD_LENGTH_TASKS,
         labels=dict(_SIXTEEN_WORD_LENGTH_LABELS),
         title="16-word vocabularies (no spaces): closed-loop trajectories",
+        seeds=GEOMETRY_STATS_SEEDS,
     ),
     "sixteen_word_lengths_ns_learning": ComparisonSpec(
         name="sixteen_word_lengths_ns",

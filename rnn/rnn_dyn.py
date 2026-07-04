@@ -353,6 +353,19 @@ def inject_timestep_noise(
     return state + rng.standard_normal(state.shape) * std
 
 
+def apply_dropout(
+    state: np.ndarray,
+    rate: float,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, np.ndarray | None]:
+    """Inverted dropout on hidden activations. Returns (dropped_state, mask)."""
+    if rate <= 0.0:
+        return state, None
+    keep = 1.0 - rate
+    mask = rng.random(state.shape) >= rate
+    return state * mask / keep, mask
+
+
 def rnn_hidden_step(
     hidden_state: np.ndarray,
     input_one_hot: np.ndarray,

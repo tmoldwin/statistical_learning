@@ -31,26 +31,44 @@
       "task": "two_word_disjoint_ns",
       "seed": 1,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.52086763880444,
+        "polygon_order": 3,
+        "polygon_score": 0.9851350214546674,
         "polygon_spectrum": {
-          "3": 0.3346450569564962,
-          "4": 0.1872849516223455,
-          "5": 0.22627077821440622,
-          "6": 0.52086763880444,
-          "7": 0.06387749713134873,
-          "8": 0.04082320825947263
+          "3": 0.9851350214546674,
+          "4": 0.02094056983654724,
+          "5": 0.0295111091600634,
+          "6": 0.328507181289385,
+          "7": 0.011407120352042775,
+          "8": 0.024723947326914106
         },
-        "n_corners": 5,
-        "circularity": 0.9514184528333085,
-        "bbox_aspect": 1.0658675361300995
+        "n_corners": 3,
+        "circularity": 0.7082805350321524,
+        "bbox_aspect": 1.1679068134928776
       },
       "spread": {
-        "word_spread_over_diameter": 0.09453321621887893,
-        "within_word_spread_over_diameter": 0.3984485392318855,
+        "word_spread_over_diameter": 0.04906479549012944,
+        "within_word_spread_over_diameter": 0.12131961164771264,
         "per_word_spread": {
-          "cat": 0.09849824801595002,
-          "mop": 0.08263812082766568
+          "cat": 0.058761154578256924,
+          "mop": 0.019975718225746984
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.103920251106889,
+          "top2_variance_frac": 0.7725425258800629,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3735727910249581,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.09190306882567,
+          "top2_variance_frac": 0.7760825695605804,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4284042469275602,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -59,25 +77,43 @@
       "seed": 2,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.582962540356527,
+        "polygon_score": 0.8813003216970176,
         "polygon_spectrum": {
-          "3": 0.582962540356527,
-          "4": 0.30492343244053427,
-          "5": 0.16353702232801537,
-          "6": 0.10891529249801796,
-          "7": 0.1505771248525212,
-          "8": 0.07858109982012447
+          "3": 0.8813003216970176,
+          "4": 0.056580272516054096,
+          "5": 0.0402321916423165,
+          "6": 0.1858905191265937,
+          "7": 0.16016659140919243,
+          "8": 0.12653757676302496
         },
-        "n_corners": 5,
-        "circularity": 0.6442578359848331,
-        "bbox_aspect": 1.2534768519436814
+        "n_corners": 4,
+        "circularity": 0.6457199354763578,
+        "bbox_aspect": 1.0066678514010883
       },
       "spread": {
-        "word_spread_over_diameter": 0.09080901313242339,
-        "within_word_spread_over_diameter": 0.15148493094812024,
+        "word_spread_over_diameter": 0.12154327528651737,
+        "within_word_spread_over_diameter": 0.2276276413066373,
         "per_word_spread": {
-          "cat": 0.09384178814142158,
-          "mop": 0.0817106881054288
+          "cat": 0.1441742750723949,
+          "mop": 0.05365027592888483
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.2448689910627864,
+          "top2_variance_frac": 0.7616409176262752,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.367946427445415,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.2601125681260066,
+          "top2_variance_frac": 0.7613184306941323,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.42226210636162875,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -85,26 +121,44 @@
       "task": "two_word_disjoint_ns",
       "seed": 3,
       "shape": {
-        "polygon_order": 7,
-        "polygon_score": 0.32307840578704944,
+        "polygon_order": 3,
+        "polygon_score": 0.9697184508602507,
         "polygon_spectrum": {
-          "3": 0.15958388547583904,
-          "4": 0.14545122439240554,
-          "5": 0.1761930013383441,
-          "6": 0.1829700437703109,
-          "7": 0.32307840578704944,
-          "8": 0.1267740786952466
+          "3": 0.9697184508602507,
+          "4": 0.0711305753522329,
+          "5": 0.029098448059756275,
+          "6": 0.31017941306200186,
+          "7": 0.02321690225088406,
+          "8": 0.01114229014852861
         },
-        "n_corners": 4,
-        "circularity": 0.974944977578597,
-        "bbox_aspect": 1.1008626805863297
+        "n_corners": 3,
+        "circularity": 0.6984117573890146,
+        "bbox_aspect": 1.0362406813593883
       },
       "spread": {
-        "word_spread_over_diameter": 0.051215969819198695,
-        "within_word_spread_over_diameter": 0.6342980911441598,
+        "word_spread_over_diameter": 0.059335606957553855,
+        "within_word_spread_over_diameter": 0.12662680864947015,
         "per_word_spread": {
-          "cat": 0.07848438993783487,
-          "mop": 0.02394754970056251
+          "cat": 0.05981109993433227,
+          "mop": 0.05886011398077544
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.5589298965209397,
+          "top2_variance_frac": 0.6990882332314172,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3164707761772504,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.3797916368044723,
+          "top2_variance_frac": 0.7334300736422109,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4045231298816885,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -112,26 +166,44 @@
       "task": "two_word_disjoint_ns",
       "seed": 5,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9136686831008779,
+        "polygon_order": 3,
+        "polygon_score": 0.8805100736159696,
         "polygon_spectrum": {
-          "3": 0.0810874679976113,
-          "4": 0.9136686831008779,
-          "5": 0.1291051861299003,
-          "6": 0.12628035733636322,
-          "7": 0.13693054909938393,
-          "8": 0.1703884495161594
+          "3": 0.8805100736159696,
+          "4": 0.17723289893835015,
+          "5": 0.07926234486789786,
+          "6": 0.19262898486403837,
+          "7": 0.1669341705986506,
+          "8": 0.04892604596483816
         },
-        "n_corners": 4,
-        "circularity": 0.8690226985488346,
-        "bbox_aspect": 1.022853312019167
+        "n_corners": 5,
+        "circularity": 0.6188947937108603,
+        "bbox_aspect": 1.0406822254085644
       },
       "spread": {
-        "word_spread_over_diameter": 0.11052399189547168,
-        "within_word_spread_over_diameter": 0.47423912846875077,
+        "word_spread_over_diameter": 0.08607046903183553,
+        "within_word_spread_over_diameter": 0.18948013085191173,
         "per_word_spread": {
-          "mop": 0.12062665303952791,
-          "cat": 0.080216008463303
+          "mop": 0.10152207049523139,
+          "cat": 0.03971566464164796
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.2188036834542033,
+          "top2_variance_frac": 0.7529730208720246,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.2801319547004647,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.1931422053399205,
+          "top2_variance_frac": 0.761940643326043,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.32729196669643235,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -140,25 +212,43 @@
       "seed": 7,
       "shape": {
         "polygon_order": 4,
-        "polygon_score": 0.4648173864676446,
+        "polygon_score": 0.6687582374642154,
         "polygon_spectrum": {
-          "3": 0.43950995856481007,
-          "4": 0.4648173864676446,
-          "5": 0.30122979334131317,
-          "6": 0.261364793283046,
-          "7": 0.22192940496566693,
-          "8": 0.2734942502416786
+          "3": 0.10480785727109154,
+          "4": 0.6687582374642154,
+          "5": 0.3021186597446912,
+          "6": 0.0964040822776731,
+          "7": 0.32572983490382024,
+          "8": 0.14277058424197955
         },
-        "n_corners": 5,
-        "circularity": 0.2182135311273895,
-        "bbox_aspect": 1.688048492135487
+        "n_corners": 4,
+        "circularity": 0.5282676854394843,
+        "bbox_aspect": 1.1872790927662429
       },
       "spread": {
-        "word_spread_over_diameter": 0.10572289660350369,
-        "within_word_spread_over_diameter": 0.23575452023702387,
+        "word_spread_over_diameter": 0.05848486140015932,
+        "within_word_spread_over_diameter": 0.123930186119405,
         "per_word_spread": {
-          "mop": 0.1576120954331034,
-          "cat": 0.05383369777390398
+          "mop": 0.06715521904359661,
+          "cat": 0.049814503756722014
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.441589796292402,
+          "top2_variance_frac": 0.5971760885300641,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.28762257119543444,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.597141695692071,
+          "top2_variance_frac": 0.7021454259576801,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4294133582448905,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -166,26 +256,44 @@
       "task": "two_word_disjoint_ns",
       "seed": 8,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.5246460726338616,
+        "polygon_order": 3,
+        "polygon_score": 0.9857328716261178,
         "polygon_spectrum": {
-          "3": 0.22235895201163056,
-          "4": 0.382803799529407,
-          "5": 0.22589882355631652,
-          "6": 0.5246460726338616,
-          "7": 0.14960637643303612,
-          "8": 0.034310936095302315
+          "3": 0.9857328716261178,
+          "4": 0.029958131659155132,
+          "5": 0.02714844868740069,
+          "6": 0.3209802297750325,
+          "7": 0.012771131473689438,
+          "8": 0.005565419476618571
         },
-        "n_corners": 6,
-        "circularity": 0.9440171506011336,
-        "bbox_aspect": 1.0339948329506843
+        "n_corners": 3,
+        "circularity": 0.7124358023192428,
+        "bbox_aspect": 1.0345865719279992
       },
       "spread": {
-        "word_spread_over_diameter": 0.08402743934055674,
-        "within_word_spread_over_diameter": 0.7212851920875836,
+        "word_spread_over_diameter": 0.05741058061738638,
+        "within_word_spread_over_diameter": 0.0978911183950566,
         "per_word_spread": {
-          "cat": 0.1008951688188088,
-          "mop": 0.06715970986230468
+          "cat": 0.06822544782675205,
+          "mop": 0.046595713408020725
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.421296294738809,
+          "top2_variance_frac": 0.7263477535415697,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.31068273760247445,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.198033162555976,
+          "top2_variance_frac": 0.7618239410934189,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.399352637926725,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -193,349 +301,583 @@
       "task": "two_word_disjoint_ns",
       "seed": 11,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.5690975952668548,
+        "polygon_order": 3,
+        "polygon_score": 0.8932920808049002,
         "polygon_spectrum": {
-          "3": 0.33095477146572266,
-          "4": 0.5690975952668548,
-          "5": 0.39063145231696333,
-          "6": 0.1102450485657564,
-          "7": 0.1443419249325065,
-          "8": 0.11717780597514678
+          "3": 0.8932920808049002,
+          "4": 0.12652647255663238,
+          "5": 0.04256112234709894,
+          "6": 0.2759626023373594,
+          "7": 0.08239038404676212,
+          "8": 0.01457864473443303
         },
-        "n_corners": 7,
-        "circularity": 0.23781965064258767,
-        "bbox_aspect": 3.4158753195393077
+        "n_corners": 3,
+        "circularity": 0.7049933611513951,
+        "bbox_aspect": 1.0290824788495654
       },
       "spread": {
-        "word_spread_over_diameter": 0.21174346222250578,
-        "within_word_spread_over_diameter": 0.9001347354794064,
+        "word_spread_over_diameter": 0.05855138796207712,
+        "within_word_spread_over_diameter": 0.16920653889296175,
         "per_word_spread": {
-          "mop": 0.20636981325859938,
-          "cat": 0.227864409114225
+          "mop": 0.05947202408247156,
+          "cat": 0.055789479600893824
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.4364362919566935,
+          "top2_variance_frac": 0.727879650096076,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.33855184984295095,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.09369807068488,
+          "top2_variance_frac": 0.766982422718096,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.41036168568582015,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
     {
       "task": "two_word_disjoint_ns",
       "seed": 13,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9058840990925956,
+        "polygon_spectrum": {
+          "3": 0.9058840990925956,
+          "4": 0.0460263891589796,
+          "5": 0.09228580000183344,
+          "6": 0.3012289968484439,
+          "7": 0.08064811877214406,
+          "8": 0.01983084543681426
+        },
+        "n_corners": 3,
+        "circularity": 0.6438177263713311,
+        "bbox_aspect": 1.2251339811823545
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.07064036786105965,
+        "within_word_spread_over_diameter": 0.15487859187566033,
+        "per_word_spread": {
+          "mop": 0.0672186191965036,
+          "cat": 0.0740621165256157
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.630665744048918,
+          "top2_variance_frac": 0.5666413991238303,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.26850381973290627,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 4.426291648471464,
+          "top2_variance_frac": 0.6119739772550252,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.33770320043308333,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 17,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.5795717447040399,
+        "polygon_spectrum": {
+          "3": 0.5795717447040399,
+          "4": 0.2095937243208725,
+          "5": 0.08615929509552982,
+          "6": 0.07736874705783826,
+          "7": 0.2568193699822105,
+          "8": 0.10860104998482631
+        },
+        "n_corners": 4,
+        "circularity": 0.6301264928159435,
+        "bbox_aspect": 1.3032269646464854
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.12875365472128858,
+        "within_word_spread_over_diameter": 0.19496336838216086,
+        "per_word_spread": {
+          "mop": 0.12875365472128858
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.6317440540709742,
+          "top2_variance_frac": 0.8430914030955783,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.3904511609744905,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.465546160459487,
+          "top2_variance_frac": 0.7130370539600591,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4071988410760355,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 19,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.855971281691435,
+        "polygon_spectrum": {
+          "3": 0.855971281691435,
+          "4": 0.22097429234855268,
+          "5": 0.08152550488883951,
+          "6": 0.24225481360513956,
+          "7": 0.19149571281038474,
+          "8": 0.12096691128331753
+        },
+        "n_corners": 4,
+        "circularity": 0.4809142039979994,
+        "bbox_aspect": 1.1000473383578389
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.07920978830332102,
+        "within_word_spread_over_diameter": 0.12239181689461437,
+        "per_word_spread": {
+          "cat": 0.09155781747796482,
+          "mop": 0.04216570077938963
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.958552755677482,
+          "top2_variance_frac": 0.6473180106299983,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.24730606182575995,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.6343026766154334,
+          "top2_variance_frac": 0.6922764419164248,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.2911524962978647,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 23,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9555903661058182,
+        "polygon_spectrum": {
+          "3": 0.9555903661058182,
+          "4": 0.0506684958678292,
+          "5": 0.06910962591379323,
+          "6": 0.31911804063608434,
+          "7": 0.04402442614461135,
+          "8": 0.04019710083322452
+        },
+        "n_corners": 3,
+        "circularity": 0.687051676100078,
+        "bbox_aspect": 1.1305555745180325
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.05741820393285463,
+        "within_word_spread_over_diameter": 0.10240331556935862,
+        "per_word_spread": {
+          "mop": 0.06318865232141987,
+          "cat": 0.05164775554428939
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.003982399438581,
+          "top2_variance_frac": 0.621974626178989,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.20759063887723364,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.641855813781417,
+          "top2_variance_frac": 0.6731154702072848,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.28276972327751093,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 29,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9324869739011195,
+        "polygon_spectrum": {
+          "3": 0.9324869739011195,
+          "4": 0.07385398932238953,
+          "5": 0.057285166998490615,
+          "6": 0.23628887511750357,
+          "7": 0.07780989633115275,
+          "8": 0.03459686651245533
+        },
+        "n_corners": 4,
+        "circularity": 0.7418631695130457,
+        "bbox_aspect": 1.0392127620766234
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.06469589035457043,
+        "within_word_spread_over_diameter": 0.13690528697728555,
+        "per_word_spread": {
+          "cat": 0.06348775020587363,
+          "mop": 0.06590403050326726
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.3380397720554775,
+          "top2_variance_frac": 0.6125463926990801,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.3001683611343668,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.8782352709560173,
+          "top2_variance_frac": 0.6733389333895365,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.39469401789329644,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 31,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9891033147848728,
+        "polygon_spectrum": {
+          "3": 0.9891033147848728,
+          "4": 0.04681916078233362,
+          "5": 0.019003115973768907,
+          "6": 0.33498740196675175,
+          "7": 0.017248636414644188,
+          "8": 0.004756790654730601
+        },
+        "n_corners": 3,
+        "circularity": 0.6980957615488003,
+        "bbox_aspect": 1.131370149312064
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.058713354456732855,
+        "within_word_spread_over_diameter": 0.12705005364134975,
+        "per_word_spread": {
+          "cat": 0.06500184629146971,
+          "mop": 0.052424862621996006
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.154490681118697,
+          "top2_variance_frac": 0.631504267147315,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.28609480774506474,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.552066320206403,
+          "top2_variance_frac": 0.70805058960891,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3971228287836473,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 37,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9944414221389154,
+        "polygon_spectrum": {
+          "3": 0.9944414221389154,
+          "4": 0.021759069603658157,
+          "5": 0.019126120210300683,
+          "6": 0.3424499270018639,
+          "7": 0.00950438093228255,
+          "8": 0.01809724123580533
+        },
+        "n_corners": 3,
+        "circularity": 0.6915587488820152,
+        "bbox_aspect": 1.121050414708605
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.04645494205248456,
+        "within_word_spread_over_diameter": 0.09596193350162145,
+        "per_word_spread": {
+          "cat": 0.052212570567376965,
+          "mop": 0.04069731353759215
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.635977437363717,
+          "top2_variance_frac": 0.6967064178573318,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3249353594498032,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.3799578117293985,
+          "top2_variance_frac": 0.7364696866379924,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4120402245576541,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_disjoint_ns",
+      "seed": 53,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9108521190100767,
+        "polygon_spectrum": {
+          "3": 0.9108521190100767,
+          "4": 0.022590624108623766,
+          "5": 0.047584930574828745,
+          "6": 0.29827398355628787,
+          "7": 0.01983575770302449,
+          "8": 0.04114895743820686
+        },
+        "n_corners": 5,
+        "circularity": 0.6047184533876812,
+        "bbox_aspect": 1.0674338718415317
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.08540818147806264,
+        "within_word_spread_over_diameter": 0.03532169019764703,
+        "per_word_spread": {
+          "cat": 0.12645978716788067,
+          "mop": 0.07172431291478996
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.1892219727756514,
+          "top2_variance_frac": 0.7699422894117701,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3408522329647101,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.5950700886350733,
+          "top2_variance_frac": 0.7003839398749182,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.40969950704313607,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_pos_overlap_ns",
+      "seed": 1,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9783759129809458,
+        "polygon_spectrum": {
+          "3": 0.9783759129809458,
+          "4": 0.042850501675919334,
+          "5": 0.022681712348297994,
+          "6": 0.32509414407620374,
+          "7": 0.018498880516243658,
+          "8": 0.012664518017945115
+        },
+        "n_corners": 3,
+        "circularity": 0.671489466853791,
+        "bbox_aspect": 1.1196292874689293
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.06384479968582749,
+        "within_word_spread_over_diameter": 0.09750100743518449,
+        "per_word_spread": {
+          "cub": 0.07555237912852718,
+          "nut": 0.02872206135772845
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.48460335746208,
+          "top2_variance_frac": 0.879002244407175,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4268747836534773,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.5993651428077813,
+          "top2_variance_frac": 0.8598465328596115,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4680311616812502,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_pos_overlap_ns",
+      "seed": 2,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9619824838337384,
+        "polygon_spectrum": {
+          "3": 0.9619824838337384,
+          "4": 0.06751161735719816,
+          "5": 0.024776780401193955,
+          "6": 0.33332637595772846,
+          "7": 0.030266103356881575,
+          "8": 0.01880081997189682
+        },
+        "n_corners": 3,
+        "circularity": 0.6880180852812293,
+        "bbox_aspect": 1.0976793524017634
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.052720432832486994,
+        "within_word_spread_over_diameter": 0.11476843784803281,
+        "per_word_spread": {
+          "cub": 0.060665678190920315,
+          "nut": 0.028884696757187012
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.7608325310869883,
+          "top2_variance_frac": 0.8364052066313793,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.41059063822475134,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.888450966631435,
+          "top2_variance_frac": 0.8131996976591275,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.46277837794720705,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_pos_overlap_ns",
+      "seed": 3,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.9564529511210099,
+        "polygon_spectrum": {
+          "3": 0.9564529511210099,
+          "4": 0.05892271840431975,
+          "5": 0.044861566857570284,
+          "6": 0.3013173401107495,
+          "7": 0.03524974897554502,
+          "8": 0.06879791905756301
+        },
+        "n_corners": 3,
+        "circularity": 0.6949740871049397,
+        "bbox_aspect": 1.0603764624874716
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.059116872287775075,
+        "within_word_spread_over_diameter": 0.1008530464557995,
+        "per_word_spread": {
+          "cub": 0.057187504029432346,
+          "nut": 0.06104624054611782
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.4252830507524608,
+          "top2_variance_frac": 0.7282600727998673,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3470309120856191,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.2910341588173857,
+          "top2_variance_frac": 0.7518060594773243,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4271207171703984,
+          "n_points": 42.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "two_word_pos_overlap_ns",
+      "seed": 5,
       "shape": {
         "polygon_order": 5,
-        "polygon_score": 0.643079246164798,
+        "polygon_score": 0.40374754250950196,
         "polygon_spectrum": {
-          "3": 0.2613382164036973,
-          "4": 0.11837760942638001,
-          "5": 0.643079246164798,
-          "6": 0.4394800864541237,
-          "7": 0.21299302517033555,
-          "8": 0.0498889891339491
+          "3": 0.32992520320121804,
+          "4": 0.3843824513428352,
+          "5": 0.40374754250950196,
+          "6": 0.08292253797384944,
+          "7": 0.03873778301759258,
+          "8": 0.12943337513200578
         },
         "n_corners": 6,
-        "circularity": 0.9341671835664407,
-        "bbox_aspect": 1.0583244822249773
+        "circularity": 0.30912456547857875,
+        "bbox_aspect": 1.4861240852096171
       },
       "spread": {
-        "word_spread_over_diameter": 0.10030513596959606,
-        "within_word_spread_over_diameter": 0.6383686223707558,
+        "word_spread_over_diameter": 0.1440308941718905,
+        "within_word_spread_over_diameter": 0.3853425358663405,
         "per_word_spread": {
-          "mop": 0.13368265743663646,
-          "cat": 0.06692761450255566
+          "nut": 0.16126357231650032,
+          "cub": 0.09233285973806103
         }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 17,
-      "shape": {
-        "polygon_order": 5,
-        "polygon_score": 0.577271136609874,
-        "polygon_spectrum": {
-          "3": 0.4659608967966652,
-          "4": 0.32840541382197536,
-          "5": 0.577271136609874,
-          "6": 0.08958806559521817,
-          "7": 0.206580875120877,
-          "8": 0.06951723705650083
-        },
-        "n_corners": 4,
-        "circularity": 0.9265084167113412,
-        "bbox_aspect": 1.0702066349359904
       },
-      "spread": {
-        "word_spread_over_diameter": 0.05220026122506769,
-        "within_word_spread_over_diameter": 0.45159918877441313,
-        "per_word_spread": {
-          "mop": 0.05220026122506769
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 19,
-      "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.5100573420596675,
-        "polygon_spectrum": {
-          "3": 0.3179269280747083,
-          "4": 0.4048539703946683,
-          "5": 0.311117591510587,
-          "6": 0.5100573420596675,
-          "7": 0.058594800637191226,
-          "8": 0.025706773542232032
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.385076981523477,
+          "top2_variance_frac": 0.6844358999076616,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.35149941904843396,
+          "n_points": 12.0,
+          "n_dims": 50.0
         },
-        "n_corners": 6,
-        "circularity": 0.9041799754916365,
-        "bbox_aspect": 1.2082422584738
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.06216554952532692,
-        "within_word_spread_over_diameter": 0.5025159420229587,
-        "per_word_spread": {
-          "cat": 0.06555789201328165,
-          "mop": 0.05198852206146275
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 23,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.60799847806691,
-        "polygon_spectrum": {
-          "3": 0.60799847806691,
-          "4": 0.39460708285580515,
-          "5": 0.3105204768416224,
-          "6": 0.3252111183826007,
-          "7": 0.12698957868481212,
-          "8": 0.05848449184174886
-        },
-        "n_corners": 5,
-        "circularity": 0.935711720998372,
-        "bbox_aspect": 1.0638536339589233
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.08362257044738594,
-        "within_word_spread_over_diameter": 0.6513205010683836,
-        "per_word_spread": {
-          "mop": 0.10759337507318356,
-          "cat": 0.05965176582158832
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 29,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.9637304886176201,
-        "polygon_spectrum": {
-          "3": 0.9637304886176201,
-          "4": 0.09768623305028896,
-          "5": 0.09313467415469887,
-          "6": 0.3298927167105185,
-          "7": 0.10274790337295624,
-          "8": 0.07110493158930145
-        },
-        "n_corners": 3,
-        "circularity": 0.6428344189046628,
-        "bbox_aspect": 1.060059400137208
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.09103051944545056,
-        "within_word_spread_over_diameter": 0.26321899388834546,
-        "per_word_spread": {
-          "cat": 0.05753585234732,
-          "mop": 0.1245251865435811
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 31,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.5095146010195066,
-        "polygon_spectrum": {
-          "3": 0.29500090180073185,
-          "4": 0.5095146010195066,
-          "5": 0.1465640688200371,
-          "6": 0.28131135204270646,
-          "7": 0.30734482989496165,
-          "8": 0.235511871175376
-        },
-        "n_corners": 5,
-        "circularity": 0.45021468771269896,
-        "bbox_aspect": 1.726949653149411
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.1620402619532059,
-        "within_word_spread_over_diameter": 0.2232543889993948,
-        "per_word_spread": {
-          "cat": 0.26496549455788704,
-          "mop": 0.059115029348524764
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 37,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.9838685762885692,
-        "polygon_spectrum": {
-          "3": 0.9838685762885692,
-          "4": 0.04252382658192815,
-          "5": 0.02662491838976997,
-          "6": 0.3330562663837821,
-          "7": 0.020248963970699623,
-          "8": 0.01914585558997241
-        },
-        "n_corners": 3,
-        "circularity": 0.7121961060520196,
-        "bbox_aspect": 1.0453378531043325
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.08183906384819145,
-        "within_word_spread_over_diameter": 0.1426259898544954,
-        "per_word_spread": {
-          "cat": 0.10988600431716028,
-          "mop": 0.05379212337922261
-        }
-      }
-    },
-    {
-      "task": "two_word_disjoint_ns",
-      "seed": 53,
-      "shape": {
-        "polygon_order": 8,
-        "polygon_score": 0.5062462805396274,
-        "polygon_spectrum": {
-          "3": 0.42515361902344945,
-          "4": 0.31241071410306553,
-          "5": 0.2902218158737571,
-          "6": 0.23764746716241242,
-          "7": 0.11133067249248359,
-          "8": 0.5062462805396274
-        },
-        "n_corners": 5,
-        "circularity": 0.9721641792551903,
-        "bbox_aspect": 1.0839667748476243
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.048820682263434716,
-        "within_word_spread_over_diameter": 0.6574685314679708,
-        "per_word_spread": {
-          "cat": 0.11280922881468115,
-          "mop": 0.027491166746352564
-        }
-      }
-    },
-    {
-      "task": "two_word_pos_overlap_ns",
-      "seed": 1,
-      "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.5695109997625536,
-        "polygon_spectrum": {
-          "3": 0.23075420599100183,
-          "4": 0.5285084959790534,
-          "5": 0.0389025753709047,
-          "6": 0.5695109997625536,
-          "7": 0.07603160778027775,
-          "8": 0.48518366474329483
-        },
-        "n_corners": 6,
-        "circularity": 0.3969072082552691,
-        "bbox_aspect": 3.738971012013014
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.21634526687694966,
-        "within_word_spread_over_diameter": 0.7453214845687047,
-        "per_word_spread": {
-          "cub": 0.21463822229290805,
-          "nut": 0.22146640062907455
-        }
-      }
-    },
-    {
-      "task": "two_word_pos_overlap_ns",
-      "seed": 2,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9774783496117144,
-        "polygon_spectrum": {
-          "3": 0.033486699758679274,
-          "4": 0.9774783496117144,
-          "5": 0.022511561380258727,
-          "6": 0.040214741394281966,
-          "7": 0.02143876904131148,
-          "8": 0.2672962209914402
-        },
-        "n_corners": 4,
-        "circularity": 0.8501439193786174,
-        "bbox_aspect": 1.0249472471581065
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.04116926550960188,
-        "within_word_spread_over_diameter": 0.6000010377040174,
-        "per_word_spread": {
-          "cub": 0.04517937697987489,
-          "nut": 0.029138931098782846
-        }
-      }
-    },
-    {
-      "task": "two_word_pos_overlap_ns",
-      "seed": 3,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9469613798135752,
-        "polygon_spectrum": {
-          "3": 0.08256072372377442,
-          "4": 0.9469613798135752,
-          "5": 0.07953211919116668,
-          "6": 0.044325302979412395,
-          "7": 0.06622743508123792,
-          "8": 0.1668249142036135
-        },
-        "n_corners": 4,
-        "circularity": 0.873338580529552,
-        "bbox_aspect": 1.0325768244464342
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.09023615499178955,
-        "within_word_spread_over_diameter": 0.4142790716898294,
-        "per_word_spread": {
-          "cub": 0.1266851553282437,
-          "nut": 0.0537871546553354
-        }
-      }
-    },
-    {
-      "task": "two_word_pos_overlap_ns",
-      "seed": 5,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.9858487119139547,
-        "polygon_spectrum": {
-          "3": 0.9858487119139547,
-          "4": 0.012885457937613228,
-          "5": 0.007527788274013315,
-          "6": 0.325153406157345,
-          "7": 0.008803087525128421,
-          "8": 0.014242802680965776
-        },
-        "n_corners": 3,
-        "circularity": 0.6961254241792587,
-        "bbox_aspect": 1.0062144261911006
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.06091787451816501,
-        "within_word_spread_over_diameter": 0.17286881619382463,
-        "per_word_spread": {
-          "nut": 0.06855007114047808,
-          "cub": 0.03802128465122577
+        "loop": {
+          "effective_dim": 3.476779915428092,
+          "top2_variance_frac": 0.6703161429143166,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4194158368978024,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -544,25 +886,43 @@
       "seed": 7,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9145449939359284,
+        "polygon_score": 0.6565022139831883,
         "polygon_spectrum": {
-          "3": 0.9145449939359284,
-          "4": 0.12857439472757023,
-          "5": 0.12022674985628408,
-          "6": 0.30469902204062693,
-          "7": 0.064888680897205,
-          "8": 0.022226924658649692
+          "3": 0.6565022139831883,
+          "4": 0.20928832711182324,
+          "5": 0.25169821917771834,
+          "6": 0.09399034463408878,
+          "7": 0.2466026373447389,
+          "8": 0.18747091190387635
         },
-        "n_corners": 3,
-        "circularity": 0.6422312752361611,
-        "bbox_aspect": 1.2510789142137162
+        "n_corners": 5,
+        "circularity": 0.5974970964602423,
+        "bbox_aspect": 1.1194085476513682
       },
       "spread": {
-        "word_spread_over_diameter": 0.06497771604476768,
-        "within_word_spread_over_diameter": 0.1054775620324458,
+        "word_spread_over_diameter": 0.06203865478652289,
+        "within_word_spread_over_diameter": 0.09913031811280677,
         "per_word_spread": {
-          "nut": 0.09605244062354859,
-          "cub": 0.03390299146598676
+          "nut": 0.03511414173803434,
+          "cub": 0.08896316783501143
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.4579550695303047,
+          "top2_variance_frac": 0.7159700927502494,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.2636591181826643,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.182154286395441,
+          "top2_variance_frac": 0.7519125826541736,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.32468281402935745,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -571,25 +931,43 @@
       "seed": 8,
       "shape": {
         "polygon_order": 4,
-        "polygon_score": 0.6716102667929209,
+        "polygon_score": 0.5833993232860734,
         "polygon_spectrum": {
-          "3": 0.2971822385901469,
-          "4": 0.6716102667929209,
-          "5": 0.3950006637128974,
-          "6": 0.1072758720948419,
-          "7": 0.07518307236075032,
-          "8": 0.2805033090912378
+          "3": 0.5518953793246862,
+          "4": 0.5833993232860734,
+          "5": 0.303798899562515,
+          "6": 0.3412584967076765,
+          "7": 0.25866837758433064,
+          "8": 0.0630833919170064
         },
-        "n_corners": 6,
-        "circularity": 0.24528873046474617,
-        "bbox_aspect": 4.615954104895697
+        "n_corners": 5,
+        "circularity": 0.567797237640063,
+        "bbox_aspect": 1.0180698380583504
       },
       "spread": {
-        "word_spread_over_diameter": 0.20888398139224945,
-        "within_word_spread_over_diameter": 1.2215878158387143,
+        "word_spread_over_diameter": 0.04878074188870225,
+        "within_word_spread_over_diameter": 0.07631388301964946,
         "per_word_spread": {
-          "cub": 0.18912784958475484,
-          "nut": 0.22864011319974403
+          "cub": 0.03869320081136266,
+          "nut": 0.05886828296604184
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.0902899463980007,
+          "top2_variance_frac": 0.780487794613009,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.33373050767840456,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.863192283804736,
+          "top2_variance_frac": 0.8226459530300825,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.39680998747460655,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -597,26 +975,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 11,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.573044195263247,
+        "polygon_order": 3,
+        "polygon_score": 0.9690728121702766,
         "polygon_spectrum": {
-          "3": 0.19357590379485265,
-          "4": 0.573044195263247,
-          "5": 0.06503413982941791,
-          "6": 0.08467928418344399,
-          "7": 0.08928255185500461,
-          "8": 0.12415198087463387
+          "3": 0.9690728121702766,
+          "4": 0.10941489432634907,
+          "5": 0.053878481094755536,
+          "6": 0.32859041259427024,
+          "7": 0.05741061662849287,
+          "8": 0.025263577692767783
         },
-        "n_corners": 4,
-        "circularity": 0.938483482941994,
-        "bbox_aspect": 1.1858258040351188
+        "n_corners": 3,
+        "circularity": 0.6018836609685148,
+        "bbox_aspect": 1.0909746110066945
       },
       "spread": {
-        "word_spread_over_diameter": 0.07198719146396226,
-        "within_word_spread_over_diameter": 0.48223017161714715,
+        "word_spread_over_diameter": 0.06964887199983258,
+        "within_word_spread_over_diameter": 0.1049084358173377,
         "per_word_spread": {
-          "nut": 0.08587164969136712,
-          "cub": 0.03033381678174767
+          "nut": 0.07961202883143624,
+          "cub": 0.03975940150502158
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.4282668814072137,
+          "top2_variance_frac": 0.7237113061723206,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3771017066708459,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.7086721373854687,
+          "top2_variance_frac": 0.6919020823118243,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.35278513794326855,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -624,26 +1020,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 13,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9829121996500078,
+        "polygon_order": 3,
+        "polygon_score": 0.9126976400588304,
         "polygon_spectrum": {
-          "3": 0.02287410019913496,
-          "4": 0.9829121996500078,
-          "5": 0.005020622232826833,
-          "6": 0.035861611919480264,
-          "7": 0.010083757649293035,
-          "8": 0.26009252388103654
+          "3": 0.9126976400588304,
+          "4": 0.12004809221690425,
+          "5": 0.040103850788673324,
+          "6": 0.2927558302908067,
+          "7": 0.07319597277472514,
+          "8": 0.019663851913439754
         },
-        "n_corners": 4,
-        "circularity": 0.8447174510946375,
-        "bbox_aspect": 1.0341511766633575
+        "n_corners": 3,
+        "circularity": 0.7073471075951885,
+        "bbox_aspect": 1.0597351698518
       },
       "spread": {
-        "word_spread_over_diameter": 0.04669319867077992,
-        "within_word_spread_over_diameter": 0.4949933552997805,
+        "word_spread_over_diameter": 0.05023152690603754,
+        "within_word_spread_over_diameter": 0.06001015767397833,
         "per_word_spread": {
-          "nut": 0.0661322894099795,
-          "cub": 0.027254107931580354
+          "nut": 0.04904600627987303,
+          "cub": 0.051417047532202054
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.554225225654417,
+          "top2_variance_frac": 0.695545138631943,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.2609620061242124,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.271266113273354,
+          "top2_variance_frac": 0.7470511095395042,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3202772014084219,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -652,24 +1066,42 @@
       "seed": 17,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.4950076715741175,
+        "polygon_score": 0.8804966753951737,
         "polygon_spectrum": {
-          "3": 0.4950076715741175,
-          "4": 0.3299009705068436,
-          "5": 0.2999125767256557,
-          "6": 0.06835831055943216,
-          "7": 0.15654176526539737,
-          "8": 0.15825922229544695
+          "3": 0.8804966753951737,
+          "4": 0.20337055596441864,
+          "5": 0.15629220731929394,
+          "6": 0.22784582612140386,
+          "7": 0.10382737413212131,
+          "8": 0.04949000043377124
         },
-        "n_corners": 5,
-        "circularity": 0.40827986423875195,
-        "bbox_aspect": 1.1190982728447563
+        "n_corners": 3,
+        "circularity": 0.5919197857847812,
+        "bbox_aspect": 1.0186400713028216
       },
       "spread": {
-        "word_spread_over_diameter": 0.18068309450445713,
-        "within_word_spread_over_diameter": 0.2646173775866792,
+        "word_spread_over_diameter": 0.07527757168295685,
+        "within_word_spread_over_diameter": 0.1563446781944178,
         "per_word_spread": {
-          "nut": 0.18068309450445713
+          "nut": 0.07527757168295685
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.641929960917834,
+          "top2_variance_frac": 0.858461868606288,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.35835577930747115,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.87554275629261,
+          "top2_variance_frac": 0.805671657454726,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4320128862493202,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -677,26 +1109,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 19,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.8251360231655382,
+        "polygon_order": 3,
+        "polygon_score": 0.8976816311960313,
         "polygon_spectrum": {
-          "3": 0.2846623949758071,
-          "4": 0.8251360231655382,
-          "5": 0.139375065744388,
-          "6": 0.058116891678770426,
-          "7": 0.07244945010458888,
-          "8": 0.1581262274343203
+          "3": 0.8976816311960313,
+          "4": 0.1013094152485361,
+          "5": 0.06061776305901701,
+          "6": 0.20656755825440903,
+          "7": 0.1416947711353635,
+          "8": 0.05224415513786777
         },
         "n_corners": 4,
-        "circularity": 0.8647275418826853,
-        "bbox_aspect": 1.0672197051723606
+        "circularity": 0.6618577717844469,
+        "bbox_aspect": 1.2107879958504857
       },
       "spread": {
-        "word_spread_over_diameter": 0.09268514167610498,
-        "within_word_spread_over_diameter": 0.5401931199062117,
+        "word_spread_over_diameter": 0.060734700411189405,
+        "within_word_spread_over_diameter": 0.12277457748028871,
         "per_word_spread": {
-          "cub": 0.10006371542747422,
-          "nut": 0.07054942042199722
+          "cub": 0.06862321953870665,
+          "nut": 0.03706914302863766
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.974279145606981,
+          "top2_variance_frac": 0.6433638568773943,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4067799339351519,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.225178872334153,
+          "top2_variance_frac": 0.7677880665261178,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.39368753452093913,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -704,26 +1154,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 23,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9652607018845641,
+        "polygon_order": 3,
+        "polygon_score": 0.9721264937631027,
         "polygon_spectrum": {
-          "3": 0.08030061652394474,
-          "4": 0.9652607018845641,
-          "5": 0.06520565576314362,
-          "6": 0.03252455452014447,
-          "7": 0.03970669083040758,
-          "8": 0.26638382301789765
+          "3": 0.9721264937631027,
+          "4": 0.05782991671926996,
+          "5": 0.03425360523893756,
+          "6": 0.32598237532701135,
+          "7": 0.02863896787977577,
+          "8": 0.02106872102420862
         },
-        "n_corners": 4,
-        "circularity": 0.8576467938114455,
-        "bbox_aspect": 1.0033727404865336
+        "n_corners": 3,
+        "circularity": 0.695846882139745,
+        "bbox_aspect": 1.1193487331351126
       },
       "spread": {
-        "word_spread_over_diameter": 0.07948997183139148,
-        "within_word_spread_over_diameter": 0.466135615684566,
+        "word_spread_over_diameter": 0.053887903309187364,
+        "within_word_spread_over_diameter": 0.09311986122656689,
         "per_word_spread": {
-          "nut": 0.12011609080065389,
-          "cub": 0.03886385286212907
+          "nut": 0.06847826221675653,
+          "cub": 0.03929754440161821
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.4237465451051046,
+          "top2_variance_frac": 0.7357625977468266,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.26641796917837013,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.856965938633041,
+          "top2_variance_frac": 0.8216311096184674,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.32094305694424446,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -731,26 +1199,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 29,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9818319376373115,
+        "polygon_order": 3,
+        "polygon_score": 0.9904219728985323,
         "polygon_spectrum": {
-          "3": 0.06562185856700711,
-          "4": 0.9818319376373115,
-          "5": 0.052431000709421,
-          "6": 0.029333271076236934,
-          "7": 0.0448394806511011,
-          "8": 0.2658251266723784
+          "3": 0.9904219728985323,
+          "4": 0.020251089365495335,
+          "5": 0.008107176885197099,
+          "6": 0.33819644902067525,
+          "7": 0.007838691985804497,
+          "8": 0.006003059159334117
         },
-        "n_corners": 4,
-        "circularity": 0.8481325092840877,
-        "bbox_aspect": 1.0474839435062775
+        "n_corners": 3,
+        "circularity": 0.6853744780848409,
+        "bbox_aspect": 1.0993047064424295
       },
       "spread": {
-        "word_spread_over_diameter": 0.048789308529561995,
-        "within_word_spread_over_diameter": 0.5296487100724593,
+        "word_spread_over_diameter": 0.06183710472284592,
+        "within_word_spread_over_diameter": 0.14791112371903464,
         "per_word_spread": {
-          "cub": 0.06010841815643627,
-          "nut": 0.03747019890268772
+          "cub": 0.08016911858085231,
+          "nut": 0.04350509086483953
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.624871200921795,
+          "top2_variance_frac": 0.862831730617695,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.36618616830652523,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.3660564593173903,
+          "top2_variance_frac": 0.9111809632842585,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4876036832854092,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -759,25 +1245,43 @@
       "seed": 31,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9878942889627053,
+        "polygon_score": 0.9927642749448675,
         "polygon_spectrum": {
-          "3": 0.9878942889627053,
-          "4": 0.038882258044736655,
-          "5": 0.020910960444963045,
-          "6": 0.3364262044286202,
-          "7": 0.015123393904753512,
-          "8": 0.015806450205852095
+          "3": 0.9927642749448675,
+          "4": 0.02376261374797307,
+          "5": 0.011175570979489458,
+          "6": 0.34100245597669016,
+          "7": 0.013105240784241199,
+          "8": 0.01264819940089192
         },
         "n_corners": 3,
-        "circularity": 0.6847234188531258,
-        "bbox_aspect": 1.0335554987031683
+        "circularity": 0.7043246904959026,
+        "bbox_aspect": 1.119660026838517
       },
       "spread": {
-        "word_spread_over_diameter": 0.08297982991150066,
-        "within_word_spread_over_diameter": 0.2106803667552401,
+        "word_spread_over_diameter": 0.04506615022951209,
+        "within_word_spread_over_diameter": 0.10218275483841241,
         "per_word_spread": {
-          "cub": 0.09950921436440072,
-          "nut": 0.06645044545860061
+          "cub": 0.04232767980256921,
+          "nut": 0.047804620656454966
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.353243144756772,
+          "top2_variance_frac": 0.7376993062139711,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.34522286001806124,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.153088567532244,
+          "top2_variance_frac": 0.7754108347332904,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.4298926064477286,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -785,26 +1289,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 37,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.3404518810299602,
+        "polygon_order": 3,
+        "polygon_score": 0.8230127065733281,
         "polygon_spectrum": {
-          "3": 0.33123853346436655,
-          "4": 0.3404518810299602,
-          "5": 0.1668268248473518,
-          "6": 0.07766458139491277,
-          "7": 0.14117018850356247,
-          "8": 0.14489282110388277
+          "3": 0.8230127065733281,
+          "4": 0.15359300595277914,
+          "5": 0.10068478372278945,
+          "6": 0.3123278648241972,
+          "7": 0.1723433591408053,
+          "8": 0.13290949547343947
         },
-        "n_corners": 3,
-        "circularity": 0.4299372738530406,
-        "bbox_aspect": 1.84484108088134
+        "n_corners": 4,
+        "circularity": 0.59219643867688,
+        "bbox_aspect": 1.12652052581998
       },
       "spread": {
-        "word_spread_over_diameter": 0.037993757154816316,
-        "within_word_spread_over_diameter": 0.20182275110107156,
+        "word_spread_over_diameter": 0.06436704997516565,
+        "within_word_spread_over_diameter": 0.1212026584219843,
         "per_word_spread": {
-          "cub": 0.045959106399146736,
-          "nut": 0.030028407910485895
+          "cub": 0.07851409243334392,
+          "nut": 0.05022000751698738
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.3362124375899906,
+          "top2_variance_frac": 0.7149714500568404,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3363723567370101,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.1757328291133105,
+          "top2_variance_frac": 0.7353069754589866,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.42009348778024797,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -812,26 +1334,44 @@
       "task": "two_word_pos_overlap_ns",
       "seed": 53,
       "shape": {
-        "polygon_order": 8,
-        "polygon_score": 0.44430341798830997,
+        "polygon_order": 3,
+        "polygon_score": 0.8626447703947555,
         "polygon_spectrum": {
-          "3": 0.20957126693924805,
-          "4": 0.38638821993954797,
-          "5": 0.08166347030847546,
-          "6": 0.34586360593687043,
-          "7": 0.2544868769193292,
-          "8": 0.44430341798830997
+          "3": 0.8626447703947555,
+          "4": 0.1995205285925422,
+          "5": 0.18492215349589233,
+          "6": 0.31090861203763276,
+          "7": 0.053396741104127655,
+          "8": 0.03244774387473202
         },
-        "n_corners": 9,
-        "circularity": 0.3114763328139995,
-        "bbox_aspect": 2.361267311943688
+        "n_corners": 5,
+        "circularity": 0.6084369484292168,
+        "bbox_aspect": 1.1485547766743158
       },
       "spread": {
-        "word_spread_over_diameter": 0.23290621039651144,
-        "within_word_spread_over_diameter": 0.951587309702217,
+        "word_spread_over_diameter": 0.0750879683233148,
+        "within_word_spread_over_diameter": 0.09798936491978431,
         "per_word_spread": {
-          "cub": 0.2132446707682183,
-          "nut": 0.23946005693927583
+          "cub": 0.08896561313058418,
+          "nut": 0.07046208672089166
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.911639774104817,
+          "top2_variance_frac": 0.6741846942601931,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.32008883937386023,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 4.360493648298637,
+          "top2_variance_frac": 0.6209865589561443,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.36211223823385813,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -840,25 +1380,43 @@
       "seed": 1,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9838314115381711,
+        "polygon_score": 0.9921683761633662,
         "polygon_spectrum": {
-          "3": 0.9838314115381711,
-          "4": 0.03624052446406029,
-          "5": 0.01690551951675434,
-          "6": 0.3329916946991373,
-          "7": 0.014952623293063134,
-          "8": 0.00881594466443983
+          "3": 0.9921683761633662,
+          "4": 0.03936212404911219,
+          "5": 0.013259160525393544,
+          "6": 0.34177782016627783,
+          "7": 0.015575505113864086,
+          "8": 0.006473476838125815
         },
         "n_corners": 3,
-        "circularity": 0.6840972749957778,
-        "bbox_aspect": 1.2102252029048866
+        "circularity": 0.6872075799940391,
+        "bbox_aspect": 1.1189444882714363
       },
       "spread": {
-        "word_spread_over_diameter": 0.03794833255983176,
-        "within_word_spread_over_diameter": 0.13133394635449816,
+        "word_spread_over_diameter": 0.0430915773924131,
+        "within_word_spread_over_diameter": 0.07463824796076214,
         "per_word_spread": {
-          "can": 0.03876645421608516,
-          "cat": 0.03549396759107154
+          "can": 0.04470027572184466,
+          "cat": 0.03826548240411842
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.5799490394546565,
+          "top2_variance_frac": 0.8591520917673121,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.480307951891807,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.198674533869717,
+          "top2_variance_frac": 0.9509268914419351,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5686721095896012,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -866,26 +1424,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 2,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.6145881855076539,
+        "polygon_order": 3,
+        "polygon_score": 0.9953054988319668,
         "polygon_spectrum": {
-          "3": 0.32138377400725965,
-          "4": 0.3169311065434991,
-          "5": 0.2787923068259212,
-          "6": 0.6145881855076539,
-          "7": 0.11529224257628162,
-          "8": 0.023817460082300373
+          "3": 0.9953054988319668,
+          "4": 0.029415057698444748,
+          "5": 0.00959442173759896,
+          "6": 0.3416354412935203,
+          "7": 0.011636392684800082,
+          "8": 0.005840251898987041
         },
-        "n_corners": 6,
-        "circularity": 0.9352237262494324,
-        "bbox_aspect": 1.085501249779971
+        "n_corners": 3,
+        "circularity": 0.6888986170616945,
+        "bbox_aspect": 1.02138364275473
       },
       "spread": {
-        "word_spread_over_diameter": 0.06626269513451485,
-        "within_word_spread_over_diameter": 0.5247731213445698,
+        "word_spread_over_diameter": 0.043361517485503875,
+        "within_word_spread_over_diameter": 0.10429920468713592,
         "per_word_spread": {
-          "can": 0.06560134496636484,
-          "cat": 0.06824674563896488
+          "can": 0.04513948149806484,
+          "cat": 0.038027625447821
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0894723792467538,
+          "top2_variance_frac": 0.9718707745187705,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.47517697482211596,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.030851759314215,
+          "top2_variance_frac": 0.9906888630998739,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5407019742550268,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -893,26 +1469,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 3,
       "shape": {
-        "polygon_order": 5,
-        "polygon_score": 0.5525317246656294,
+        "polygon_order": 3,
+        "polygon_score": 0.6625886741312024,
         "polygon_spectrum": {
-          "3": 0.36652725481846277,
-          "4": 0.3989431585855329,
-          "5": 0.5525317246656294,
-          "6": 0.3859386298003169,
-          "7": 0.24074633074949617,
-          "8": 0.10369966126880362
+          "3": 0.6625886741312024,
+          "4": 0.343698274214826,
+          "5": 0.32212225843989406,
+          "6": 0.2831802644782312,
+          "7": 0.10173122195277308,
+          "8": 0.19242185006082468
         },
         "n_corners": 5,
-        "circularity": 0.9313200812414331,
-        "bbox_aspect": 1.0081340969775634
+        "circularity": 0.347942903812099,
+        "bbox_aspect": 1.1063374912537405
       },
       "spread": {
-        "word_spread_over_diameter": 0.08482931474018593,
-        "within_word_spread_over_diameter": 0.7093583476531948,
+        "word_spread_over_diameter": 0.09787405435938532,
+        "within_word_spread_over_diameter": 0.5124507201880139,
         "per_word_spread": {
-          "can": 0.09906038117166545,
-          "cat": 0.0705982483087064
+          "can": 0.09357546616976135,
+          "cat": 0.1021726425490093
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.2679584976497833,
+          "top2_variance_frac": 0.6968829077020973,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.3448996888689455,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.019122538626537,
+          "top2_variance_frac": 0.7199611271945946,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4208349285496938,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -921,25 +1515,43 @@
       "seed": 5,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9891469774142906,
+        "polygon_score": 0.9879095263548704,
         "polygon_spectrum": {
-          "3": 0.9891469774142906,
-          "4": 0.038285353824197926,
-          "5": 0.018521883505903818,
-          "6": 0.337493639257563,
-          "7": 0.017167285684009596,
-          "8": 0.011062361753682706
+          "3": 0.9879095263548704,
+          "4": 0.048600165217805434,
+          "5": 0.01770177247773468,
+          "6": 0.3404805382924201,
+          "7": 0.019824869934217615,
+          "8": 0.00946939181693752
         },
         "n_corners": 3,
-        "circularity": 0.6873897451032392,
-        "bbox_aspect": 1.1565162498628307
+        "circularity": 0.6885236039301633,
+        "bbox_aspect": 1.1425473170569125
       },
       "spread": {
-        "word_spread_over_diameter": 0.04564410446352131,
-        "within_word_spread_over_diameter": 0.10145009253352916,
+        "word_spread_over_diameter": 0.04778084672944275,
+        "within_word_spread_over_diameter": 0.08858229898967446,
         "per_word_spread": {
-          "cat": 0.04769941377321607,
-          "can": 0.03947817653443701
+          "cat": 0.05035360047004272,
+          "can": 0.04006258550764285
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.1574169272688537,
+          "top2_variance_frac": 0.9540462947726649,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.33191662223558793,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0539483384636137,
+          "top2_variance_frac": 0.9842905283698629,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.37247831248153773,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -947,26 +1559,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 7,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9744239666695301,
+        "polygon_order": 3,
+        "polygon_score": 0.8273399830861327,
         "polygon_spectrum": {
-          "3": 0.05515677289046066,
-          "4": 0.9744239666695301,
-          "5": 0.07970731841152358,
-          "6": 0.04744281392975163,
-          "7": 0.04944369956835925,
-          "8": 0.2282054191524652
+          "3": 0.8273399830861327,
+          "4": 0.05840992917520371,
+          "5": 0.17855434344232382,
+          "6": 0.08973521768361595,
+          "7": 0.15311815469141576,
+          "8": 0.14806253441001452
         },
         "n_corners": 4,
-        "circularity": 0.8487082006449777,
-        "bbox_aspect": 1.0067771507805836
+        "circularity": 0.5403131593026873,
+        "bbox_aspect": 1.0620851273265925
       },
       "spread": {
-        "word_spread_over_diameter": 0.052740863478942884,
-        "within_word_spread_over_diameter": 0.6712852959285796,
+        "word_spread_over_diameter": 0.051377727092197456,
+        "within_word_spread_over_diameter": 0.17506372585295205,
         "per_word_spread": {
-          "cat": 0.07539153898773955,
-          "can": 0.030090187970146207
+          "cat": 0.04698464157351509,
+          "can": 0.05577081261087982
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.962367016774982,
+          "top2_variance_frac": 0.6428268740756138,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.32772193361313073,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 4.024979469106394,
+          "top2_variance_frac": 0.6211040988793184,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3690681119274244,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -975,25 +1605,43 @@
       "seed": 8,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9020818422109085,
+        "polygon_score": 0.9968045535214245,
         "polygon_spectrum": {
-          "3": 0.9020818422109085,
-          "4": 0.17802480779543214,
-          "5": 0.04306293516120618,
-          "6": 0.2530332151729701,
-          "7": 0.12569562130859477,
-          "8": 0.061702366984017126
+          "3": 0.9968045535214245,
+          "4": 0.021972263763313366,
+          "5": 0.011107708071410476,
+          "6": 0.3431837292420473,
+          "7": 0.007160227884757191,
+          "8": 0.003325263811484165
         },
-        "n_corners": 4,
-        "circularity": 0.7260045289460794,
-        "bbox_aspect": 1.31776885654672
+        "n_corners": 3,
+        "circularity": 0.6863989116800763,
+        "bbox_aspect": 1.1334089088928745
       },
       "spread": {
-        "word_spread_over_diameter": 0.11829602321236135,
-        "within_word_spread_over_diameter": 0.16822423184788265,
+        "word_spread_over_diameter": 0.04970089458547114,
+        "within_word_spread_over_diameter": 0.173265721537302,
         "per_word_spread": {
-          "can": 0.12161395380377268,
-          "cat": 0.11497809262095002
+          "can": 0.05435009996343913,
+          "cat": 0.045051689207503146
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.4175783279856353,
+          "top2_variance_frac": 0.9028527823391642,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.429158707442997,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.106390492113109,
+          "top2_variance_frac": 0.9690711158997317,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5280027637547818,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1002,25 +1650,43 @@
       "seed": 11,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9931597238358917,
+        "polygon_score": 0.9953162322259264,
         "polygon_spectrum": {
-          "3": 0.9931597238358917,
-          "4": 0.02788018104246567,
-          "5": 0.016972722967259046,
-          "6": 0.337353174764014,
-          "7": 0.01061584866615007,
-          "8": 0.00974706393429596
+          "3": 0.9953162322259264,
+          "4": 0.023983475775095825,
+          "5": 0.007837934538944491,
+          "6": 0.3432380966403001,
+          "7": 0.008274852598652887,
+          "8": 0.004379118734114421
         },
         "n_corners": 3,
-        "circularity": 0.6901071063731997,
-        "bbox_aspect": 1.0558114017753937
+        "circularity": 0.6881140939890097,
+        "bbox_aspect": 1.0954038844468954
       },
       "spread": {
-        "word_spread_over_diameter": 0.1265851133976576,
-        "within_word_spread_over_diameter": 0.28876689381261805,
+        "word_spread_over_diameter": 0.04849517840435169,
+        "within_word_spread_over_diameter": 0.109237078375509,
         "per_word_spread": {
-          "cat": 0.1529302261062042,
-          "can": 0.04754977527201785
+          "cat": 0.05110791848296716,
+          "can": 0.0406569581685053
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.08943894569744,
+          "top2_variance_frac": 0.9752638509789275,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4748615107019886,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.028951692650438,
+          "top2_variance_frac": 0.9918953995640449,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5420511624096473,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1028,26 +1694,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 13,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.5527440455167406,
+        "polygon_order": 3,
+        "polygon_score": 0.9938249445270455,
         "polygon_spectrum": {
-          "3": 0.49288721323401813,
-          "4": 0.2971560764364488,
-          "5": 0.44965467416802574,
-          "6": 0.5527440455167406,
-          "7": 0.23238640112938316,
-          "8": 0.03259521090633658
+          "3": 0.9938249445270455,
+          "4": 0.025041517258810285,
+          "5": 0.015529369582296716,
+          "6": 0.34046682760872116,
+          "7": 0.014088807107361332,
+          "8": 0.005702691096223517
         },
-        "n_corners": 5,
-        "circularity": 0.9346651878439828,
-        "bbox_aspect": 1.046312606097172
+        "n_corners": 3,
+        "circularity": 0.6868583056115467,
+        "bbox_aspect": 1.0698973977036206
       },
       "spread": {
-        "word_spread_over_diameter": 0.07185156245078476,
-        "within_word_spread_over_diameter": 0.6843975145098382,
+        "word_spread_over_diameter": 0.035049789761669135,
+        "within_word_spread_over_diameter": 0.1297816368126678,
         "per_word_spread": {
-          "cat": 0.10014531902251479,
-          "can": 0.04355780587905474
+          "cat": 0.030613784523535525,
+          "can": 0.039485794999802745
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.4116554271909676,
+          "top2_variance_frac": 0.9066138812461395,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3340246937701689,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.1103722126007645,
+          "top2_variance_frac": 0.9731897213240586,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3661900091346814,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1055,25 +1739,43 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 17,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9465254328564874,
+        "polygon_order": 3,
+        "polygon_score": 0.7399131035714424,
         "polygon_spectrum": {
-          "3": 0.22133257386578933,
-          "4": 0.9465254328564874,
-          "5": 0.07145976402196795,
-          "6": 0.024354378047006842,
-          "7": 0.03354795183222931,
-          "8": 0.21886086044835493
+          "3": 0.7399131035714424,
+          "4": 0.27077095640700893,
+          "5": 0.4131183182316172,
+          "6": 0.20931820814346982,
+          "7": 0.14663696209163804,
+          "8": 0.1285940799044671
         },
-        "n_corners": 4,
-        "circularity": 0.860065446858865,
-        "bbox_aspect": 1.0200198455354015
+        "n_corners": 5,
+        "circularity": 0.362941246515165,
+        "bbox_aspect": 1.1956838261714353
       },
       "spread": {
-        "word_spread_over_diameter": 0.050309292621568025,
-        "within_word_spread_over_diameter": 0.5716921759551449,
+        "word_spread_over_diameter": 0.09040742576326655,
+        "within_word_spread_over_diameter": 0.31708400787254226,
         "per_word_spread": {
-          "cat": 0.050309292621568025
+          "cat": 0.09040742576326655
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.0055073146935296,
+          "top2_variance_frac": 0.7507300086457498,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.38432900645233625,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.1386305776597947,
+          "top2_variance_frac": 0.7086132305549268,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4126026613663553,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1081,26 +1783,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 19,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9746023313793372,
+        "polygon_order": 3,
+        "polygon_score": 0.9935957903183702,
         "polygon_spectrum": {
-          "3": 0.01731046447843674,
-          "4": 0.9746023313793372,
-          "5": 0.03585388273144405,
-          "6": 0.03195116754305868,
-          "7": 0.021927825050917976,
-          "8": 0.2504122300926695
+          "3": 0.9935957903183702,
+          "4": 0.03267049271467546,
+          "5": 0.020351136388408277,
+          "6": 0.34198173930706177,
+          "7": 0.014879711519924267,
+          "8": 0.009087530012271437
         },
-        "n_corners": 4,
-        "circularity": 0.8435825804420182,
-        "bbox_aspect": 1.0007022974725417
+        "n_corners": 3,
+        "circularity": 0.6881857450321287,
+        "bbox_aspect": 1.1702192964351503
       },
       "spread": {
-        "word_spread_over_diameter": 0.051898254658365235,
-        "within_word_spread_over_diameter": 0.5001086489826233,
+        "word_spread_over_diameter": 0.04561845250182957,
+        "within_word_spread_over_diameter": 0.12321189267213649,
         "per_word_spread": {
-          "can": 0.061935036227761996,
-          "cat": 0.02178790995017496
+          "can": 0.046582267813444246,
+          "cat": 0.04272700656698551
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2675235382403156,
+          "top2_variance_frac": 0.9348687061351872,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3028565722324133,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.081580106902494,
+          "top2_variance_frac": 0.9788316936410655,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.34442121577877993,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1108,26 +1828,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 23,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9865288613003553,
+        "polygon_order": 3,
+        "polygon_score": 0.9890139126823997,
         "polygon_spectrum": {
-          "3": 0.04698877341591485,
-          "4": 0.9865288613003553,
-          "5": 0.036172770496933,
-          "6": 0.037886961683803407,
-          "7": 0.02492264051997755,
-          "8": 0.25192635027599797
+          "3": 0.9890139126823997,
+          "4": 0.03239485696785395,
+          "5": 0.02017721998062224,
+          "6": 0.3337886730326618,
+          "7": 0.018580898850526825,
+          "8": 0.011786589050421804
         },
-        "n_corners": 4,
-        "circularity": 0.8414495344950454,
-        "bbox_aspect": 1.031422764885637
+        "n_corners": 3,
+        "circularity": 0.6891314181438488,
+        "bbox_aspect": 1.004858594151503
       },
       "spread": {
-        "word_spread_over_diameter": 0.05190205106900013,
-        "within_word_spread_over_diameter": 0.569355991278909,
+        "word_spread_over_diameter": 0.05901737133580679,
+        "within_word_spread_over_diameter": 0.12615669435194077,
         "per_word_spread": {
-          "cat": 0.07705434171100507,
-          "can": 0.02674976042699518
+          "cat": 0.06842686917852868,
+          "can": 0.0496078734930849
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.308364958840224,
+          "top2_variance_frac": 0.9284934432364373,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3224781284880178,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.1102373355963673,
+          "top2_variance_frac": 0.9721891892360902,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.35036109261091875,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1135,26 +1873,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 29,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9407237259867315,
+        "polygon_order": 3,
+        "polygon_score": 0.9902754401105711,
         "polygon_spectrum": {
-          "3": 0.19565485471448016,
-          "4": 0.9407237259867315,
-          "5": 0.010952914452345903,
-          "6": 0.027450748925428314,
-          "7": 0.06204802744709872,
-          "8": 0.21517903932838
+          "3": 0.9902754401105711,
+          "4": 0.04781531251403961,
+          "5": 0.023661151087679886,
+          "6": 0.34218137274547794,
+          "7": 0.02245211568744079,
+          "8": 0.011736586287262091
         },
-        "n_corners": 4,
-        "circularity": 0.8778200670445838,
-        "bbox_aspect": 1.0064945295262495
+        "n_corners": 3,
+        "circularity": 0.686882826363328,
+        "bbox_aspect": 1.058808107960009
       },
       "spread": {
-        "word_spread_over_diameter": 0.05816004938811329,
-        "within_word_spread_over_diameter": 0.46952135896880787,
+        "word_spread_over_diameter": 0.04677334455637008,
+        "within_word_spread_over_diameter": 0.08624497144599501,
         "per_word_spread": {
-          "can": 0.07038382129554921,
-          "cat": 0.04593627748067737
+          "can": 0.057924481400272454,
+          "cat": 0.03562220771246771
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.113730702272283,
+          "top2_variance_frac": 0.9585737851761318,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3579347466017904,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.024973953135777,
+          "top2_variance_frac": 0.9867409549716208,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.38619854065473136,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1163,25 +1919,43 @@
       "seed": 31,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.32691936630894225,
+        "polygon_score": 0.9884751740464577,
         "polygon_spectrum": {
-          "3": 0.32691936630894225,
-          "4": 0.23745225381802948,
-          "5": 0.18357660199332887,
-          "6": 0.15253928504012282,
-          "7": 0.1469313799634491,
-          "8": 0.12074536653843476
+          "3": 0.9884751740464577,
+          "4": 0.04957455137999595,
+          "5": 0.022042930448611532,
+          "6": 0.34210061149346555,
+          "7": 0.023001480807341046,
+          "8": 0.010031941941451298
         },
         "n_corners": 3,
-        "circularity": 0.49240993074318246,
-        "bbox_aspect": 1.432754519035258
+        "circularity": 0.6849802813704631,
+        "bbox_aspect": 1.1258958396762035
       },
       "spread": {
-        "word_spread_over_diameter": 0.03581623792812977,
-        "within_word_spread_over_diameter": 0.39970878360039536,
+        "word_spread_over_diameter": 0.038725622418422125,
+        "within_word_spread_over_diameter": 0.08346082159841096,
         "per_word_spread": {
-          "can": 0.038942188910852014,
-          "cat": 0.032690286945407515
+          "can": 0.040412351223301286,
+          "cat": 0.03703889361354296
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2398408815383317,
+          "top2_variance_frac": 0.9219628675129491,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.49966258707425676,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0581104090984526,
+          "top2_variance_frac": 0.9750997027551253,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5477357062506554,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1189,26 +1963,44 @@
       "task": "two_word_prefix_branch_ns",
       "seed": 37,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.47758962382561376,
+        "polygon_order": 3,
+        "polygon_score": 0.9865956280374641,
         "polygon_spectrum": {
-          "3": 0.2277642400614062,
-          "4": 0.3647991738521752,
-          "5": 0.45232118294574963,
-          "6": 0.47758962382561376,
-          "7": 0.13173602877147728,
-          "8": 0.11287061308817914
+          "3": 0.9865956280374641,
+          "4": 0.05122673750662626,
+          "5": 0.026726337204222007,
+          "6": 0.3401187222362296,
+          "7": 0.02977902522380972,
+          "8": 0.015673699696077476
         },
-        "n_corners": 5,
-        "circularity": 0.9349908374528411,
-        "bbox_aspect": 1.0494018951423463
+        "n_corners": 3,
+        "circularity": 0.6852408011789922,
+        "bbox_aspect": 1.1194297890858749
       },
       "spread": {
-        "word_spread_over_diameter": 0.04266814757430327,
-        "within_word_spread_over_diameter": 0.6551414817441477,
+        "word_spread_over_diameter": 0.04239902036806362,
+        "within_word_spread_over_diameter": 0.061464225945346264,
         "per_word_spread": {
-          "can": 0.07219126926123734,
-          "cat": 0.013145025887369188
+          "can": 0.04802441780518919,
+          "cat": 0.03677362293093804
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.208071579215457,
+          "top2_variance_frac": 0.9384677712256271,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5085595974229175,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.052437414987712,
+          "top2_variance_frac": 0.980853019924176,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5516483650181995,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1217,25 +2009,43 @@
       "seed": 53,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.990770372604971,
+        "polygon_score": 0.9950685007352145,
         "polygon_spectrum": {
-          "3": 0.990770372604971,
-          "4": 0.025972719895576774,
-          "5": 0.01511306758964437,
-          "6": 0.3383881013127719,
-          "7": 0.00955455763774387,
-          "8": 0.004796020779736981
+          "3": 0.9950685007352145,
+          "4": 0.013350999992749185,
+          "5": 0.008625064036812208,
+          "6": 0.3404025055559548,
+          "7": 0.002577671213733817,
+          "8": 0.004380087612387325
         },
         "n_corners": 3,
-        "circularity": 0.6933206150767932,
-        "bbox_aspect": 1.018315886188664
+        "circularity": 0.6897655158694249,
+        "bbox_aspect": 1.093028615961042
       },
       "spread": {
-        "word_spread_over_diameter": 0.20323091198370488,
-        "within_word_spread_over_diameter": 0.07348630227930104,
+        "word_spread_over_diameter": 0.04950172359046476,
+        "within_word_spread_over_diameter": 0.026053431207334377,
         "per_word_spread": {
-          "can": 0.13773224889664526,
-          "cat": 0.22506379967939139
+          "can": 0.08929522874746422,
+          "cat": 0.03623722187146494
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.443933157318962,
+          "top2_variance_frac": 0.9000781286271268,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.45238328615730017,
+          "n_points": 12.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.1193351176168607,
+          "top2_variance_frac": 0.9696307072338615,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5482636484937043,
+          "n_points": 42.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1244,26 +2054,44 @@
       "seed": 1,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9553886403511972,
+        "polygon_score": 0.9957137322283234,
         "polygon_spectrum": {
-          "3": 0.9553886403511972,
-          "4": 0.07267255289131473,
-          "5": 0.07078961031316755,
-          "6": 0.3174691775142829,
-          "7": 0.04870722997594876,
-          "8": 0.04681790121449649
+          "3": 0.9957137322283234,
+          "4": 0.021538067776840333,
+          "5": 0.010458009223586279,
+          "6": 0.3425764695165819,
+          "7": 0.0075053991005506315,
+          "8": 0.00345708951029978
         },
         "n_corners": 3,
-        "circularity": 0.6868739942672826,
-        "bbox_aspect": 1.1105944676872104
+        "circularity": 0.686928886899315,
+        "bbox_aspect": 1.1860117726255672
       },
       "spread": {
-        "word_spread_over_diameter": 0.09509841252820199,
-        "within_word_spread_over_diameter": 0.1787830285628632,
+        "word_spread_over_diameter": 0.042502812456545525,
+        "within_word_spread_over_diameter": 0.10956577829506516,
         "per_word_spread": {
-          "cat": 0.13708755840167994,
-          "mat": 0.08770505777906541,
-          "hat": 0.035811371092553335
+          "cat": 0.0486137642535702,
+          "mat": 0.036718773476298254,
+          "hat": 0.03622840425113215
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.1150272245663966,
+          "top2_variance_frac": 0.9699192759317855,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5075758465597738,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0264984316909564,
+          "top2_variance_frac": 0.9904562057454593,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5538718437783322,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1271,27 +2099,45 @@
       "task": "three_word_overlap_ns",
       "seed": 2,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.4687937423048842,
+        "polygon_order": 3,
+        "polygon_score": 0.9928857039227708,
         "polygon_spectrum": {
-          "3": 0.29308658657843417,
-          "4": 0.4687937423048842,
-          "5": 0.358466255498684,
-          "6": 0.2112499434718455,
-          "7": 0.05498674051788639,
-          "8": 0.1098845614601044
+          "3": 0.9928857039227708,
+          "4": 0.024299100606256334,
+          "5": 0.012752253078778367,
+          "6": 0.3409221198813578,
+          "7": 0.008290910585656333,
+          "8": 0.004993174815309296
         },
-        "n_corners": 7,
-        "circularity": 0.2695658643290064,
-        "bbox_aspect": 3.2387154599554244
+        "n_corners": 3,
+        "circularity": 0.6866146066958995,
+        "bbox_aspect": 1.0344702912309665
       },
       "spread": {
-        "word_spread_over_diameter": 0.17970833353772628,
-        "within_word_spread_over_diameter": 0.7083830573524447,
+        "word_spread_over_diameter": 0.04662183356836405,
+        "within_word_spread_over_diameter": 0.11454282622363206,
         "per_word_spread": {
-          "cat": 0.165894457564046,
-          "hat": 0.20718089899973763,
-          "mat": 0.2074912719704361
+          "cat": 0.0507559115322195,
+          "hat": 0.03821664127508275,
+          "mat": 0.03849071400622354
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.117688789180008,
+          "top2_variance_frac": 0.9714538023555368,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4812053660244784,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.033507867825224,
+          "top2_variance_frac": 0.9909279675933601,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5454608700382826,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1300,26 +2146,44 @@
       "seed": 3,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9979669256328728,
+        "polygon_score": 0.989587322814366,
         "polygon_spectrum": {
-          "3": 0.9979669256328728,
-          "4": 0.020720582880069595,
-          "5": 0.009431997173128473,
-          "6": 0.34469980438251924,
-          "7": 0.006496748570967559,
-          "8": 0.00442147283327611
+          "3": 0.989587322814366,
+          "4": 0.029368568330149464,
+          "5": 0.016818197940631652,
+          "6": 0.33495010508940076,
+          "7": 0.009090967550553442,
+          "8": 0.006894532493336937
         },
         "n_corners": 3,
-        "circularity": 0.6867306414093856,
-        "bbox_aspect": 1.116248268599181
+        "circularity": 0.6894642430644682,
+        "bbox_aspect": 1.0906715559430742
       },
       "spread": {
-        "word_spread_over_diameter": 0.051977339577696034,
-        "within_word_spread_over_diameter": 0.10413836560680859,
+        "word_spread_over_diameter": 0.04370710429533483,
+        "within_word_spread_over_diameter": 0.0802315458030874,
         "per_word_spread": {
-          "cat": 0.08312968517893024,
-          "mat": 0.03545828758904119,
-          "hat": 0.03922980434119217
+          "cat": 0.05619994731772261,
+          "mat": 0.0369014727973094,
+          "hat": 0.03913831274463555
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2753017718571944,
+          "top2_variance_frac": 0.9338446338069322,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4898979634691354,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.083940095811515,
+          "top2_variance_frac": 0.9784477829836107,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5504863742679316,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1327,26 +2191,44 @@
       "task": "three_word_overlap_ns",
       "seed": 5,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.4276681046322711,
+        "polygon_order": 3,
+        "polygon_score": 0.9934987567845912,
         "polygon_spectrum": {
-          "3": 0.2674214013477249,
-          "4": 0.4076886949407661,
-          "5": 0.24266725665048722,
-          "6": 0.4276681046322711,
-          "7": 0.15514225070816512,
-          "8": 0.383702916830151
+          "3": 0.9934987567845912,
+          "4": 0.02415726211017409,
+          "5": 0.012448102499499522,
+          "6": 0.342093259138204,
+          "7": 0.009164452328822598,
+          "8": 0.002971100487713695
         },
-        "n_corners": 7,
-        "circularity": 0.2996631945832292,
-        "bbox_aspect": 2.9564594531496193
+        "n_corners": 3,
+        "circularity": 0.6852744738852304,
+        "bbox_aspect": 1.0183848001373768
       },
       "spread": {
-        "word_spread_over_diameter": 0.224429421380016,
-        "within_word_spread_over_diameter": 0.7552500691681919,
+        "word_spread_over_diameter": 0.043210686357523266,
+        "within_word_spread_over_diameter": 0.08260224692324837,
         "per_word_spread": {
-          "mat": 0.21343791054295758,
-          "hat": 0.24641244305413296
+          "mat": 0.046519641669730695,
+          "hat": 0.036592775733108415
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0222605401771503,
+          "top2_variance_frac": 0.9877286968393983,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5059872177401983,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 1.9983069147821007,
+          "top2_variance_frac": 0.9967364499008284,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5426020668006006,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1354,27 +2236,45 @@
       "task": "three_word_overlap_ns",
       "seed": 7,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.521782048098358,
+        "polygon_order": 3,
+        "polygon_score": 0.9900613475547874,
         "polygon_spectrum": {
-          "3": 0.35472279780801413,
-          "4": 0.521782048098358,
-          "5": 0.15184532937066367,
-          "6": 0.18014021797527227,
-          "7": 0.47580891602038294,
-          "8": 0.028245321415724015
+          "3": 0.9900613475547874,
+          "4": 0.045349999351561546,
+          "5": 0.021862950031684706,
+          "6": 0.3413043096452545,
+          "7": 0.02214875110305542,
+          "8": 0.012410833439178384
         },
-        "n_corners": 6,
-        "circularity": 0.5986257716602226,
-        "bbox_aspect": 1.0999554167964416
+        "n_corners": 3,
+        "circularity": 0.6857349810594003,
+        "bbox_aspect": 1.229687775952496
       },
       "spread": {
-        "word_spread_over_diameter": 0.051869729499243455,
-        "within_word_spread_over_diameter": 0.28232246599309163,
+        "word_spread_over_diameter": 0.04490156605860909,
+        "within_word_spread_over_diameter": 0.044629161820281434,
         "per_word_spread": {
-          "hat": 0.07370378943389468,
-          "cat": 0.04441691002681571,
-          "mat": 0.030560068047224227
+          "hat": 0.05881016513129554,
+          "cat": 0.038454813647138264,
+          "mat": 0.036424625147648625
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0270173135282095,
+          "top2_variance_frac": 0.9838844375370435,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.49743916621441187,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0107994560275677,
+          "top2_variance_frac": 0.9913301521563377,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5427006010765488,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1382,27 +2282,45 @@
       "task": "three_word_overlap_ns",
       "seed": 8,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.6274285299660737,
+        "polygon_order": 3,
+        "polygon_score": 0.9850035002110109,
         "polygon_spectrum": {
-          "3": 0.43088230077227724,
-          "4": 0.09788130912789895,
-          "5": 0.5299355405267852,
-          "6": 0.6274285299660737,
-          "7": 0.21904022837901083,
-          "8": 0.07044684138872791
+          "3": 0.9850035002110109,
+          "4": 0.04031190318359026,
+          "5": 0.021943136535908694,
+          "6": 0.33525454735536314,
+          "7": 0.02013738040285325,
+          "8": 0.010307344136806021
         },
-        "n_corners": 6,
-        "circularity": 0.9373623784385048,
-        "bbox_aspect": 1.0367133520275051
+        "n_corners": 3,
+        "circularity": 0.6864226221438628,
+        "bbox_aspect": 1.0356761060639221
       },
       "spread": {
-        "word_spread_over_diameter": 0.04185050656086744,
-        "within_word_spread_over_diameter": 0.5551932658288034,
+        "word_spread_over_diameter": 0.05218795569187603,
+        "within_word_spread_over_diameter": 0.1350692470242149,
         "per_word_spread": {
-          "cat": 0.06274241809352693,
-          "hat": 0.0231775364406126,
-          "mat": 0.016520712203398596
+          "cat": 0.06589683676645446,
+          "hat": 0.03805419032580335,
+          "mat": 0.03932884320028608
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.118895369325878,
+          "top2_variance_frac": 0.9608552626665154,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.47761623118600094,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0239668319791555,
+          "top2_variance_frac": 0.9872177685298489,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5385747215545224,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1410,26 +2328,44 @@
       "task": "three_word_overlap_ns",
       "seed": 11,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9536159617617631,
+        "polygon_order": 3,
+        "polygon_score": 0.9847009005335033,
         "polygon_spectrum": {
-          "3": 0.13606965479817315,
-          "4": 0.9536159617617631,
-          "5": 0.12594133767398885,
-          "6": 0.03679152996819455,
-          "7": 0.021620200706594556,
-          "8": 0.23767201928339562
+          "3": 0.9847009005335033,
+          "4": 0.0403218270742712,
+          "5": 0.018878538616878774,
+          "6": 0.3318712352330512,
+          "7": 0.018986026459918297,
+          "8": 0.011421185179083465
         },
-        "n_corners": 4,
-        "circularity": 0.8672505153879531,
-        "bbox_aspect": 1.0026607114885526
+        "n_corners": 3,
+        "circularity": 0.6899812620372954,
+        "bbox_aspect": 1.033350038300207
       },
       "spread": {
-        "word_spread_over_diameter": 0.05888299609347016,
-        "within_word_spread_over_diameter": 0.558423196569709,
+        "word_spread_over_diameter": 0.04296160337354909,
+        "within_word_spread_over_diameter": 0.08952753779275785,
         "per_word_spread": {
-          "hat": 0.059028781030013654,
-          "mat": 0.05873721115692665
+          "hat": 0.052717955727786446,
+          "mat": 0.03320525101931172
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2832818719345873,
+          "top2_variance_frac": 0.9316499505278206,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5097259747565983,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0754501550222053,
+          "top2_variance_frac": 0.9797222485955002,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5612744611795984,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1437,27 +2373,45 @@
       "task": "three_word_overlap_ns",
       "seed": 13,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.5229819993385924,
+        "polygon_order": 3,
+        "polygon_score": 0.995117394303026,
         "polygon_spectrum": {
-          "3": 0.32134407158733325,
-          "4": 0.5229819993385924,
-          "5": 0.38559833734665405,
-          "6": 0.09102433098507083,
-          "7": 0.1568284297109619,
-          "8": 0.06956047798935357
+          "3": 0.995117394303026,
+          "4": 0.03265996747344202,
+          "5": 0.012598376023468274,
+          "6": 0.3422868999401543,
+          "7": 0.012141982204432971,
+          "8": 0.007449374721637634
         },
-        "n_corners": 6,
-        "circularity": 0.23705483423945198,
-        "bbox_aspect": 2.2567776207838808
+        "n_corners": 3,
+        "circularity": 0.6880077485680571,
+        "bbox_aspect": 1.0693015386785745
       },
       "spread": {
-        "word_spread_over_diameter": 0.1435680097503094,
-        "within_word_spread_over_diameter": 0.7614104130868357,
+        "word_spread_over_diameter": 0.04458741643034944,
+        "within_word_spread_over_diameter": 0.03956582537187767,
         "per_word_spread": {
-          "hat": 0.12620525175514324,
-          "mat": 0.15345539287689983,
-          "cat": 0.14863137636087048
+          "hat": 0.05385504480450559,
+          "mat": 0.04011472312620442,
+          "cat": 0.03947023959447221
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.049225150206714,
+          "top2_variance_frac": 0.9842455401841879,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5228909325781126,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0256823537336315,
+          "top2_variance_frac": 0.9918432469312105,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5459425930850403,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1466,26 +2420,44 @@
       "seed": 17,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.610791534976696,
+        "polygon_score": 0.9963916894793806,
         "polygon_spectrum": {
-          "3": 0.610791534976696,
-          "4": 0.1680503503801195,
-          "5": 0.2614847857628637,
-          "6": 0.14424604876825559,
-          "7": 0.0503115315358785,
-          "8": 0.15392331452506
+          "3": 0.9963916894793806,
+          "4": 0.015442831460722482,
+          "5": 0.008611210620432656,
+          "6": 0.3441056765657439,
+          "7": 0.003463732452343619,
+          "8": 0.004132931100850928
         },
         "n_corners": 3,
-        "circularity": 0.6212325088749054,
-        "bbox_aspect": 1.0213874285748412
+        "circularity": 0.6870947418565585,
+        "bbox_aspect": 1.0627181268080323
       },
       "spread": {
-        "word_spread_over_diameter": 0.1348334053038576,
-        "within_word_spread_over_diameter": 0.0007346215304393817,
+        "word_spread_over_diameter": 0.04770901695027666,
+        "within_word_spread_over_diameter": 0.005309947842825209,
         "per_word_spread": {
-          "mat": 0.5778702117170316,
-          "hat": 0.04624128560689217,
-          "cat": 0.04616507767854531
+          "mat": 0.09850221468870211,
+          "hat": 0.03751641574448809,
+          "cat": 0.03768622403500554
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.101515978726106,
+          "top2_variance_frac": 0.9746331395980762,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.48356983760557803,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0261806855075934,
+          "top2_variance_frac": 0.9918002447643807,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5332440869047983,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1493,26 +2465,44 @@
       "task": "three_word_overlap_ns",
       "seed": 19,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.5388557832214254,
+        "polygon_order": 6,
+        "polygon_score": 0.5251777547364064,
         "polygon_spectrum": {
-          "3": 0.24718612370025808,
-          "4": 0.5388557832214254,
-          "5": 0.2891509764635645,
-          "6": 0.11629684197180327,
-          "7": 0.21275209949649485,
-          "8": 0.35986952683346135
+          "3": 0.3702381217950507,
+          "4": 0.3777657363237521,
+          "5": 0.3089689666767795,
+          "6": 0.5251777547364064,
+          "7": 0.1635036645124002,
+          "8": 0.25043508750161625
         },
         "n_corners": 6,
-        "circularity": 0.21374864460348453,
-        "bbox_aspect": 2.9769126403483686
+        "circularity": 0.2759226743760825,
+        "bbox_aspect": 1.9470000633510114
       },
       "spread": {
-        "word_spread_over_diameter": 0.2391741861842621,
-        "within_word_spread_over_diameter": 0.6629973034363947,
+        "word_spread_over_diameter": 0.15592816481502766,
+        "within_word_spread_over_diameter": 0.2521494153837643,
         "per_word_spread": {
-          "mat": 0.1920964609679167,
-          "cat": 0.2862519114006075
+          "mat": 0.15859439550400525,
+          "cat": 0.15326193412605008
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.1267940979038986,
+          "top2_variance_frac": 0.8236537298709379,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.5190391273401154,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 1.8445370314533203,
+          "top2_variance_frac": 0.8720471410981656,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.6498752409004998,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1521,26 +2511,44 @@
       "seed": 23,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.993389394110172,
+        "polygon_score": 0.9904212556999744,
         "polygon_spectrum": {
-          "3": 0.993389394110172,
-          "4": 0.01748173946172223,
-          "5": 0.008265593598129986,
-          "6": 0.3394303410298669,
-          "7": 0.007441562141498859,
-          "8": 0.005865553114647853
+          "3": 0.9904212556999744,
+          "4": 0.03337775633774143,
+          "5": 0.024205777672482824,
+          "6": 0.3411387231377488,
+          "7": 0.02205635523532158,
+          "8": 0.01229622647199055
         },
         "n_corners": 3,
-        "circularity": 0.6878451478861225,
-        "bbox_aspect": 1.0125787311966652
+        "circularity": 0.6856746316774498,
+        "bbox_aspect": 1.0168238812515107
       },
       "spread": {
-        "word_spread_over_diameter": 0.2162653925055995,
-        "within_word_spread_over_diameter": 0.10335441215074,
+        "word_spread_over_diameter": 0.04187398872492972,
+        "within_word_spread_over_diameter": 0.08756160821665429,
         "per_word_spread": {
-          "hat": 0.2070723508598026,
-          "cat": 0.22497403143138042,
-          "mat": 0.22642723959142844
+          "hat": 0.0478684852330749,
+          "cat": 0.034686305387018106,
+          "mat": 0.038265865876317404
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0921405880020134,
+          "top2_variance_frac": 0.9727220063778871,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.3199926041149994,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0343538905594136,
+          "top2_variance_frac": 0.9865523987024668,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.34694273212617255,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1549,26 +2557,44 @@
       "seed": 29,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9856833215553183,
+        "polygon_score": 0.7554982135913295,
         "polygon_spectrum": {
-          "3": 0.9856833215553183,
-          "4": 0.04334880271842155,
-          "5": 0.024518343647593175,
-          "6": 0.3361979577146571,
-          "7": 0.02021173138815969,
-          "8": 0.013240145578589504
+          "3": 0.7554982135913295,
+          "4": 0.15577671353979344,
+          "5": 0.3454002119565459,
+          "6": 0.059951091797019414,
+          "7": 0.1538713804799823,
+          "8": 0.29827110038496135
         },
-        "n_corners": 3,
-        "circularity": 0.6838621810971752,
-        "bbox_aspect": 1.1161478841460943
+        "n_corners": 4,
+        "circularity": 0.5184110990689876,
+        "bbox_aspect": 1.042817326760752
       },
       "spread": {
-        "word_spread_over_diameter": 0.04647858681596642,
-        "within_word_spread_over_diameter": 0.1247477718360931,
+        "word_spread_over_diameter": 0.0490673424284368,
+        "within_word_spread_over_diameter": 0.238596441800785,
         "per_word_spread": {
-          "mat": 0.05556497394832672,
-          "cat": 0.037207428449376474,
-          "hat": 0.03748458530072094
+          "mat": 0.05186923743189773,
+          "cat": 0.05102563549215391,
+          "hat": 0.04388535339138683
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.114674175568138,
+          "top2_variance_frac": 0.7278940531803462,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.39457355288025153,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.118779167442778,
+          "top2_variance_frac": 0.715879320914171,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.4309927823594689,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1576,27 +2602,45 @@
       "task": "three_word_overlap_ns",
       "seed": 31,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.4420756282329824,
+        "polygon_order": 3,
+        "polygon_score": 0.9892311803738403,
         "polygon_spectrum": {
-          "3": 0.2940414106852695,
-          "4": 0.4420756282329824,
-          "5": 0.322554366524007,
-          "6": 0.36296150311361547,
-          "7": 0.06096412802899822,
-          "8": 0.26043960504247826
+          "3": 0.9892311803738403,
+          "4": 0.025625480177842972,
+          "5": 0.010773877483474697,
+          "6": 0.3365201696050956,
+          "7": 0.006945936670941057,
+          "8": 0.003636311756038048
         },
-        "n_corners": 7,
-        "circularity": 0.2799530375946516,
-        "bbox_aspect": 2.236666861350787
+        "n_corners": 3,
+        "circularity": 0.6860918069297689,
+        "bbox_aspect": 1.1695530176493534
       },
       "spread": {
-        "word_spread_over_diameter": 0.17307219963218856,
-        "within_word_spread_over_diameter": 0.15244208348734659,
+        "word_spread_over_diameter": 0.042962411899514864,
+        "within_word_spread_over_diameter": 0.0873256480480304,
         "per_word_spread": {
-          "cat": 0.1633329124366624,
-          "hat": 0.18313843554761186,
-          "mat": 0.18215758938792057
+          "cat": 0.0474571034418162,
+          "hat": 0.03824844101241101,
+          "mat": 0.03890627904681858
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0528760976923386,
+          "top2_variance_frac": 0.9831227824845503,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5379498445683759,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0084381987537623,
+          "top2_variance_frac": 0.9935346608711603,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5768931499200821,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1605,25 +2649,43 @@
       "seed": 37,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9659602179034908,
+        "polygon_score": 0.9968792781002013,
         "polygon_spectrum": {
-          "3": 0.9659602179034908,
-          "4": 0.06910329564868099,
-          "5": 0.053974936195349425,
-          "6": 0.3263614608753327,
-          "7": 0.04398809064622435,
-          "8": 0.029253877507809726
+          "3": 0.9968792781002013,
+          "4": 0.02231613546580473,
+          "5": 0.011400644983538115,
+          "6": 0.3434438587644522,
+          "7": 0.006604896762844443,
+          "8": 0.0021459744317153555
         },
         "n_corners": 3,
-        "circularity": 0.6785010066417458,
-        "bbox_aspect": 1.2390423887253634
+        "circularity": 0.6873842739301594,
+        "bbox_aspect": 1.088072852270535
       },
       "spread": {
-        "word_spread_over_diameter": 0.08278088066410645,
-        "within_word_spread_over_diameter": 0.27372100725820614,
+        "word_spread_over_diameter": 0.04673655487276632,
+        "within_word_spread_over_diameter": 0.09132343512688623,
         "per_word_spread": {
-          "mat": 0.09174865878169272,
-          "cat": 0.03794199007617511
+          "mat": 0.048261277687796575,
+          "cat": 0.03911294079761504
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0980632768562573,
+          "top2_variance_frac": 0.9744491345781752,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4811200550277447,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0392138258822032,
+          "top2_variance_frac": 0.9900717828274194,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5173950735587539,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1631,27 +2693,45 @@
       "task": "three_word_overlap_ns",
       "seed": 53,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.7039478081112667,
+        "polygon_order": 3,
+        "polygon_score": 0.9931063271369475,
         "polygon_spectrum": {
-          "3": 0.464733390541198,
-          "4": 0.059231759576655135,
-          "5": 0.1737507754057782,
-          "6": 0.7039478081112667,
-          "7": 0.06690716011983851,
-          "8": 0.029340722250547784
+          "3": 0.9931063271369475,
+          "4": 0.030446711073708967,
+          "5": 0.015524700428976098,
+          "6": 0.34164233843723835,
+          "7": 0.016230566979537595,
+          "8": 0.007703874681610579
         },
-        "n_corners": 6,
-        "circularity": 0.9473542984236393,
-        "bbox_aspect": 1.0282478316705865
+        "n_corners": 3,
+        "circularity": 0.6855494675752041,
+        "bbox_aspect": 1.1303228271430905
       },
       "spread": {
-        "word_spread_over_diameter": 0.07283553847638385,
-        "within_word_spread_over_diameter": 0.5758827561100167,
+        "word_spread_over_diameter": 0.05861873271705495,
+        "within_word_spread_over_diameter": 0.18323582643247832,
         "per_word_spread": {
-          "mat": 0.08590750265987666,
-          "cat": 0.1355412450316632,
-          "hat": 0.021874738923504954
+          "mat": 0.07433331549926424,
+          "cat": 0.06395166518955556,
+          "hat": 0.03238039230749072
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2514516684401564,
+          "top2_variance_frac": 0.9338368448653611,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.38826797281699993,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.058157155916542,
+          "top2_variance_frac": 0.9829624570577653,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4400499628401822,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1660,248 +2740,410 @@
       "seed": 1,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.5759961047869023,
+        "polygon_score": 0.6876856805501338,
         "polygon_spectrum": {
-          "3": 0.5759961047869023,
-          "4": 0.5246351648745343,
-          "5": 0.3122742926793541,
-          "6": 0.2940302436492624,
-          "7": 0.3154284092077362,
-          "8": 0.24354491035071216
-        },
-        "n_corners": 5,
-        "circularity": 0.2039716537135548,
-        "bbox_aspect": 1.105270288591084
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.12124251353145182,
-        "within_word_spread_over_diameter": 0.2926874410195378,
-        "per_word_spread": {
-          "ate": 0.19402973832988937,
-          "tea": 0.01609635249519782,
-          "eat": 0.0646347568519225
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 2,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.982844969679501,
-        "polygon_spectrum": {
-          "3": 0.05184708294349178,
-          "4": 0.982844969679501,
-          "5": 0.037664520726332404,
-          "6": 0.038548115735867694,
-          "7": 0.015065642390434907,
-          "8": 0.26013574637459635
-        },
-        "n_corners": 4,
-        "circularity": 0.8455561494637552,
-        "bbox_aspect": 1.0012727867938294
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.03713120614330991,
-        "within_word_spread_over_diameter": 0.5058627238841372,
-        "per_word_spread": {
-          "ate": 0.03877217991372518,
-          "eat": 0.03493521760990183,
-          "tea": 0.032763299595056916
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 3,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.5268809799380177,
-        "polygon_spectrum": {
-          "3": 0.5268809799380177,
-          "4": 0.36698438347196854,
-          "5": 0.12723133777440657,
-          "6": 0.11426562358299404,
-          "7": 0.13364984842071373,
-          "8": 0.16592593842471043
-        },
-        "n_corners": 5,
-        "circularity": 0.3043285681936332,
-        "bbox_aspect": 2.69811339156749
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.09940102816673906,
-        "within_word_spread_over_diameter": 0.2711004488047844,
-        "per_word_spread": {
-          "ate": 0.16435637603088665,
-          "tea": 0.07118647398356401,
-          "eat": 0.05413399498796898
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 5,
-      "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.7911994552177345,
-        "polygon_spectrum": {
-          "3": 0.3085476517895997,
-          "4": 0.4207909259306574,
-          "5": 0.11559038807600579,
-          "6": 0.7911994552177345,
-          "7": 0.11443592979847285,
-          "8": 0.0994467065764043
-        },
-        "n_corners": 6,
-        "circularity": 0.9448877209252945,
-        "bbox_aspect": 1.0307494852552903
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.0415854290234168,
-        "within_word_spread_over_diameter": 0.39344964365603413,
-        "per_word_spread": {
-          "tea": 0.04887425083984308,
-          "eat": 0.027007785390564254
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 7,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9823411695300004,
-        "polygon_spectrum": {
-          "3": 0.044253969289557986,
-          "4": 0.9823411695300004,
-          "5": 0.031099217674785355,
-          "6": 0.028283691782256374,
-          "7": 0.021898285084898727,
-          "8": 0.27071852317972983
-        },
-        "n_corners": 4,
-        "circularity": 0.8431517479255829,
-        "bbox_aspect": 1.0252512533856024
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.04380884261193502,
-        "within_word_spread_over_diameter": 0.42787451952273503,
-        "per_word_spread": {
-          "eat": 0.07486315734418555,
-          "ate": 0.028012504435475247,
-          "tea": 0.029089227676813215
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 8,
-      "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.6162795009463184,
-        "polygon_spectrum": {
-          "3": 0.6162795009463184,
-          "4": 0.5335287433065365,
-          "5": 0.36800976515970973,
-          "6": 0.2863244599563903,
-          "7": 0.18329565902236983,
-          "8": 0.24587502030873032
-        },
-        "n_corners": 6,
-        "circularity": 0.1812393562268094,
-        "bbox_aspect": 1.6827761308263296
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.09811949952217952,
-        "within_word_spread_over_diameter": 0.24107383247719877,
-        "per_word_spread": {
-          "ate": 0.14037060917065067,
-          "eat": 0.0703609220385367,
-          "tea": 0.026883325544051755
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 11,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.6192416067546782,
-        "polygon_spectrum": {
-          "3": 0.2066451505670297,
-          "4": 0.6192416067546782,
-          "5": 0.18277846279376173,
-          "6": 0.2140378080853396,
-          "7": 0.20447127600028092,
-          "8": 0.37585307563457443
-        },
-        "n_corners": 9,
-        "circularity": 0.31827043289964496,
-        "bbox_aspect": 3.7142657373633536
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.1785476149851989,
-        "within_word_spread_over_diameter": 0.8810430552795926,
-        "per_word_spread": {
-          "eat": 0.18077242992867829,
-          "tea": 0.1763228000417195
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 13,
-      "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9891391276379863,
-        "polygon_spectrum": {
-          "3": 0.050090576999661664,
-          "4": 0.9891391276379863,
-          "5": 0.018448655806634552,
-          "6": 0.028500725309147056,
-          "7": 0.018704957337515156,
-          "8": 0.2607278535914497
-        },
-        "n_corners": 4,
-        "circularity": 0.8450078509842729,
-        "bbox_aspect": 1.0021010349224038
-      },
-      "spread": {
-        "word_spread_over_diameter": 0.037104957253360896,
-        "within_word_spread_over_diameter": 0.5711278442028112,
-        "per_word_spread": {
-          "eat": 0.06430152231154669,
-          "tea": 0.022826863787373405,
-          "ate": 0.025546107534951765
-        }
-      }
-    },
-    {
-      "task": "three_word_permutation_ns",
-      "seed": 17,
-      "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.5121276418463908,
-        "polygon_spectrum": {
-          "3": 0.3810336633291327,
-          "4": 0.26484685110148914,
-          "5": 0.28330373863725766,
-          "6": 0.5121276418463908,
-          "7": 0.19256345497720406,
-          "8": 0.34048170488283475
+          "3": 0.6876856805501338,
+          "4": 0.3308914995960504,
+          "5": 0.18047523080938271,
+          "6": 0.13820456538300466,
+          "7": 0.1298440131155962,
+          "8": 0.31217318707824715
         },
         "n_corners": 8,
-        "circularity": 0.0941861449837358,
-        "bbox_aspect": 1.57909560061149
+        "circularity": 0.3098585784727179,
+        "bbox_aspect": 1.2242634676838322
       },
       "spread": {
-        "word_spread_over_diameter": 0.21913974097114022,
-        "within_word_spread_over_diameter": 0.8729317575859787,
+        "word_spread_over_diameter": 0.10101840647833936,
+        "within_word_spread_over_diameter": 0.07408348653889352,
         "per_word_spread": {
-          "tea": 0.13494375725360797,
-          "eat": 0.23642825734713435,
-          "ate": 0.234181659184696
+          "ate": 0.08616747373254474,
+          "tea": 0.07986036384331463,
+          "eat": 0.13387382691454364
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.694500792802783,
+          "top2_variance_frac": 0.48154632417030335,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.38007346561257166,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 6.45654504864314,
+          "top2_variance_frac": 0.47148455826381613,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.4769489524102448,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 2,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.7495656814071294,
+        "polygon_spectrum": {
+          "3": 0.7495656814071294,
+          "4": 0.255027965691777,
+          "5": 0.04811151246397733,
+          "6": 0.31078012471777966,
+          "7": 0.11035478252751077,
+          "8": 0.11209681107888547
+        },
+        "n_corners": 5,
+        "circularity": 0.6542083468978067,
+        "bbox_aspect": 1.2240511203906403
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.09246737887585803,
+        "within_word_spread_over_diameter": 0.1377704984594997,
+        "per_word_spread": {
+          "ate": 0.11209767110248164,
+          "eat": 0.046137039213325404,
+          "tea": 0.060276549631896124
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.621338685154312,
+          "top2_variance_frac": 0.599967791152148,
+          "dims_90pct": 6.0,
+          "mean_abs_corr": 0.36707759952502683,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 6.475483026515024,
+          "top2_variance_frac": 0.4582975320232241,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.4074208933229654,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 3,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.37265580430870265,
+        "polygon_spectrum": {
+          "3": 0.37265580430870265,
+          "4": 0.30913735640202467,
+          "5": 0.3361586866220072,
+          "6": 0.11519972135794192,
+          "7": 0.34624793732703496,
+          "8": 0.18832841547913665
+        },
+        "n_corners": 9,
+        "circularity": 0.30563046502144625,
+        "bbox_aspect": 1.5662552391948035
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.16415914433140397,
+        "within_word_spread_over_diameter": 0.7393197463330551,
+        "per_word_spread": {
+          "ate": 0.14351756870103433,
+          "tea": 0.17279156037313245,
+          "eat": 0.1795450474669579
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.667161280051608,
+          "top2_variance_frac": 0.7069561731472818,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.4830867877180185,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.4628703224175243,
+          "top2_variance_frac": 0.7301578666202182,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.567820204976139,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 5,
+      "shape": {
+        "polygon_order": 8,
+        "polygon_score": 0.45865907796790045,
+        "polygon_spectrum": {
+          "3": 0.3683901084637134,
+          "4": 0.39669064450589625,
+          "5": 0.2406364059697412,
+          "6": 0.22615666149243238,
+          "7": 0.05596869812711657,
+          "8": 0.45865907796790045
+        },
+        "n_corners": 8,
+        "circularity": 0.39939345923418595,
+        "bbox_aspect": 1.1256284651873647
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.18214803091526274,
+        "within_word_spread_over_diameter": 0.1614175085142125,
+        "per_word_spread": {
+          "tea": 0.1812174751638994,
+          "eat": 0.18400914241798938
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.614091020855524,
+          "top2_variance_frac": 0.4851581386178661,
+          "dims_90pct": 6.0,
+          "mean_abs_corr": 0.21098107650370942,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 7.756252039543003,
+          "top2_variance_frac": 0.3931653192815366,
+          "dims_90pct": 9.0,
+          "mean_abs_corr": 0.24221857011079675,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 7,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.5033993887419813,
+        "polygon_spectrum": {
+          "3": 0.5033993887419813,
+          "4": 0.11842407108076887,
+          "5": 0.4570292886006981,
+          "6": 0.11922359326507012,
+          "7": 0.2572681995925428,
+          "8": 0.24868659885784938
+        },
+        "n_corners": 8,
+        "circularity": 0.46988479358070145,
+        "bbox_aspect": 1.0503698537896398
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.24918124154004762,
+        "within_word_spread_over_diameter": 0.44232541380193857,
+        "per_word_spread": {
+          "eat": 0.27171628379792473,
+          "ate": 0.25748161574681055,
+          "tea": 0.1792100344040044
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.396992757751588,
+          "top2_variance_frac": 0.5716356914143764,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.3131874512544885,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.774518233384586,
+          "top2_variance_frac": 0.5346568277289147,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.2818040310865609,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 8,
+      "shape": {
+        "polygon_order": 4,
+        "polygon_score": 0.5675912242529332,
+        "polygon_spectrum": {
+          "3": 0.19616402757647222,
+          "4": 0.5675912242529332,
+          "5": 0.17210050578072117,
+          "6": 0.13683005931208442,
+          "7": 0.08313354858258615,
+          "8": 0.14082447465318298
+        },
+        "n_corners": 4,
+        "circularity": 0.7828816208655818,
+        "bbox_aspect": 1.246107878986516
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.08182611358930054,
+        "within_word_spread_over_diameter": 0.1707807384075663,
+        "per_word_spread": {
+          "ate": 0.08958530801231142,
+          "eat": 0.09130529064968729,
+          "tea": 0.03959017619949444
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.649042436678655,
+          "top2_variance_frac": 0.5195309877361857,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.2506053601515408,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.804655671378147,
+          "top2_variance_frac": 0.5199070774553489,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.29047543850834046,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 11,
+      "shape": {
+        "polygon_order": 6,
+        "polygon_score": 0.5483180513330518,
+        "polygon_spectrum": {
+          "3": 0.3231527812047386,
+          "4": 0.4197889338397694,
+          "5": 0.06179226480136844,
+          "6": 0.5483180513330518,
+          "7": 0.19336268510255847,
+          "8": 0.35109639242746193
+        },
+        "n_corners": 10,
+        "circularity": 0.21280737591125776,
+        "bbox_aspect": 1.145396080782357
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.16262742630117685,
+        "within_word_spread_over_diameter": 0.5265487304087014,
+        "per_word_spread": {
+          "eat": 0.17212950368543714,
+          "tea": 0.15312534891691654
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.281982318224176,
+          "top2_variance_frac": 0.6164931570439585,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.336305832938162,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 4.596905097665652,
+          "top2_variance_frac": 0.5741978660252901,
+          "dims_90pct": 6.0,
+          "mean_abs_corr": 0.3613078603552629,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 13,
+      "shape": {
+        "polygon_order": 3,
+        "polygon_score": 0.42384056710571166,
+        "polygon_spectrum": {
+          "3": 0.42384056710571166,
+          "4": 0.40903907065074474,
+          "5": 0.2560118858170713,
+          "6": 0.030939205570056687,
+          "7": 0.3912496263804241,
+          "8": 0.1107122401677694
+        },
+        "n_corners": 6,
+        "circularity": 0.4584369217145872,
+        "bbox_aspect": 1.138321834527549
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.08962034750256759,
+        "within_word_spread_over_diameter": 0.08531229939083448,
+        "per_word_spread": {
+          "eat": 0.10338009256890046,
+          "tea": 0.08914382203478542,
+          "ate": 0.06353043377324825
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.1958013832927845,
+          "top2_variance_frac": 0.5555773409125303,
+          "dims_90pct": 6.0,
+          "mean_abs_corr": 0.5802306135376251,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 6.210679462709239,
+          "top2_variance_frac": 0.4701704571145022,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.6369113695691724,
+          "n_points": 60.0,
+          "n_dims": 50.0
+        }
+      }
+    },
+    {
+      "task": "three_word_permutation_ns",
+      "seed": 17,
+      "shape": {
+        "polygon_order": 7,
+        "polygon_score": 0.44141119216054864,
+        "polygon_spectrum": {
+          "3": 0.2826216229048534,
+          "4": 0.20004255775635116,
+          "5": 0.08733696760532687,
+          "6": 0.15300040127533124,
+          "7": 0.44141119216054864,
+          "8": 0.06765236552512854
+        },
+        "n_corners": 7,
+        "circularity": 0.3099873107700791,
+        "bbox_aspect": 1.3263841499106008
+      },
+      "spread": {
+        "word_spread_over_diameter": 0.11999323943176826,
+        "within_word_spread_over_diameter": 0.09458137557866791,
+        "per_word_spread": {
+          "tea": 0.06460395471002231,
+          "eat": 0.13997309118033216,
+          "ate": 0.09546311715925869
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.537504011476195,
+          "top2_variance_frac": 0.608690796398934,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.43535874721416523,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.846477775943348,
+          "top2_variance_frac": 0.47022451461183196,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.521802682422623,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1909,26 +3151,44 @@
       "task": "three_word_permutation_ns",
       "seed": 19,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.7354436389008288,
+        "polygon_order": 4,
+        "polygon_score": 0.7233169737705869,
         "polygon_spectrum": {
-          "3": 0.310677994108086,
-          "4": 0.4610199415094297,
-          "5": 0.2560170468850319,
-          "6": 0.7354436389008288,
-          "7": 0.14332527918436963,
-          "8": 0.08487214043308017
+          "3": 0.29894122882434954,
+          "4": 0.7233169737705869,
+          "5": 0.3496585827989221,
+          "6": 0.11809601586760823,
+          "7": 0.07367034981989154,
+          "8": 0.187046241548005
         },
         "n_corners": 6,
-        "circularity": 0.9247908873481105,
-        "bbox_aspect": 1.282091944955206
+        "circularity": 0.4292413165170467,
+        "bbox_aspect": 1.0390923556084515
       },
       "spread": {
-        "word_spread_over_diameter": 0.05366810264628764,
-        "within_word_spread_over_diameter": 0.0796055109730588,
+        "word_spread_over_diameter": 0.08774098886101168,
+        "within_word_spread_over_diameter": 0.05192746558197845,
         "per_word_spread": {
-          "tea": 0.0720846286877273,
-          "ate": 0.035251576604847984
+          "tea": 0.0755816610743356,
+          "ate": 0.09990031664768778
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.47474997780872,
+          "top2_variance_frac": 0.559179302124814,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.5353190754236583,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 6.291776141965851,
+          "top2_variance_frac": 0.4647491537874678,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.5782287779313746,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1936,27 +3196,45 @@
       "task": "three_word_permutation_ns",
       "seed": 23,
       "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.3879670787394169,
+        "polygon_order": 4,
+        "polygon_score": 0.5640113630995839,
         "polygon_spectrum": {
-          "3": 0.3879670787394169,
-          "4": 0.33407613958345184,
-          "5": 0.10908795859961427,
-          "6": 0.10930803770686325,
-          "7": 0.19671590195269162,
-          "8": 0.15020235934267942
+          "3": 0.5517852950072505,
+          "4": 0.5640113630995839,
+          "5": 0.1662626854944101,
+          "6": 0.1463689630053605,
+          "7": 0.10954850335341054,
+          "8": 0.23414342620401268
         },
         "n_corners": 4,
-        "circularity": 0.30536702230866747,
-        "bbox_aspect": 2.1950035357456397
+        "circularity": 0.7327109470141075,
+        "bbox_aspect": 1.041430666714925
       },
       "spread": {
-        "word_spread_over_diameter": 0.1381495246277532,
-        "within_word_spread_over_diameter": 0.46380458601422947,
+        "word_spread_over_diameter": 0.09393266107870352,
+        "within_word_spread_over_diameter": 0.4353145497577031,
         "per_word_spread": {
-          "eat": 0.24798899104380523,
-          "ate": 0.030821115161741314,
-          "tea": 0.02328794431162088
+          "eat": 0.11071246905040268,
+          "ate": 0.07723640677805553,
+          "tea": 0.07698574576490197
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 6.260303114083189,
+          "top2_variance_frac": 0.47279512713971045,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.2290853776416277,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 6.260459908925789,
+          "top2_variance_frac": 0.5030811142656618,
+          "dims_90pct": 9.0,
+          "mean_abs_corr": 0.28621606234414304,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1964,27 +3242,45 @@
       "task": "three_word_permutation_ns",
       "seed": 29,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.6194817695046294,
+        "polygon_order": 3,
+        "polygon_score": 0.4622873734477153,
         "polygon_spectrum": {
-          "3": 0.26550390483988173,
-          "4": 0.6194817695046294,
-          "5": 0.4110105044469483,
-          "6": 0.10436126511195931,
-          "7": 0.037171100318306644,
-          "8": 0.1758335198465633
+          "3": 0.4622873734477153,
+          "4": 0.3932724295812946,
+          "5": 0.31805857071357124,
+          "6": 0.0880513450113039,
+          "7": 0.1731834206309544,
+          "8": 0.17679411267063275
         },
-        "n_corners": 5,
-        "circularity": 0.2744362298181939,
-        "bbox_aspect": 1.4942306178465432
+        "n_corners": 4,
+        "circularity": 0.6675245325896709,
+        "bbox_aspect": 1.1597480693508335
       },
       "spread": {
-        "word_spread_over_diameter": 0.13512845361612433,
-        "within_word_spread_over_diameter": 0.7375382330639602,
+        "word_spread_over_diameter": 0.08862127193923913,
+        "within_word_spread_over_diameter": 0.17885081676197245,
         "per_word_spread": {
-          "tea": 0.12606355229195962,
-          "ate": 0.1402110766214444,
-          "eat": 0.14618449409971135
+          "tea": 0.08948597765498269,
+          "ate": 0.10940551944982367,
+          "eat": 0.07693208961033149
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 6.325622604266918,
+          "top2_variance_frac": 0.4780812749669414,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.23693377705940205,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 7.892382167991344,
+          "top2_variance_frac": 0.37886057491292346,
+          "dims_90pct": 10.0,
+          "mean_abs_corr": 0.24362688604469152,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -1992,27 +3288,45 @@
       "task": "three_word_permutation_ns",
       "seed": 31,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.651680493993645,
+        "polygon_order": 3,
+        "polygon_score": 0.803733690524223,
         "polygon_spectrum": {
-          "3": 0.2647677569304965,
-          "4": 0.4887679834272231,
-          "5": 0.0996550480995826,
-          "6": 0.651680493993645,
-          "7": 0.07242970497175666,
-          "8": 0.10563372639618777
+          "3": 0.803733690524223,
+          "4": 0.25712228957597927,
+          "5": 0.3088094243445292,
+          "6": 0.2742035438410335,
+          "7": 0.15827181588010122,
+          "8": 0.19820115959179377
         },
         "n_corners": 6,
-        "circularity": 0.4326221123228483,
-        "bbox_aspect": 1.2334099604479418
+        "circularity": 0.37327975059734825,
+        "bbox_aspect": 1.116554728478699
       },
       "spread": {
-        "word_spread_over_diameter": 0.07009948009174546,
-        "within_word_spread_over_diameter": 0.13566243578185663,
+        "word_spread_over_diameter": 0.09758608737668767,
+        "within_word_spread_over_diameter": 0.02241522158215772,
         "per_word_spread": {
-          "ate": 0.09104698282408573,
-          "eat": 0.04572759022514335,
-          "tea": 0.05600075162792891
+          "ate": 0.11692744359353179,
+          "eat": 0.08979702737873263,
+          "tea": 0.05514013872206548
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.7328784473378605,
+          "top2_variance_frac": 0.49112525923047456,
+          "dims_90pct": 6.0,
+          "mean_abs_corr": 0.5166520566750629,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.266148185878412,
+          "top2_variance_frac": 0.5419459807149911,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.5048608561771294,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2021,25 +3335,43 @@
       "seed": 37,
       "shape": {
         "polygon_order": 4,
-        "polygon_score": 0.9683861551159605,
+        "polygon_score": 0.4472544012414101,
         "polygon_spectrum": {
-          "3": 0.06485521223565416,
-          "4": 0.9683861551159605,
-          "5": 0.04291853621626996,
-          "6": 0.03379041475702684,
-          "7": 0.034676994765938995,
-          "8": 0.262874361473805
+          "3": 0.43941489607028755,
+          "4": 0.4472544012414101,
+          "5": 0.17840496256357588,
+          "6": 0.17608816558180965,
+          "7": 0.2315504708421234,
+          "8": 0.14171864232725725
         },
-        "n_corners": 4,
-        "circularity": 0.8412903989120645,
-        "bbox_aspect": 1.0288953790779178
+        "n_corners": 5,
+        "circularity": 0.4942624620587697,
+        "bbox_aspect": 1.2035844484125746
       },
       "spread": {
-        "word_spread_over_diameter": 0.039023088969038576,
-        "within_word_spread_over_diameter": 0.5144660549899959,
+        "word_spread_over_diameter": 0.11982233636114033,
+        "within_word_spread_over_diameter": 0.09855384990477337,
         "per_word_spread": {
-          "tea": 0.04176660776616471,
-          "ate": 0.025305494983407905
+          "tea": 0.11775983061130306,
+          "ate": 0.1301348651103267
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.3919129494576303,
+          "top2_variance_frac": 0.7221321866926127,
+          "dims_90pct": 5.0,
+          "mean_abs_corr": 0.5719700720848241,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.8497361806196535,
+          "top2_variance_frac": 0.49802497239102184,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.5477634221693899,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2048,26 +3380,44 @@
       "seed": 53,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.5986603849617862,
+        "polygon_score": 0.7509336376426243,
         "polygon_spectrum": {
-          "3": 0.5986603849617862,
-          "4": 0.09994900915332122,
-          "5": 0.0951813011297094,
-          "6": 0.47135069776947375,
-          "7": 0.08794019560787636,
-          "8": 0.03296358155924127
+          "3": 0.7509336376426243,
+          "4": 0.09865205794330568,
+          "5": 0.22974932465652642,
+          "6": 0.18033428567987528,
+          "7": 0.20151766255819045,
+          "8": 0.16866936301230293
         },
-        "n_corners": 9,
-        "circularity": 0.14999537498398535,
-        "bbox_aspect": 3.041199074158921
+        "n_corners": 5,
+        "circularity": 0.7305623739177749,
+        "bbox_aspect": 1.1361515195300864
       },
       "spread": {
-        "word_spread_over_diameter": 0.24381876332170127,
-        "within_word_spread_over_diameter": 1.1225672381879572,
+        "word_spread_over_diameter": 0.09463539774342426,
+        "within_word_spread_over_diameter": 0.14051496512560385,
         "per_word_spread": {
-          "tea": 0.23921855623810762,
-          "ate": 0.23827845042686183,
-          "eat": 0.2534892303945116
+          "tea": 0.10565895869829006,
+          "ate": 0.07693128333088359,
+          "eat": 0.08695211351739586
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 5.52937967840769,
+          "top2_variance_frac": 0.5368671922955499,
+          "dims_90pct": 7.0,
+          "mean_abs_corr": 0.24228125376187515,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 5.573954015917596,
+          "top2_variance_frac": 0.5313822879266795,
+          "dims_90pct": 8.0,
+          "mean_abs_corr": 0.28511920374717903,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2075,27 +3425,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 1,
       "shape": {
-        "polygon_order": 3,
-        "polygon_score": 0.9842238836545789,
+        "polygon_order": 6,
+        "polygon_score": 0.7036333908179276,
         "polygon_spectrum": {
-          "3": 0.9842238836545789,
-          "4": 0.05689469943066388,
-          "5": 0.03505653835176845,
-          "6": 0.33678606143474166,
-          "7": 0.0295994334227669,
-          "8": 0.02375988867156643
+          "3": 0.34098802717229615,
+          "4": 0.29151236748734466,
+          "5": 0.1653217670589482,
+          "6": 0.7036333908179276,
+          "7": 0.07671229100225156,
+          "8": 0.24662948043533922
         },
-        "n_corners": 3,
-        "circularity": 0.6841725492999535,
-        "bbox_aspect": 1.088930013839107
+        "n_corners": 6,
+        "circularity": 0.31099201670268034,
+        "bbox_aspect": 1.374782133856812
       },
       "spread": {
-        "word_spread_over_diameter": 0.0455776640283585,
-        "within_word_spread_over_diameter": 0.10696529603509723,
+        "word_spread_over_diameter": 0.1400420963817893,
+        "within_word_spread_over_diameter": 0.09403372632529282,
         "per_word_spread": {
-          "can": 0.0564332541327793,
-          "cab": 0.03059357865665696,
-          "cat": 0.036786321557578064
+          "can": 0.13992775981682473,
+          "cab": 0.13455123967042273,
+          "cat": 0.1429590295849194
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.6042630603473955,
+          "top2_variance_frac": 0.7799737752189949,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.46980790638338144,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.5587674981439044,
+          "top2_variance_frac": 0.7781892858146752,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.5109845575472762,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2103,27 +3471,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 2,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.6801638331603189,
+        "polygon_order": 3,
+        "polygon_score": 0.9950207026772331,
         "polygon_spectrum": {
-          "3": 0.37509030771146534,
-          "4": 0.19656982408752618,
-          "5": 0.43239564338313224,
-          "6": 0.6801638331603189,
-          "7": 0.181947779933346,
-          "8": 0.037566329111012126
+          "3": 0.9950207026772331,
+          "4": 0.019721436315805734,
+          "5": 0.00983199618588642,
+          "6": 0.3408533600097226,
+          "7": 0.007355721208570416,
+          "8": 0.007878222681604144
         },
-        "n_corners": 6,
-        "circularity": 0.9377584829109646,
-        "bbox_aspect": 1.0548362358895125
+        "n_corners": 3,
+        "circularity": 0.6872014988770645,
+        "bbox_aspect": 1.0322035272812933
       },
       "spread": {
-        "word_spread_over_diameter": 0.040369209640392714,
-        "within_word_spread_over_diameter": 0.41267595534243773,
+        "word_spread_over_diameter": 0.04618173341749868,
+        "within_word_spread_over_diameter": 0.09810507976185374,
         "per_word_spread": {
-          "can": 0.054313491512866276,
-          "cat": 0.012101551332007524,
-          "cab": 0.01285974045888365
+          "can": 0.050532201329987966,
+          "cat": 0.03747676588051629,
+          "cab": 0.03748482930452392
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.1091243805391584,
+          "top2_variance_frac": 0.9732478636188779,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4727274644973745,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0288617517647936,
+          "top2_variance_frac": 0.9914642679293155,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5244266882172118,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2131,27 +3517,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 3,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.6476166077602162,
+        "polygon_order": 3,
+        "polygon_score": 0.9925168005961129,
         "polygon_spectrum": {
-          "3": 0.21299473957811785,
-          "4": 0.6476166077602162,
-          "5": 0.2856580638667179,
-          "6": 0.139200014238709,
-          "7": 0.08509892759168995,
-          "8": 0.20282669503337136
+          "3": 0.9925168005961129,
+          "4": 0.021440807476350337,
+          "5": 0.011626685362159625,
+          "6": 0.3414926435152423,
+          "7": 0.008566530672450981,
+          "8": 0.005351207506931254
         },
-        "n_corners": 4,
-        "circularity": 0.2010082371713449,
-        "bbox_aspect": 1.2165250482271457
+        "n_corners": 3,
+        "circularity": 0.6866613924850277,
+        "bbox_aspect": 1.1094538079819531
       },
       "spread": {
-        "word_spread_over_diameter": 0.10041426954446964,
-        "within_word_spread_over_diameter": 0.16851576285862874,
+        "word_spread_over_diameter": 0.04899648088990181,
+        "within_word_spread_over_diameter": 0.08501453207060715,
         "per_word_spread": {
-          "can": 0.21991761206655347,
-          "cab": 0.04071031102028505,
-          "cat": 0.04051946007285584
+          "can": 0.07672899535027662,
+          "cab": 0.03432146656968907,
+          "cat": 0.037556494929790435
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.113210748099781,
+          "top2_variance_frac": 0.971586271074349,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.45165263904456915,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.036106325326313,
+          "top2_variance_frac": 0.9908188782591648,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5111264598327385,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2159,26 +3563,44 @@
       "task": "three_word_ca_hub_ns",
       "seed": 5,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.883069130441243,
+        "polygon_order": 3,
+        "polygon_score": 0.9915931642323264,
         "polygon_spectrum": {
-          "3": 0.27591206423447556,
-          "4": 0.883069130441243,
-          "5": 0.10017790329701494,
-          "6": 0.04281743249672817,
-          "7": 0.10444956836053008,
-          "8": 0.17572331308216915
+          "3": 0.9915931642323264,
+          "4": 0.04170116288152501,
+          "5": 0.018083946515132506,
+          "6": 0.3420669986784745,
+          "7": 0.018596391926232716,
+          "8": 0.008520409582019082
         },
-        "n_corners": 4,
-        "circularity": 0.8835342510365438,
-        "bbox_aspect": 1.0921246216996254
+        "n_corners": 3,
+        "circularity": 0.6847156059380719,
+        "bbox_aspect": 1.0467329312395444
       },
       "spread": {
-        "word_spread_over_diameter": 0.07896153542313815,
-        "within_word_spread_over_diameter": 0.6734066941065124,
+        "word_spread_over_diameter": 0.0437967066534698,
+        "within_word_spread_over_diameter": 0.07972577232006184,
         "per_word_spread": {
-          "cab": 0.08243510378994037,
-          "cat": 0.07201439868953369
+          "cab": 0.04637390343051757,
+          "cat": 0.03864231309937425
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 1.989736473080708,
+          "top2_variance_frac": 0.9882471406111139,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4722414656384645,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 1.9789448875177125,
+          "top2_variance_frac": 0.9964134647622236,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5133707008959415,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2187,26 +3609,44 @@
       "seed": 7,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.36539636262943953,
+        "polygon_score": 0.9887888620443167,
         "polygon_spectrum": {
-          "3": 0.36539636262943953,
-          "4": 0.22703351036233876,
-          "5": 0.1592490278846509,
-          "6": 0.19675288354389034,
-          "7": 0.19317680010007124,
-          "8": 0.10421667195989527
+          "3": 0.9887888620443167,
+          "4": 0.023497238717218594,
+          "5": 0.012898992134220648,
+          "6": 0.3376275771105106,
+          "7": 0.013079458457070913,
+          "8": 0.002781079198673157
         },
-        "n_corners": 4,
-        "circularity": 0.3570515584449,
-        "bbox_aspect": 1.9213244687157607
+        "n_corners": 3,
+        "circularity": 0.6838260969613627,
+        "bbox_aspect": 1.114099892474969
       },
       "spread": {
-        "word_spread_over_diameter": 0.08196071325567902,
-        "within_word_spread_over_diameter": 0.18009956954907247,
+        "word_spread_over_diameter": 0.041563590885922125,
+        "within_word_spread_over_diameter": 0.06862235311797268,
         "per_word_spread": {
-          "cat": 0.09776812127113177,
-          "can": 0.07490100959764641,
-          "cab": 0.07152500819887135
+          "cat": 0.04932856183299286,
+          "can": 0.03863277805436057,
+          "cab": 0.034826087486465325
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.066416332810503,
+          "top2_variance_frac": 0.975646621965519,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.49570044691088533,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0154912353033425,
+          "top2_variance_frac": 0.9892747582332838,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5453759508256315,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2214,27 +3654,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 8,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.8190488342869687,
+        "polygon_order": 3,
+        "polygon_score": 0.7174172699253986,
         "polygon_spectrum": {
-          "3": 0.29838336813686267,
-          "4": 0.31213767198822745,
-          "5": 0.16235179543092051,
-          "6": 0.8190488342869687,
-          "7": 0.05858961549907594,
-          "8": 0.056959353708289515
+          "3": 0.7174172699253986,
+          "4": 0.13661888778690223,
+          "5": 0.4771046572510897,
+          "6": 0.0981568844102392,
+          "7": 0.28195696570560996,
+          "8": 0.19874223148952833
         },
-        "n_corners": 6,
-        "circularity": 0.9395402128184266,
-        "bbox_aspect": 1.066007614816473
+        "n_corners": 5,
+        "circularity": 0.411191579246654,
+        "bbox_aspect": 1.1386789928916128
       },
       "spread": {
-        "word_spread_over_diameter": 0.03764679240357547,
-        "within_word_spread_over_diameter": 0.5977228008815758,
+        "word_spread_over_diameter": 0.05846916846398131,
+        "within_word_spread_over_diameter": 0.2920963215815544,
         "per_word_spread": {
-          "can": 0.05137920625421727,
-          "cat": 0.028518444899381705,
-          "cab": 0.01470624586003759
+          "can": 0.05968177174377846,
+          "cat": 0.05919109442089864,
+          "cab": 0.05338750671075513
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.129505400390618,
+          "top2_variance_frac": 0.7190175438748495,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.3779993175903447,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.130004818053189,
+          "top2_variance_frac": 0.6950553540057895,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.41023934436653525,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2243,25 +3701,43 @@
       "seed": 11,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9783460324850248,
+        "polygon_score": 0.9864121145409408,
         "polygon_spectrum": {
-          "3": 0.9783460324850248,
-          "4": 0.05654900750863631,
-          "5": 0.04415513387600709,
-          "6": 0.3318564948623401,
-          "7": 0.029932494322755087,
-          "8": 0.0321121892340955
+          "3": 0.9864121145409408,
+          "4": 0.026650422040021035,
+          "5": 0.022244792876373414,
+          "6": 0.3327038692199808,
+          "7": 0.01895085700972792,
+          "8": 0.018849498119840814
         },
         "n_corners": 3,
-        "circularity": 0.685455092639035,
-        "bbox_aspect": 1.0830826861041059
+        "circularity": 0.6890230739839508,
+        "bbox_aspect": 1.0813079570922144
       },
       "spread": {
-        "word_spread_over_diameter": 0.06230367553090977,
-        "within_word_spread_over_diameter": 0.06323210508722522,
+        "word_spread_over_diameter": 0.06820912302953187,
+        "within_word_spread_over_diameter": 0.15115925528509647,
         "per_word_spread": {
-          "cat": 0.08812022969709597,
-          "cab": 0.036487121364723575
+          "cat": 0.0765618173915716,
+          "cab": 0.059856428667492134
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.376239711344904,
+          "top2_variance_frac": 0.912670229671173,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.47257383971057815,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.1526282123983336,
+          "top2_variance_frac": 0.9625247315583667,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5125426571493584,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2269,27 +3745,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 13,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.8993500073756345,
+        "polygon_order": 3,
+        "polygon_score": 0.9889986438614286,
         "polygon_spectrum": {
-          "3": 0.14172605736821,
-          "4": 0.8993500073756345,
-          "5": 0.14221240987182826,
-          "6": 0.07378575832612468,
-          "7": 0.09183352849266717,
-          "8": 0.11840281182264872
+          "3": 0.9889986438614286,
+          "4": 0.026705459314002988,
+          "5": 0.01782432439029807,
+          "6": 0.3372721411372137,
+          "7": 0.01597023968973461,
+          "8": 0.005806205379215759
         },
-        "n_corners": 4,
-        "circularity": 0.876034747377943,
-        "bbox_aspect": 1.0306148970095106
+        "n_corners": 3,
+        "circularity": 0.6864271653149433,
+        "bbox_aspect": 1.0774343720057602
       },
       "spread": {
-        "word_spread_over_diameter": 0.07600171944678909,
-        "within_word_spread_over_diameter": 0.6965941546796435,
+        "word_spread_over_diameter": 0.04072926252287488,
+        "within_word_spread_over_diameter": 0.05426805356330535,
         "per_word_spread": {
-          "cat": 0.09020096604805841,
-          "cab": 0.06523645473166656,
-          "can": 0.07989902038961792
+          "cat": 0.05150826203230624,
+          "cab": 0.034952497875190426,
+          "can": 0.03650155744706552
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.2458342698683875,
+          "top2_variance_frac": 0.939844221330467,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.48624686760697033,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0703494474260173,
+          "top2_variance_frac": 0.9803139234087609,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.531072692475605,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2297,27 +3791,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 17,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.6445898279500123,
+        "polygon_order": 3,
+        "polygon_score": 0.9867954595449135,
         "polygon_spectrum": {
-          "3": 0.26185359011256293,
-          "4": 0.43628650652358086,
-          "5": 0.10054357641034689,
-          "6": 0.6445898279500123,
-          "7": 0.057703184739096566,
-          "8": 0.27623577871279986
+          "3": 0.9867954595449135,
+          "4": 0.04941129623296434,
+          "5": 0.030908036004047762,
+          "6": 0.33713864230579366,
+          "7": 0.028725797132189534,
+          "8": 0.0193548615160426
         },
-        "n_corners": 6,
-        "circularity": 0.32393556308599275,
-        "bbox_aspect": 3.0434050370491
+        "n_corners": 3,
+        "circularity": 0.6858759510859849,
+        "bbox_aspect": 1.18434773709272
       },
       "spread": {
-        "word_spread_over_diameter": 0.2054696150774127,
-        "within_word_spread_over_diameter": 0.8357637228679167,
+        "word_spread_over_diameter": 0.05184073370409389,
+        "within_word_spread_over_diameter": 0.035235570531138675,
         "per_word_spread": {
-          "cab": 0.1570755823796879,
-          "cat": 0.21356808097402563,
-          "can": 0.22146978418868596
+          "cab": 0.10749593362207195,
+          "cat": 0.04127569308944346,
+          "can": 0.03844569624471751
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.339938878568522,
+          "top2_variance_frac": 0.9158375331617977,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.36923375043149026,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.09332588028933,
+          "top2_variance_frac": 0.9719628315194422,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.40576902884275856,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2325,26 +3837,44 @@
       "task": "three_word_ca_hub_ns",
       "seed": 19,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.9603199923082517,
+        "polygon_order": 3,
+        "polygon_score": 0.8959247030620171,
         "polygon_spectrum": {
-          "3": 0.08880174516433817,
-          "4": 0.9603199923082517,
-          "5": 0.014819265956695237,
-          "6": 0.04503102384447727,
-          "7": 0.03323807055664319,
-          "8": 0.20964344090859482
+          "3": 0.8959247030620171,
+          "4": 0.06487804192186013,
+          "5": 0.15975150000490224,
+          "6": 0.23087967750101665,
+          "7": 0.10489155146461356,
+          "8": 0.11192081534508072
         },
         "n_corners": 4,
-        "circularity": 0.85452608908367,
-        "bbox_aspect": 1.0171238293319231
+        "circularity": 0.7232874261538621,
+        "bbox_aspect": 1.0148422008988256
       },
       "spread": {
-        "word_spread_over_diameter": 0.04349018887723658,
-        "within_word_spread_over_diameter": 0.5133106339699056,
+        "word_spread_over_diameter": 0.04895490697472207,
+        "within_word_spread_over_diameter": 0.030498679491961497,
         "per_word_spread": {
-          "cab": 0.054261932615968185,
-          "can": 0.03271844513850499
+          "cab": 0.038579624142407544,
+          "can": 0.0593301898070366
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 3.8982567537537833,
+          "top2_variance_frac": 0.6314305377793991,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3219815162879318,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 3.9535765319205107,
+          "top2_variance_frac": 0.6144981733758206,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.34324722895638093,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2353,26 +3883,44 @@
       "seed": 23,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9884583788802968,
+        "polygon_score": 0.9965842339652519,
         "polygon_spectrum": {
-          "3": 0.9884583788802968,
-          "4": 0.03582781806978504,
-          "5": 0.015402622174425071,
-          "6": 0.3356970321451416,
-          "7": 0.015613701747040756,
-          "8": 0.007087088164665324
+          "3": 0.9965842339652519,
+          "4": 0.015254661179215014,
+          "5": 0.0116702334284753,
+          "6": 0.34433399173112184,
+          "7": 0.0038706703040946506,
+          "8": 0.006245751412036518
         },
         "n_corners": 3,
-        "circularity": 0.6880382431228065,
-        "bbox_aspect": 1.0931115348735105
+        "circularity": 0.6882853249892751,
+        "bbox_aspect": 1.1123910499009104
       },
       "spread": {
-        "word_spread_over_diameter": 0.04557837872995621,
-        "within_word_spread_over_diameter": 0.09917012857233164,
+        "word_spread_over_diameter": 0.0371764524103759,
+        "within_word_spread_over_diameter": 0.10410915354197708,
         "per_word_spread": {
-          "cat": 0.0528283830416102,
-          "can": 0.03786189789909547,
-          "cab": 0.03926132745671573
+          "cat": 0.04406053320338943,
+          "can": 0.027190115930842848,
+          "cab": 0.0364968829904014
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.4655926270348263,
+          "top2_variance_frac": 0.8968779791442475,
+          "dims_90pct": 3.0,
+          "mean_abs_corr": 0.32338796696402883,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.1373557046671103,
+          "top2_variance_frac": 0.9656107862703429,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.37642027384517796,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2380,27 +3928,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 29,
       "shape": {
-        "polygon_order": 6,
-        "polygon_score": 0.60448526544764,
+        "polygon_order": 3,
+        "polygon_score": 0.9948702669985853,
         "polygon_spectrum": {
-          "3": 0.5358019406245321,
-          "4": 0.1636076212037411,
-          "5": 0.47120458730288656,
-          "6": 0.60448526544764,
-          "7": 0.19415330169919517,
-          "8": 0.0917287076905835
+          "3": 0.9948702669985853,
+          "4": 0.03202505142790573,
+          "5": 0.015814162427284794,
+          "6": 0.34267147108211443,
+          "7": 0.01420999695149403,
+          "8": 0.006846630784165292
         },
-        "n_corners": 5,
-        "circularity": 0.9355351526859313,
-        "bbox_aspect": 1.1222825715797413
+        "n_corners": 3,
+        "circularity": 0.6887247001735665,
+        "bbox_aspect": 1.1445692821212725
       },
       "spread": {
-        "word_spread_over_diameter": 0.038004503678210864,
-        "within_word_spread_over_diameter": 0.5759011857160173,
+        "word_spread_over_diameter": 0.04765077426501321,
+        "within_word_spread_over_diameter": 0.1258230714580016,
         "per_word_spread": {
-          "cab": 0.0568148273961138,
-          "can": 0.022932846505824722,
-          "cat": 0.017324846687549533
+          "cab": 0.051366010734352964,
+          "can": 0.053487665618250045,
+          "cat": 0.03915947388438515
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.214362123225022,
+          "top2_variance_frac": 0.9468218001419462,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.4540525429892358,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.065491258418234,
+          "top2_variance_frac": 0.9828518501896021,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5081827825294908,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2408,27 +3974,45 @@
       "task": "three_word_ca_hub_ns",
       "seed": 31,
       "shape": {
-        "polygon_order": 4,
-        "polygon_score": 0.597610338798525,
+        "polygon_order": 3,
+        "polygon_score": 0.8243563921026886,
         "polygon_spectrum": {
-          "3": 0.3932833130061126,
-          "4": 0.597610338798525,
-          "5": 0.3584382094962609,
-          "6": 0.11437498297330921,
-          "7": 0.05247571646069732,
-          "8": 0.19508985470467471
+          "3": 0.8243563921026886,
+          "4": 0.13271272204830195,
+          "5": 0.17428845518574823,
+          "6": 0.13406924616814986,
+          "7": 0.1488097056122717,
+          "8": 0.18265494069867777
         },
-        "n_corners": 5,
-        "circularity": 0.24677400699458726,
-        "bbox_aspect": 1.8306053052399964
+        "n_corners": 4,
+        "circularity": 0.6378222460323573,
+        "bbox_aspect": 1.1761493143141108
       },
       "spread": {
-        "word_spread_over_diameter": 0.1142736882571721,
-        "within_word_spread_over_diameter": 0.354880366155586,
+        "word_spread_over_diameter": 0.07608344829616315,
+        "within_word_spread_over_diameter": 0.15959812018035452,
         "per_word_spread": {
-          "can": 0.1179258887265166,
-          "cat": 0.10106965896115842,
-          "cab": 0.12972514544116595
+          "can": 0.07127454512339294,
+          "cat": 0.07985131578005325,
+          "cab": 0.08297442284669361
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 4.281629599606648,
+          "top2_variance_frac": 0.587164708789618,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.32766474652351185,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 4.332987004706155,
+          "top2_variance_frac": 0.572736799643618,
+          "dims_90pct": 4.0,
+          "mean_abs_corr": 0.3512381651587262,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2437,25 +4021,43 @@
       "seed": 37,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.9976804031015489,
+        "polygon_score": 0.9940068191052646,
         "polygon_spectrum": {
-          "3": 0.9976804031015489,
-          "4": 0.017063182041591362,
-          "5": 0.011428158728927648,
-          "6": 0.3448583304471156,
-          "7": 0.007150342801675949,
-          "8": 0.004693063852819944
+          "3": 0.9940068191052646,
+          "4": 0.02838348162569026,
+          "5": 0.01466980719408104,
+          "6": 0.3420970582737194,
+          "7": 0.012926084801865186,
+          "8": 0.005909181382975189
         },
         "n_corners": 3,
-        "circularity": 0.686161685308307,
-        "bbox_aspect": 1.1021457837272135
+        "circularity": 0.6874000629898744,
+        "bbox_aspect": 1.0485070497398405
       },
       "spread": {
-        "word_spread_over_diameter": 0.04179199173243633,
-        "within_word_spread_over_diameter": 0.09364467768862828,
+        "word_spread_over_diameter": 0.04375312064465018,
+        "within_word_spread_over_diameter": 0.08655449675508392,
         "per_word_spread": {
-          "cab": 0.04279217441966152,
-          "can": 0.03679107829631032
+          "cab": 0.04499196123575794,
+          "can": 0.037558917689111425
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.223902085270603,
+          "top2_variance_frac": 0.9440503972077227,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.49880147636805294,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.0665618071501695,
+          "top2_variance_frac": 0.9819706478293965,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5509383620011506,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     },
@@ -2464,26 +4066,44 @@
       "seed": 53,
       "shape": {
         "polygon_order": 3,
-        "polygon_score": 0.4172379437985583,
+        "polygon_score": 0.9972301480326307,
         "polygon_spectrum": {
-          "3": 0.4172379437985583,
-          "4": 0.32457565971236757,
-          "5": 0.21747679264659278,
-          "6": 0.1854555441789685,
-          "7": 0.139232589244417,
-          "8": 0.07469697492524524
+          "3": 0.9972301480326307,
+          "4": 0.029104259143567242,
+          "5": 0.013478561750305804,
+          "6": 0.34299237913169833,
+          "7": 0.009162869755503242,
+          "8": 0.0018986109698830727
         },
-        "n_corners": 4,
-        "circularity": 0.44960765944546877,
-        "bbox_aspect": 2.08992543700603
+        "n_corners": 3,
+        "circularity": 0.6881180808695837,
+        "bbox_aspect": 1.073647682843544
       },
       "spread": {
-        "word_spread_over_diameter": 0.04382221653657404,
-        "within_word_spread_over_diameter": 0.3374011530070708,
+        "word_spread_over_diameter": 0.04716407622236252,
+        "within_word_spread_over_diameter": 0.09643458146521335,
         "per_word_spread": {
-          "cab": 0.04421524587429995,
-          "can": 0.033503477365248426,
-          "cat": 0.04839204211564799
+          "cab": 0.05505208268866329,
+          "can": 0.03921060318355333,
+          "cat": 0.039308803042316
+        }
+      },
+      "state_space": {
+        "corpus": {
+          "effective_dim": 2.0774792422633275,
+          "top2_variance_frac": 0.9787058604441355,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5102585063400719,
+          "n_points": 18.0,
+          "n_dims": 50.0
+        },
+        "loop": {
+          "effective_dim": 2.023432183974603,
+          "top2_variance_frac": 0.9932148701504655,
+          "dims_90pct": 2.0,
+          "mean_abs_corr": 0.5522394233294172,
+          "n_points": 60.0,
+          "n_dims": 50.0
         }
       }
     }

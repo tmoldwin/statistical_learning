@@ -77,11 +77,14 @@ _SIXTEEN_WORD_NS_DEFAULTS: dict[str, object] = {
     "early_stop_patience": 3,
     "min_checkpoint_iter": 4_000,
     "viz_length": 50,
-    "hidden_size": 100,
+    "hidden_size": 128,
     "sequence_length": 12,
     "eval_interval": 50,
     "eval_iterations": 20,
     "metric_rollout_len": 1000,
+    "train_ratio": 0.9,
+    "dropout": 0.25,
+    "l2_lambda": 1e-4,
 }
 
 _MIXED_LENGTH_DEFAULTS: dict[str, object] = {
@@ -112,11 +115,14 @@ _MICRO_CURRICULUM_NS_DEFAULTS: dict[str, object] = {
     "min_checkpoint_iter": 1_000,
     "viz_length": 18,
     "demo_snippet_len": 80,
-    "hidden_size": 100,
+    "hidden_size": 50,
     "sequence_length": 8,
     "eval_interval": 50,
     "eval_iterations": 20,
     "metric_rollout_len": 200,
+    "train_ratio": 0.9,
+    "dropout": 0.15,
+    "l2_lambda": 1e-4,
 }
 
 _FIFTY_WORD_NS_DEFAULTS: dict[str, object] = {

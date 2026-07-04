@@ -17,6 +17,8 @@ onto one outline:
 - word spread: how far individual word trajectories sit from the mean loop
   (normalized by loop diameter), plus within-word consistency across
   repeated traversals of the same word.
+- state space: participation-ratio effective dimensionality and mean |r|
+  for the teacher-forced corpus cloud and the closed-loop rollout in ℝᴴ.
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ from experiment import comparison_dir, seeds_for_task
 from viz.compare._data import TaskVizContext, load_task_viz_context
 from viz.compare.geometry import _bbox_aspect, _path_diameter
 from viz.compare.spec import ComparisonSpec
+from viz.compare.state_space_metrics import paired_state_space_metrics
 from viz.dimred import fit_pca_2d_with_evr
 from visualize import (
     _closed_loop_summary_seed,
@@ -336,16 +339,13 @@ def word_spread_metrics(
 # per-panel computation
 # ---------------------------------------------------------------------------
 
-def closed_loop_rollout_pc(
+def closed_loop_rollout_hidden(
     ctx: TaskVizContext,
     *,
     n_cycles: int = _ROLLOUT_CYCLES,
     rollout_seed: int = _ROLLOUT_SEED,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-    """Multi-cycle closed-loop rollout projected into teacher-forced PCA 2D.
-
-    Returns (rollout_pc, pca_mean, pca_components) or None if too short.
-    """
+) -> np.ndarray | None:
+    """Multi-cycle closed-loop rollout in full hidden space."""
     vocab_words = list(ctx.words)
     seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
@@ -358,16 +358,35 @@ def closed_loop_rollout_pc(
     )
     if len(hidden) < 8:
         return None
+    return np.asarray(hidden, dtype=float)
+
+
+def closed_loop_rollout_pc(
+    ctx: TaskVizContext,
+    *,
+    n_cycles: int = _ROLLOUT_CYCLES,
+    rollout_seed: int = _ROLLOUT_SEED,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """Multi-cycle closed-loop rollout projected into teacher-forced PCA 2D.
+
+    Returns (rollout_pc, pca_mean, pca_components) or None if too short.
+    """
+    hidden = closed_loop_rollout_hidden(
+        ctx, n_cycles=n_cycles, rollout_seed=rollout_seed,
+    )
+    if hidden is None:
+        return None
     _, pca_mean, pca_components, _ = fit_pca_2d_with_evr(ctx.hidden_states)
     return (hidden - pca_mean) @ pca_components.T, pca_mean, pca_components
 
 
 def compute_shape_panel(ctx: TaskVizContext) -> dict[str, Any]:
     """Shape + spread metrics for one task/seed, with plot-ready arrays."""
-    rollout = closed_loop_rollout_pc(ctx)
-    if rollout is None:
+    rollout_hidden = closed_loop_rollout_hidden(ctx)
+    if rollout_hidden is None:
         return {"task": ctx.task, "seed": ctx.seed, "error": "closed-loop path too short"}
-    rollout_pc, pca_mean, pca_components = rollout
+    _, pca_mean, pca_components, _ = fit_pca_2d_with_evr(ctx.hidden_states)
+    rollout_pc = (rollout_hidden - pca_mean) @ pca_components.T
 
     shape = loop_shape_metrics(rollout_pc)
     if shape.get("error"):
@@ -376,12 +395,14 @@ def compute_shape_panel(ctx: TaskVizContext) -> dict[str, Any]:
     labeled = labeled_word_trajectories(ctx)
     labeled_pc = [(w, (t - pca_mean) @ pca_components.T) for w, t in labeled]
     spread = word_spread_metrics(labeled_pc, shape["outline_xy"])
+    state_space = paired_state_space_metrics(ctx.hidden_states, rollout_hidden)
 
     return {
         "task": ctx.task,
         "seed": ctx.seed,
         "shape": shape,
         "spread": spread,
+        "state_space": state_space,
         "rollout_pc": rollout_pc,
         "word_trajs_pc": labeled_pc,
     }
@@ -408,6 +429,7 @@ def _panel_json(panel: dict[str, Any]) -> dict[str, Any]:
             "within_word_spread_over_diameter": panel["spread"]["within_word_spread_over_diameter"],
             "per_word_spread": panel["spread"]["per_word_spread"],
         },
+        "state_space": panel["state_space"],
     }
 
 
@@ -425,6 +447,9 @@ def _fmt(v: float, decimals: int = 2) -> str:
 def _plot_shape_panel(ax_traj, ax_spec, panel: dict[str, Any]) -> None:
     shape = panel["shape"]
     spread = panel["spread"]
+    state_space = panel["state_space"]
+    corpus = state_space["corpus"]
+    loop = state_space["loop"]
     rollout_pc = panel["rollout_pc"]
     word_trajs = panel["word_trajs_pc"]
     outline = shape["outline_xy"]
@@ -464,7 +489,9 @@ def _plot_shape_panel(ax_traj, ax_spec, panel: dict[str, Any]) -> None:
         f"corners {shape['n_corners']}  circ {_fmt(shape['circularity'])}  "
         f"asp {_fmt(shape['bbox_aspect'])}\n"
         f"spread {_fmt(spread['word_spread_over_diameter'])}  "
-        f"within-word {_fmt(spread['within_word_spread_over_diameter'])}"
+        f"within-word {_fmt(spread['within_word_spread_over_diameter'])}\n"
+        f"dim c {_fmt(corpus['effective_dim'])}  |r| c {_fmt(corpus['mean_abs_corr'])}  "
+        f"dim l {_fmt(loop['effective_dim'])}  |r| l {_fmt(loop['mean_abs_corr'])}"
     )
     ax_traj.text(
         0.02, 0.98, annot, transform=ax_traj.transAxes, fontsize=5.5,

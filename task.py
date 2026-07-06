@@ -303,5 +303,12 @@ def main() -> None:
     print(f"Preview: {text[:80]}")
 
 
+from vocab_sweep import register_sweep_regimes
+from vocab_sweep_pow2 import register_pow2_sweep_regimes
+
+register_sweep_regimes(REGIMES)
+register_pow2_sweep_regimes(REGIMES)
+
+
 if __name__ == "__main__":
     main()

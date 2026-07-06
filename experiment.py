@@ -316,6 +316,12 @@ TASKS: dict[str, dict] = {
     },
 }
 
+from vocab_sweep import register_sweep_tasks
+from vocab_sweep_pow2 import register_pow2_sweep_tasks
+
+register_sweep_tasks(TASKS)
+register_pow2_sweep_tasks(TASKS)
+
 # Backward-compatible alias used by training / visualization entry points.
 EXPERIMENT_CONFIG: dict[str, dict] = TASKS
 

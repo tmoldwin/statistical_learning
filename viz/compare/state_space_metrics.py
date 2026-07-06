@@ -30,7 +30,21 @@ def variance_top_k_frac(points: np.ndarray, k: int = 2) -> float:
     return float(var[:n].sum() / total)
 
 
-def participation_ratio(points: np.ndarray) -> float:
+def pc_variance_fractions(points: np.ndarray) -> np.ndarray:
+    """Per-PC variance fractions λᵢ / Σλ (descending)."""
+    var = _cov_eigenvalues(points)
+    if len(var) == 0:
+        return np.empty(0)
+    total = float(var.sum())
+    if total <= 1e-12:
+        return np.empty(0)
+    return var / total
+
+
+def pc_variance_percent(points: np.ndarray) -> np.ndarray:
+    """Per-PC variance explained in percent."""
+    return 100.0 * pc_variance_fractions(points)
+
     """Effective dimensionality: (sum λ)² / sum λ² on covariance eigenvalues."""
     var = _cov_eigenvalues(points)
     if len(var) == 0:

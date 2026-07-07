@@ -1,0 +1,358 @@
+"""Linear-probe decoding from hidden states and top-k PCA projections."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+
+from experiment import TASKS
+from unit_selectivity import FEATURE_DISPLAY, build_timestep_labels
+from vocab_diagrams import build_minimized_vocabulary_automaton
+
+from viz.compare._data import TaskVizContext
+
+DECODING_FEATURES: tuple[str, ...] = (
+    "char", "dfa", "position", "position_from_end",
+)
+DECODE_FEATURE_COLORS: dict[str, str] = {
+    "char": "#E69F00",
+    "dfa": "#0072B2",
+    "position": "#009E73",
+    "position_from_end": "#CC79A7",
+}
+_DEFAULT_MAX_PCS = 20
+_DEFAULT_MAX_K = _DEFAULT_MAX_PCS
+_DEFAULT_TEST_SIZE = 0.2
+_DEFAULT_RANDOM_STATE = 0
+
+
+def fit_pca_k(
+    points: np.ndarray,
+    k: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """PCA fit to ``k`` components. Returns projected coords, mean, and (k, D) axes."""
+    mean = np.mean(points, axis=0)
+    centered = points - mean
+    _, _, vh = np.linalg.svd(centered, full_matrices=False)
+    k_eff = min(int(k), points.shape[0], points.shape[1])
+    if k_eff < 1:
+        raise ValueError("need at least one PC")
+    components = vh[:k_eff]
+    coords = centered @ components.T
+    return coords, mean, components
+
+
+def project_pca_k(
+    points: np.ndarray,
+    mean: np.ndarray,
+    components: np.ndarray,
+) -> np.ndarray:
+    """Project ``points`` onto fitted PCA axes."""
+    return (points - mean) @ components.T
+
+
+def select_top_variance_neurons(x_train: np.ndarray, k: int) -> np.ndarray:
+    """Indices of the ``k`` highest-variance hidden units (fit on train only)."""
+    var = np.var(x_train, axis=0)
+    k_eff = min(int(k), x_train.shape[1])
+    if k_eff < 1:
+        raise ValueError("need at least one neuron")
+    return np.argsort(var)[-k_eff:][::-1]
+
+
+def project_neurons(points: np.ndarray, indices: np.ndarray) -> np.ndarray:
+    return np.asarray(points[:, indices], dtype=float)
+
+
+def _fit_probe_accuracy(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    *,
+    n_classes: int,
+    k: int | None = None,
+) -> float:
+    from sklearn.linear_model import LogisticRegression
+
+    n_train = len(y_train)
+    ratio = n_classes / max(n_train, 1)
+    C = 1.0
+    if ratio > 0.1:
+        C = 0.3
+    if ratio > 0.2:
+        C = 0.1
+    if ratio > 0.35:
+        C = 0.03
+    if k is not None and k > max(2, n_train // 4):
+        C *= 0.5
+
+    clf = LogisticRegression(max_iter=2000, C=C, random_state=_DEFAULT_RANDOM_STATE)
+    try:
+        clf.fit(x_train, y_train)
+        return float(clf.score(x_test, y_test))
+    except ValueError:
+        return float("nan")
+
+
+def _k_values_for_split(
+    *,
+    hidden_dim: int,
+    n_train: int,
+    n_classes: int,
+    max_k: int,
+) -> list[int]:
+    upper = min(max_k, hidden_dim, n_train - 1)
+    if n_classes > 1:
+        upper = min(upper, max(1, n_train // n_classes))
+    if upper < 1:
+        return []
+    return list(range(1, upper + 1))
+
+
+def empirical_null_chance(feat: str, y: np.ndarray) -> float | None:
+    """Null = uniform over label values observed in the condensed corpus."""
+    labels = np.asarray(y)
+    if len(labels) == 0:
+        return None
+    n = len(np.unique(labels))
+    return 1.0 / n if n > 0 else None
+
+
+def chance_corrected(acc: float, chance: float) -> float:
+    """Map chance→0 and perfect→1: (acc − chance) / (1 − chance)."""
+    if not np.isfinite(acc) or not np.isfinite(chance) or chance >= 1.0:
+        return float("nan")
+    return float((acc - chance) / (1.0 - chance))
+
+
+def theoretical_chance(
+    feat: str,
+    *,
+    words: list[str],
+    length: int,
+    automaton: Any | None = None,
+) -> float | None:
+    """Uniform-guess null for each label type given vocabulary structure."""
+    if feat == "char":
+        letters = set("".join(words))
+        return 1.0 / len(letters) if letters else None
+    if feat == "dfa":
+        if automaton is None:
+            return None
+        n_states = int(automaton.dfa._n)
+        return 1.0 / n_states if n_states > 0 else None
+    if feat in ("position", "position_from_end"):
+        return 1.0 / length if length > 0 else None
+    return None
+
+
+def null_chances_for_vocab(
+    words: list[str],
+    length: int,
+) -> dict[str, float]:
+    automaton = build_minimized_vocabulary_automaton(words)
+    out: dict[str, float] = {}
+    for feat in DECODING_FEATURES:
+        ch = theoretical_chance(feat, words=words, length=length, automaton=automaton)
+        if ch is not None and np.isfinite(ch):
+            out[feat] = float(ch)
+    return out
+
+
+def prepare_decoding_data(
+    ctx: TaskVizContext,
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """Per-feature (X, y) on all timesteps."""
+    automaton = build_minimized_vocabulary_automaton(ctx.words)
+    x = np.asarray(ctx.hidden_states, dtype=float)
+    labels = build_timestep_labels(
+        ctx.text,
+        automaton,
+        spaced=ctx.spaced,
+        words=ctx.words,
+        model=ctx.model,
+        activations=x,
+    )
+
+    out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for feat in DECODING_FEATURES:
+        vals, mask = labels.feature_values(feat)
+        if mask is not None:
+            idxs = [i for i, ok in enumerate(mask) if ok]
+            out[feat] = (x[idxs], np.asarray([vals[i] for i in idxs]))
+        else:
+            out[feat] = (x, np.asarray(vals))
+    return out
+
+
+def decode_feature_curve(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    max_k: int = _DEFAULT_MAX_K,
+    basis: str = "pca",
+    test_size: float = _DEFAULT_TEST_SIZE,
+    random_state: int = _DEFAULT_RANDOM_STATE,
+) -> dict[str, Any] | None:
+    """Train/test linear probe on full hidden state and top-k PCA or neuron subspace."""
+    from sklearn.model_selection import train_test_split
+
+    if basis not in ("pca", "neuron"):
+        raise ValueError(f"unknown basis {basis!r}")
+
+    y_arr = np.asarray(y)
+    if len(y_arr) < 4:
+        return None
+
+    classes, counts = np.unique(y_arr, return_counts=True)
+    supported = set(classes[counts >= 2])
+    if len(supported) < 2:
+        return None
+    keep = np.array([yi in supported for yi in y_arr])
+    x = x[keep]
+    y_arr = y_arr[keep]
+    if len(y_arr) < 4:
+        return None
+
+    n_classes = len(supported)
+    chance = float(1.0 / n_classes)
+
+    n = len(y_arr)
+    abs_test = max(int(np.ceil(n * test_size)), 1)
+    if abs_test < n_classes:
+        abs_test = n_classes
+    if n - abs_test < n_classes:
+        return None
+    frac = abs_test / n
+
+    try:
+        train_idx, test_idx = train_test_split(
+            np.arange(n),
+            test_size=frac,
+            random_state=random_state,
+            stratify=y_arr,
+        )
+    except ValueError:
+        return None
+
+    x_train = x[train_idx]
+    x_test = x[test_idx]
+    y_train = y_arr[train_idx]
+    y_test = y_arr[test_idx]
+
+    k_values = _k_values_for_split(
+        hidden_dim=x.shape[1],
+        n_train=len(y_train),
+        n_classes=n_classes,
+        max_k=max_k,
+    )
+    by_k: dict[int, float] = {}
+    for k in k_values:
+        if basis == "pca":
+            _, mean, components = fit_pca_k(x_train, k)
+            xtr = project_pca_k(x_train, mean, components)
+            xte = project_pca_k(x_test, mean, components)
+        else:
+            idx = select_top_variance_neurons(x_train, k)
+            xtr = project_neurons(x_train, idx)
+            xte = project_neurons(x_test, idx)
+        by_k[k] = _fit_probe_accuracy(
+            xtr, y_train, xte, y_test, n_classes=n_classes, k=k,
+        )
+
+    full_hidden = _fit_probe_accuracy(
+        x_train, y_train, x_test, y_test, n_classes=n_classes, k=None,
+    )
+    return {
+        "chance": chance,
+        "basis": basis,
+        "n_classes": int(n_classes),
+        "n_label_values": int(len(np.unique(y))),
+        "n_samples": int(len(y_arr)),
+        "full_hidden": full_hidden,
+        "by_k": by_k,
+    }
+
+
+def _curve_to_list(curve: dict[str, Any], *, max_k: int) -> list[float]:
+    return [curve["by_k"].get(k, float("nan")) for k in range(1, max_k + 1)]
+
+
+def compute_panel_decoding(
+    ctx: TaskVizContext,
+    *,
+    max_k: int = _DEFAULT_MAX_K,
+) -> dict[str, Any]:
+    """Decode all features for one (task, seed) checkpoint."""
+    feature_data = prepare_decoding_data(ctx)
+    hidden_size = int(ctx.hidden_states.shape[1])
+    cfg = TASKS.get(ctx.task, {})
+    if "hidden_size" in cfg:
+        hidden_size = int(cfg["hidden_size"])
+
+    features_out: dict[str, Any] = {}
+    n_samples = 0
+    vocab_null = null_chances_for_vocab(ctx.words, _infer_length(ctx))
+    for feat in DECODING_FEATURES:
+        x_feat, y_feat = feature_data[feat]
+        n_samples = max(n_samples, len(y_feat))
+        label_null = empirical_null_chance(feat, y_feat)
+        curve_pca = decode_feature_curve(x_feat, y_feat, max_k=max_k, basis="pca")
+        curve_neu = decode_feature_curve(x_feat, y_feat, max_k=max_k, basis="neuron")
+        if curve_pca is None and curve_neu is None:
+            features_out[feat] = {"error": "insufficient samples or classes"}
+            continue
+        curve = curve_pca or curve_neu
+        if label_null is not None:
+            null_ch = label_null
+        else:
+            null_ch = vocab_null.get(feat)
+        entry: dict[str, Any] = {
+            "chance": curve["chance"],
+            "null_chance": null_ch,
+            "n_classes": curve["n_classes"],
+            "n_label_values": curve.get("n_label_values"),
+            "n_samples": curve["n_samples"],
+        }
+        if curve_pca is not None:
+            entry["full_hidden"] = curve_pca["full_hidden"]
+            entry["by_k"] = _curve_to_list(curve_pca, max_k=max_k)
+        if curve_neu is not None:
+            entry["full_hidden_neurons"] = curve_neu["full_hidden"]
+            entry["by_k_neurons"] = _curve_to_list(curve_neu, max_k=max_k)
+        features_out[feat] = entry
+
+    null_chance = {
+        feat: features_out[feat].get("null_chance")
+        for feat in DECODING_FEATURES
+        if feat in features_out and features_out[feat].get("null_chance") is not None
+    }
+    for feat in DECODING_FEATURES:
+        if feat not in null_chance and feat in vocab_null:
+            null_chance[feat] = vocab_null[feat]
+
+    return {
+        "task": ctx.task,
+        "seed": ctx.seed,
+        "hidden_size": hidden_size,
+        "n_samples": n_samples,
+        "null_chance": null_chance,
+        "features": features_out,
+    }
+
+
+def _infer_length(ctx: TaskVizContext) -> int:
+    cfg = TASKS.get(ctx.task, {})
+    if "sweep_length" in cfg:
+        sweep_length = cfg["sweep_length"]
+        if isinstance(sweep_length, (int, float)):
+            return int(sweep_length)
+    if ctx.words:
+        return max(len(w) for w in ctx.words)
+    return 1
+
+
+def feature_display_name(feature: str) -> str:
+    return FEATURE_DISPLAY.get(feature, feature)

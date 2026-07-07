@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
 
-from experiment import comparison_dir, checkpoint_path, TASKS
+from experiment import checkpoint_path, TASKS
+from viz.compare.sweep_output import sweep_data_dir, sweep_figures_dir
 from viz.compare.geometry import _metric_value, compute_panel_geometry
 from viz.compare._data import load_task_viz_context
 from viz.plot_layout import finalize_grid_figure, save_figure
@@ -124,9 +125,7 @@ def write_sweep_training_metrics(
                 model_type=model_type,
             ))
 
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_data_dir(SWEEP_COMPARISON_NAME) / outfile
     payload = {
         "comparison": SWEEP_COMPARISON_NAME,
         "model_type": model_type,
@@ -178,9 +177,7 @@ def write_sweep_geometry(
             panels.append(panel)
             print(f"  {task} seed {run_seed}", flush=True)
 
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_data_dir(SWEEP_COMPARISON_NAME) / outfile
     payload = {
         "comparison": SWEEP_COMPARISON_NAME,
         "model_type": model_type,
@@ -270,6 +267,12 @@ def _format_heatmap_cell(key: str, val: float) -> str:
     return f"{val:.2f}"
 
 
+def _length_tick_label(length: object) -> str:
+    if isinstance(length, (int, np.integer)):
+        return f"{int(length)}-letter"
+    return str(length)
+
+
 def _plot_heatmap_panel(
     ax: plt.Axes,
     means: np.ndarray,
@@ -303,7 +306,7 @@ def _plot_heatmap_panel(
     ax.set_xticks(range(len(word_counts)))
     ax.set_xticklabels([str(n) for n in word_counts], fontsize=8)
     ax.set_yticks(range(len(lengths)))
-    ax.set_yticklabels([f"{L}-letter" for L in lengths], fontsize=8)
+    ax.set_yticklabels([_length_tick_label(L) for L in lengths], fontsize=8)
     ax.set_xlabel("# words", fontsize=8)
     ax.set_title(title, fontsize=9)
     for i in range(len(lengths)):
@@ -396,9 +399,7 @@ def plot_sweep_heatmaps(
         hspace=0.55,
         wspace=0.45,
     )
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_figures_dir(SWEEP_COMPARISON_NAME) / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
 
@@ -429,9 +430,9 @@ def replot_sweep_heatmaps(
     outfile: str = "sweep_heatmaps.png",
 ) -> Path:
     """Regenerate combined heatmaps from existing JSON summaries."""
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    geom_payload = json.loads((out_dir / geometry_file).read_text(encoding="utf-8"))
-    train_path = out_dir / training_file
+    data_dir = sweep_data_dir(SWEEP_COMPARISON_NAME)
+    geom_payload = json.loads((data_dir / geometry_file).read_text(encoding="utf-8"))
+    train_path = data_dir / training_file
     training_panels = None
     if train_path.is_file():
         train_payload = json.loads(train_path.read_text(encoding="utf-8"))
@@ -484,8 +485,7 @@ def run_sweep_plots(
         print(f"wrote {heatmap_path}")
         outputs.extend([json_path, heatmap_path])
     elif training_panels is not None:
-        out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-        geom_path = out_dir / json_file
+        geom_path = sweep_data_dir(SWEEP_COMPARISON_NAME) / json_file
         if geom_path.is_file():
             payload = json.loads(geom_path.read_text(encoding="utf-8"))
             heatmap_path = plot_sweep_heatmaps(

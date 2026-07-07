@@ -45,6 +45,7 @@ DALE_RNN_DEFAULTS: dict[str, object] = {
 }
 
 COMPARISON_VIZ_KINDS: tuple[str, ...] = (
+    "data",
     "learning_curves",
     "trajectories",
     "states",

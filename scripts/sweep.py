@@ -21,6 +21,7 @@ from vocab_sweep import (
 )
 from viz.compare.sweep_heatmap import replot_sweep_heatmaps, run_sweep_plots, run_sweep_training_plots
 from viz.compare.sweep_spectrum import replot_sweep_spectra, run_sweep_spectrum_plots
+from viz.compare.sweep_decoding import replot_sweep_decoding, run_sweep_decoding_plots
 
 
 def _tasks() -> tuple[str, ...]:
@@ -61,6 +62,14 @@ def cmd_train(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     seeds = tuple(args.seeds) if args.seeds else SWEEP_DEFAULT_SEEDS
+    if args.decoding_only:
+        if args.replot_only:
+            curves_pca, curves_neu = replot_sweep_decoding()
+            print(f"wrote {curves_pca}")
+            print(f"wrote {curves_neu}")
+        else:
+            run_sweep_decoding_plots(seeds=seeds, recompute=True)
+        return
     if args.spectrum_only:
         if args.replot_only:
             path = replot_sweep_spectra()
@@ -99,6 +108,11 @@ def main() -> None:
 
     p_plot = sub.add_parser("plot", help="write sweep_geometry.json + heatmaps")
     p_plot.add_argument("--seeds", nargs="+", type=int)
+    p_plot.add_argument(
+        "--decoding-only",
+        action="store_true",
+        help="compute/plot linear decoding from hidden states (PCA + neurons)",
+    )
     p_plot.add_argument(
         "--spectrum-only",
         action="store_true",

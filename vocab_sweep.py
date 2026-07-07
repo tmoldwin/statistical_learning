@@ -179,6 +179,12 @@ def sweep_task_config(n_words: int, length: int) -> dict[str, object]:
 
     viz_length = min(n_words * length + 20, 500)
     sequence_length = max(8, 2 * length + (8 if n_words >= 50 else 4))
+    stall_min_iter = max(
+        int(max(1_000, steps * 0.30)),
+        max(1_000, int(steps * 0.08)),
+    )
+    stall_patience_evals = 24 if n_words < 50 else 36
+    stall_min_delta = 0.001
 
     return {
         "regime": regime_name(n_words, length),
@@ -198,6 +204,9 @@ def sweep_task_config(n_words: int, length: int) -> dict[str, object]:
         "dropout": 0.25,
         "l2_lambda": 1e-4,
         "learning_rate": 0.04 if length >= 5 or n_words >= 50 else 0.1,
+        "stall_patience_evals": int(stall_patience_evals),
+        "stall_min_delta": float(stall_min_delta),
+        "stall_min_iter": int(stall_min_iter),
         "sweep_n_words": int(n_words),
         "sweep_length": int(length),
     }

@@ -45,6 +45,8 @@ def pc_variance_percent(points: np.ndarray) -> np.ndarray:
     """Per-PC variance explained in percent."""
     return 100.0 * pc_variance_fractions(points)
 
+
+def participation_ratio(points: np.ndarray) -> float:
     """Effective dimensionality: (sum λ)² / sum λ² on covariance eigenvalues."""
     var = _cov_eigenvalues(points)
     if len(var) == 0:

@@ -19,7 +19,13 @@ from vocab_sweep_pow2 import (
     iter_pow2_sweep_cells,
     task_name,
 )
+from viz.compare.pow2_sweep_decoding import replot_pow2_sweep_decoding, run_pow2_sweep_decoding_plots
 from viz.compare.pow2_sweep_heatmap import replot_pow2_sweep_heatmaps, run_pow2_sweep_plots
+from viz.compare.pow2_sweep_spectrum import replot_pow2_sweep_spectra, run_pow2_sweep_spectrum_plots
+from viz.compare.pow2_sweep_viz import (
+    run_pow2_sweep_closed_loop_plots,
+    run_pow2_sweep_learning_curve_plots,
+)
 
 
 def _tasks() -> tuple[str, ...]:
@@ -65,6 +71,27 @@ def cmd_train(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     seeds = tuple(args.seeds) if args.seeds else POW2_DEFAULT_SEEDS
+    if args.learning_curves_only:
+        paths = run_pow2_sweep_learning_curve_plots(seeds=seeds)
+        return
+    if args.trajectories_only:
+        run_pow2_sweep_closed_loop_plots(seeds=seeds)
+        return
+    if args.decoding_only:
+        if args.replot_only:
+            curves_pca, curves_neu = replot_pow2_sweep_decoding()
+            print(f"wrote {curves_pca}")
+            print(f"wrote {curves_neu}")
+        else:
+            run_pow2_sweep_decoding_plots(seeds=seeds, recompute=True)
+        return
+    if args.spectrum_only:
+        if args.replot_only:
+            path = replot_pow2_sweep_spectra()
+            print(f"wrote {path}")
+        else:
+            run_pow2_sweep_spectrum_plots(seeds=seeds, recompute=True)
+        return
     if args.replot_only:
         path = replot_pow2_sweep_heatmaps()
         print(f"wrote {path}")
@@ -73,7 +100,7 @@ def cmd_plot(args: argparse.Namespace) -> None:
         run_pow2_sweep_plots(seeds=seeds, geometry=False, training=True)
         geom_path = (
             REPO_ROOT
-            / "experiments/comparisons/word_count_pow2_sweep_ns/trajectories/sweep_geometry.json"
+            / "experiments/comparisons/word_count_pow2_sweep_ns/data/sweep_geometry.json"
         )
         if geom_path.is_file():
             path = replot_pow2_sweep_heatmaps()
@@ -82,6 +109,9 @@ def cmd_plot(args: argparse.Namespace) -> None:
         run_pow2_sweep_plots(seeds=seeds, geometry=True, training=False)
     else:
         run_pow2_sweep_plots(seeds=seeds)
+        run_pow2_sweep_spectrum_plots(seeds=seeds)
+        run_pow2_sweep_learning_curve_plots(seeds=seeds)
+        run_pow2_sweep_closed_loop_plots(seeds=seeds)
 
 
 def main() -> None:
@@ -100,6 +130,16 @@ def main() -> None:
     p_plot = sub.add_parser("plot", help="write sweep JSON + heatmaps")
     p_plot.add_argument("--seeds", nargs="+", type=int)
     p_plot.add_argument(
+        "--decoding-only",
+        action="store_true",
+        help="compute/plot linear decoding from hidden states (PCA + neurons)",
+    )
+    p_plot.add_argument(
+        "--spectrum-only",
+        action="store_true",
+        help="compute/plot closed-loop PC variance spectra",
+    )
+    p_plot.add_argument(
         "--replot-only",
         action="store_true",
         help="replot heatmaps from existing sweep_geometry.json + sweep_training.json",
@@ -108,6 +148,16 @@ def main() -> None:
         "--training-only",
         action="store_true",
         help="refresh sweep_training.json (incl. uniform word probs) and replot",
+    )
+    p_plot.add_argument(
+        "--learning-curves-only",
+        action="store_true",
+        help="plot per-cell training curve grid under learning_curves/",
+    )
+    p_plot.add_argument(
+        "--trajectories-only",
+        action="store_true",
+        help="plot per-cell closed-loop 2D PCA/jPCA grids under trajectories/",
     )
     p_plot.add_argument(
         "--geometry-only",

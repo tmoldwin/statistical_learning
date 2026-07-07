@@ -9,7 +9,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from experiment import comparison_dir
+from viz.compare.sweep_output import sweep_data_dir, sweep_figures_dir
 from viz.compare._data import load_task_viz_context
 from viz.compare.geometry import _GEOMETRY_TRIALS, _ROLLOUT_SEED, _mean_closed_loop_hidden
 from viz.compare.state_space_metrics import pc_variance_percent
@@ -97,9 +97,7 @@ def write_sweep_spectra(
             "spectrum_pct": mean_spectrum,
         })
 
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_data_dir(SWEEP_COMPARISON_NAME) / outfile
     payload = {
         "comparison": SWEEP_COMPARISON_NAME,
         "model_type": model_type,
@@ -204,8 +202,7 @@ def plot_sweep_spectra(
         hspace=0.38,
         wspace=0.28,
     )
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    out_path = out_dir / outfile
+    out_path = sweep_figures_dir(SWEEP_COMPARISON_NAME) / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
 
@@ -215,8 +212,9 @@ def replot_sweep_spectra(
     spectra_file: str = "sweep_spectra.json",
     outfile: str = "sweep_pc_spectra.png",
 ) -> Path:
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    payload = json.loads((out_dir / spectra_file).read_text(encoding="utf-8"))
+    payload = json.loads(
+        (sweep_data_dir(SWEEP_COMPARISON_NAME) / spectra_file).read_text(encoding="utf-8"),
+    )
     return plot_sweep_spectra(
         payload["panels"],
         max_pcs=int(payload.get("max_pcs", _DEFAULT_MAX_PCS)),
@@ -231,12 +229,9 @@ def run_sweep_spectrum_plots(
     recompute: bool = True,
     spectra_file: str = "sweep_spectra.json",
 ) -> tuple[Path, Path]:
-    out_dir = comparison_dir(SWEEP_COMPARISON_NAME, "trajectories")
-    json_path = out_dir / spectra_file
+    json_path = sweep_data_dir(SWEEP_COMPARISON_NAME) / spectra_file
     if recompute or not json_path.is_file():
         json_path = write_sweep_spectra(seeds=seeds, max_pcs=max_pcs, outfile=spectra_file)
-    else:
-        json_path = out_dir / spectra_file
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     fig_path = plot_sweep_spectra(
         payload["panels"],

@@ -28,6 +28,7 @@ def load_task_viz_context(
     *,
     model_type: str = "rnn",
     seed: int | None = None,
+    text_chars: int | None = None,
 ) -> TaskVizContext:
     run_seed = DEFAULT_SEED if seed is None else seed
     ckpt = checkpoint_path(task, model_type, seed=run_seed)
@@ -39,7 +40,8 @@ def load_task_viz_context(
     spaced = corpus_uses_word_spacing(full_text, task)
     words = vocabulary_for_experiment(task)
     cfg = TASKS[task]
-    length = int(cfg.get("viz_length", 50))
+    length = int(text_chars if text_chars is not None else cfg.get("viz_length", 50))
+    length = min(length, len(full_text))
 
     if words and not spaced:
         extensions = label_extensions_for_experiment(task)
@@ -58,4 +60,18 @@ def load_task_viz_context(
         words=words,
         spaced=spaced,
         hidden_states=np.asarray(hidden_states),
+    )
+
+
+def load_task_decoding_context(
+    task: str,
+    *,
+    model_type: str = "rnn",
+    seed: int | None = None,
+) -> TaskVizContext:
+    """Longer rollout than trajectory viz so decoding curves reach higher k."""
+    cfg = TASKS[task]
+    text_chars = int(cfg.get("metric_rollout_len", cfg.get("viz_length", 50)))
+    return load_task_viz_context(
+        task, model_type=model_type, seed=seed, text_chars=text_chars,
     )

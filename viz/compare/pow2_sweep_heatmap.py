@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import numpy as np
 
-from experiment import comparison_dir, checkpoint_path, TASKS
+from experiment import checkpoint_path, TASKS
+from viz.compare.sweep_output import sweep_data_dir, sweep_figures_dir
 from viz.compare.geometry import _metric_value, compute_panel_geometry
 from viz.compare._data import load_task_viz_context
 from viz.compare.sweep_heatmap import (
@@ -130,9 +131,7 @@ def write_pow2_sweep_training_metrics(
             ))
             print(f"  training {task} seed {run_seed}", flush=True)
 
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
     payload = {
         "comparison": POW2_SWEEP_COMPARISON_NAME,
         "model_type": model_type,
@@ -187,9 +186,7 @@ def write_pow2_sweep_geometry(
             panels.append(panel)
             print(f"  geometry {task} seed {run_seed}", flush=True)
 
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
     payload = {
         "comparison": POW2_SWEEP_COMPARISON_NAME,
         "model_type": model_type,
@@ -274,9 +271,7 @@ def plot_pow2_sweep_heatmaps(
         hspace=0.55,
         wspace=0.45,
     )
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "trajectories")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / outfile
+    out_path = sweep_figures_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
 
@@ -287,9 +282,9 @@ def replot_pow2_sweep_heatmaps(
     training_file: str = "sweep_training.json",
     outfile: str = "sweep_heatmaps.png",
 ) -> Path:
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "trajectories")
-    geom_payload = json.loads((out_dir / geometry_file).read_text(encoding="utf-8"))
-    train_path = out_dir / training_file
+    data_dir = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME)
+    geom_payload = json.loads((data_dir / geometry_file).read_text(encoding="utf-8"))
+    train_path = data_dir / training_file
     training_panels = None
     if train_path.is_file():
         train_payload = json.loads(train_path.read_text(encoding="utf-8"))
@@ -332,8 +327,7 @@ def run_pow2_sweep_plots(
         print(f"wrote {heatmap_path}")
         outputs.extend([json_path, heatmap_path])
     elif training_panels is not None:
-        out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "trajectories")
-        geom_path = out_dir / json_file
+        geom_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / json_file
         if geom_path.is_file():
             payload = json.loads(geom_path.read_text(encoding="utf-8"))
             heatmap_path = plot_pow2_sweep_heatmaps(

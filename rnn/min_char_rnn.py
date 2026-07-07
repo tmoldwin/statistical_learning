@@ -717,12 +717,28 @@ best_valid_letter_frac = -1.0
 best_iter = -1
 best_state: dict[str, np.ndarray] | None = None
 target_met_streak = 0
+stall_patience_evals = 0
+stall_min_delta = 0.0
+stall_min_iter = MIN_CHECKPOINT_ITER
+if args.exp:
+    from experiment import EXPERIMENT_CONFIG
+    _stall_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+    stall_patience_evals = int(_stall_cfg.get("stall_patience_evals", stall_patience_evals))
+    stall_min_delta = float(_stall_cfg.get("stall_min_delta", stall_min_delta))
+    stall_min_iter = int(_stall_cfg.get("stall_min_iter", stall_min_iter))
+best_progress_word_err = float("inf")
+stall_evals_since_progress = 0
 _legacy_zero_stop = target_word_error is None
 _stop_threshold = 0.0 if _legacy_zero_stop else target_word_error
 if not _legacy_zero_stop:
     print(
         f"early stop target: {100.0 * _stop_threshold:.2f}% word error "
         f"({early_stop_patience} consecutive evals)",
+    )
+if stall_patience_evals > 0:
+    print(
+        f"plateau stop: <{100.0 * stall_min_delta:.2f}% word-error improvement "
+        f"for {stall_patience_evals} evals after iter {stall_min_iter}",
     )
 
 
@@ -825,6 +841,13 @@ while iteration < max_iterations:
                 best_valid_letter_frac = letter_frac
                 best_iter = iteration
                 best_state = copy.deepcopy(snapshot_params())
+            if confirmed_err < (best_progress_word_err - stall_min_delta):
+                best_progress_word_err = confirmed_err
+                stall_evals_since_progress = 0
+            else:
+                stall_evals_since_progress += 1
+        else:
+            stall_evals_since_progress += 1
         if word_err <= _stop_threshold:
             target_met_streak += 1
         else:
@@ -841,6 +864,16 @@ while iteration < max_iterations:
                     f"word error <= {100.0 * _stop_threshold:.2f}% "
                     f"for {early_stop_patience * eval_interval} training steps",
                 )
+            break
+        if (
+            stall_patience_evals > 0
+            and iteration >= stall_min_iter
+            and stall_evals_since_progress >= stall_patience_evals
+        ):
+            print(
+                f"plateau stop at iter {iteration}: no >= {100.0 * stall_min_delta:.2f}% "
+                f"word-error improvement for {stall_patience_evals} evals",
+            )
             break
 
     if iteration == 0:

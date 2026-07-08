@@ -5,8 +5,7 @@
     "char",
     "dfa",
     "position",
-    "position_from_end",
-    "prefix"
+    "position_from_end"
   ],
   "word_counts": [
     1,
@@ -41,13 +40,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 37,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 1.0,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -60,9 +58,6 @@
           "n_seeds": 0
         },
         "position_from_end": {
-          "n_seeds": 0
-        },
-        "prefix": {
           "n_seeds": 0
         }
       }
@@ -73,13 +68,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 41,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.5,
         "dfa": 0.3333333333333333,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.5
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -469,9 +463,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -481,13 +472,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 45,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.3333333333333333,
         "dfa": 0.25,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.3333333333333333
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -877,9 +867,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -889,13 +876,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 49,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.25,
         "dfa": 0.2,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.25
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -1285,9 +1271,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -1297,13 +1280,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 53,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.2,
         "dfa": 0.16666666666666666,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.2
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -1693,9 +1675,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -1705,13 +1684,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 57,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.16666666666666666,
         "dfa": 0.14285714285714285,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.16666666666666666
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -2101,9 +2079,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -2113,13 +2088,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 61,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.14285714285714285,
         "dfa": 0.125,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.14285714285714285
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -2509,9 +2483,6 @@
           ],
           "full_hidden_neurons_mean": 0.9833333333333333,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -2521,13 +2492,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 37,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 1.0,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -2541,9 +2511,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -2553,13 +2520,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 38,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.5,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -2667,9 +2633,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -2679,13 +2642,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 42,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.3333333333333333,
         "dfa": 0.3333333333333333,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.5
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -3075,9 +3037,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -3087,13 +3046,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 46,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.25,
         "dfa": 0.25,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.2
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -3483,9 +3441,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -3495,13 +3450,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 50,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.2,
         "dfa": 0.2,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.14285714285714285
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -3891,9 +3845,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -3903,13 +3854,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 54,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.16666666666666666,
         "dfa": 0.16666666666666666,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.1111111111111111
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -4299,9 +4249,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -4311,13 +4258,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 58,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.14285714285714285,
         "dfa": 0.14285714285714285,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.09090909090909091
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -4707,9 +4653,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -4719,13 +4662,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 62,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.125,
         "dfa": 0.125,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.08333333333333333
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -5115,9 +5057,6 @@
           ],
           "full_hidden_neurons_mean": 0.9833333333333333,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -5127,13 +5066,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 42,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.3333333333333333,
         "dfa": 0.3333333333333333,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.5
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -5523,9 +5461,6 @@
           ],
           "full_hidden_neurons_mean": 0.9944444444444445,
           "full_hidden_neurons_std": 0.009622504486493794
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -5535,13 +5470,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 40,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.25,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -5649,9 +5583,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -5661,13 +5592,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 44,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.2,
         "dfa": 0.3333333333333333,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.5
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -6057,9 +5987,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -6069,13 +5996,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 48,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.16666666666666666,
         "dfa": 0.25,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.1111111111111111
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -6465,9 +6391,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -6477,13 +6400,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 52,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.14285714285714285,
         "dfa": 0.2,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.07692307692307693
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -6873,9 +6795,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -6885,13 +6804,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 56,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.125,
         "dfa": 0.16666666666666666,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.058823529411764705
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -7281,9 +7199,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -7293,13 +7208,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 60,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.1111111111111111,
         "dfa": 0.14285714285714285,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.047619047619047616
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -7689,9 +7603,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -7701,13 +7612,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.1111111111111111,
         "dfa": 0.125,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.045454545454545456
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -8097,9 +8007,6 @@
           ],
           "full_hidden_neurons_mean": 0.9833333333333333,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -8109,13 +8016,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 52,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.125,
         "dfa": 0.125,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.14285714285714285
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -8505,9 +8411,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -8517,13 +8420,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.125,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -8631,9 +8533,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -8643,13 +8542,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.14285714285714285,
         "dfa": 0.25,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.3333333333333333
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -9039,103 +8937,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.3333333333333333,
-          "full_hidden_mean": 0.6666666666666666,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.6666666666666666,
-            0.6666666666666666,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 3.0,
-          "by_k_neurons_mean": [
-            0.3333333333333333,
-            0.3333333333333333,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.6666666666666666,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -9145,13 +8946,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.14285714285714285,
         "dfa": 0.25,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.07692307692307693
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -9541,103 +9341,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.6,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.4000000000000001,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            6.798699777552591e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.6,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -9647,13 +9350,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.125,
         "dfa": 0.16666666666666666,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.058823529411764705
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -10043,103 +9745,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.26666666666666666,
-          "full_hidden_std": 0.11547005383792516,
-          "by_k_mean": [
-            0.26666666666666666,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.11547005383792516,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.26666666666666666,
-          "full_hidden_neurons_std": 0.11547005383792516
         }
       }
     },
@@ -10149,13 +9754,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.09090909090909091,
         "dfa": 0.1111111111111111,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.034482758620689655
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -10545,103 +10149,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.20000000000000004,
-          "full_hidden_std": 3.3993498887762956e-17,
-          "by_k_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.20000000000000004,
-          "full_hidden_neurons_std": 3.3993498887762956e-17
         }
       }
     },
@@ -10651,13 +10158,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.08333333333333333,
         "dfa": 0.09090909090909091,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.02702702702702703
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -11047,103 +10553,6 @@
           ],
           "full_hidden_neurons_mean": 0.9944444444444445,
           "full_hidden_neurons_std": 0.009622504486493794
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.20000000000000004,
-          "full_hidden_std": 3.3993498887762956e-17,
-          "by_k_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.20000000000000004,
-          "full_hidden_neurons_std": 3.3993498887762956e-17
         }
       }
     },
@@ -11153,13 +10562,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 68,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.1,
         "dfa": 0.08333333333333333,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.02631578947368421
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -11549,103 +10957,6 @@
           ],
           "full_hidden_neurons_mean": 0.9833333333333333,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.20000000000000004,
-          "full_hidden_std": 3.3993498887762956e-17,
-          "by_k_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.20000000000000004,
-          "full_hidden_neurons_std": 3.3993498887762956e-17
         }
       }
     },
@@ -11655,13 +10966,12 @@
       "length": "mixed",
       "n_seeds": 2,
       "hidden_size": 68,
-      "n_prefixes": 300,
+      "n_samples": 300,
       "null_chance": {
         "char": 0.05555555555555555,
         "dfa": 0.047619047619047616,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.045454545454545456
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -12051,9 +11361,6 @@
           ],
           "full_hidden_neurons_mean": 0.9916666666666667,
           "full_hidden_neurons_std": 0.011785113019775828
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -12063,13 +11370,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 320,
+      "n_samples": 320,
       "null_chance": {
         "char": 0.0625,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -12177,9 +11483,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -12189,13 +11492,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 640,
+      "n_samples": 640,
       "null_chance": {
         "char": 0.1111111111111111,
         "dfa": 0.25,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.2
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -12585,103 +11887,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.25,
-          "full_hidden_mean": 0.5833333333333334,
-          "full_hidden_std": 0.28867513459481287,
-          "by_k_mean": [
-            0.5,
-            0.4166666666666667,
-            0.5,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.14433756729740643,
-            0.25,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.0,
-          "by_k_neurons_mean": [
-            0.5,
-            0.5,
-            0.5,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.5833333333333334,
-          "full_hidden_neurons_std": 0.28867513459481287
         }
       }
     },
@@ -12691,13 +11896,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 960,
+      "n_samples": 960,
       "null_chance": {
         "char": 0.1111111111111111,
         "dfa": 0.2,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.07692307692307693
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -13087,103 +12291,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.1111111111111111,
-          "full_hidden_mean": 0.2222222222222222,
-          "full_hidden_std": 0.1111111111111111,
-          "by_k_mean": [
-            0.2222222222222222,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 9.0,
-          "by_k_neurons_mean": [
-            0.1111111111111111,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.2222222222222222,
-          "full_hidden_neurons_std": 0.1111111111111111
         }
       }
     },
@@ -13193,13 +12300,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 64,
-      "n_prefixes": 1280,
+      "n_samples": 1280,
       "null_chance": {
         "char": 0.1111111111111111,
         "dfa": 0.16666666666666666,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.047619047619047616
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -13589,103 +12695,6 @@
           ],
           "full_hidden_neurons_mean": 0.9986979166666666,
           "full_hidden_neurons_std": 0.002255274489021976
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.1111111111111111,
-          "full_hidden_mean": 0.14814814814814814,
-          "full_hidden_std": 0.06415002990995841,
-          "by_k_mean": [
-            0.2222222222222222,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 9.0,
-          "by_k_neurons_mean": [
-            0.1111111111111111,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.14814814814814814,
-          "full_hidden_neurons_std": 0.06415002990995841
         }
       }
     },
@@ -13695,13 +12704,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 68,
-      "n_prefixes": 1600,
+      "n_samples": 1600,
       "null_chance": {
         "char": 0.06666666666666667,
         "dfa": 0.06666666666666667,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.018867924528301886
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -14091,103 +13099,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.20000000000000004,
-          "full_hidden_std": 3.3993498887762956e-17,
-          "by_k_mean": [
-            0.4000000000000001,
-            0.4000000000000001,
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            6.798699777552591e-17,
-            0.19999999999999998,
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.4000000000000001,
-            0.4000000000000001,
-            0.4000000000000001,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            6.798699777552591e-17,
-            6.798699777552591e-17,
-            6.798699777552591e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.20000000000000004,
-          "full_hidden_neurons_std": 3.3993498887762956e-17
         }
       }
     },
@@ -14197,13 +13108,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 72,
-      "n_prefixes": 1920,
+      "n_samples": 1920,
       "null_chance": {
         "char": 0.0625,
         "dfa": 0.058823529411764705,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.015384615384615385
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -14593,103 +13503,6 @@
           ],
           "full_hidden_neurons_mean": 0.9991319444444445,
           "full_hidden_neurons_std": 0.001503516326014629
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.1111111111111111,
-          "full_hidden_mean": 0.1111111111111111,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.2222222222222222,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 9.0,
-          "by_k_neurons_mean": [
-            0.1111111111111111,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.1111111111111111,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -14699,13 +13512,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 76,
-      "n_prefixes": 2240,
+      "n_samples": 2240,
       "null_chance": {
         "char": 0.09090909090909091,
         "dfa": 0.07142857142857142,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.014285714285714285
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -15095,103 +13907,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.20000000000000004,
-          "full_hidden_mean": 0.20000000000000004,
-          "full_hidden_std": 3.3993498887762956e-17,
-          "by_k_mean": [
-            0.4000000000000001,
-            0.20000000000000004,
-            0.20000000000000004,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            6.798699777552591e-17,
-            3.3993498887762956e-17,
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 4.999999999999999,
-          "by_k_neurons_mean": [
-            0.4000000000000001,
-            0.4000000000000001,
-            0.4000000000000001,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            6.798699777552591e-17,
-            6.798699777552591e-17,
-            6.798699777552591e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.20000000000000004,
-          "full_hidden_neurons_std": 3.3993498887762956e-17
         }
       }
     },
@@ -15201,13 +13916,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 76,
-      "n_prefixes": 1180,
+      "n_samples": 1180,
       "null_chance": {
         "char": 0.05,
         "dfa": 0.034482758620689655,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.027777777777777776
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -15597,103 +14311,6 @@
           ],
           "full_hidden_neurons_mean": 0.9971811008605688,
           "full_hidden_neurons_std": 0.0024412546327779146
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.14285714285714285,
-          "full_hidden_mean": 0.42857142857142855,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.42857142857142855,
-            0.42857142857142855,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 7.0,
-          "by_k_neurons_mean": [
-            0.42857142857142855,
-            0.42857142857142855,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.42857142857142855,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -15703,13 +14320,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 640,
+      "n_samples": 640,
       "null_chance": {
         "char": 0.03125,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -15817,9 +14433,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -15829,13 +14442,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 1280,
+      "n_samples": 1280,
       "null_chance": {
         "char": 0.08333333333333333,
         "dfa": 0.25,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.125
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -16225,103 +14837,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.125,
-          "full_hidden_mean": 0.5833333333333334,
-          "full_hidden_std": 0.19094065395649332,
-          "by_k_mean": [
-            0.375,
-            0.4166666666666667,
-            0.4166666666666667,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.07216878364870323,
-            0.07216878364870323,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 8.0,
-          "by_k_neurons_mean": [
-            0.375,
-            0.375,
-            0.375,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.5833333333333334,
-          "full_hidden_neurons_std": 0.19094065395649332
         }
       }
     },
@@ -16331,13 +14846,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 1920,
+      "n_samples": 1920,
       "null_chance": {
         "char": 0.07142857142857142,
         "dfa": 0.14285714285714285,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.04
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -16727,103 +15241,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.07692307692307693,
-          "full_hidden_mean": 0.10256410256410257,
-          "full_hidden_std": 0.04441155916843275,
-          "by_k_mean": [
-            0.20512820512820515,
-            0.15384615384615385,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.04441155916843276,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 13.0,
-          "by_k_neurons_mean": [
-            0.07692307692307693,
-            0.15384615384615385,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.10256410256410257,
-          "full_hidden_neurons_std": 0.04441155916843275
         }
       }
     },
@@ -16833,13 +15250,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 2560,
+      "n_samples": 2560,
       "null_chance": {
         "char": 0.08333333333333333,
         "dfa": 0.09090909090909091,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.02040816326530612
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -17229,103 +15645,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.0588235294117647,
-          "full_hidden_mean": 0.0588235294117647,
-          "full_hidden_std": 8.498374721940739e-18,
-          "by_k_mean": [
-            0.1568627450980392,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.03396178054056623,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 17.000000000000004,
-          "by_k_neurons_mean": [
-            0.0980392156862745,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.03396178054056622,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.0588235294117647,
-          "full_hidden_neurons_std": 8.498374721940739e-18
         }
       }
     },
@@ -17335,13 +15654,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 3200,
+      "n_samples": 3200,
       "null_chance": {
         "char": 0.05555555555555555,
         "dfa": 0.045454545454545456,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.011764705882352941
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -17731,103 +16049,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.0588235294117647,
-          "full_hidden_mean": 0.0588235294117647,
-          "full_hidden_std": 8.498374721940739e-18,
-          "by_k_mean": [
-            0.17647058823529413,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 17.000000000000004,
-          "by_k_neurons_mean": [
-            0.1176470588235294,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.05882352941176471,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.0588235294117647,
-          "full_hidden_neurons_std": 8.498374721940739e-18
         }
       }
     },
@@ -17837,13 +16058,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 3840,
+      "n_samples": 3840,
       "null_chance": {
         "char": 0.05555555555555555,
         "dfa": 0.037037037037037035,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.009009009009009009
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -18233,103 +16453,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.0588235294117647,
-          "full_hidden_mean": 0.17647058823529413,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.2352941176470588,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            3.3993498887762956e-17,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 17.000000000000004,
-          "by_k_neurons_mean": [
-            0.17647058823529413,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.17647058823529413,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -18339,13 +16462,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 4480,
+      "n_samples": 4480,
       "null_chance": {
         "char": 0.0625,
         "dfa": 0.047619047619047616,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.007692307692307693
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -18735,103 +16857,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.1111111111111111,
-          "full_hidden_mean": 0.1111111111111111,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.2222222222222222,
-            0.2222222222222222,
-            0.2222222222222222,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.1111111111111111,
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 9.0,
-          "by_k_neurons_mean": [
-            0.2962962962962963,
-            0.2962962962962963,
-            0.2962962962962963,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.06415002990995841,
-            0.06415002990995841,
-            0.06415002990995841,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.1111111111111111,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -18841,13 +16866,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 128,
-      "n_prefixes": 2440,
+      "n_samples": 2440,
       "null_chance": {
         "char": 0.045454545454545456,
         "dfa": 0.020833333333333332,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.015873015873015872
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -19237,103 +17261,6 @@
           ],
           "full_hidden_neurons_mean": 0.9965846994535519,
           "full_hidden_neurons_std": 0.0031301746550244903
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.08333333333333333,
-          "full_hidden_mean": 0.9166666666666666,
-          "full_hidden_std": 0.08333333333333331,
-          "by_k_mean": [
-            0.3888888888888889,
-            0.5,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.048112522432468836,
-            0.08333333333333334,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 12.0,
-          "by_k_neurons_mean": [
-            0.3055555555555555,
-            0.3055555555555555,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0481125224324688,
-            0.0481125224324688,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.9166666666666666,
-          "full_hidden_neurons_std": 0.08333333333333331
         }
       }
     },
@@ -19343,13 +17270,12 @@
       "length": 1,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 1280,
+      "n_samples": 1280,
       "null_chance": {
         "char": 0.015625,
         "dfa": 0.5,
         "position": 1.0,
-        "position_from_end": 1.0,
-        "prefix": 1.0
+        "position_from_end": 1.0
       },
       "features": {
         "char": {
@@ -19457,9 +17383,6 @@
         },
         "position_from_end": {
           "n_seeds": 0
-        },
-        "prefix": {
-          "n_seeds": 0
         }
       }
     },
@@ -19469,13 +17392,12 @@
       "length": 2,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 2560,
+      "n_samples": 2560,
       "null_chance": {
         "char": 0.05555555555555555,
         "dfa": 0.25,
         "position": 0.5,
-        "position_from_end": 0.5,
-        "prefix": 0.07142857142857142
+        "position_from_end": 0.5
       },
       "features": {
         "char": {
@@ -19865,103 +17787,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.07142857142857142,
-          "full_hidden_mean": 0.25,
-          "full_hidden_std": 0.0625,
-          "by_k_mean": [
-            0.25,
-            0.25,
-            0.22916666666666666,
-            0.22916666666666666,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.0625,
-            0.07216878364870322,
-            0.07216878364870322,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 14.0,
-          "by_k_neurons_mean": [
-            0.1875,
-            0.25,
-            0.25,
-            0.25,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.25,
-          "full_hidden_neurons_std": 0.0625
         }
       }
     },
@@ -19971,13 +17796,12 @@
       "length": 3,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 3840,
+      "n_samples": 3840,
       "null_chance": {
         "char": 0.0625,
         "dfa": 0.14285714285714285,
         "position": 0.3333333333333333,
-        "position_from_end": 0.3333333333333333,
-        "prefix": 0.04
+        "position_from_end": 0.3333333333333333
       },
       "features": {
         "char": {
@@ -20367,103 +18191,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.047619047619047616,
-          "full_hidden_mean": 0.17460317460317457,
-          "full_hidden_std": 0.05498573992282149,
-          "by_k_mean": [
-            0.19047619047619047,
-            0.19047619047619047,
-            0.15873015873015872,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.0,
-            0.047619047619047616,
-            0.027492869961410746,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 21.0,
-          "by_k_neurons_mean": [
-            0.14285714285714285,
-            0.14285714285714285,
-            0.14285714285714285,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.17460317460317457,
-          "full_hidden_neurons_std": 0.05498573992282149
         }
       }
     },
@@ -20473,13 +18200,12 @@
       "length": 4,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 5000,
+      "n_samples": 5000,
       "null_chance": {
         "char": 0.06666666666666667,
         "dfa": 0.08333333333333333,
         "position": 0.25,
-        "position_from_end": 0.25,
-        "prefix": 0.012987012987012988
+        "position_from_end": 0.25
       },
       "features": {
         "char": {
@@ -20869,103 +18595,6 @@
           ],
           "full_hidden_neurons_mean": 1.0,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.04,
-          "full_hidden_mean": 0.038461538461538464,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.12820512820512822,
-            0.10256410256410257,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.04441155916843276,
-            0.02220577958421638,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 25.0,
-          "by_k_neurons_mean": [
-            0.07692307692307693,
-            0.07692307692307693,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.038461538461538464,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -20975,13 +18604,12 @@
       "length": 5,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 5000,
+      "n_samples": 5000,
       "null_chance": {
         "char": 0.05555555555555555,
         "dfa": 0.02857142857142857,
         "position": 0.2,
-        "position_from_end": 0.2,
-        "prefix": 0.005780346820809248
+        "position_from_end": 0.2
       },
       "features": {
         "char": {
@@ -21371,103 +18999,6 @@
           ],
           "full_hidden_neurons_mean": 0.9996666666666667,
           "full_hidden_neurons_std": 0.0005773502691896263
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.047619047619047616,
-          "full_hidden_mean": 0.19047619047619047,
-          "full_hidden_std": 0.24743582965269673,
-          "by_k_mean": [
-            0.19047619047619047,
-            0.23809523809523805,
-            0.19047619047619047,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.08247860988423225,
-            0.08247860988423225,
-            0.12598815766974242,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 21.0,
-          "by_k_neurons_mean": [
-            0.14285714285714285,
-            0.17460317460317457,
-            0.17460317460317457,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.027492869961410746,
-            0.027492869961410746,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.19047619047619047,
-          "full_hidden_neurons_std": 0.24743582965269673
         }
       }
     },
@@ -21477,13 +19008,12 @@
       "length": 6,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 5000,
+      "n_samples": 5000,
       "null_chance": {
         "char": 0.05,
         "dfa": 0.02564102564102564,
         "position": 0.16666666666666666,
-        "position_from_end": 0.16666666666666666,
-        "prefix": 0.005128205128205128
+        "position_from_end": 0.16666666666666666
       },
       "features": {
         "char": {
@@ -21873,103 +19403,6 @@
           ],
           "full_hidden_neurons_mean": 0.9983333333333334,
           "full_hidden_neurons_std": 0.0005773502691896263
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.04,
-          "full_hidden_mean": 0.08,
-          "full_hidden_std": 0.0,
-          "by_k_mean": [
-            0.12,
-            0.16,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.04,
-            0.06928203230275509,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 25.0,
-          "by_k_neurons_mean": [
-            0.08,
-            0.08,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.0,
-            0.0,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.08,
-          "full_hidden_neurons_std": 0.0
         }
       }
     },
@@ -21979,13 +19412,12 @@
       "length": 7,
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 5000,
+      "n_samples": 5000,
       "null_chance": {
         "char": 0.058823529411764705,
         "dfa": 0.025,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.0037735849056603774
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -22375,103 +19807,6 @@
           ],
           "full_hidden_neurons_mean": 0.9993333333333334,
           "full_hidden_neurons_std": 0.0011547005383792527
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.047619047619047616,
-          "full_hidden_mean": 0.2698412698412698,
-          "full_hidden_std": 0.1802828046285801,
-          "by_k_mean": [
-            0.25396825396825395,
-            0.2698412698412698,
-            0.19047619047619047,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.02749286996141075,
-            0.02749286996141075,
-            0.047619047619047616,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 21.0,
-          "by_k_neurons_mean": [
-            0.15873015873015872,
-            0.17460317460317457,
-            0.15873015873015872,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.02749286996141075,
-            0.0549857399228215,
-            0.07273929674533079,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.2698412698412698,
-          "full_hidden_neurons_std": 0.1802828046285801
         }
       }
     },
@@ -22481,13 +19816,12 @@
       "length": "mixed",
       "n_seeds": 3,
       "hidden_size": 192,
-      "n_prefixes": 5000,
+      "n_samples": 5000,
       "null_chance": {
         "char": 0.038461538461538464,
         "dfa": 0.012195121951219513,
         "position": 0.14285714285714285,
-        "position_from_end": 0.14285714285714285,
-        "prefix": 0.008547008547008548
+        "position_from_end": 0.14285714285714285
       },
       "features": {
         "char": {
@@ -22877,103 +20211,6 @@
           ],
           "full_hidden_neurons_mean": 0.999,
           "full_hidden_neurons_std": 0.0
-        },
-        "prefix": {
-          "n_seeds": 3,
-          "chance": 0.05555555555555555,
-          "full_hidden_mean": 0.9259259259259259,
-          "full_hidden_std": 0.08486251286955257,
-          "by_k_mean": [
-            0.3703703703703704,
-            0.4259259259259259,
-            0.5555555555555556,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_std": [
-            0.03207501495497923,
-            0.0848625128695526,
-            0.05555555555555558,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "probe_n_classes": 18.0,
-          "by_k_neurons_mean": [
-            0.3148148148148148,
-            0.29629629629629634,
-            0.3333333333333333,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "by_k_neurons_std": [
-            0.06415002990995841,
-            0.03207501495497919,
-            0.05555555555555555,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "full_hidden_neurons_mean": 0.9259259259259259,
-          "full_hidden_neurons_std": 0.08486251286955257
         }
       }
     }

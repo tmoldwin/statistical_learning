@@ -30,6 +30,9 @@ from vocab_sweep_pow2 import (
 POW2_SWEEP_COMPARISON_NAME = "word_count_pow2_sweep_ns"
 _DEMO_SNIPPET_CAP = 56
 _VOCAB_LABEL_MAX = 30
+_SEED_CMP_COL_FONTSIZE = 18
+_SEED_CMP_ROW_FONTSIZE = 16
+_SEED_CMP_ROW_LABELPAD = 22
 
 
 def _demo_snippet_len(task: str) -> int:
@@ -152,10 +155,10 @@ def plot_pow2_sweep_demo_sequences(
 
 def _seed_comparison_grid_axes(n_rows: int, n_cols: int):
     """Large cells so closed-loop panels stay readable."""
-    cell_w, cell_h = 3.0, 3.4
+    cell_w, cell_h = 3.1, 3.5
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(cell_w * n_cols + 0.9, cell_h * n_rows + 0.6),
+        figsize=(cell_w * n_cols + 1.6, cell_h * n_rows + 0.9),
         squeeze=False,
     )
     return fig, axes
@@ -217,19 +220,29 @@ def _plot_closed_loop_seed_comparison_grid(
                 annotate_fontsize=7.0 if n_words <= 4 else 5.5,
             )
             if ri == 0:
-                ax.set_title(f"seed {run_seed}", fontsize=10, pad=6)
+                ax.set_title(f"seed {run_seed}", fontsize=_SEED_CMP_COL_FONTSIZE, pad=14)
         if not is_3d:
-            axes[ri, 0].set_ylabel(row_label_fn(n_words, length), fontsize=9, labelpad=8)
+            axes[ri, 0].set_ylabel(
+                row_label_fn(n_words, length),
+                fontsize=_SEED_CMP_ROW_FONTSIZE,
+                labelpad=_SEED_CMP_ROW_LABELPAD,
+                fontweight="bold",
+            )
+            axes[ri, 0].yaxis.get_label().set_fontweight("bold")
+
+    for ax in axes[0]:
+        if ax.get_title():
+            ax.title.set_fontweight("bold")
 
     finalize_grid_figure(
         fig,
         suptitle=suptitle,
-        suptitle_fontsize=12,
-        top=0.95,
+        suptitle_fontsize=14,
+        top=0.93,
         bottom=0.04,
-        left=0.08,
-        hspace=0.32,
-        wspace=0.16,
+        left=0.14,
+        hspace=0.35,
+        wspace=0.18,
     )
     save_figure(fig, out_path, dpi=200)
     return out_path

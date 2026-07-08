@@ -7,6 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -15,6 +19,7 @@ from experiment import TASKS, checkpoint_path
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
+    POW2_SEED_COMPARISON_SEEDS,
     POW2_WORD_COUNTS,
     iter_pow2_sweep_cells,
     task_name,
@@ -24,7 +29,9 @@ from viz.compare.pow2_sweep_heatmap import replot_pow2_sweep_heatmaps, run_pow2_
 from viz.compare.pow2_sweep_spectrum import replot_pow2_sweep_spectra, run_pow2_sweep_spectrum_plots
 from viz.compare.pow2_sweep_viz import (
     run_pow2_sweep_closed_loop_plots,
+    run_pow2_sweep_demo_sequence_plots,
     run_pow2_sweep_learning_curve_plots,
+    run_pow2_sweep_seed_comparison_plots,
 )
 
 
@@ -71,11 +78,18 @@ def cmd_train(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     seeds = tuple(args.seeds) if args.seeds else POW2_DEFAULT_SEEDS
+    seed_cmp_seeds = tuple(args.seeds) if args.seeds else POW2_SEED_COMPARISON_SEEDS
     if args.learning_curves_only:
         paths = run_pow2_sweep_learning_curve_plots(seeds=seeds)
         return
     if args.trajectories_only:
         run_pow2_sweep_closed_loop_plots(seeds=seeds)
+        return
+    if args.seed_comparison_only:
+        run_pow2_sweep_seed_comparison_plots(seeds=seed_cmp_seeds)
+        return
+    if args.sequences_only:
+        run_pow2_sweep_demo_sequence_plots(seeds=seeds)
         return
     if args.decoding_only:
         if args.replot_only:
@@ -112,6 +126,8 @@ def cmd_plot(args: argparse.Namespace) -> None:
         run_pow2_sweep_spectrum_plots(seeds=seeds)
         run_pow2_sweep_learning_curve_plots(seeds=seeds)
         run_pow2_sweep_closed_loop_plots(seeds=seeds)
+        run_pow2_sweep_demo_sequence_plots(seeds=seeds)
+        run_pow2_sweep_seed_comparison_plots(seeds=seed_cmp_seeds)
 
 
 def main() -> None:
@@ -158,6 +174,16 @@ def main() -> None:
         "--trajectories-only",
         action="store_true",
         help="plot per-cell closed-loop 2D PCA/jPCA grids under trajectories/",
+    )
+    p_plot.add_argument(
+        "--seed-comparison-only",
+        action="store_true",
+        help="rows = experiments, cols = seeds; closed-loop trajectories under seed_comparison/",
+    )
+    p_plot.add_argument(
+        "--sequences-only",
+        action="store_true",
+        help="plot per-cell vocabulary + corpus demo snippet grid under sequences/",
     )
     p_plot.add_argument(
         "--geometry-only",

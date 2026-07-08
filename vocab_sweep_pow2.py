@@ -12,6 +12,7 @@ SweepLength = int | str
 POW2_WORD_COUNTS: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64)
 POW2_LENGTHS: tuple[SweepLength, ...] = (1, 2, 3, 4, 5, 6, 7, "mixed")
 POW2_DEFAULT_SEEDS: tuple[int, ...] = tuple(range(1, 16))  # 15 seeds
+POW2_SEED_COMPARISON_SEEDS: tuple[int, ...] = (1, 2, 3, 4, 5, 6, 7)
 
 # Enough distinct single-character tokens for the largest length-1 grid cell.
 _SINGLE_CHARS: tuple[str, ...] = tuple(

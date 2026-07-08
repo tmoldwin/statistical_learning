@@ -23,6 +23,7 @@ experiments/<name>/
             ...
 
 Side-by-side comparison figures live under experiments/comparisons/<name>/.
+Grid-sweep task checkpoints live under experiments/comparisons/<sweep>/checkpoints/.
 Archived runs are under experiments/old/.
 """
 
@@ -47,6 +48,8 @@ DALE_RNN_DEFAULTS: dict[str, object] = {
 COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "data",
     "learning_curves",
+    "sequences",
+    "seed_comparison",
     "trajectories",
     "decoding",
     "states",
@@ -358,8 +361,45 @@ def spaced_experiment_name(regime: str) -> str:
     return f"{regime}_s"
 
 
+POW2_SWEEP_COMPARISON = "word_count_pow2_sweep_ns"
+WORD_LENGTH_SWEEP_COMPARISON = "word_length_sweep_ns"
+
+
+def experiment_subpath(name: str) -> Path:
+    """Map a task name to its folder under experiments/."""
+    if name.startswith("pow2sweep_w") and name.endswith("_ns"):
+        core = name.removeprefix("pow2sweep_w").removesuffix("_ns")
+        if "_lmix" in core:
+            n_s = core.removesuffix("_lmix")
+            leaf = "lmix_ns"
+        elif "_l" in core:
+            n_s, l_s = core.split("_l", 1)
+            leaf = f"l{l_s}_ns"
+        else:
+            return Path(name)
+        return (
+            Path("comparisons")
+            / POW2_SWEEP_COMPARISON
+            / "checkpoints"
+            / f"w{n_s}"
+            / leaf
+        )
+    if name.startswith("sweep_w") and name.endswith("_ns"):
+        core = name.removeprefix("sweep_w").removesuffix("_ns")
+        if "_l" in core:
+            n_s, l_s = core.split("_l", 1)
+            return (
+                Path("comparisons")
+                / WORD_LENGTH_SWEEP_COMPARISON
+                / "checkpoints"
+                / f"w{n_s}"
+                / f"l{l_s}_ns"
+            )
+    return Path(name)
+
+
 def experiment_dir(name: str) -> Path:
-    return EXPERIMENTS_ROOT / name
+    return EXPERIMENTS_ROOT / experiment_subpath(name)
 
 
 def input_path(name: str) -> Path:

@@ -6505,6 +6505,8 @@ def _plot_trajectory_closed_loop_panel(
     unique_word_labels: bool = True,
     average_trials: int = _CLOSED_LOOP_AVERAGE_TRIALS,
     normalize_activity: bool = False,
+    annotate: bool = True,
+    annotate_fontsize: float = 8.0,
 ) -> None:
     _plot_letter_seed_closed_loop_on_axis(
         ax, model,
@@ -6517,8 +6519,8 @@ def _plot_trajectory_closed_loop_panel(
         vocab_words=vocab_words,
         word_colors=word_colors,
         spaced=spaced,
-        annotate=True,
-        annotate_fontsize=8.0,
+        annotate=annotate,
+        annotate_fontsize=annotate_fontsize,
         is_3d=is_3d,
         max_rollouts=max_rollouts,
         unique_word_labels=unique_word_labels,

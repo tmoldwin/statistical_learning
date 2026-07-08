@@ -70,6 +70,8 @@ def _plot_task_closed_loop_panel(
     ax, ctx, *, is_3d: bool, rollout_seed: int, embed_method: str,
     average_trials: int = 1,
     minimal_axes: bool = False,
+    annotate: bool = True,
+    annotate_fontsize: float = 8.0,
 ) -> list:
     fit_states, trajs = _states_after_first_word(
         ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
@@ -103,6 +105,8 @@ def _plot_task_closed_loop_panel(
         vocab_words=vocab_words, word_colors=word_colors,
         spaced=ctx.spaced, is_3d=is_3d,
         average_trials=average_trials,
+        annotate=annotate,
+        annotate_fontsize=annotate_fontsize,
     )
     _closed_loop_panel_limits(
         ax, limit_arrays, is_3d=is_3d, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,

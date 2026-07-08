@@ -59,12 +59,16 @@ def finalize_grid_figure(
     suptitle_fontsize: float = 11,
     bottom: float = 0.10,
     top: float = 0.93,
+    left: float | None = None,
     hspace: float = 0.38,
     wspace: float = 0.28,
 ) -> None:
     if suptitle:
         fig.suptitle(suptitle, fontsize=suptitle_fontsize, y=0.985)
-    fig.subplots_adjust(top=top, bottom=bottom, hspace=hspace, wspace=wspace)
+    kwargs = dict(top=top, bottom=bottom, hspace=hspace, wspace=wspace)
+    if left is not None:
+        kwargs["left"] = left
+    fig.subplots_adjust(**kwargs)
 
 
 def condition_bar_colors(n: int) -> list[tuple[float, float, float, float]]:

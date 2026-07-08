@@ -1300,6 +1300,58 @@ def _word_start_segment_flags(
     return flags
 
 
+def _trim_first_word_from_labeled_path(
+    coords: np.ndarray,
+    prefix_labels: list[str],
+    word_at_step: list[str],
+) -> tuple[np.ndarray, list[str], list[str]]:
+    """Drop the seed-primed first word (incomplete vs regular word trajectories)."""
+    ranges = _word_segment_ranges(word_at_step)
+    if len(ranges) < 2:
+        return coords, prefix_labels, word_at_step
+    start = ranges[1][0]
+    return coords[start:], prefix_labels[start:], word_at_step[start:]
+
+
+def _trim_first_word_from_hidden(
+    hidden: np.ndarray,
+    word_at_step: list[str],
+) -> np.ndarray:
+    """Drop hidden states belonging to the first word segment."""
+    ranges = _word_segment_ranges(word_at_step)
+    if len(ranges) < 2:
+        return hidden
+    start = ranges[1][0]
+    return np.asarray(hidden[start:], dtype=float)
+
+
+def _states_after_first_word(
+    text: str,
+    hidden_states: np.ndarray,
+    *,
+    spaced: bool,
+    words: list[str] | None,
+) -> tuple[np.ndarray, list[np.ndarray]]:
+    """Corpus hidden states / word trajectories excluding the first word segment."""
+    segments = corpus_segments(text, list(_corpus_vocab(text, words) or []), spaced=spaced)
+    if len(segments) < 2:
+        trajs = _embed_trajectories_for_text(
+            text, hidden_states, spaced=spaced, words=words,
+        )
+        return np.asarray(hidden_states, dtype=float), trajs
+    start = int(segments[1][0])
+    hs = np.asarray(hidden_states[start:], dtype=float)
+    remapped = [
+        (int(s) - start, int(e) - start, seg)
+        for s, e, seg in segments[1:]
+        if int(e) >= start
+    ]
+    from viz.dimred import trajectories_for_embed
+
+    trajs = trajectories_for_embed(hs, segments=remapped) if remapped else []
+    return hs, trajs
+
+
 def _closed_loop_rollout_pca(
     model: dict,
     *,
@@ -1311,6 +1363,7 @@ def _closed_loop_rollout_pca(
     vocab_words: list[str],
     spaced: bool,
     normalize_activity: bool = False,
+    skip_first_word: bool = True,
 ) -> tuple[np.ndarray, list[str], list[str]]:
     """One stochastic closed-loop rollout projected into PCA space."""
     hidden, generated = rnn_closed_loop_rollout(
@@ -1328,6 +1381,10 @@ def _closed_loop_rollout_pca(
     word_at_step = _rollout_word_at_positions(
         generated, seed_len, n_states, spaced=spaced, words=vocab_words,
     )
+    if skip_first_word:
+        gen_z, prefix_labels, word_at_step = _trim_first_word_from_labeled_path(
+            gen_z, prefix_labels, word_at_step,
+        )
     return gen_z, prefix_labels, word_at_step
 
 

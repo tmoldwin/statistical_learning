@@ -25,11 +25,13 @@ from viz.compare.state_space_metrics import paired_state_space_metrics, variance
 from viz.dimred import fit_jpca_components, fit_pca_2d_with_evr
 from visualize import (
     _closed_loop_summary_seed,
-    _embed_trajectories_for_text,
     _one_vocab_cycle_steps,
+    _rollout_word_at_positions,
     _same_length_average_trajectory,
     _square_data_limits,
+    _states_after_first_word,
     _trajectory_seed_letters,
+    _trim_first_word_from_hidden,
     rnn_closed_loop_rollout,
 )
 
@@ -196,16 +198,23 @@ def _mean_closed_loop_and_pca(
     seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
     summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+    if vocab_words:
+        summary_steps += max(len(w) for w in vocab_words)
     mean_loop = _mean_closed_loop_hidden(
         ctx.model,
         summary_seed=summary_seed,
         steps=summary_steps,
         rollout_seed=rollout_seed,
         n_trials=n_trials,
+        vocab_words=vocab_words,
+        spaced=ctx.spaced,
     )
     if mean_loop is None or len(mean_loop) < 2:
         return None
-    _, pca_mean, pca_components, _ = fit_pca_2d_with_evr(ctx.hidden_states)
+    fit_states, _ = _states_after_first_word(
+        ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=vocab_words,
+    )
+    _, pca_mean, pca_components, _ = fit_pca_2d_with_evr(fit_states)
     mean_loop_pc = (mean_loop - pca_mean) @ pca_components.T
     return mean_loop, mean_loop_pc, pca_mean, pca_components
 
@@ -217,13 +226,23 @@ def _mean_closed_loop_hidden(
     steps: int,
     rollout_seed: int,
     n_trials: int,
+    vocab_words: list[str] | None = None,
+    spaced: bool = False,
+    skip_first_word: bool = True,
 ) -> np.ndarray | None:
     trials: list[np.ndarray] = []
+    words = list(vocab_words or [])
     for trial in range(max(1, n_trials)):
         rng = np.random.default_rng(int(rollout_seed) + trial)
-        hidden, _ = rnn_closed_loop_rollout(
+        hidden, generated = rnn_closed_loop_rollout(
             model, seed_text=summary_seed, steps=steps, rng=rng,
         )
+        if skip_first_word and words:
+            word_at_step = _rollout_word_at_positions(
+                generated, len(summary_seed), len(hidden),
+                spaced=spaced, words=words,
+            )
+            hidden = _trim_first_word_from_hidden(hidden, word_at_step)
         if len(hidden) >= 2:
             trials.append(hidden)
     return _same_length_average_trajectory(trials)
@@ -241,10 +260,12 @@ def compute_panel_geometry(
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
     summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
 
-    word_trajs = _embed_trajectories_for_text(
+    fit_states, word_trajs = _states_after_first_word(
         ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=vocab_words,
     )
     word_trajs = [np.asarray(t, dtype=float) for t in word_trajs if len(t) >= 2]
+    if vocab_words:
+        summary_steps += max(len(w) for w in vocab_words)
 
     mean_loop = _mean_closed_loop_hidden(
         ctx.model,
@@ -252,6 +273,8 @@ def compute_panel_geometry(
         steps=summary_steps,
         rollout_seed=rollout_seed,
         n_trials=n_trials,
+        vocab_words=vocab_words,
+        spaced=ctx.spaced,
     )
     if mean_loop is None or len(mean_loop) < 2:
         return {
@@ -262,7 +285,7 @@ def compute_panel_geometry(
             "error": "closed-loop path too short",
         }
 
-    _, pca_mean, pca_components, pca_evr = fit_pca_2d_with_evr(ctx.hidden_states)
+    _, pca_mean, pca_components, pca_evr = fit_pca_2d_with_evr(fit_states)
     mean_loop_pc = (mean_loop - pca_mean) @ pca_components.T
     word_trajs_pc = [(w - pca_mean) @ pca_components.T for w in word_trajs]
 

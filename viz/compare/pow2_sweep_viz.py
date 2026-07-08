@@ -177,8 +177,9 @@ def run_pow2_sweep_closed_loop_plots(
     *,
     seeds: tuple[int, ...] | None = None,
     dimensions: tuple[int, ...] = (2,),
-    embed_methods: tuple[str, ...] = ("pca", "jpca"),
+    embed_methods: tuple[str, ...] = ("pca",),
 ) -> list[Path]:
+    """Closed-loop grids. Default is PCA only; pass embed_methods=(\"jpca\",) if needed."""
     run_seeds = seeds if seeds is not None else (1,)
     paths: list[Path] = []
     for dims in dimensions:

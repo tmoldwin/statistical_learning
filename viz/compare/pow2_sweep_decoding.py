@@ -9,8 +9,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from viz.compare.sweep_output import sweep_data_dir, sweep_figures_dir
-from viz.compare.sweep_output import sweep_data_dir, sweep_figures_dir
+from viz.compare.sweep_output import sweep_data_dir, sweep_decoding_dir
 from viz.compare._data import load_task_decoding_context
 from viz.compare.decoding import (
     DECODING_FEATURES,
@@ -386,7 +385,7 @@ def plot_pow2_sweep_decode_curves(
         wspace=0.30,
         bottom=0.14,
     )
-    out_dir = sweep_figures_dir(POW2_SWEEP_COMPARISON_NAME)
+    out_dir = sweep_decoding_dir(POW2_SWEEP_COMPARISON_NAME)
     out_path = out_dir / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
@@ -416,8 +415,6 @@ def run_pow2_sweep_decoding_plots(
     json_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / decoding_file
     if recompute or not json_path.is_file():
         json_path = write_pow2_sweep_decoding(seeds=seeds, max_k=max_k, outfile=decoding_file)
-    else:
-        json_path = out_dir / decoding_file
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     max_k = int(payload.get("max_k", payload.get("max_pcs", max_k)))
     panels = payload["panels"]

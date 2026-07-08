@@ -17,10 +17,10 @@ from visualize import (
     _char_vocab_word_mask,
     _closed_loop_summary_seed,
     _draw_sample_chars,
-    _embed_trajectories_for_text,
     _one_vocab_cycle_steps,
     _plot_letter_seed_closed_loop_on_axis,
     _square_data_limits,
+    _states_after_first_word,
     _trajectory_seed_letters,
     _vocab_word_colors,
     display_char,
@@ -141,16 +141,18 @@ def _add_mean_pca_trajectory_inset(ax, task: str, model_type: str, run_seed: int
     """Upper-right inset: mean closed-loop trajectory in the model's PCA plane."""
     try:
         ctx = load_task_viz_context(task, model_type=model_type, seed=run_seed)
-        trajs = _embed_trajectories_for_text(
+        fit_states, trajs = _states_after_first_word(
             ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
         )
         _projected, mean, components, _evr = fit_embed_2d_with_evr(
-            ctx.hidden_states, method="pca", trajectories=trajs,
+            fit_states, method="pca", trajectories=trajs,
         )
         vocab_words = list(ctx.words)
         seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
         summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
         summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+        if vocab_words:
+            summary_steps += max(len(w) for w in vocab_words)
         word_colors = _vocab_word_colors(vocab_words)
 
         inset = ax.inset_axes([0.56, 0.52, 0.43, 0.46])

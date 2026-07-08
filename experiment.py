@@ -48,6 +48,7 @@ COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "data",
     "learning_curves",
     "trajectories",
+    "decoding",
     "states",
     "unit_selectivity",
     "dfa_sensitivity",

@@ -48,12 +48,16 @@ def _loop_pc_spectrum(ctx) -> np.ndarray:
     seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
     summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+    if vocab_words:
+        summary_steps += max(len(w) for w in vocab_words)
     mean_loop = _mean_closed_loop_hidden(
         ctx.model,
         summary_seed=summary_seed,
         steps=summary_steps,
         rollout_seed=_ROLLOUT_SEED,
         n_trials=_GEOMETRY_TRIALS,
+        vocab_words=vocab_words,
+        spaced=ctx.spaced,
     )
     if mean_loop is None or len(mean_loop) < 3:
         return np.empty(0)

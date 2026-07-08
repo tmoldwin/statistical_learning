@@ -23,10 +23,10 @@ from visualize import (
     _apply_cube_limits_3d,
     _closed_loop_summary_seed,
     _cube_data_limits,
-    _embed_trajectories_for_text,
     _one_vocab_cycle_steps,
     _plot_trajectory_closed_loop_panel,
     _square_data_limits,
+    _states_after_first_word,
     _trajectory_seed_letters,
     _vocab_word_colors,
 )
@@ -71,17 +71,17 @@ def _plot_task_closed_loop_panel(
     average_trials: int = 1,
     minimal_axes: bool = False,
 ) -> list:
-    trajs = _embed_trajectories_for_text(
+    fit_states, trajs = _states_after_first_word(
         ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
     )
     if is_3d:
         _projected, mean, components, evr = fit_embed_3d_with_evr(
-            ctx.hidden_states, method=embed_method, trajectories=trajs,
+            fit_states, method=embed_method, trajectories=trajs,
         )
         xlabel, ylabel, zlabel = embed_axis_labels_3d(evr, embed_method)
     else:
         _projected, mean, components, evr = fit_embed_2d_with_evr(
-            ctx.hidden_states, method=embed_method, trajectories=trajs,
+            fit_states, method=embed_method, trajectories=trajs,
         )
         xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
         zlabel = None
@@ -89,7 +89,11 @@ def _plot_task_closed_loop_panel(
     vocab_words = list(ctx.words)
     seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
+    # Extra word length so after dropping the seed-primed first word we still
+    # cover roughly one full vocabulary cycle of complete words.
     summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+    if vocab_words:
+        summary_steps += max(len(w) for w in vocab_words)
     word_colors = _vocab_word_colors(vocab_words)
     limit_arrays: list = []
 

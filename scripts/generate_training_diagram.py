@@ -1,4 +1,4 @@
-﻿"""Generate slideshow SVGs: character RNN training (clean layout, no overlaps)."""
+"""Generate slideshow SVGs: character RNN training (clean layout, no overlaps)."""
 # fig2_version: bilateral_mesh_v3
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from task import REGIMES, generate_sequence
 
-BG = "#f4f1ea"
+BG = "#ffffff"
 INK = "#1a1a1a"
 MUTED = "#666"
 ACCENT = "#4477AA"
@@ -61,8 +61,11 @@ def colored_w(name: str, color: str) -> str:
     )
 
 
-def svg_open(w: int, h: int) -> list[str]:
-    return [
+FIG1_LAYOUT_PANELS: list[tuple[float, float, float, float]] = []
+
+
+def svg_open(w: int, h: int, *, background: bool = True) -> list[str]:
+    lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">',
         "<defs>",
@@ -74,8 +77,10 @@ def svg_open(w: int, h: int) -> list[str]:
         f'<path d="M0,0 L8,4 L0,8 Z" fill="{ACCENT2}"/></marker>',
         "</defs>",
         f'<style>text {{ font-family: {SANS}; fill: {INK}; }}</style>',
-        f'<rect width="{w}" height="{h}" fill="{BG}"/>',
     ]
+    if background:
+        lines.append(f'<rect width="{w}" height="{h}" fill="{BG}"/>')
+    return lines
 
 
 def svg_close(lines: list[str]) -> str:
@@ -85,15 +90,33 @@ def svg_close(lines: list[str]) -> str:
 
 def title_block(lines: list[str], y: int, title: str, subtitle: str = "") -> int:
     lines.append(
-        f'<text x="{MARGIN}" y="{y}" font-size="26" font-weight="700" fill="{INK}">{esc(title)}</text>'
+        f'<text x="{MARGIN}" y="{y}" font-family="{SANS}" font-size="26" '
+        f'font-weight="700" fill="{INK}">{esc(title)}</text>'
     )
     y += 36
     if subtitle:
         lines.append(
-            f'<text x="{MARGIN}" y="{y}" font-size="15" fill="{MUTED}">{esc(subtitle)}</text>'
+            f'<text x="{MARGIN}" y="{y}" font-family="{SANS}" font-size="15" '
+            f'fill="{MUTED}">{esc(subtitle)}</text>'
         )
         y += 30
     return y + 20
+
+
+def caption(
+    lines: list[str],
+    x: float,
+    y: float,
+    text: str,
+    *,
+    anchor: str = "start",
+    size: int = 12,
+    fill: str = MUTED,
+) -> None:
+    lines.append(
+        f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" '
+        f'font-size="{size}" font-weight="600" fill="{fill}">{esc(text)}</text>'
+    )
 
 
 def segment_greedy(text: str, vocab: set[str]) -> list[tuple[str, bool]]:
@@ -123,6 +146,15 @@ def make_stream(words: list[str], n_chars: int, seed: int) -> str:
     return generate_sequence(words, n_chars, seed=seed, word_space=False)
 
 
+
+def make_before_rollout(after: str, *, prefix_len: int = 3, seed: int = 99) -> str:
+    prefix = after[:prefix_len]
+    tail = list(after[prefix_len:])
+    rng = random.Random(seed)
+    rng.shuffle(tail)
+    return prefix + "".join(tail)
+
+
 def make_stream_words(words: list[str], n_chars: int, seed: int) -> list[str]:
     """Same sampling as generate_sequence, but returns the sampled word list."""
     rng = random.Random(seed)
@@ -146,11 +178,7 @@ def _word_color(word: str, words: list[str]) -> tuple[str, str]:
 def _stream_items(words: list[str], picked: list[str], n_chars: int) -> list[tuple]:
     items: list[tuple] = []
     count = 0
-    first = True
     for w in picked:
-        if not first:
-            items.append(("gap",))
-        first = False
         wi = words.index(w)
         stroke, _ = _word_color(w, words)
         for ch in w:
@@ -168,7 +196,7 @@ def _layout_stream_rows(
     *,
     cell_w: float = 26,
     char_gap: float = 4,
-    word_gap: float = 8,
+    word_gap: float = 0,
 ) -> list[list[tuple[float, tuple]]]:
     rows: list[list[tuple[float, tuple]]] = [[]]
     cx = x
@@ -221,7 +249,7 @@ def render_word_char_stream(
     cell_w: float = 26,
     cell_h: float = 32,
     char_gap: float = 4,
-    word_gap: float = 8,
+    word_gap: float = 0,
     row_gap: float = 10,
     font_size: int = 16,
 ) -> float:
@@ -298,6 +326,38 @@ def render_char_cells(
                 f'fill="{color}">{esc(ch)}</text>'
             )
     return y + len(rows) * (cell_h + row_gap) - row_gap
+
+
+
+
+def corpus_window_highlight(
+    lines: list[str],
+    x: float,
+    y: float,
+    start: int,
+    length: int,
+    *,
+    cell_w: float = 26,
+    cell_h: float = 32,
+    gap: float = 4,
+    pad: float = 5,
+    max_cols: int = 40,
+    row_gap: float = 10,
+) -> None:
+    if length <= 0:
+        return
+    end = start + length - 1
+    sr, sc = divmod(start, max_cols)
+    er, ec = divmod(end, max_cols)
+    x1 = x + sc * (cell_w + gap)
+    y1 = y + sr * (cell_h + row_gap)
+    x2 = x + ec * (cell_w + gap) + cell_w
+    y2 = y + er * (cell_h + row_gap) + cell_h
+    lines.append(
+        f'<rect x="{x1 - pad:.1f}" y="{y1 - pad:.1f}" '
+        f'width="{x2 - x1 + 2 * pad:.1f}" height="{y2 - y1 + 2 * pad:.1f}" rx="6" '
+        f'fill="none" stroke="{ACCENT2}" stroke-width="2" stroke-dasharray="6 3"/>'
+    )
 
 
 def render_colored_line(
@@ -399,61 +459,57 @@ def legend_char_colors(lines: list[str], x: float, y: float) -> None:
 
 
 def build_figure1() -> str:
+    global FIG1_LAYOUT_PANELS
+    FIG1_LAYOUT_PANELS = []
     w = 1280
     mixed_vocab = REGIMES["ten_word_overlap"][:4] + REGIMES["six_word_four_letter"][:4]
     conditions = [
-        ("8 words · length 3", REGIMES["ten_word_overlap"][:8], 42),
-        ("4 words · length 5", REGIMES["six_word_five_letter"][:4], 43),
-        ("8 words · mixed 3–4", mixed_vocab, 44),
+        ("8 Words · Length 3", REGIMES["ten_word_overlap"][:8], 42),
+        ("4 Words · Length 5", REGIMES["six_word_five_letter"][:4], 43),
+        ("8 Words · Mixed 3–4", mixed_vocab, 44),
     ]
     inner_w = w - 2 * MARGIN
     content_w = inner_w - 40
     bx = MARGIN + 20
-    subtitle = (
-        "Real word vocabularies · sample uniformly · "
-        "concatenate letters (no spaces)"
-    )
-    stream_chars = 19
+    cx = bx + content_w / 2
+    stream_chars = 37
     cell_h = 32
+    stream_label_gap = 48
+    stream_top_gap = 70
 
     blocks = []
-    y = title_block([], 44, "Build training corpora", subtitle)
+    y = MARGIN
     for label, words, seed in conditions:
         box_y = y
         chip_start = box_y + 74
         chip_rows = _chip_rows(words, content_w)
         chip_bottom = chip_start + chip_rows * 30 + max(0, chip_rows - 1) * 10
-        stream_y = chip_bottom + 94
+        stream_y = chip_bottom + stream_top_gap
         stream_h = measure_word_char_stream(words, seed, stream_chars, content_w, cell_h=cell_h)
         block_h = stream_y + stream_h + 20 - box_y
         blocks.append((label, words, seed, box_y, block_h))
         y = box_y + block_h + 20
     total_h = y + MARGIN
     lines = svg_open(w, total_h)
-    title_block(lines, 44, "Build training corpora", subtitle)
     for label, words, seed, box_y, block_h in blocks:
+        FIG1_LAYOUT_PANELS.append((bx, box_y, content_w, block_h))
         lines.append(
             f'<rect x="{MARGIN}" y="{box_y}" width="{inner_w}" height="{block_h:.0f}" rx="12" '
             f'fill="{PANEL_BG}" stroke="{PANEL_BORDER}" stroke-width="1.5"/>'
         )
         ty = box_y + 34
         lines.append(
-            f'<text x="{bx}" y="{ty}" font-size="16" font-weight="600" fill="{ACCENT}">{esc(label)}</text>'
+            f'<text x="{bx:.1f}" y="{ty:.1f}" font-family="{SANS}" font-size="16" '
+            f'font-weight="600" fill="{ACCENT}">{esc(label)}</text>'
         )
         ty += 26
-        lines.append(f'<text x="{bx}" y="{ty}" font-size="13" fill="{MUTED}">vocabulary</text>')
+        caption(lines, bx, ty, "Vocabulary")
         chip_start = box_y + 74
         chip_bottom = word_chips(lines, bx, chip_start, words, content_w, colored=True)
-        down_arrow(lines, bx + 8, chip_bottom + 8, chip_bottom + 28)
-        lines.append(
-            f'<text x="{bx + 22}" y="{chip_bottom + 46}" font-size="13" fill="{MUTED}">'
-            f"sample &amp; concatenate</text>"
-        )
-        lines.append(
-            f'<text x="{bx}" y="{chip_bottom + 72}" font-size="13" fill="{MUTED}">training stream</text>'
-        )
+        down_arrow(lines, cx, chip_bottom + 8, chip_bottom + 28)
+        caption(lines, cx, chip_bottom + stream_label_gap, "Training Stream", anchor="middle")
         render_word_char_stream(
-            lines, bx, chip_bottom + 94, words, seed, stream_chars, content_w, cell_h=cell_h,
+            lines, bx, chip_bottom + stream_top_gap, words, seed, stream_chars, content_w, cell_h=cell_h,
         )
     return svg_close(lines)
 
@@ -466,18 +522,10 @@ def _layer_positions(lx: float, n: int, y_top: float, y_bot: float) -> list[tupl
 
 def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
     """Input -> one recurrent hidden column (all-pairs mesh) -> output."""
-    h = 300
-    lines.append(
-        f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="10" '
-        f'fill="#faf8f4" stroke="{ACCENT}" stroke-width="2"/>'
-    )
-    lines.append(
-        f'<text x="{x + 16:.0f}" y="{y + 24:.0f}" '
-        f'font-size="16" font-weight="600" fill="{INK}">Character-level RNN (one timestep)</text>'
-    )
+    h = 270
 
-    y_top = y + 62
-    y_bot = y + h - 52
+    y_top = y + 36
+    y_bot = y + h - 36
     lx_in = x + w * 0.14
     lx_h = x + w * 0.50
     lx_out = x + w * 0.78
@@ -552,7 +600,7 @@ def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
     draw_nodes(h_pos, h_labels, 15, fill="#fff3e6", stroke=ACCENT2)
     draw_nodes(out_pos, out_labels, 15, fill="#e8f6f4", stroke=C_OUT)
 
-    hdr_y = y + 46
+    hdr_y = y + 18
     lines.append(
         f'<text x="{lx_in:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="13" fill="{ACCENT}">'
         f"input x{sub('t')}</text>"
@@ -579,7 +627,7 @@ def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
         f'font-size="13" font-weight="600">{colored_w("Wyh", C_OUT)}</text>'
     )
     lines.append(
-        f'<text x="{x + w / 2:.0f}" y="{y + h - 14:.0f}" text-anchor="middle" font-size="13" fill="{MUTED}">'
+        f'<text x="{x + w / 2:.0f}" y="{y + h - 8:.0f}" text-anchor="middle" font-size="13" fill="{MUTED}">'
         f"h{sub('t')} = tanh({colored_w('Wxh', ACCENT)} x{sub('t')} + {colored_w('Whh', ACCENT2)} h{sub('t-1')}) "
         f"· predict next char · cross-entropy loss</text>"
     )
@@ -595,19 +643,8 @@ def render_bptt_panel(
 ) -> float:
     n = len(window)
     cell_w, cell_h, gap = 32, 38, 6
-    pad = 16
-    box_h = pad + 22 + cell_h + 28 + cell_h + pad
-    lines.append(
-        f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{box_h:.0f}" rx="10" '
-        f'fill="#f5f5f5" stroke="#ccc8bc" stroke-width="1.2"/>'
-    )
-    ty = y + pad + 14
-    lines.append(
-        f'<text x="{x + pad:.0f}" y="{ty:.0f}" font-size="15" font-weight="600" fill="{ACCENT2}">'
-        f"BPTT window (T = {n})</text>"
-    )
-    ty += 20
-    wx = x + pad
+    wx = x
+    ty = y
     for i, ch in enumerate(window):
         cx = wx + i * (cell_w + gap)
         cy = ty
@@ -636,7 +673,7 @@ def render_bptt_panel(
             f'<text x="{cx + cell_w / 2:.1f}" y="{ty + cell_h * 0.72:.0f}" text-anchor="middle" '
             f'font-family="{FONT}" font-size="17" fill="{C_OUT}">{esc(ch)}</text>'
         )
-    return y + box_h
+    return y + cell_h + 28 + cell_h
 
 
 def build_figure2() -> str:
@@ -646,41 +683,35 @@ def build_figure2() -> str:
     demo = trim_in_vocab(make_stream(words, 32, seed=100), vocab)[:24]
     window = demo[4:12]
 
-    header: list[str] = []
-    y = title_block(
-        header, 44,
-        "Train the RNN (BPTT)",
-        "Feed characters one at a time · hidden state carries forward · predict next character",
-    )
     inner_w = w - 2 * MARGIN
     pad = 28
     content_w = inner_w - 2 * pad
     bx = MARGIN + pad
-    panel_y = y
+    panel_y = MARGIN
 
     panel: list[str] = []
-    rnn_bottom = draw_rnn_schematic(panel, bx, panel_y + 20, content_w)
+    rnn_bottom = draw_rnn_schematic(panel, bx, panel_y, content_w)
     ty = rnn_bottom + 20
     panel.append(
         f'<line x1="{bx:.0f}" y1="{ty:.0f}" x2="{bx + content_w:.0f}" y2="{ty:.0f}" '
         f'stroke="#ddd8cc" stroke-width="1"/>'
     )
     ty += 24
+    corpus_y = ty
     ty = render_char_cells(
         panel, bx, ty, demo, vocab,
         max_cols=40, max_width=content_w, cell_w=26, cell_h=32, gap=4,
         uniform_color=ACCENT,
-    ) + 24
+    )
+    corpus_window_highlight(
+        panel, bx, corpus_y, 4, len(window),
+        cell_w=26, cell_h=32, gap=4, max_cols=40,
+    )
+    ty += 24
     bptt_bottom = render_bptt_panel(panel, bx, ty, window, content_w)
-    panel_h = bptt_bottom - panel_y + 28
-    total_h = int(panel_y + panel_h + MARGIN)
+    total_h = int(bptt_bottom + MARGIN)
 
     lines = svg_open(w, total_h)
-    lines.extend(header)
-    lines.append(
-        f'<rect x="{MARGIN}" y="{panel_y}" width="{inner_w}" height="{panel_h:.0f}" rx="12" '
-        f'fill="{PANEL_BG}" stroke="{PANEL_BORDER}" stroke-width="1.5"/>'
-    )
     lines.extend(panel)
     return svg_close(lines)
 
@@ -689,18 +720,21 @@ def build_figure3() -> str:
     w = 1280
     words = REGIMES["ten_word_overlap"]
     vocab = set(words)
-    before = "catxqzwbfrhatjkmmatratzqplwvxpetnetxyzoateajkl"
-    after = trim_in_vocab(make_stream(words, 32, seed=200), vocab)
+    rollout_len = 64
+    after = trim_in_vocab(make_stream(words, rollout_len, seed=200), vocab)
+    before = make_before_rollout(after)
 
     inner_w = w - 2 * MARGIN
     bx = MARGIN + 20
     content_w = inner_w - 40
+    stream_fs = 20
+    stream_line_h = stream_fs + 8
     panel_y = title_block([], 44, "Evaluation: model rollout",
         "Generation warm-started from a corpus prefix")
 
     ty = panel_y + 34 + 26 + 14 + 30 + 36
-    ty += 24 + 22 + 22
-    ty += 36 + 24 + 22 + 22 + 36
+    ty += 24 + 22 + stream_line_h
+    ty += 36 + 24 + 22 + stream_line_h + 36
     panel_h = ty - panel_y
     total_h = panel_y + panel_h + MARGIN
 
@@ -727,13 +761,14 @@ def build_figure3() -> str:
         ty += 24
         lines.append(f'<text x="{bx}" y="{ty}" font-size="13" fill="{MUTED}">{esc(sub)}</text>')
         ty += 22
-        ty = render_colored_line(lines, bx, ty, text, vocab, font_size=16)
+        ty = render_colored_line(lines, bx, ty, text, vocab, font_size=stream_fs)
 
     rollout_row("Before training", "high OOV rate", before)
     ty += 36
     rollout_row("After training", "mostly vocabulary words", after)
     legend_char_colors(lines, bx, ty + 24)
     return svg_close(lines)
+
 
 
 
@@ -825,21 +860,8 @@ def main() -> None:
         if p.exists():
             p.unlink()
     failed = False
-    fig1_panels: list[tuple[float, float, float, float]] = []
-
-    def _fig1_panel_specs(svg_text: str) -> list[tuple[float, float, float, float]]:
-        if fig1_panels:
-            return fig1_panels
-        import re
-
-        inner_w = 1280 - 2 * MARGIN
-        for m in re.finditer(
-            rf'<rect x="{MARGIN}" y="([0-9.]+)" width="{inner_w}" height="([0-9.]+)" rx="12"',
-            svg_text,
-        ):
-            py, ph = float(m.group(1)), float(m.group(2))
-            fig1_panels.append((MARGIN + 20, py, inner_w - 40, ph))
-        return fig1_panels
+    def _fig1_panel_specs(_svg_text: str) -> list[tuple[float, float, float, float]]:
+        return list(FIG1_LAYOUT_PANELS)
 
     for item in figures:
         name, builder = item[0], item[1]

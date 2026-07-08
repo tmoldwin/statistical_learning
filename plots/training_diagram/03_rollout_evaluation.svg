@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="534" viewBox="0 0 1280 534">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="546" viewBox="0 0 1280 546">
 <defs>
 <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
 <path d="M0,0 L8,4 L0,8 Z" fill="#555"/></marker>
@@ -9,10 +9,10 @@
 <path d="M0,0 L8,4 L0,8 Z" fill="#F58518"/></marker>
 </defs>
 <style>text { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1a1a1a; }</style>
-<rect width="1280" height="534" fill="#f4f1ea"/>
-<text x="56" y="44" font-size="26" font-weight="700" fill="#1a1a1a">Evaluation: model rollout</text>
-<text x="56" y="80" font-size="15" fill="#666">Generation warm-started from a corpus prefix</text>
-<rect x="56" y="130" width="1168" height="348" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
+<rect width="1280" height="546" fill="#ffffff"/>
+<text x="56" y="44" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#1a1a1a">Evaluation: model rollout</text>
+<text x="56" y="80" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" fill="#666">Generation warm-started from a corpus prefix</text>
+<rect x="56" y="130" width="1168" height="360" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
 <text x="76" y="164" font-size="16" font-weight="600" fill="#4477AA">Vocabulary</text>
 <rect x="76" y="190" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
 <text x="103.5" y="210.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#1a1a1a">cat</text>
@@ -36,12 +36,12 @@
 <text x="688.5" y="210.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#1a1a1a">tea</text>
 <text x="76" y="256" font-size="16" font-weight="600" fill="#1a1a1a">Before training</text>
 <text x="76" y="280" font-size="13" fill="#666">high OOV rate</text>
-<text x="76.0" y="302.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16"><tspan style="fill:#2ca02c">cat</tspan><tspan style="fill:#d62728">xqzwbfr</tspan><tspan style="fill:#2ca02c">hat</tspan><tspan style="fill:#d62728">jkm</tspan><tspan style="fill:#2ca02c">matrat</tspan><tspan style="fill:#d62728">zqplwvx</tspan><tspan style="fill:#2ca02c">petnet</tspan><tspan style="fill:#d62728">xyzo</tspan><tspan style="fill:#2ca02c">ate</tspan><tspan style="fill:#d62728">ajkl</tspan></text>
-<text x="76" y="362" font-size="16" font-weight="600" fill="#1a1a1a">After training</text>
-<text x="76" y="386" font-size="13" fill="#666">mostly vocabulary words</text>
-<text x="76.0" y="408.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16"><tspan style="fill:#2ca02c">catratcatmatteametcatatematcat</tspan></text>
-<rect x="76" y="443" width="14" height="14" fill="#2ca02c"/>
-<text x="96" y="456" font-size="13" fill="#666">in-vocabulary</text>
-<rect x="276" y="443" width="14" height="14" fill="#d62728"/>
-<text x="296" y="456" font-size="13" fill="#666">out-of-vocabulary</text>
+<text x="76.0" y="302.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="20"><tspan style="fill:#2ca02c">cat</tspan><tspan style="fill:#d62728">ttphetan</tspan><tspan style="fill:#2ca02c">eat</tspan><tspan style="fill:#d62728">eacmr</tspan><tspan style="fill:#2ca02c">eat</tspan><tspan style="fill:#d62728">tttm</tspan><tspan style="fill:#2ca02c">eat</tspan><tspan style="fill:#d62728">eaar</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">attetthertttaaaaatmtctaemca</tspan></text>
+<text x="76" y="366" font-size="16" font-weight="600" fill="#1a1a1a">After training</text>
+<text x="76" y="390" font-size="13" fill="#666">mostly vocabulary words</text>
+<text x="76.0" y="412.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="20"><tspan style="fill:#2ca02c">catratcatmatteametcatatematcatatemetateateratrathatmetnetpethat</tspan></text>
+<rect x="76" y="451" width="14" height="14" fill="#2ca02c"/>
+<text x="96" y="464" font-size="13" fill="#666">in-vocabulary</text>
+<rect x="276" y="451" width="14" height="14" fill="#d62728"/>
+<text x="296" y="464" font-size="13" fill="#666">out-of-vocabulary</text>
 </svg>

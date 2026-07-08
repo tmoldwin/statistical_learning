@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="996" viewBox="0 0 1280 996">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="850" viewBox="0 0 1280 850">
 <defs>
 <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
 <path d="M0,0 L8,4 L0,8 Z" fill="#555"/></marker>
@@ -9,179 +9,282 @@
 <path d="M0,0 L8,4 L0,8 Z" fill="#F58518"/></marker>
 </defs>
 <style>text { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1a1a1a; }</style>
-<rect width="1280" height="996" fill="#f4f1ea"/>
-<text x="56" y="44" font-size="26" font-weight="700" fill="#1a1a1a">Build training corpora</text>
-<text x="56" y="80" font-size="15" fill="#666">Real word vocabularies · sample uniformly · concatenate letters (no spaces)</text>
-<rect x="56" y="130" width="1168" height="250" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
-<text x="76" y="164" font-size="16" font-weight="600" fill="#4477AA">8 words · length 3</text>
-<text x="76" y="190" font-size="13" fill="#666">vocabulary</text>
-<rect x="76" y="204" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="103.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
-<rect x="141" y="204" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="168.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">hat</text>
-<rect x="206" y="204" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="233.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">mat</text>
-<rect x="271" y="204" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="298.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">rat</text>
-<rect x="336" y="204" width="55" height="30" rx="7" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="363.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#CCBB44">met</text>
-<rect x="401" y="204" width="55" height="30" rx="7" fill="#e8f7fc" stroke="#66CCEE" stroke-width="1.4"/>
-<text x="428.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#66CCEE">pet</text>
-<rect x="466" y="204" width="55" height="30" rx="7" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="493.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#AA3377">net</text>
-<rect x="531" y="204" width="55" height="30" rx="7" fill="#f0f0f0" stroke="#BBBBBB" stroke-width="1.4"/>
-<text x="558.5" y="224.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#BBBBBB">ate</text>
-<line x1="84.0" y1="242.0" x2="84.0" y2="262.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
-<text x="98" y="280" font-size="13" fill="#666">sample &amp; concatenate</text>
-<text x="76" y="306" font-size="13" fill="#666">training stream</text>
-<rect x="76.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="89.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
-<rect x="106.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="119.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
-<rect x="136.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="149.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
-<rect x="174.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="187.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
-<rect x="204.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="217.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
-<rect x="234.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="247.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
-<rect x="272.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="285.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">m</text>
-<rect x="302.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="315.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">e</text>
-<rect x="332.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="345.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">t</text>
-<rect x="370.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="383.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
-<rect x="400.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="413.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
-<rect x="430.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="443.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
-<rect x="468.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="481.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
-<rect x="498.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="511.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
-<rect x="528.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="541.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
-<rect x="566.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="579.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">m</text>
-<rect x="596.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="609.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">a</text>
-<rect x="626.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="639.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
-<rect x="664.0" y="328.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="677.0" y="349.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
-<rect x="56" y="400" width="1168" height="250" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
-<text x="76" y="434" font-size="16" font-weight="600" fill="#4477AA">4 words · length 5</text>
-<text x="76" y="460" font-size="13" fill="#666">vocabulary</text>
-<rect x="76" y="474" width="77" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="114.5" y="494.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">light</text>
-<rect x="163" y="474" width="77" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="201.5" y="494.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">night</text>
-<rect x="250" y="474" width="77" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="288.5" y="494.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">right</text>
-<rect x="337" y="474" width="77" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="375.5" y="494.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">bound</text>
-<line x1="84.0" y1="512.0" x2="84.0" y2="532.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
-<text x="98" y="550" font-size="13" fill="#666">sample &amp; concatenate</text>
-<text x="76" y="576" font-size="13" fill="#666">training stream</text>
-<rect x="76.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="89.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">l</text>
-<rect x="106.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="119.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">i</text>
-<rect x="136.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="149.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">g</text>
-<rect x="166.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="179.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">h</text>
-<rect x="196.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="209.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
-<rect x="234.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="247.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">r</text>
-<rect x="264.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="277.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">i</text>
-<rect x="294.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="307.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">g</text>
-<rect x="324.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="337.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">h</text>
-<rect x="354.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="367.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
-<rect x="392.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="405.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">n</text>
-<rect x="422.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="435.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">i</text>
-<rect x="452.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="465.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">g</text>
-<rect x="482.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="495.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
-<rect x="512.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="525.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
-<rect x="550.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="563.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">b</text>
-<rect x="580.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="593.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">o</text>
-<rect x="610.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="623.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">u</text>
-<rect x="640.0" y="598.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="653.0" y="619.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">n</text>
-<rect x="56" y="670" width="1168" height="250" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
-<text x="76" y="704" font-size="16" font-weight="600" fill="#4477AA">8 words · mixed 3–4</text>
-<text x="76" y="730" font-size="13" fill="#666">vocabulary</text>
-<rect x="76" y="744" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="103.5" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
-<rect x="141" y="744" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="168.5" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">hat</text>
-<rect x="206" y="744" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="233.5" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">mat</text>
-<rect x="271" y="744" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="298.5" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">rat</text>
-<rect x="336" y="744" width="66" height="30" rx="7" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="369.0" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#CCBB44">bake</text>
-<rect x="412" y="744" width="66" height="30" rx="7" fill="#e8f7fc" stroke="#66CCEE" stroke-width="1.4"/>
-<text x="445.0" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#66CCEE">cake</text>
-<rect x="488" y="744" width="66" height="30" rx="7" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="521.0" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#AA3377">lake</text>
-<rect x="564" y="744" width="66" height="30" rx="7" fill="#f0f0f0" stroke="#BBBBBB" stroke-width="1.4"/>
-<text x="597.0" y="764.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#BBBBBB">bank</text>
-<line x1="84.0" y1="782.0" x2="84.0" y2="802.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
-<text x="98" y="820" font-size="13" fill="#666">sample &amp; concatenate</text>
-<text x="76" y="846" font-size="13" fill="#666">training stream</text>
-<rect x="76.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="89.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">l</text>
-<rect x="106.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="119.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">a</text>
-<rect x="136.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="149.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">k</text>
-<rect x="166.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="179.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">e</text>
-<rect x="204.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="217.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
-<rect x="234.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="247.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
-<rect x="264.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="277.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
-<rect x="302.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="315.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">m</text>
-<rect x="332.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="345.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">a</text>
-<rect x="362.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="375.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
-<rect x="400.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="413.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">l</text>
-<rect x="430.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="443.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">a</text>
-<rect x="460.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="473.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">k</text>
-<rect x="490.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
-<text x="503.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">e</text>
-<rect x="528.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="541.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
-<rect x="558.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="571.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
-<rect x="588.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="601.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
-<rect x="626.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="639.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">b</text>
-<rect x="656.0" y="868.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
-<text x="669.0" y="889.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">a</text>
+<rect width="1280" height="850" fill="#ffffff"/>
+<rect x="56" y="56" width="1168" height="226" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
+<text x="76.0" y="90.0" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#4477AA">8 Words · Length 3</text>
+<text x="76.0" y="116.0" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Vocabulary</text>
+<rect x="76" y="130" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="103.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
+<rect x="141" y="130" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="168.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">hat</text>
+<rect x="206" y="130" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="233.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">mat</text>
+<rect x="271" y="130" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="298.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">rat</text>
+<rect x="336" y="130" width="55" height="30" rx="7" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="363.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#CCBB44">met</text>
+<rect x="401" y="130" width="55" height="30" rx="7" fill="#e8f7fc" stroke="#66CCEE" stroke-width="1.4"/>
+<text x="428.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#66CCEE">pet</text>
+<rect x="466" y="130" width="55" height="30" rx="7" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="493.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#AA3377">net</text>
+<rect x="531" y="130" width="55" height="30" rx="7" fill="#f0f0f0" stroke="#BBBBBB" stroke-width="1.4"/>
+<text x="558.5" y="150.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#BBBBBB">ate</text>
+<line x1="640.0" y1="168.0" x2="640.0" y2="188.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="640.0" y="208.0" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Training Stream</text>
+<rect x="76.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="89.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="106.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="119.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="136.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="149.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="166.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="179.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
+<rect x="196.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="209.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
+<rect x="226.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="239.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="256.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="269.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">m</text>
+<rect x="286.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="299.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">e</text>
+<rect x="316.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="329.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">t</text>
+<rect x="346.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="359.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
+<rect x="376.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="389.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
+<rect x="406.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="419.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
+<rect x="436.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="449.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
+<rect x="466.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="479.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
+<rect x="496.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="509.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
+<rect x="526.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="539.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">m</text>
+<rect x="556.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="569.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">a</text>
+<rect x="586.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="599.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
+<rect x="616.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="629.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="646.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="659.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="676.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="689.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="706.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="719.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="736.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="749.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="766.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="779.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="796.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="809.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">n</text>
+<rect x="826.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="839.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">e</text>
+<rect x="856.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="869.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">t</text>
+<rect x="886.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="899.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
+<rect x="916.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="929.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
+<rect x="946.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="959.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="976.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="989.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
+<rect x="1006.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="1019.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
+<rect x="1036.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="1049.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="1066.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1079.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="1096.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1109.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="1126.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1139.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="1156.0" y="230.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1169.0" y="251.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
+<rect x="56" y="302" width="1168" height="226" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
+<text x="76.0" y="336.0" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#4477AA">4 Words · Length 5</text>
+<text x="76.0" y="362.0" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Vocabulary</text>
+<rect x="76" y="376" width="77" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="114.5" y="396.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">light</text>
+<rect x="163" y="376" width="77" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="201.5" y="396.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">night</text>
+<rect x="250" y="376" width="77" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="288.5" y="396.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">right</text>
+<rect x="337" y="376" width="77" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="375.5" y="396.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">bound</text>
+<line x1="640.0" y1="414.0" x2="640.0" y2="434.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="640.0" y="454.0" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Training Stream</text>
+<rect x="76.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="89.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">l</text>
+<rect x="106.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="119.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">i</text>
+<rect x="136.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="149.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">g</text>
+<rect x="166.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="179.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">h</text>
+<rect x="196.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="209.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="226.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="239.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">r</text>
+<rect x="256.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="269.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">i</text>
+<rect x="286.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="299.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">g</text>
+<rect x="316.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="329.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">h</text>
+<rect x="346.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="359.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
+<rect x="376.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="389.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">n</text>
+<rect x="406.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="419.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">i</text>
+<rect x="436.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="449.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">g</text>
+<rect x="466.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="479.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="496.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="509.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="526.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="539.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">b</text>
+<rect x="556.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="569.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">o</text>
+<rect x="586.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="599.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">u</text>
+<rect x="616.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="629.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">n</text>
+<rect x="646.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="659.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">d</text>
+<rect x="676.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="689.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">r</text>
+<rect x="706.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="719.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">i</text>
+<rect x="736.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="749.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">g</text>
+<rect x="766.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="779.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">h</text>
+<rect x="796.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="809.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
+<rect x="826.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="839.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">l</text>
+<rect x="856.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="869.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">i</text>
+<rect x="886.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="899.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">g</text>
+<rect x="916.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="929.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">h</text>
+<rect x="946.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="959.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="976.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="989.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">b</text>
+<rect x="1006.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1019.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">o</text>
+<rect x="1036.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1049.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">u</text>
+<rect x="1066.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1079.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">n</text>
+<rect x="1096.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1109.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">d</text>
+<rect x="1126.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1139.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">b</text>
+<rect x="1156.0" y="476.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="1169.0" y="497.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">o</text>
+<rect x="56" y="548" width="1168" height="226" rx="12" fill="#ffffff" stroke="#ccc8bc" stroke-width="1.5"/>
+<text x="76.0" y="582.0" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#4477AA">8 Words · Mixed 3–4</text>
+<text x="76.0" y="608.0" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Vocabulary</text>
+<rect x="76" y="622" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="103.5" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
+<rect x="141" y="622" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="168.5" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">hat</text>
+<rect x="206" y="622" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="233.5" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">mat</text>
+<rect x="271" y="622" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="298.5" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">rat</text>
+<rect x="336" y="622" width="66" height="30" rx="7" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="369.0" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#CCBB44">bake</text>
+<rect x="412" y="622" width="66" height="30" rx="7" fill="#e8f7fc" stroke="#66CCEE" stroke-width="1.4"/>
+<text x="445.0" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#66CCEE">cake</text>
+<rect x="488" y="622" width="66" height="30" rx="7" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="521.0" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#AA3377">lake</text>
+<rect x="564" y="622" width="66" height="30" rx="7" fill="#f0f0f0" stroke="#BBBBBB" stroke-width="1.4"/>
+<text x="597.0" y="642.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#BBBBBB">bank</text>
+<line x1="640.0" y1="660.0" x2="640.0" y2="680.0" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="640.0" y="700.0" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#666">Training Stream</text>
+<rect x="76.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="89.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">l</text>
+<rect x="106.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="119.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">a</text>
+<rect x="136.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="149.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">k</text>
+<rect x="166.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="179.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">e</text>
+<rect x="196.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="209.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="226.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="239.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="256.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="269.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="286.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="299.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">m</text>
+<rect x="316.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="329.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">a</text>
+<rect x="346.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="359.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">t</text>
+<rect x="376.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="389.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">l</text>
+<rect x="406.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="419.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">a</text>
+<rect x="436.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="449.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">k</text>
+<rect x="466.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#f5eaf0" stroke="#AA3377" stroke-width="1.4"/>
+<text x="479.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#AA3377">e</text>
+<rect x="496.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="509.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
+<rect x="526.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="539.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
+<rect x="556.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="569.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
+<rect x="586.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="599.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">b</text>
+<rect x="616.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="629.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">a</text>
+<rect x="646.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="659.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">k</text>
+<rect x="676.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="689.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#CCBB44">e</text>
+<rect x="706.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="719.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
+<rect x="736.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="749.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
+<rect x="766.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="779.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="796.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="809.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">r</text>
+<rect x="826.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="839.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">a</text>
+<rect x="856.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="869.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#228833">t</text>
+<rect x="886.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="899.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="916.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="929.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="946.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="959.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="976.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="989.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">c</text>
+<rect x="1006.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="1019.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">a</text>
+<rect x="1036.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="1049.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">t</text>
+<rect x="1066.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1079.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">h</text>
+<rect x="1096.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1109.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">a</text>
+<rect x="1126.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="1139.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#F58518">t</text>
+<rect x="1156.0" y="722.0" width="26.0" height="32.0" rx="4" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="1169.0" y="743.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#EE6677">m</text>
 </svg>

@@ -24,6 +24,7 @@ from viz.compare.sweep_heatmap import (
 )
 from viz.compare.word_uniformity import measure_output_word_uniformity
 from viz.plot_layout import finalize_grid_figure, save_figure
+from viz.compare.pow2_sweep_spec import POW2_SWEEP_SPEC_NS, Pow2SweepSpec
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
@@ -32,7 +33,7 @@ from vocab_sweep_pow2 import (
     task_name,
 )
 
-POW2_SWEEP_COMPARISON_NAME = "word_count_pow2_sweep_ns"
+POW2_SWEEP_COMPARISON_NAME = POW2_SWEEP_SPEC_NS.comparison_name
 
 _HEATMAP_METRICS: tuple[tuple[str, str, str], ...] = (
     ("shape", "polygon_score", "polygon score"),
@@ -115,12 +116,13 @@ def write_pow2_sweep_training_metrics(
     seeds: tuple[int, ...] | None = None,
     model_type: str = "rnn",
     outfile: str = "sweep_training.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
     panels: list[dict[str, Any]] = []
 
-    for n_words, length in iter_pow2_sweep_cells():
-        task = task_name(n_words, length)
+    for n_words, length in spec.iter_cells():
+        task = spec.task_name(n_words, length)
         for run_seed in run_seeds:
             panels.append(_training_panel_from_checkpoint(
                 task,
@@ -131,12 +133,12 @@ def write_pow2_sweep_training_metrics(
             ))
             print(f"  training {task} seed {run_seed}", flush=True)
 
-    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_data_dir(spec.comparison_name) / outfile
     payload = {
-        "comparison": POW2_SWEEP_COMPARISON_NAME,
+        "comparison": spec.comparison_name,
         "model_type": model_type,
-        "word_counts": list(POW2_WORD_COUNTS),
-        "lengths": list(POW2_LENGTHS),
+        "word_counts": list(spec.word_counts),
+        "lengths": list(spec.lengths),
         "seeds": list(run_seeds),
         "uniformity_note": (
             "uniform_tv_distance / uniform_kl_divergence / uniform_l2_distance "
@@ -153,12 +155,13 @@ def write_pow2_sweep_geometry(
     seeds: tuple[int, ...] | None = None,
     model_type: str = "rnn",
     outfile: str = "sweep_geometry.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
     panels: list[dict[str, Any]] = []
 
-    for n_words, length in iter_pow2_sweep_cells():
-        task = task_name(n_words, length)
+    for n_words, length in spec.iter_cells():
+        task = spec.task_name(n_words, length)
         for run_seed in run_seeds:
             try:
                 ctx = load_task_viz_context(task, model_type=model_type, seed=run_seed)
@@ -186,12 +189,12 @@ def write_pow2_sweep_geometry(
             panels.append(panel)
             print(f"  geometry {task} seed {run_seed}", flush=True)
 
-    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_data_dir(spec.comparison_name) / outfile
     payload = {
-        "comparison": POW2_SWEEP_COMPARISON_NAME,
+        "comparison": spec.comparison_name,
         "model_type": model_type,
-        "word_counts": list(POW2_WORD_COUNTS),
-        "lengths": list(POW2_LENGTHS),
+        "word_counts": list(spec.word_counts),
+        "lengths": list(spec.lengths),
         "seeds": list(run_seeds),
         "panels": panels,
     }
@@ -204,11 +207,14 @@ def plot_pow2_sweep_heatmaps(
     *,
     training_panels: list[dict[str, Any]] | None = None,
     seeds: tuple[int, ...] | None = None,
-    word_counts: tuple[int, ...] = POW2_WORD_COUNTS,
-    lengths: tuple[int, ...] = POW2_LENGTHS,
+    word_counts: tuple[int, ...] | None = None,
+    lengths: tuple[int, ...] | None = None,
     outfile: str = "sweep_heatmaps.png",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
+    word_counts = spec.word_counts if word_counts is None else word_counts
+    lengths = spec.lengths if lengths is None else lengths
     n_training = len(_TRAINING_HEATMAP_METRICS) if training_panels else 0
     n_metrics = len(_HEATMAP_METRICS) + n_training
     n_cols = 4
@@ -271,7 +277,7 @@ def plot_pow2_sweep_heatmaps(
         hspace=0.55,
         wspace=0.45,
     )
-    out_path = sweep_figures_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_figures_dir(spec.comparison_name) / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
 
@@ -281,8 +287,9 @@ def replot_pow2_sweep_heatmaps(
     geometry_file: str = "sweep_geometry.json",
     training_file: str = "sweep_training.json",
     outfile: str = "sweep_heatmaps.png",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    data_dir = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME)
+    data_dir = sweep_data_dir(spec.comparison_name)
     geom_payload = json.loads((data_dir / geometry_file).read_text(encoding="utf-8"))
     train_path = data_dir / training_file
     training_panels = None
@@ -294,6 +301,7 @@ def replot_pow2_sweep_heatmaps(
         training_panels=training_panels,
         seeds=tuple(geom_payload["seeds"]),
         outfile=outfile,
+        spec=spec,
     )
 
 
@@ -303,37 +311,40 @@ def run_pow2_sweep_plots(
     json_file: str = "sweep_geometry.json",
     geometry: bool = True,
     training: bool = True,
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> tuple[Path, ...]:
     outputs: list[Path] = []
     training_panels: list[dict[str, Any]] | None = None
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
 
     if training:
-        train_json = write_pow2_sweep_training_metrics(seeds=run_seeds)
+        train_json = write_pow2_sweep_training_metrics(seeds=run_seeds, spec=spec)
         train_payload = json.loads(train_json.read_text(encoding="utf-8"))
         training_panels = train_payload["panels"]
         outputs.append(train_json)
         print(f"wrote {train_json}")
 
     if geometry:
-        json_path = write_pow2_sweep_geometry(seeds=run_seeds, outfile=json_file)
+        json_path = write_pow2_sweep_geometry(seeds=run_seeds, outfile=json_file, spec=spec)
         payload = json.loads(json_path.read_text(encoding="utf-8"))
         heatmap_path = plot_pow2_sweep_heatmaps(
             payload["panels"],
             training_panels=training_panels,
             seeds=tuple(payload["seeds"]),
+            spec=spec,
         )
         print(f"wrote {json_path}")
         print(f"wrote {heatmap_path}")
         outputs.extend([json_path, heatmap_path])
     elif training_panels is not None:
-        geom_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / json_file
+        geom_path = sweep_data_dir(spec.comparison_name) / json_file
         if geom_path.is_file():
             payload = json.loads(geom_path.read_text(encoding="utf-8"))
             heatmap_path = plot_pow2_sweep_heatmaps(
                 payload["panels"],
                 training_panels=training_panels,
                 seeds=tuple(payload["seeds"]),
+                spec=spec,
             )
             print(f"wrote {heatmap_path}")
             outputs.append(heatmap_path)

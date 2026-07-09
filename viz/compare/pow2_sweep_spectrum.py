@@ -19,6 +19,7 @@ from visualize import (
     _one_vocab_cycle_steps,
     _trajectory_seed_letters,
 )
+from viz.compare.pow2_sweep_spec import POW2_SWEEP_SPEC_NS, Pow2SweepSpec
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
@@ -28,7 +29,7 @@ from vocab_sweep_pow2 import (
     task_name,
 )
 
-POW2_SWEEP_COMPARISON_NAME = "word_count_pow2_sweep_ns"
+POW2_SWEEP_COMPARISON_NAME = POW2_SWEEP_SPEC_NS.comparison_name
 _DEFAULT_MAX_PCS = 20
 _LENGTH_COLORS = ("#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B", "#EECA3B", "#B279A2")
 
@@ -71,12 +72,13 @@ def write_pow2_sweep_spectra(
     model_type: str = "rnn",
     max_pcs: int = _DEFAULT_MAX_PCS,
     outfile: str = "sweep_spectra.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
     panels: list[dict[str, Any]] = []
 
-    for n_words, length in iter_pow2_sweep_cells():
-        task = task_name(n_words, length)
+    for n_words, length in spec.iter_cells():
+        task = spec.task_name(n_words, length)
         seed_spectra: list[list[float]] = []
         for run_seed in run_seeds:
             try:
@@ -102,12 +104,12 @@ def write_pow2_sweep_spectra(
             "spectrum_pct": mean_spectrum,
         })
 
-    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_data_dir(spec.comparison_name) / outfile
     payload = {
-        "comparison": POW2_SWEEP_COMPARISON_NAME,
+        "comparison": spec.comparison_name,
         "model_type": model_type,
-        "word_counts": list(POW2_WORD_COUNTS),
-        "lengths": list(POW2_LENGTHS),
+        "word_counts": list(spec.word_counts),
+        "lengths": list(spec.lengths),
         "seeds": list(run_seeds),
         "max_pcs": max_pcs,
         "panels": panels,
@@ -130,12 +132,15 @@ def _spectrum_display_end(spectrum: np.ndarray, *, floor_pct: float = 0.5) -> in
 def plot_pow2_sweep_spectra(
     panels: list[dict[str, Any]],
     *,
-    word_counts: tuple[int, ...] = POW2_WORD_COUNTS,
-    lengths: tuple[object, ...] = POW2_LENGTHS,
+    word_counts: tuple[int, ...] | None = None,
+    lengths: tuple[object, ...] | None = None,
     max_pcs: int = _DEFAULT_MAX_PCS,
     outfile: str = "sweep_pc_spectra.png",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
     """One panel per word count; overlapping PC scree curves for each letter length."""
+    word_counts = spec.word_counts if word_counts is None else word_counts
+    lengths = spec.lengths if lengths is None else lengths
     lookup = {(p["n_words"], p["length"]): p for p in panels}
     n_word_panels = len(word_counts)
     n_cols = min(2, n_word_panels)
@@ -179,7 +184,7 @@ def plot_pow2_sweep_spectra(
                 alpha=0.85,
                 marker="o",
                 markersize=3.5,
-                label=length_label(length),
+                label=spec.length_label(length),
             )
         ax.set_title(f"{n_words} words", fontsize=10)
         ax.grid(axis="y", alpha=0.25, linewidth=0.5)
@@ -209,7 +214,7 @@ def plot_pow2_sweep_spectra(
         hspace=0.38,
         wspace=0.28,
     )
-    out_path = sweep_figures_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_figures_dir(spec.comparison_name) / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
 
@@ -218,14 +223,16 @@ def replot_pow2_sweep_spectra(
     *,
     spectra_file: str = "sweep_spectra.json",
     outfile: str = "sweep_pc_spectra.png",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
     payload = json.loads(
-        (sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / spectra_file).read_text(encoding="utf-8"),
+        (sweep_data_dir(spec.comparison_name) / spectra_file).read_text(encoding="utf-8"),
     )
     return plot_pow2_sweep_spectra(
         payload["panels"],
         max_pcs=int(payload.get("max_pcs", _DEFAULT_MAX_PCS)),
         outfile=outfile,
+        spec=spec,
     )
 
 
@@ -235,14 +242,18 @@ def run_pow2_sweep_spectrum_plots(
     max_pcs: int = _DEFAULT_MAX_PCS,
     recompute: bool = True,
     spectra_file: str = "sweep_spectra.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> tuple[Path, Path]:
-    json_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / spectra_file
+    json_path = sweep_data_dir(spec.comparison_name) / spectra_file
     if recompute or not json_path.is_file():
-        json_path = write_pow2_sweep_spectra(seeds=seeds, max_pcs=max_pcs, outfile=spectra_file)
+        json_path = write_pow2_sweep_spectra(
+            seeds=seeds, max_pcs=max_pcs, outfile=spectra_file, spec=spec,
+        )
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     fig_path = plot_pow2_sweep_spectra(
         payload["panels"],
         max_pcs=int(payload.get("max_pcs", max_pcs)),
+        spec=spec,
     )
     print(f"wrote {json_path}")
     print(f"wrote {fig_path}")

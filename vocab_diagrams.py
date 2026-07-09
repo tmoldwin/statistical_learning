@@ -523,6 +523,15 @@ def select_analysis_window(
     if spaced:
         return 0, full_text[:length], list(words)
 
+    n_starts = len(full_text) - length + 1
+    if n_starts > 512:
+        snippet = full_text[:length]
+        label_words = labeling_vocabulary(
+            snippet, words, spaced=False, extra_lengths=extra_lengths,
+            extensions=extensions,
+        )
+        return 0, snippet, label_words
+
     label_vocab = set(labeling_vocabulary(
         full_text, words, spaced=False, extra_lengths=extra_lengths,
         extensions=extensions,
@@ -534,7 +543,7 @@ def select_analysis_window(
             segment_corpus_by_words(snippet, label_vocab), length,
         )
 
-    best_start = max(range(len(full_text) - length + 1), key=score)
+    best_start = max(range(n_starts), key=score)
     snippet = full_text[best_start : best_start + length]
     label_words = labeling_vocabulary(
         snippet, words, spaced=False, extra_lengths=extra_lengths,

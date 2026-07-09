@@ -17,6 +17,7 @@ from viz.compare.trajectories import _plot_task_closed_loop_panel
 from viz.dimred import embed_dim_label, embed_save_path
 from viz.plot_layout import finalize_grid_figure, hide_x_tick_labels, save_figure
 from visualize import load_model_for_viz, plot_learning_curve_on_axes
+from viz.compare.pow2_sweep_spec import POW2_SWEEP_SPEC_NS, Pow2SweepSpec
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
@@ -27,7 +28,7 @@ from vocab_sweep_pow2 import (
     task_name,
 )
 
-POW2_SWEEP_COMPARISON_NAME = "word_count_pow2_sweep_ns"
+POW2_SWEEP_COMPARISON_NAME = POW2_SWEEP_SPEC_NS.comparison_name
 _DEMO_SNIPPET_CAP = 56
 _VOCAB_LABEL_MAX = 30
 _SEED_CMP_COL_FONTSIZE = 18
@@ -104,11 +105,12 @@ def _plot_demo_sequence_cell(
 def plot_pow2_sweep_demo_sequences(
     *,
     seeds: tuple[int, ...] = (1,),
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     """Grid of vocabulary labels + corpus demo snippets per sweep cell."""
-    n_rows = len(POW2_LENGTHS)
-    n_cols = len(POW2_WORD_COUNTS)
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "sequences")
+    n_rows = len(spec.lengths)
+    n_cols = len(spec.word_counts)
+    out_dir = comparison_dir(spec.comparison_name, "sequences")
     out_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
 
@@ -118,10 +120,10 @@ def plot_pow2_sweep_demo_sequences(
             figsize=(2.8 * n_cols, 2.4 * n_rows),
             squeeze=False,
         )
-        for li, length in enumerate(POW2_LENGTHS):
-            for wi, n_words in enumerate(POW2_WORD_COUNTS):
+        for li, length in enumerate(spec.lengths):
+            for wi, n_words in enumerate(spec.word_counts):
                 ax = axes[li, wi]
-                task = task_name(n_words, length)
+                task = spec.task_name(n_words, length)
                 _plot_demo_sequence_cell(ax, task=task, run_seed=run_seed, ncols=n_cols)
                 if li == 0:
                     ax.text(
@@ -130,7 +132,7 @@ def plot_pow2_sweep_demo_sequences(
                     )
                 if wi == 0:
                     ax.text(
-                        -0.08, 0.5, length_label(length),
+                        -0.08, 0.5, spec.length_label(length),
                         transform=ax.transAxes, ha="right", va="center", fontsize=7,
                         rotation=90,
                     )
@@ -184,6 +186,7 @@ def _plot_closed_loop_seed_comparison_grid(
     dimensions: int = 2,
     embed_method: str = "pca",
     model_type: str = "rnn",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
     if dimensions not in (2, 3):
         raise ValueError("dimensions must be 2 or 3")
@@ -204,7 +207,7 @@ def _plot_closed_loop_seed_comparison_grid(
         fig, axes = _seed_comparison_grid_axes(n_rows, n_cols)
 
     for ri, (n_words, length) in enumerate(row_specs):
-        task = task_name(n_words, length)
+        task = spec.task_name(n_words, length)
         for si, run_seed in enumerate(seeds):
             ax = axes[ri, si]
             try:
@@ -250,46 +253,49 @@ def _plot_closed_loop_seed_comparison_grid(
 
 def plot_pow2_sweep_closed_loop_seed_comparison(
     *,
-    seeds: tuple[int, ...] = POW2_SEED_COMPARISON_SEEDS,
+    seeds: tuple[int, ...] | None = None,
     dimensions: int = 2,
     embed_method: str = "pca",
     model_type: str = "rnn",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     """Two figure families under seed_comparison/: by_length and by_word_count."""
     if dimensions not in (2, 3):
         raise ValueError("dimensions must be 2 or 3")
-    base = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "seed_comparison")
+    run_seeds = seeds if seeds is not None else spec.seed_comparison_seeds
+    base = comparison_dir(spec.comparison_name, "seed_comparison")
     by_length_dir = base / "by_length"
     by_word_count_dir = base / "by_word_count"
     paths: list[Path] = []
     dim_lbl = embed_dim_label(embed_method)
     dim_tag = f"closed_loop_{dimensions}d"
 
-    for length in POW2_LENGTHS:
-        row_specs = tuple((n_words, length) for n_words in POW2_WORD_COUNTS)
+    for length in spec.lengths:
+        row_specs = tuple((n_words, length) for n_words in spec.word_counts)
         slug = _length_slug(length)
         out_path = by_length_dir / embed_save_path(f"{dim_tag}_{slug}.png", embed_method)
         paths.append(_plot_closed_loop_seed_comparison_grid(
-            seeds=seeds,
+            seeds=run_seeds,
             row_specs=row_specs,
             row_label_fn=lambda n_words, _length: f"{n_words}w",
             out_path=out_path,
             suptitle=(
-                f"Pow2 sweep by length · {length_label(length)} "
+                f"Pow2 sweep by length · {spec.length_label(length)} "
                 f"(rows = word count, cols = seed; {dimensions}D {dim_lbl}, {model_type})"
             ),
             dimensions=dimensions,
             embed_method=embed_method,
             model_type=model_type,
+            spec=spec,
         ))
 
-    for n_words in POW2_WORD_COUNTS:
-        row_specs = tuple((n_words, length) for length in POW2_LENGTHS)
+    for n_words in spec.word_counts:
+        row_specs = tuple((n_words, length) for length in spec.lengths)
         out_path = by_word_count_dir / embed_save_path(f"{dim_tag}_w{n_words}.png", embed_method)
         paths.append(_plot_closed_loop_seed_comparison_grid(
-            seeds=seeds,
+            seeds=run_seeds,
             row_specs=row_specs,
-            row_label_fn=lambda _n_words, length: length_label(length),
+            row_label_fn=lambda _n_words, length: spec.length_label(length),
             out_path=out_path,
             suptitle=(
                 f"Pow2 sweep by word count · {n_words}w "
@@ -298,6 +304,7 @@ def plot_pow2_sweep_closed_loop_seed_comparison(
             dimensions=dimensions,
             embed_method=embed_method,
             model_type=model_type,
+            spec=spec,
         ))
 
     return paths
@@ -325,20 +332,21 @@ def plot_pow2_sweep_learning_curves(
     *,
     seeds: tuple[int, ...] = (1,),
     model_type: str = "rnn",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     """Grid of training curves: rows = length, cols = word count (one file per seed)."""
-    n_rows = len(POW2_LENGTHS)
-    n_cols = len(POW2_WORD_COUNTS)
-    out_dir = comparison_dir(POW2_SWEEP_COMPARISON_NAME, "learning_curves")
+    n_rows = len(spec.lengths)
+    n_cols = len(spec.word_counts)
+    out_dir = comparison_dir(spec.comparison_name, "learning_curves")
     out_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
 
     for run_seed in seeds:
         fig, axes = _grid_axes(n_rows, n_cols)
-        for li, length in enumerate(POW2_LENGTHS):
-            for wi, n_words in enumerate(POW2_WORD_COUNTS):
+        for li, length in enumerate(spec.lengths):
+            for wi, n_words in enumerate(spec.word_counts):
                 ax = axes[li, wi]
-                task = task_name(n_words, length)
+                task = spec.task_name(n_words, length)
                 ckpt = checkpoint_path(task, model_type, seed=run_seed)
                 if not ckpt.is_file():
                     ax.axis("off")
@@ -361,7 +369,7 @@ def plot_pow2_sweep_learning_curves(
                 if li == 0:
                     ax.set_title(f"{n_words}w", fontsize=8)
                 if wi == 0:
-                    ax.set_ylabel(length_label(length), fontsize=7)
+                    ax.set_ylabel(spec.length_label(length), fontsize=7)
                 if li < n_rows - 1:
                     hide_x_tick_labels(ax)
                 ax.tick_params(labelsize=6)
@@ -387,22 +395,23 @@ def plot_pow2_sweep_closed_loop(
     dimensions: int = 2,
     embed_method: str = "pca",
     model_type: str = "rnn",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     """Grid of closed-loop trajectory PCA/jPCA panels per sweep cell."""
     if dimensions not in (2, 3):
         raise ValueError("dimensions must be 2 or 3")
     is_3d = dimensions == 3
-    n_rows = len(POW2_LENGTHS)
-    n_cols = len(POW2_WORD_COUNTS)
-    out_dir = sweep_figures_dir(POW2_SWEEP_COMPARISON_NAME)
+    n_rows = len(spec.lengths)
+    n_cols = len(spec.word_counts)
+    out_dir = sweep_figures_dir(spec.comparison_name)
     paths: list[Path] = []
 
     for run_seed in seeds:
         fig, axes = _grid_axes(n_rows, n_cols, is_3d=is_3d)
-        for li, length in enumerate(POW2_LENGTHS):
-            for wi, n_words in enumerate(POW2_WORD_COUNTS):
+        for li, length in enumerate(spec.lengths):
+            for wi, n_words in enumerate(spec.word_counts):
                 ax = axes[li, wi]
-                task = task_name(n_words, length)
+                task = spec.task_name(n_words, length)
                 try:
                     ctx = load_task_viz_context(task, model_type=model_type, seed=run_seed)
                 except (FileNotFoundError, KeyError, ValueError):
@@ -415,7 +424,7 @@ def plot_pow2_sweep_closed_loop(
                 if li == 0:
                     ax.set_title(f"{n_words}w", fontsize=8)
                 if wi == 0 and not is_3d:
-                    ax.set_ylabel(length_label(length), fontsize=7)
+                    ax.set_ylabel(spec.length_label(length), fontsize=7)
 
         base = f"sweep_closed_loop_{dimensions}d"
         if len(seeds) > 1:
@@ -445,13 +454,15 @@ def run_pow2_sweep_seed_comparison_plots(
     model_type: str = "rnn",
     dimensions: int = 2,
     embed_method: str = "pca",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
-    run_seeds = seeds if seeds is not None else POW2_SEED_COMPARISON_SEEDS
+    run_seeds = seeds if seeds is not None else spec.seed_comparison_seeds
     paths = plot_pow2_sweep_closed_loop_seed_comparison(
         seeds=run_seeds,
         dimensions=dimensions,
         embed_method=embed_method,
         model_type=model_type,
+        spec=spec,
     )
     for p in paths:
         print(f"wrote {p}")
@@ -461,9 +472,10 @@ def run_pow2_sweep_seed_comparison_plots(
 def run_pow2_sweep_demo_sequence_plots(
     *,
     seeds: tuple[int, ...] | None = None,
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     run_seeds = seeds if seeds is not None else (1,)
-    paths = plot_pow2_sweep_demo_sequences(seeds=run_seeds)
+    paths = plot_pow2_sweep_demo_sequences(seeds=run_seeds, spec=spec)
     for p in paths:
         print(f"wrote {p}")
     return paths
@@ -472,9 +484,10 @@ def run_pow2_sweep_demo_sequence_plots(
 def run_pow2_sweep_learning_curve_plots(
     *,
     seeds: tuple[int, ...] | None = None,
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
     run_seeds = seeds if seeds is not None else (1,)
-    paths = plot_pow2_sweep_learning_curves(seeds=run_seeds)
+    paths = plot_pow2_sweep_learning_curves(seeds=run_seeds, spec=spec)
     for p in paths:
         print(f"wrote {p}")
     return paths
@@ -485,14 +498,15 @@ def run_pow2_sweep_closed_loop_plots(
     seeds: tuple[int, ...] | None = None,
     dimensions: tuple[int, ...] = (2,),
     embed_methods: tuple[str, ...] = ("pca",),
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> list[Path]:
-    """Closed-loop grids. Default is PCA only; pass embed_methods=(\"jpca\",) if needed."""
+    """Closed-loop grids. Default is PCA only; pass embed_methods=("jpca",) if needed."""
     run_seeds = seeds if seeds is not None else (1,)
     paths: list[Path] = []
     for dims in dimensions:
         for method in embed_methods:
             paths.extend(plot_pow2_sweep_closed_loop(
-                seeds=run_seeds, dimensions=dims, embed_method=method,
+                seeds=run_seeds, dimensions=dims, embed_method=method, spec=spec,
             ))
     for p in paths:
         print(f"wrote {p}")

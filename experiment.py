@@ -323,9 +323,11 @@ TASKS: dict[str, dict] = {
 
 from vocab_sweep import register_sweep_tasks
 from vocab_sweep_pow2 import register_pow2_sweep_tasks
+from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_tasks
 
 register_sweep_tasks(TASKS)
 register_pow2_sweep_tasks(TASKS)
+register_pow2_h100_sweep_tasks(TASKS)
 
 # Backward-compatible alias used by training / visualization entry points.
 EXPERIMENT_CONFIG: dict[str, dict] = TASKS
@@ -362,28 +364,44 @@ def spaced_experiment_name(regime: str) -> str:
 
 
 POW2_SWEEP_COMPARISON = "word_count_pow2_sweep_ns"
+POW2_SWEEP_H100_COMPARISON = "word_count_pow2_sweep_h100_ns"
 WORD_LENGTH_SWEEP_COMPARISON = "word_length_sweep_ns"
+
+
+def _pow2_sweep_checkpoint_subpath(name: str, comparison: str) -> Path | None:
+    if not name.endswith("_ns"):
+        return None
+    if name.startswith("pow2sweep_h100_w"):
+        core = name.removeprefix("pow2sweep_h100_w").removesuffix("_ns")
+    elif name.startswith("pow2sweep_w"):
+        core = name.removeprefix("pow2sweep_w").removesuffix("_ns")
+    else:
+        return None
+    if "_lmix" in core:
+        n_s = core.removesuffix("_lmix")
+        leaf = "lmix_ns"
+    elif "_l" in core:
+        n_s, l_s = core.split("_l", 1)
+        leaf = f"l{l_s}_ns"
+    else:
+        return None
+    return (
+        Path("comparisons")
+        / comparison
+        / "checkpoints"
+        / f"w{n_s}"
+        / leaf
+    )
 
 
 def experiment_subpath(name: str) -> Path:
     """Map a task name to its folder under experiments/."""
+    h100_path = _pow2_sweep_checkpoint_subpath(name, POW2_SWEEP_H100_COMPARISON)
+    if h100_path is not None and name.startswith("pow2sweep_h100_w"):
+        return h100_path
     if name.startswith("pow2sweep_w") and name.endswith("_ns"):
-        core = name.removeprefix("pow2sweep_w").removesuffix("_ns")
-        if "_lmix" in core:
-            n_s = core.removesuffix("_lmix")
-            leaf = "lmix_ns"
-        elif "_l" in core:
-            n_s, l_s = core.split("_l", 1)
-            leaf = f"l{l_s}_ns"
-        else:
-            return Path(name)
-        return (
-            Path("comparisons")
-            / POW2_SWEEP_COMPARISON
-            / "checkpoints"
-            / f"w{n_s}"
-            / leaf
-        )
+        path = _pow2_sweep_checkpoint_subpath(name, POW2_SWEEP_COMPARISON)
+        return path if path is not None else Path(name)
     if name.startswith("sweep_w") and name.endswith("_ns"):
         core = name.removeprefix("sweep_w").removesuffix("_ns")
         if "_l" in core:

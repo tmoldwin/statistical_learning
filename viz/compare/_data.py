@@ -36,11 +36,12 @@ def load_task_viz_context(
         raise FileNotFoundError(f"missing {model_type} checkpoint for task {task!r}: {ckpt}")
 
     model = load_model_for_viz(str(ckpt), model_type)
-    full_text = corpus_for_experiment(task, seed=run_seed)
-    spaced = corpus_uses_word_spacing(full_text, task)
     words = vocabulary_for_experiment(task)
     cfg = TASKS[task]
     length = int(text_chars if text_chars is not None else cfg.get("viz_length", 50))
+
+    full_text = corpus_for_experiment(task, seed=run_seed)
+    spaced = corpus_uses_word_spacing(full_text, task)
     length = min(length, len(full_text))
 
     if words and not spaced:

@@ -21,6 +21,7 @@ from viz.compare.decoding import (
     null_chances_for_vocab,
 )
 from viz.plot_layout import finalize_grid_figure, hide_x_tick_labels, save_figure
+from viz.compare.pow2_sweep_spec import POW2_SWEEP_SPEC_NS, Pow2SweepSpec
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
@@ -31,7 +32,7 @@ from vocab_sweep_pow2 import (
     task_name,
 )
 
-POW2_SWEEP_COMPARISON_NAME = "word_count_pow2_sweep_ns"
+POW2_SWEEP_COMPARISON_NAME = POW2_SWEEP_SPEC_NS.comparison_name
 
 
 def _chance_length(words: list[str], length: object) -> int:
@@ -128,12 +129,13 @@ def write_pow2_sweep_decoding(
     model_type: str = "rnn",
     max_k: int = _DEFAULT_MAX_PCS,
     outfile: str = "sweep_decoding.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    run_seeds = seeds if seeds is not None else POW2_DEFAULT_SEEDS
+    run_seeds = seeds if seeds is not None else spec.default_seeds
     agg_panels: list[dict[str, Any]] = []
 
-    for n_words, length in iter_pow2_sweep_cells():
-        task = task_name(n_words, length)
+    for n_words, length in spec.iter_cells():
+        task = spec.task_name(n_words, length)
         cell_seed_panels: list[dict[str, Any]] = []
         hidden_size = 0
         n_samples = 0
@@ -169,19 +171,19 @@ def write_pow2_sweep_decoding(
             "hidden_size": hidden_size,
             "n_samples": n_samples,
             "null_chance": null_chances_for_vocab(
-                build_vocab(n_words, length),
-                _chance_length(build_vocab(n_words, length), length),
+                spec.build_vocab(n_words, length),
+                _chance_length(spec.build_vocab(n_words, length), length),
             ),
             "features": features_agg,
         })
 
-    out_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / outfile
+    out_path = sweep_data_dir(spec.comparison_name) / outfile
     payload = {
-        "comparison": POW2_SWEEP_COMPARISON_NAME,
+        "comparison": spec.comparison_name,
         "model_type": model_type,
         "features": list(DECODING_FEATURES),
-        "word_counts": list(POW2_WORD_COUNTS),
-        "lengths": list(POW2_LENGTHS),
+        "word_counts": list(spec.word_counts),
+        "lengths": list(spec.lengths),
         "seeds": list(run_seeds),
         "max_k": max_k,
         "max_pcs": max_k,
@@ -214,6 +216,7 @@ def _null_chance_for_cell(
     *,
     n_words: int,
     length: int,
+    build_vocab_fn=build_vocab,
 ) -> float | None:
     feat_data = panel.get("features", {}).get(feat, {})
     probe_chance = feat_data.get("chance")
@@ -225,7 +228,7 @@ def _null_chance_for_cell(
     nc = panel.get("null_chance")
     if isinstance(nc, dict) and feat in nc:
         return float(nc[feat])
-    words = build_vocab(n_words, length)
+    words = build_vocab_fn(n_words, length)
     return null_chances_for_vocab(words, _chance_length(words, length)).get(feat)
 
 
@@ -244,14 +247,17 @@ def _correct_curve(y: np.ndarray, chance: float) -> np.ndarray:
 def plot_pow2_sweep_decode_curves(
     panels: list[dict[str, Any]],
     *,
-    word_counts: tuple[int, ...] = POW2_WORD_COUNTS,
-    lengths: tuple[object, ...] = POW2_LENGTHS,
+    word_counts: tuple[int, ...] | None = None,
+    lengths: tuple[object, ...] | None = None,
     max_k: int = _DEFAULT_MAX_PCS,
     features: tuple[str, ...] = DECODING_FEATURES,
     basis: str = "pca",
     outfile: str | None = None,
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
     """Grid: rows = letter length, cols = word count; lines = decoded features."""
+    word_counts = spec.word_counts if word_counts is None else word_counts
+    lengths = spec.lengths if lengths is None else lengths
     if outfile is None:
         outfile = (
             "sweep_decode_curves.png" if basis == "pca"
@@ -285,6 +291,7 @@ def plot_pow2_sweep_decode_curves(
                     continue
                 null_ch = _null_chance_for_cell(
                     panel, feat, n_words=n_words, length=length,
+                    build_vocab_fn=spec.build_vocab,
                 )
                 if null_ch is None:
                     continue
@@ -323,7 +330,7 @@ def plot_pow2_sweep_decode_curves(
             if li == 0:
                 ax.set_title(f"{n_words} words", fontsize=10, fontweight="medium")
             if wi == 0:
-                ax.set_ylabel(length_label(length), fontsize=9)
+                ax.set_ylabel(spec.length_label(length), fontsize=9)
             ax.grid(axis="y", alpha=0.3, linewidth=0.5)
             if li == n_rows - 1:
                 ax.set_xlabel(f"# {x_unit}  |  star = full hidden", fontsize=8)
@@ -385,7 +392,7 @@ def plot_pow2_sweep_decode_curves(
         wspace=0.30,
         bottom=0.14,
     )
-    out_dir = sweep_decoding_dir(POW2_SWEEP_COMPARISON_NAME)
+    out_dir = sweep_decoding_dir(spec.comparison_name)
     out_path = out_dir / outfile
     save_figure(fig, out_path, dpi=160)
     return out_path
@@ -394,14 +401,15 @@ def plot_pow2_sweep_decode_curves(
 def replot_pow2_sweep_decoding(
     *,
     decoding_file: str = "sweep_decoding.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> tuple[Path, Path]:
     payload = json.loads(
-        (sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / decoding_file).read_text(encoding="utf-8"),
+        (sweep_data_dir(spec.comparison_name) / decoding_file).read_text(encoding="utf-8"),
     )
     max_k = int(payload.get("max_k", payload.get("max_pcs", _DEFAULT_MAX_PCS)))
     panels = payload["panels"]
-    curves_pca = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="pca")
-    curves_neu = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="neuron")
+    curves_pca = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="pca", spec=spec)
+    curves_neu = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="neuron", spec=spec)
     return curves_pca, curves_neu
 
 
@@ -411,15 +419,18 @@ def run_pow2_sweep_decoding_plots(
     max_k: int = _DEFAULT_MAX_PCS,
     recompute: bool = True,
     decoding_file: str = "sweep_decoding.json",
+    spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> tuple[Path, Path, Path]:
-    json_path = sweep_data_dir(POW2_SWEEP_COMPARISON_NAME) / decoding_file
+    json_path = sweep_data_dir(spec.comparison_name) / decoding_file
     if recompute or not json_path.is_file():
-        json_path = write_pow2_sweep_decoding(seeds=seeds, max_k=max_k, outfile=decoding_file)
+        json_path = write_pow2_sweep_decoding(
+            seeds=seeds, max_k=max_k, outfile=decoding_file, spec=spec,
+        )
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     max_k = int(payload.get("max_k", payload.get("max_pcs", max_k)))
     panels = payload["panels"]
-    curves_pca = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="pca")
-    curves_neu = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="neuron")
+    curves_pca = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="pca", spec=spec)
+    curves_neu = plot_pow2_sweep_decode_curves(panels, max_k=max_k, basis="neuron", spec=spec)
     print(f"wrote {json_path}")
     print(f"wrote {curves_pca}")
     print(f"wrote {curves_neu}")

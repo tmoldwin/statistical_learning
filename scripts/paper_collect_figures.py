@@ -19,6 +19,7 @@ from readme_figures import README_FIGURES
 PAPER_ROOT = ROOT / "paper_figures"
 
 ANCHOR = "sixteen_word_four_letter_ns"
+DEMO = "four_word_overlap_ns"
 COMPARE = "sixteen_word_345_ns"
 
 
@@ -34,6 +35,14 @@ def _anchor_plot(subpath: str) -> Path:
     return ROOT / "experiments" / ANCHOR / "rnn" / "plots" / subpath
 
 
+def _demo_plot(subpath: str) -> Path:
+    return ROOT / "experiments" / DEMO / "rnn" / "plots" / subpath
+
+
+def _demo_shared(name: str) -> Path:
+    return ROOT / "experiments" / DEMO / "shared" / name
+
+
 def _shared_plot(name: str) -> Path:
     return ROOT / "experiments" / ANCHOR / "shared" / name
 
@@ -45,14 +54,14 @@ def _compare_plot(kind: str, name: str) -> Path:
 def paper_manifest() -> list[FigureRef]:
     numbered = {fig.number: fig for fig in README_FIGURES}
     refs: list[FigureRef] = [
-        FigureRef("demo", "fig01_trie.svg", _shared_plot("vocabulary_trie.svg"),
-                  numbered[1].caption),
-        FigureRef("demo", "fig02_dfa.svg", _shared_plot("vocabulary_min_dfa.svg"),
-                  numbered[2].caption),
+        FigureRef("demo", "fig01_trie.svg", _demo_shared("vocabulary_trie.svg"),
+                  "Prefix trie for the four-word demo lexicon (cat, met, ate, tea)."),
+        FigureRef("demo", "fig02_dfa.svg", _demo_shared("vocabulary_min_dfa.svg"),
+                  "Minimal DFA for the four-word demo lexicon."),
         FigureRef("demo", "fig03_learning_curve.png",
-                  _anchor_plot("training/3_learning_curve.png"), numbered[3].caption),
+                  _demo_plot("training/3_learning_curve.png"), numbered[3].caption),
         FigureRef("demo", "fig04_samples.png",
-                  _anchor_plot("training/4_samples_before_after.png"), numbered[4].caption),
+                  _demo_plot("training/4_samples_before_after.png"), numbered[4].caption),
         FigureRef("main", "fig05_weights.png", _anchor_plot("weights/5_weights.png"),
                   numbered[5].caption),
         FigureRef("main", "fig05a_weight_init_vs_final.png",

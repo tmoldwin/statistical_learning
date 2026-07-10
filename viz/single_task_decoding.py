@@ -299,6 +299,95 @@ def plot_task_decode_curves(
     return save_path
 
 
+def plot_aggregated_seed_decode_curves(
+    panels: dict[int, dict[str, Any]],
+    save_path: str | Path,
+    *,
+    task: str,
+    max_k: int = _DEFAULT_MAX_PCS,
+    features: tuple[str, ...] = DECODING_FEATURES,
+    n_neuron_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
+) -> Path:
+    """Mean ± std decoding curves across seeds (no per-seed panels / trajectory insets)."""
+    save_path = Path(save_path)
+    seeds = tuple(sorted(panels))
+    if not seeds:
+        raise ValueError("need at least one seed panel")
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.0), sharey=True)
+    legend_handles = None
+    legend_labels = None
+
+    for feat in features:
+        color = DECODE_FEATURE_COLORS.get(feat, "#333333")
+        label = feature_display_name(feat)
+
+        # PCA curves
+        pca_rows = []
+        full_pca = []
+        for seed in seeds:
+            feat_data = panels[seed]["features"][feat]
+            null_ch = _null_chance(panels[seed], feat) or 0.0
+            by_k, n = _trim_curve(np.asarray(feat_data["by_k"], dtype=float))
+            y, _ = _chance_correct_curve(by_k, None, null_ch)
+            row = np.full(max_k, np.nan)
+            row[: min(n, max_k)] = y[: min(n, max_k)]
+            pca_rows.append(row)
+            full_pca.append(chance_corrected(float(feat_data["full_hidden"]), null_ch))
+        pca_mat = np.vstack(pca_rows)
+        pca_mean = np.nanmean(pca_mat, axis=0)
+        pca_std = np.nanstd(pca_mat, axis=0)
+        xs = np.arange(1, max_k + 1)
+        axes[0].plot(xs, pca_mean, color=color, lw=1.8, label=label)
+        axes[0].fill_between(xs, pca_mean - pca_std, pca_mean + pca_std, color=color, alpha=0.18)
+        axes[0].scatter([max_k + 1.5], [float(np.nanmean(full_pca))], color=color, marker="*", s=70, zorder=5)
+
+        # Neuron curves
+        neu_rows = []
+        full_neu = []
+        for seed in seeds:
+            feat_data = panels[seed]["features"][feat]
+            null_ch = _null_chance(panels[seed], feat) or 0.0
+            by_k, n = _trim_curve(np.asarray(feat_data["by_k_neurons"], dtype=float))
+            y, _ = _chance_correct_curve(by_k, None, null_ch)
+            row = np.full(max_k, np.nan)
+            row[: min(n, max_k)] = y[: min(n, max_k)]
+            neu_rows.append(row)
+            full_neu.append(chance_corrected(float(feat_data["full_hidden_neurons"]), null_ch))
+        neu_mat = np.vstack(neu_rows)
+        neu_mean = np.nanmean(neu_mat, axis=0)
+        neu_std = np.nanstd(neu_mat, axis=0)
+        axes[1].plot(xs, neu_mean, color=color, lw=1.8, label=label)
+        axes[1].fill_between(xs, neu_mean - neu_std, neu_mean + neu_std, color=color, alpha=0.18)
+        axes[1].scatter([max_k + 1.5], [float(np.nanmean(full_neu))], color=color, marker="*", s=70, zorder=5)
+
+    axes[0].set_title("top-k PCA", fontsize=10)
+    axes[0].set_xlabel("# PCs  |  ★ = full hidden", fontsize=9)
+    axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
+    axes[1].set_title(f"random neurons · mean ± std across {len(seeds)} seeds", fontsize=9)
+    axes[1].set_xlabel(f"# neurons  |  ★ = full  |  {n_neuron_trials} draws/seed", fontsize=9)
+    for ax in axes:
+        ax.set_ylim(-0.05, 1.05)
+        ax.grid(True, alpha=0.3, linewidth=0.5)
+        _apply_k_ticks(ax, max_k, fontsize=8, show_labels=True)
+    legend_handles, legend_labels = axes[0].get_legend_handles_labels()
+    if legend_handles:
+        fig.legend(
+            legend_handles, legend_labels,
+            loc="upper center", bbox_to_anchor=(0.5, 1.02),
+            ncol=4, fontsize=8, frameon=False,
+        )
+    finalize_grid_figure(
+        fig,
+        suptitle=f"Linear readout decoding · {task} · mean ± std across seeds {list(seeds)}",
+        top=0.86,
+        wspace=0.18,
+    )
+    save_figure(fig, save_path, dpi=150)
+    print(f"wrote {save_path}")
+    return save_path
+
+
 def plot_multi_seed_decode_curves(
     panels: dict[int, dict[str, Any]],
     save_path: str | Path,
@@ -469,5 +558,13 @@ def run_multi_seed_decoding_analysis(
         max_k=max_k,
         n_neuron_trials=n_neuron_trials,
         model_type=model_type,
+    )
+    agg_path = png_path.with_name("decoding_curves_seed_mean.png")
+    plot_aggregated_seed_decode_curves(
+        panels,
+        agg_path,
+        task=task,
+        max_k=max_k,
+        n_neuron_trials=n_neuron_trials,
     )
     return bundle

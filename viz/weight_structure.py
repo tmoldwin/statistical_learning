@@ -74,7 +74,7 @@ def plot_weight_structure_init_vs_final(
     seed: int,
     chars: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Compare random init vs learned weights: heatmaps, deltas, and feedforward metrics."""
+    """Compare random init vs learned weights (clustered 2x2) plus motif side plots."""
     from visualize import weights_for_plot
 
     save_path = Path(save_path)
@@ -89,7 +89,6 @@ def plot_weight_structure_init_vs_final(
             )
 
     chars = chars or list(model["chars"])
-    hidden_size, vocab_size = w_in_f.shape
     metrics_init = compute_weight_structure_metrics(w_in_i, w_rec_i, w_out_i)
     metrics_final = compute_weight_structure_metrics(w_in_f, w_rec_f, w_out_f)
     motif_final = compute_weight_motif_metrics(w_in_f, w_rec_f)
@@ -99,58 +98,69 @@ def plot_weight_structure_init_vs_final(
     json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"wrote {json_path}")
 
-    vmax_xh = max(
-        symmetric_abs_vmax(w_in_i, w_in_f),
-        1e-9,
+    # Paper-facing panel: 2x2 init/final, hierarchically clustered, no deltas.
+    plot_weight_init_vs_final_clustered(
+        w_in_i, w_rec_i, w_in_f, w_rec_f, chars, save_path,
     )
-    vmax_hh = max(
-        symmetric_abs_vmax(w_rec_i, w_rec_f),
-        1e-9,
-    )
-    cmap = plt.cm.RdBu_r
-
-    fig, axes = plt.subplots(2, 3, figsize=(14, 8.5))
-    finalize_grid_figure(
-        fig,
-        suptitle="Weight structure: random init vs after learning",
-        top=0.92,
-        hspace=0.42,
-        wspace=0.28,
-    )
-
-    panels = [
-        (axes[0, 0], w_in_i.T, "Init $W_{xh}$ (input)", vmax_xh, "hidden unit", "input char"),
-        (axes[0, 1], w_in_f.T, "Final $W_{xh}$ (input)", vmax_xh, "hidden unit", "input char"),
-        (axes[0, 2], (w_in_f - w_in_i).T, r"$\Delta W_{xh}$ (final $-$ init)", vmax_xh, "hidden unit", "input char"),
-        (axes[1, 0], w_rec_i, "Init $W_{hh}$ (recurrent)", vmax_hh, "source h", "target h"),
-        (axes[1, 1], w_rec_f, "Final $W_{hh}$ (recurrent)", vmax_hh, "source h", "target h"),
-        (axes[1, 2], w_rec_f - w_rec_i, r"$\Delta W_{hh}$ (final $-$ init)", vmax_hh, "source h", "target h"),
-    ]
-    last_im = None
-    for ax, data, title, vmax, xlabel, ylabel in panels:
-        last_im = ax.imshow(
-            data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
-            interpolation="nearest", origin="lower",
-        )
-        ax.set_title(title, fontsize=9)
-        ax.set_xlabel(xlabel, fontsize=8)
-        ax.set_ylabel(ylabel, fontsize=8)
-    if last_im is not None:
-        fig.colorbar(last_im, ax=axes.ravel().tolist(), fraction=0.02, pad=0.02)
-
-    save_figure(fig, save_path)
-    print(f"wrote {save_path}")
 
     _plot_weight_structure_bars(metrics_init, metrics_final, save_path.with_name("weight_structure_metrics.png"))
     _plot_input_drive_histogram(w_in_i, w_rec_i, w_in_f, w_rec_f, save_path.with_name("weight_input_drive_fraction.png"))
     _plot_weight_motif_summary(motif_final, save_path.with_name("weight_motif_summary.png"))
-    plot_weight_clustered_heatmaps(
-        w_in_f, w_rec_f, chars,
-        save_path.parent,
-        basename="weights",
-    )
 
     return summary
+
+
+def plot_weight_init_vs_final_clustered(
+    w_in_i: np.ndarray,
+    w_rec_i: np.ndarray,
+    w_in_f: np.ndarray,
+    w_rec_f: np.ndarray,
+    chars: list[str],
+    save_path: str | Path,
+) -> None:
+    """2x2 init vs final heatmaps with units in hierarchical cluster order (no deltas)."""
+    save_path = Path(save_path)
+    order = _cluster_unit_order(w_in_f, w_rec_f)
+    w_in_i_c = w_in_i[order]
+    w_in_f_c = w_in_f[order]
+    w_rec_i_c = w_rec_i[np.ix_(order, order)]
+    w_rec_f_c = w_rec_f[np.ix_(order, order)]
+
+    vmax_xh = max(symmetric_abs_vmax(w_in_i_c, w_in_f_c), 1e-9)
+    vmax_hh = max(symmetric_abs_vmax(w_rec_i_c, w_rec_f_c), 1e-9)
+    cmap = plt.cm.RdBu_r
+    char_labels = [c if c not in (" ", "\n", "\t") else repr(c)[1:-1] for c in chars]
+
+    fig, axes = plt.subplots(2, 2, figsize=(9.5, 8.0))
+    finalize_grid_figure(
+        fig,
+        suptitle="Weights: random init vs after learning (clustered units)",
+        top=0.92,
+        hspace=0.38,
+        wspace=0.28,
+    )
+    panels = [
+        (axes[0, 0], w_in_i_c.T, "Init $W_{xh}$", vmax_xh, "hidden unit", "input char", True),
+        (axes[0, 1], w_in_f_c.T, "Final $W_{xh}$", vmax_xh, "hidden unit", "input char", True),
+        (axes[1, 0], w_rec_i_c, "Init $W_{hh}$", vmax_hh, "source h", "target h", False),
+        (axes[1, 1], w_rec_f_c, "Final $W_{hh}$", vmax_hh, "source h", "target h", False),
+    ]
+    last_im = None
+    for ax, data, title, vmax, xlabel, ylabel, is_xh in panels:
+        last_im = ax.imshow(
+            data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
+            interpolation="nearest", origin="lower",
+        )
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel(xlabel, fontsize=8)
+        ax.set_ylabel(ylabel, fontsize=8)
+        if is_xh:
+            ax.set_yticks(np.arange(len(char_labels)))
+            ax.set_yticklabels(char_labels, fontsize=7)
+    if last_im is not None:
+        fig.colorbar(last_im, ax=axes.ravel().tolist(), fraction=0.025, pad=0.03)
+    save_figure(fig, save_path)
+    print(f"wrote {save_path}")
 
 
 def symmetric_abs_vmax(*arrays: np.ndarray, pct: float = 99.0) -> float:

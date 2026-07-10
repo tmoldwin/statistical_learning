@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
+from viz.compare.feature_separation import plot_feature_separation_comparison
 from viz.compare.learning_curves import plot_learning_curves, plot_learning_summary
 from viz.compare.geometry import write_trajectory_geometry
 from viz.compare.shape_quantification import plot_shape_quantification
@@ -55,6 +56,7 @@ def _plot_closed_loop_3d_all(
 COMPARISON_KINDS: dict[str, ComparisonFn] = {
     "learning_curves": plot_learning_curves,
     "learning_summary": plot_learning_summary,
+    "feature_separation": plot_feature_separation_comparison,
     "trajectory_geometry": write_trajectory_geometry,
     "shape_quantification": plot_shape_quantification,
     "closed_loop_trajectories": _plot_closed_loop_both,

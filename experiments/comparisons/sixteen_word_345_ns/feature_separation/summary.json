@@ -1,0 +1,499 @@
+{
+  "tasks": [
+    "sixteen_word_ns",
+    "sixteen_word_four_letter_ns",
+    "sixteen_word_five_letter_ns",
+    "sixteen_word_mixed_345_ns"
+  ],
+  "condition_labels": [
+    "3-letter",
+    "4-letter",
+    "5-letter",
+    "mixed 3\u20135"
+  ],
+  "features": [
+    "dfa",
+    "char",
+    "position",
+    "position_from_end"
+  ],
+  "metrics": [
+    "centroid_gap",
+    "silhouette",
+    "eta2",
+    "pairwise_ratio",
+    "shuffle_z",
+    "shuffle_p"
+  ],
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "per_task_seed": {
+    "sixteen_word_ns": {
+      "1": {
+        "centroid_gap": {
+          "dfa": 7.148999509639375,
+          "char": 7.442923036282847,
+          "position": 5.49902425216894,
+          "position_from_end": 5.49902425216894
+        },
+        "silhouette": {
+          "dfa": 0.6651464259776254,
+          "char": 0.48843290394905603,
+          "position": 0.5664711632293529,
+          "position_from_end": 0.5664711632293529
+        },
+        "eta2": {
+          "dfa": 0.9287395533159193,
+          "char": 0.9680004270740459,
+          "position": 0.7371303796508089,
+          "position_from_end": 0.7371303796508089
+        },
+        "pairwise_ratio": {
+          "dfa": 0.29056135515038073,
+          "char": 0.13989233791939926,
+          "position": 0.4012973168011807,
+          "position_from_end": 0.4012973168011807
+        },
+        "shuffle_z": {
+          "dfa": 4.544050345827386,
+          "char": 6.451388744885134,
+          "position": 9.384782371227066,
+          "position_from_end": 9.017298071482811
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "2": {
+        "centroid_gap": {
+          "dfa": 6.757149890205956,
+          "char": 6.455298034599432,
+          "position": 4.616345706487859,
+          "position_from_end": 4.072119109745028
+        },
+        "silhouette": {
+          "dfa": 0.49669876769427634,
+          "char": 0.10429808363381761,
+          "position": 0.47825628600843856,
+          "position_from_end": 0.40909664492953585
+        },
+        "eta2": {
+          "dfa": 0.8734056712993455,
+          "char": 0.8362178855775427,
+          "position": 0.6467950657731826,
+          "position_from_end": 0.5794707126975834
+        },
+        "pairwise_ratio": {
+          "dfa": 0.40981968240566974,
+          "char": 0.2974578109763291,
+          "position": 0.5588501210656943,
+          "position_from_end": 0.5730531458905648
+        },
+        "shuffle_z": {
+          "dfa": 5.6550242400013335,
+          "char": 7.036070866548777,
+          "position": 10.575471235900636,
+          "position_from_end": 9.827249585839404
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "3": {
+        "centroid_gap": {
+          "dfa": 7.003653155947086,
+          "char": 7.245662384873776,
+          "position": 5.375782609717659,
+          "position_from_end": 5.375782609717659
+        },
+        "silhouette": {
+          "dfa": 0.6109130599407505,
+          "char": 0.31796290781347974,
+          "position": 0.5598021321838367,
+          "position_from_end": 0.5598021321838367
+        },
+        "eta2": {
+          "dfa": 0.9311161667493372,
+          "char": 0.9678293677807478,
+          "position": 0.7201742580772658,
+          "position_from_end": 0.7201742580772658
+        },
+        "pairwise_ratio": {
+          "dfa": 0.2866533942771323,
+          "char": 0.1641150672568074,
+          "position": 0.39577303767333344,
+          "position_from_end": 0.39577303767333344
+        },
+        "shuffle_z": {
+          "dfa": 4.546995102499118,
+          "char": 5.62781563168312,
+          "position": 8.250631388463361,
+          "position_from_end": 8.234712143625762
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      }
+    },
+    "sixteen_word_four_letter_ns": {
+      "1": {
+        "centroid_gap": {
+          "dfa": 7.288930851042979,
+          "char": 5.585786414501479,
+          "position": 4.541359418861273,
+          "position_from_end": 4.541359418861273
+        },
+        "silhouette": {
+          "dfa": 0.6523378530284278,
+          "char": 0.28876902723000425,
+          "position": 0.47938578091891587,
+          "position_from_end": 0.47938578091891587
+        },
+        "eta2": {
+          "dfa": 0.9340936942987611,
+          "char": 0.7382748970964242,
+          "position": 0.6934577968224908,
+          "position_from_end": 0.6934577968224908
+        },
+        "pairwise_ratio": {
+          "dfa": 0.34304916783278766,
+          "char": 0.5306693852563737,
+          "position": 0.4736365989858563,
+          "position_from_end": 0.4736365989858563
+        },
+        "shuffle_z": {
+          "dfa": 6.690819023332044,
+          "char": 5.828193193944791,
+          "position": 12.741180648621372,
+          "position_from_end": 13.070395644042797
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "2": {
+        "centroid_gap": {
+          "dfa": 6.830974337623635,
+          "char": 4.739103640798998,
+          "position": 3.915988166683471,
+          "position_from_end": 3.915988166683471
+        },
+        "silhouette": {
+          "dfa": 0.6926068795752288,
+          "char": 0.17105649634574316,
+          "position": 0.4845462924097715,
+          "position_from_end": 0.4845462924097715
+        },
+        "eta2": {
+          "dfa": 0.9537771636130733,
+          "char": 0.6596529243164402,
+          "position": 0.674911007176094,
+          "position_from_end": 0.674911007176094
+        },
+        "pairwise_ratio": {
+          "dfa": 0.2903054196216865,
+          "char": 0.6173569410698065,
+          "position": 0.4751624456040577,
+          "position_from_end": 0.4751624456040577
+        },
+        "shuffle_z": {
+          "dfa": 7.256642371107698,
+          "char": 4.36061190952821,
+          "position": 13.215914400305508,
+          "position_from_end": 12.649892225273586
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "3": {
+        "centroid_gap": {
+          "dfa": 7.582007610447031,
+          "char": 5.419356488843653,
+          "position": 4.81457369116136,
+          "position_from_end": 4.81457369116136
+        },
+        "silhouette": {
+          "dfa": 0.6355371240777048,
+          "char": 0.17563296310906418,
+          "position": 0.478607214055785,
+          "position_from_end": 0.478607214055785
+        },
+        "eta2": {
+          "dfa": 0.962380956631696,
+          "char": 0.6867699238767464,
+          "position": 0.704758819987332,
+          "position_from_end": 0.704758819987332
+        },
+        "pairwise_ratio": {
+          "dfa": 0.2802330729540745,
+          "char": 0.5701756892587846,
+          "position": 0.4661489820518178,
+          "position_from_end": 0.4661489820518178
+        },
+        "shuffle_z": {
+          "dfa": 6.202325771036941,
+          "char": 4.440552607005704,
+          "position": 13.090791002175695,
+          "position_from_end": 12.089891570280617
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      }
+    },
+    "sixteen_word_five_letter_ns": {
+      "1": {
+        "centroid_gap": {
+          "dfa": 5.465518821270843,
+          "char": 4.043335171300193,
+          "position": 1.668857429152018,
+          "position_from_end": 1.668857429152018
+        },
+        "silhouette": {
+          "dfa": 0.7822113241894448,
+          "char": 0.3299032198509871,
+          "position": 0.3132132099836091,
+          "position_from_end": 0.3132132099836091
+        },
+        "eta2": {
+          "dfa": 0.9727093330564565,
+          "char": 0.7960684548589606,
+          "position": 0.46750483794408393,
+          "position_from_end": 0.46750483794408393
+        },
+        "pairwise_ratio": {
+          "dfa": 0.22088315565337385,
+          "char": 0.19814008830281565,
+          "position": 0.8036592780645907,
+          "position_from_end": 0.8036592780645907
+        },
+        "shuffle_z": {
+          "dfa": 13.445968552615032,
+          "char": 12.655179237712018,
+          "position": 18.116854162072837,
+          "position_from_end": 14.984188471488919
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "2": {
+        "centroid_gap": {
+          "dfa": 5.566089478483217,
+          "char": 3.8184236228088633,
+          "position": 1.6286740151516899,
+          "position_from_end": 1.4106306164466296
+        },
+        "silhouette": {
+          "dfa": 0.8019757675283834,
+          "char": 0.24690057875876614,
+          "position": 0.3103848830909823,
+          "position_from_end": 0.27795363367580594
+        },
+        "eta2": {
+          "dfa": 0.9785420810192161,
+          "char": 0.7207759997632563,
+          "position": 0.46273591586348994,
+          "position_from_end": 0.4359349164581596
+        },
+        "pairwise_ratio": {
+          "dfa": 0.20693669842481313,
+          "char": 0.7620918742588961,
+          "position": 0.7439041551585388,
+          "position_from_end": 0.8147911293897399
+        },
+        "shuffle_z": {
+          "dfa": 17.363235124753693,
+          "char": 12.405200501960492,
+          "position": 16.690626878984673,
+          "position_from_end": 16.76103443627593
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "3": {
+        "centroid_gap": {
+          "dfa": 5.481601693071777,
+          "char": 4.38855777346531,
+          "position": 1.744644842821807,
+          "position_from_end": 1.744644842821807
+        },
+        "silhouette": {
+          "dfa": 0.8049937689801823,
+          "char": 0.32648225081507887,
+          "position": 0.3000210418096429,
+          "position_from_end": 0.3000210418096429
+        },
+        "eta2": {
+          "dfa": 0.9795448641577899,
+          "char": 0.7872977346768432,
+          "position": 0.48251445603824594,
+          "position_from_end": 0.48251445603824594
+        },
+        "pairwise_ratio": {
+          "dfa": 0.19393401193680396,
+          "char": 0.7111323013203196,
+          "position": 0.7845782167710039,
+          "position_from_end": 0.7845782167710039
+        },
+        "shuffle_z": {
+          "dfa": 15.81164723300756,
+          "char": 11.82775413678023,
+          "position": 15.01526856536893,
+          "position_from_end": 15.55660380504019
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      }
+    },
+    "sixteen_word_mixed_345_ns": {
+      "1": {
+        "centroid_gap": {
+          "dfa": 6.912726268846046,
+          "char": 6.6459965879458505,
+          "position": 4.41406596287732,
+          "position_from_end": 4.3628701004890855
+        },
+        "silhouette": {
+          "dfa": 0.6708684013085471,
+          "char": 0.6811541491532827,
+          "position": 0.35136028790539026,
+          "position_from_end": 0.32670504992889055
+        },
+        "eta2": {
+          "dfa": 0.8955755902282418,
+          "char": 0.9138858803501485,
+          "position": 0.6120157624457907,
+          "position_from_end": 0.5854991157393601
+        },
+        "pairwise_ratio": {
+          "dfa": 0.32197991103282453,
+          "char": 0.1353734316234853,
+          "position": 0.6718941344034715,
+          "position_from_end": 0.6164229936413735
+        },
+        "shuffle_z": {
+          "dfa": 10.287751279800812,
+          "char": 10.133942560611068,
+          "position": 11.12727539649466,
+          "position_from_end": 8.553811582606796
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "2": {
+        "centroid_gap": {
+          "dfa": 6.987114933414569,
+          "char": 7.080128804028314,
+          "position": 4.9670725012013115,
+          "position_from_end": 3.1969322177621313
+        },
+        "silhouette": {
+          "dfa": 0.591846669562039,
+          "char": 0.707679152617656,
+          "position": 0.46267906416527704,
+          "position_from_end": 0.20757918741385178
+        },
+        "eta2": {
+          "dfa": 0.8358315460141327,
+          "char": 0.900581841813532,
+          "position": 0.6345479709664503,
+          "position_from_end": 0.4223152577848977
+        },
+        "pairwise_ratio": {
+          "dfa": 0.25652145997172343,
+          "char": 0.1071103060038189,
+          "position": 0.6344400857053843,
+          "position_from_end": 0.8475116049729063
+        },
+        "shuffle_z": {
+          "dfa": 12.032676966025774,
+          "char": 14.222339435152646,
+          "position": 12.452166547029234,
+          "position_from_end": 7.813060393077612
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      },
+      "3": {
+        "centroid_gap": {
+          "dfa": 6.577395994345041,
+          "char": 6.159128618134046,
+          "position": 4.163371731178858,
+          "position_from_end": 3.391655974370042
+        },
+        "silhouette": {
+          "dfa": 0.5401129885454606,
+          "char": 0.49939140770616947,
+          "position": 0.3306087185601927,
+          "position_from_end": 0.1886981751988668
+        },
+        "eta2": {
+          "dfa": 0.8600994702349174,
+          "char": 0.8402880116050269,
+          "position": 0.5864586572601191,
+          "position_from_end": 0.4865436234278343
+        },
+        "pairwise_ratio": {
+          "dfa": 0.5161620744156022,
+          "char": 0.2574695297342448,
+          "position": 0.6881124006149086,
+          "position_from_end": 0.6581587925629823
+        },
+        "shuffle_z": {
+          "dfa": 10.053050963673266,
+          "char": 10.070350099380368,
+          "position": 9.513535513579635,
+          "position_from_end": 6.055915407846925
+        },
+        "shuffle_p": {
+          "dfa": 0.005,
+          "char": 0.005,
+          "position": 0.005,
+          "position_from_end": 0.005
+        }
+      }
+    }
+  }
+}

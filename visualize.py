@@ -98,6 +98,7 @@ from transformer.adapter import load_model as load_transformer_model
 from transformer.viz_repr import run_transformer_visualization
 from viz_timing import VizTimer
 from readme_figures import (
+    migrate_legacy_states_layout,
     numbered_plot_path,
     remove_flat_plot_files,
     remove_legacy_readme_plot_names,
@@ -2213,7 +2214,7 @@ PAIR_DISTANCE_PALETTE = {
 }
 
 SEPARATION_FEATURES = (
-    "dfa", "prefix", "string", "char", "position", "position_from_end",
+    "dfa", "char", "position", "position_from_end",
 )
 
 
@@ -2519,7 +2520,7 @@ def plot_feature_separation_summary(
         condensed = condense_hidden_states_by_prefix(
             text, hidden_states, output_probs, spaced=spaced, words=words,
         )
-        hidden_states = condensed.hidden_states
+    hidden_states = condensed.hidden_states
 
     if hidden_states.shape[0] < 2:
         print("feature separation: need at least 2 points")
@@ -8355,6 +8356,11 @@ def main() -> None:
         action="store_true",
         help="render closed-loop trajectory animation with generated text (off by default)",
     )
+    parser.add_argument(
+        "--weight-eigenspectra",
+        action="store_true",
+        help="include W_hh eigenspectra plot (supplementary; off by default)",
+    )
     args = parser.parse_args()
 
     timer = VizTimer()
@@ -8372,12 +8378,23 @@ def main() -> None:
     if not is_transformer and not args.trajectories_only:
         with timer.section("weight_plots"):
             plot_learned_weights(model, save_path=str(numbered_plot_path(out_dir, "weights.png")))
-            plot_weight_eigenspectra(
-                model, save_path=str(numbered_plot_path(out_dir, "weights_eigenspectra.png")),
-            )
+            if args.weight_eigenspectra:
+                plot_weight_eigenspectra(
+                    model, save_path=str(numbered_plot_path(out_dir, "weights_eigenspectra.png")),
+                )
             plot_weight_dynamics_over_training(
                 model, str(numbered_plot_path(out_dir, "weight_dynamics_over_training.png")),
             )
+            if args.exp:
+                from experiment import DEFAULT_SEED
+                from viz.weight_structure import plot_weight_structure_init_vs_final
+
+                weight_seed = args.seed if args.seed is not None else DEFAULT_SEED
+                plot_weight_structure_init_vs_final(
+                    model,
+                    numbered_plot_path(out_dir, "weight_init_vs_final.png"),
+                    seed=weight_seed,
+                )
     if not args.trajectories_only:
         with timer.section("learning_curve"):
             plot_learning_curve(
@@ -8687,6 +8704,36 @@ def main() -> None:
                     output_probs=output_probs,
                 )
 
+            if args.exp:
+                from experiment import DEFAULT_SEED
+                from viz.single_task_decoding import (
+                    run_multi_seed_decoding_analysis,
+                    run_task_decoding_analysis,
+                )
+
+                with timer.section("decoding_readout"):
+                    decode_dir = Path(out_dir)
+                    run_task_decoding_analysis(
+                        args.exp,
+                        decode_dir,
+                        model_type=model_type,
+                        seed=args.seed if args.seed is not None else DEFAULT_SEED,
+                    )
+                    if args.exp == "sixteen_word_four_letter_ns":
+                        from experiment import seeds_for_task
+
+                        anchor_seeds = tuple(
+                            s for s in (1, 2, 3, 5, 7, 8)
+                            if s in seeds_for_task(args.exp, model_type)
+                        )
+                        if len(anchor_seeds) >= 2:
+                            run_multi_seed_decoding_analysis(
+                                args.exp,
+                                decode_dir,
+                                seeds=anchor_seeds,
+                                model_type=model_type,
+                            )
+
         if model["hidden_size"] == 2:
             with timer.section("state_trajectories_2d"):
                 plot_state_trajectory(
@@ -8742,6 +8789,7 @@ def main() -> None:
 
     if args.exp:
         with timer.section("cleanup"):
+            migrate_legacy_states_layout(out_dir)
             remove_legacy_readme_plot_names(out_dir)
             remove_flat_plot_files(out_dir)
             remove_shared_figures_from_model_plots(out_dir, shared_dir(args.exp))

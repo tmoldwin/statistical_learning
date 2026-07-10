@@ -65,6 +65,11 @@ REGIMES: dict[str, list[str]] = {
         "light", "night", "right",
         "bound", "found", "hound",
     ],
+    # 8 real 4-letter words; two suffix families (-ake, -ank).
+    "eight_word_four_letter": [
+        "bake", "cake", "lake", "rake",
+        "bank", "tank", "rank", "sank",
+    ],
     # 6 words: one -at suffix family + one si- prefix family.
     "six_word_overlap_sin": [
         "sin", "six", "sir",
@@ -303,13 +308,15 @@ def main() -> None:
     print(f"Preview: {text[:80]}")
 
 
-from vocab_sweep import register_sweep_regimes
+from vocab_sweep import build_mixed_vocab, register_sweep_regimes
 from vocab_sweep_pow2 import register_pow2_sweep_regimes
 from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_regimes
 
 register_sweep_regimes(REGIMES)
 register_pow2_sweep_regimes(REGIMES)
 register_pow2_h100_sweep_regimes(REGIMES)
+REGIMES["thirty_two_word_mixed_345"] = build_mixed_vocab(32, (3, 4, 5))
+REGIMES["sixteen_word_mixed_345"] = build_mixed_vocab(16, (3, 4, 5))
 
 
 if __name__ == "__main__":

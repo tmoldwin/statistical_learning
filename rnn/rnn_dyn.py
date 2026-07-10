@@ -128,6 +128,30 @@ def init_dale_outgoing_weights(
     return init_dale_weights(hidden_size, vocab_size, dale_sign, scale=scale, rng=rng)
 
 
+def reconstruct_init_weights(
+    hidden_size: int,
+    vocab_size: int,
+    seed: int,
+    *,
+    dale_law: bool = False,
+    e_fraction: float = 0.8,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Reproduce min_char_rnn weight initialization for a given RNG seed."""
+    init_rng = np.random.default_rng(seed)
+    if dale_law:
+        dale_sign = sample_dale_signs(hidden_size, e_fraction, init_rng)
+        dale_init_scale = 0.01 if hidden_size <= 32 else 0.005
+        return init_dale_weights(
+            hidden_size, vocab_size, dale_sign, scale=dale_init_scale, rng=init_rng,
+        )
+    scale = 0.01
+    return (
+        init_rng.standard_normal((hidden_size, vocab_size)) * scale,
+        init_rng.standard_normal((hidden_size, hidden_size)) * scale,
+        init_rng.standard_normal((vocab_size, hidden_size)) * scale,
+    )
+
+
 def enforce_dale_weights(
     weights_input_to_hidden: np.ndarray,
     weights_hidden_to_hidden: np.ndarray,

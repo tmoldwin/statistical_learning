@@ -11,6 +11,20 @@ _COMPARISON_SEEDS = (42, 43, 44, 45, 46)
 # Seeds for geometry variability studies (avoid the 40s block used elsewhere).
 GEOMETRY_STATS_SEEDS = (1, 2, 3, 5, 7, 8, 11, 13, 17, 19, 23, 29, 31, 37, 53)
 
+_SIXTEEN_WORD_345_TASKS = (
+    "sixteen_word_ns",
+    "sixteen_word_four_letter_ns",
+    "sixteen_word_five_letter_ns",
+    "sixteen_word_mixed_345_ns",
+)
+
+_SIXTEEN_WORD_345_LABELS = {
+    "sixteen_word_ns": "3-letter",
+    "sixteen_word_four_letter_ns": "4-letter",
+    "sixteen_word_five_letter_ns": "5-letter",
+    "sixteen_word_mixed_345_ns": "mixed 3–5",
+}
+
 _SIXTEEN_WORD_LENGTH_TASKS = (
     "sixteen_word_ns",
     "sixteen_word_four_letter_ns",
@@ -159,6 +173,13 @@ COMPARISON_PRESETS: dict[str, ComparisonSpec] = {
             _MICRO_CURRICULUM_TASKS[:3],
             _MICRO_CURRICULUM_TASKS[3:],
         ),
+        seeds=GEOMETRY_STATS_SEEDS,
+    ),
+    "sixteen_word_345_ns": ComparisonSpec(
+        name="sixteen_word_345_ns",
+        tasks=_SIXTEEN_WORD_345_TASKS,
+        labels=dict(_SIXTEEN_WORD_345_LABELS),
+        title="16-word vocabularies (no spaces): 3 / 4 / 5-letter and mixed 3–5",
         seeds=GEOMETRY_STATS_SEEDS,
     ),
 }

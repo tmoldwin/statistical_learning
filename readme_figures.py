@@ -220,27 +220,41 @@ PLOT_SUBDIR: dict[str, str] = {
     "weights.png": "weights",
     "weights_eigenspectra.png": "weights",
     "weight_dynamics_over_training.png": "weights",
+    "weight_init_vs_final.png": "weights",
+    "weight_structure_metrics.png": "weights",
+    "weight_input_drive_fraction.png": "weights",
     "activation_heatmap.png": "activations",
     "next_char_prob_sequence_heatmap.png": "activations",
     "activation_by_input_char.png": "activations",
     "activation_clustered_heatmap.png": "activations",
-    "embedding_panels_context.png": "states",
-    "embedding_panels_context_3d.png": "states",
-    "dfa_and_embedding_pca.png": "states",
-    "next_char_regions_pca.png": "states",
-    "next_char_prob_panels_pca.png": "states",
-    "vector_field_grid_pca_no_input.png": "states",
-    "state_correlation_clustered_heatmap.png": "states",
-    "state_correlation_by_dfa_state.png": "states",
-    "dfa_state_distance_comparison.png": "states",
-    "feature_separation_summary.png": "states",
-    "state_trajectory_by_input.png": "states",
-    "state_trajectory_by_target.png": "states",
+    "embedding_panels_context.png": "embeddings",
+    "embedding_panels_context_3d.png": "embeddings",
+    "dfa_and_embedding_pca.png": "embeddings",
+    "next_char_regions_pca.png": "readout",
+    "next_char_prob_panels_pca.png": "readout",
+    "vector_field_grid_pca_no_input.png": "dynamics",
+    "state_trajectory_by_input.png": "dynamics",
+    "state_trajectory_by_target.png": "dynamics",
+    "state_correlation_clustered_heatmap.png": "correlation",
+    "state_correlation_by_dfa_state.png": "correlation",
+    "dfa_state_distance_comparison.png": "separation",
+    "feature_separation_summary.png": "separation",
+    "decoding_curves.png": "decoding",
+    "decoding_curves_by_seed.png": "decoding",
     "word_trajectories_pca.png": "trajectories",
     "word_trajectories_pca_3d.png": "trajectories",
     "word_trajectories_pca_3d_trained.png": "trajectories",
     "word_trajectories_pca_3d_closed_loop.png": "trajectories",
 }
+
+# Numbered on-disk slugs that differ from PLOT_SUBDIR keys.
+_PLOT_BASENAME_ALIASES: dict[str, str] = {
+    "vector_field_grid_pca.png": "vector_field_grid_pca_no_input.png",
+    "state_correlation_clustered.png": "state_correlation_clustered_heatmap.png",
+}
+
+# Legacy flat folder name kept for one-time migration off plots/states/.
+_LEGACY_STATES_SUBDIR = "states"
 
 # Vocabulary structure figures depend only on the word list, not the model.
 SHARED_FIGURE_NUMBERS: frozenset[int] = frozenset({1, 2})
@@ -252,7 +266,28 @@ def is_shared_figure(plot_basename: str) -> bool:
 
 
 def plot_subdir_for(plot_basename: str) -> str:
-    return PLOT_SUBDIR.get(plot_basename, "")
+    name = Path(plot_basename).name
+    if name in PLOT_SUBDIR:
+        return PLOT_SUBDIR[name]
+    stem = Path(name).stem
+    parts = stem.split("_", 1)
+    bare_stem = parts[1] if len(parts) == 2 and parts[0].isdigit() else stem
+    bare_name = f"{bare_stem}.png"
+    if bare_name in PLOT_SUBDIR:
+        return PLOT_SUBDIR[bare_name]
+    alias = _PLOT_BASENAME_ALIASES.get(bare_name)
+    if alias and alias in PLOT_SUBDIR:
+        return PLOT_SUBDIR[alias]
+    if bare_stem.endswith("_jpca"):
+        base_stem = bare_stem[:-5]
+        for suffix in ("_pca", ""):
+            candidate = f"{base_stem}{suffix}.png"
+            if candidate in PLOT_SUBDIR:
+                return PLOT_SUBDIR[candidate]
+            alias = _PLOT_BASENAME_ALIASES.get(candidate)
+            if alias and alias in PLOT_SUBDIR:
+                return PLOT_SUBDIR[alias]
+    return ""
 
 
 def plot_category_dir(out_dir: str | Path, plot_basename: str) -> Path:
@@ -275,6 +310,37 @@ def numbered_plot_path(out_dir: str | Path, plot_basename: str) -> Path:
     if fig is None:
         return root / plot_basename
     return root / fig.filename()
+
+
+def migrate_legacy_states_layout(plots_dir: str | Path) -> None:
+    """Move figures from the old flat plots/states/ folder into category subfolders."""
+    root = Path(plots_dir)
+    legacy = root / _LEGACY_STATES_SUBDIR
+    if not legacy.is_dir():
+        return
+    for path in sorted(legacy.iterdir()):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".png", ".json"}:
+            continue
+        lookup_name = path.name
+        if path.suffix.lower() == ".json" and lookup_name.endswith(".json"):
+            lookup_name = lookup_name[:-5] + ".png"
+        sub = plot_subdir_for(lookup_name)
+        if not sub or sub == _LEGACY_STATES_SUBDIR:
+            continue
+        dest_dir = root / sub
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / path.name
+        if dest.is_file():
+            path.unlink()
+            print(f"removed duplicate legacy {path.relative_to(root)}")
+        else:
+            path.rename(dest)
+            print(f"moved {path.relative_to(root)} -> {dest.relative_to(root)}")
+    if legacy.is_dir() and not any(legacy.iterdir()):
+        legacy.rmdir()
+        print(f"removed empty {legacy.relative_to(root)}")
 
 
 def remove_legacy_readme_plot_names(plots_dir: str | Path) -> None:

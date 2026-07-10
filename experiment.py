@@ -10,6 +10,12 @@ experiments/<name>/
             weights/
             activations/
             states/
+            embeddings/
+            readout/
+            dynamics/
+            correlation/
+            separation/
+            decoding/
             trajectories/
             unit_selectivity/
             learning_dynamics/
@@ -55,6 +61,7 @@ COMPARISON_VIZ_KINDS: tuple[str, ...] = (
     "states",
     "unit_selectivity",
     "dfa_sensitivity",
+    "feature_separation",
 )
 
 _SIX_WORD_NS_DEFAULTS: dict[str, object] = {
@@ -82,7 +89,7 @@ _SIXTEEN_WORD_NS_DEFAULTS: dict[str, object] = {
     "early_stop_patience": 3,
     "min_checkpoint_iter": 4_000,
     "viz_length": 50,
-    "hidden_size": 128,
+    "hidden_size": 50,
     "sequence_length": 12,
     "eval_interval": 50,
     "eval_iterations": 20,
@@ -163,6 +170,13 @@ TASKS: dict[str, dict] = {
         "sequence_length": 20,
         "steps": 35_000,
     },
+    "eight_word_four_letter_ns": {
+        **dict(_SIX_WORD_NS_DEFAULTS),
+        "regime": "eight_word_four_letter",
+        "viz_length": 32,
+        "sequence_length": 16,
+        "steps": 30_000,
+    },
     "sixteen_word": dict(_SIXTEEN_WORD_SPACED_DEFAULTS),
     "sixteen_word_ns": dict(_SIXTEEN_WORD_NS_DEFAULTS),
     "sixteen_word_mixed": dict(_MIXED_LENGTH_DEFAULTS),
@@ -184,7 +198,6 @@ TASKS: dict[str, dict] = {
     "sixteen_word_five_letter_ns": {
         **dict(_SIXTEEN_WORD_NS_DEFAULTS),
         "regime": "sixteen_word_five_letter",
-        "hidden_size": 128,
         "learning_rate": 0.04,
         "viz_length": 81,
         "sequence_length": 32,
@@ -318,6 +331,24 @@ TASKS: dict[str, dict] = {
     "three_word_ca_hub_ns": {
         **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
         "regime": "three_word_ca_hub",
+    },
+    "thirty_two_word_mixed_345_ns": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "thirty_two_word_mixed_345",
+        "learning_rate": 0.04,
+        "chars": 70_000,
+        "steps": 80_000,
+        "viz_length": 128,
+        "sequence_length": 22,
+        "stall_patience_evals": 48,
+        "stall_min_delta": 0.0015,
+        "stall_min_iter": 24_000,
+    },
+    "sixteen_word_mixed_345_ns": {
+        **dict(_SIXTEEN_WORD_NS_DEFAULTS),
+        "regime": "sixteen_word_mixed_345",
+        "viz_length": 64,
+        "sequence_length": 16,
     },
 }
 

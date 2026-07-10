@@ -159,6 +159,21 @@ def build_vocab(n_words: int, length: int) -> list[str]:
     return words
 
 
+def build_mixed_vocab(n_words: int, lengths: tuple[int, ...]) -> list[str]:
+    """Build ``n_words`` words split evenly across fixed word lengths."""
+    if n_words < 2:
+        raise ValueError("need at least 2 words")
+    if not lengths:
+        raise ValueError("need at least one length")
+    base, rem = divmod(n_words, len(lengths))
+    counts = [base + (1 if i < rem else 0) for i in range(len(lengths))]
+    words: list[str] = []
+    for length, count in zip(lengths, counts):
+        if count > 0:
+            words.extend(build_vocab(count, length))
+    return words
+
+
 def sweep_task_config(n_words: int, length: int) -> dict[str, object]:
     """Training/viz defaults scaled to vocabulary size and word length."""
     hidden = 32 + n_words + 4 * length

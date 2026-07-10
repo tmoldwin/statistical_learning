@@ -25,6 +25,7 @@ _DEFAULT_MAX_PCS = 20
 _DEFAULT_MAX_K = _DEFAULT_MAX_PCS
 _DEFAULT_TEST_SIZE = 0.2
 _DEFAULT_RANDOM_STATE = 0
+_DEFAULT_NEURON_RANDOM_TRIALS = 30
 
 
 def fit_pca_k(
@@ -50,6 +51,14 @@ def project_pca_k(
 ) -> np.ndarray:
     """Project ``points`` onto fitted PCA axes."""
     return (points - mean) @ components.T
+
+
+def select_random_neurons(hidden_dim: int, k: int, rng: np.random.Generator) -> np.ndarray:
+    """Uniform random subset of ``k`` hidden units (no replacement)."""
+    k_eff = min(int(k), hidden_dim)
+    if k_eff < 1:
+        raise ValueError("need at least one neuron")
+    return rng.choice(hidden_dim, size=k_eff, replace=False)
 
 
 def select_top_variance_neurons(x_train: np.ndarray, k: int) -> np.ndarray:
@@ -195,12 +204,17 @@ def decode_feature_curve(
     basis: str = "pca",
     test_size: float = _DEFAULT_TEST_SIZE,
     random_state: int = _DEFAULT_RANDOM_STATE,
+    neuron_sampling: str = "variance",
+    n_random_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
+    neuron_rng_seed: int = 0,
 ) -> dict[str, Any] | None:
     """Train/test linear probe on full hidden state and top-k PCA or neuron subspace."""
     from sklearn.model_selection import train_test_split
 
     if basis not in ("pca", "neuron"):
         raise ValueError(f"unknown basis {basis!r}")
+    if neuron_sampling not in ("variance", "random"):
+        raise ValueError(f"unknown neuron_sampling {neuron_sampling!r}")
 
     y_arr = np.asarray(y)
     if len(y_arr) < 4:
@@ -249,23 +263,45 @@ def decode_feature_curve(
         max_k=max_k,
     )
     by_k: dict[int, float] = {}
+    by_k_std: dict[int, float] = {}
+    hidden_dim = x.shape[1]
+    neuron_rng = np.random.default_rng(neuron_rng_seed)
     for k in k_values:
         if basis == "pca":
             _, mean, components = fit_pca_k(x_train, k)
             xtr = project_pca_k(x_train, mean, components)
             xte = project_pca_k(x_test, mean, components)
-        else:
+            by_k[k] = _fit_probe_accuracy(
+                xtr, y_train, xte, y_test, n_classes=n_classes, k=k,
+            )
+        elif neuron_sampling == "variance":
             idx = select_top_variance_neurons(x_train, k)
             xtr = project_neurons(x_train, idx)
             xte = project_neurons(x_test, idx)
-        by_k[k] = _fit_probe_accuracy(
-            xtr, y_train, xte, y_test, n_classes=n_classes, k=k,
-        )
+            by_k[k] = _fit_probe_accuracy(
+                xtr, y_train, xte, y_test, n_classes=n_classes, k=k,
+            )
+        else:
+            accs = []
+            for _ in range(n_random_trials):
+                idx = select_random_neurons(hidden_dim, k, neuron_rng)
+                xtr = project_neurons(x_train, idx)
+                xte = project_neurons(x_test, idx)
+                accs.append(
+                    _fit_probe_accuracy(
+                        xtr, y_train, xte, y_test, n_classes=n_classes, k=k,
+                    )
+                )
+            acc_arr = np.asarray(accs, dtype=float)
+            by_k[k] = float(np.nanmean(acc_arr))
+            by_k_std[k] = (
+                float(np.nanstd(acc_arr, ddof=1)) if np.sum(np.isfinite(acc_arr)) > 1 else 0.0
+            )
 
     full_hidden = _fit_probe_accuracy(
         x_train, y_train, x_test, y_test, n_classes=n_classes, k=None,
     )
-    return {
+    out: dict[str, Any] = {
         "chance": chance,
         "basis": basis,
         "n_classes": int(n_classes),
@@ -274,16 +310,25 @@ def decode_feature_curve(
         "full_hidden": full_hidden,
         "by_k": by_k,
     }
+    if basis == "neuron" and neuron_sampling == "random":
+        out["neuron_sampling"] = "random"
+        out["n_random_trials"] = int(n_random_trials)
+        out["by_k_std"] = by_k_std
+    return out
 
 
-def _curve_to_list(curve: dict[str, Any], *, max_k: int) -> list[float]:
-    return [curve["by_k"].get(k, float("nan")) for k in range(1, max_k + 1)]
+def _curve_to_list(curve: dict[str, Any], *, max_k: int, field: str = "by_k") -> list[float]:
+    data = curve.get(field) or {}
+    return [data.get(k, float("nan")) for k in range(1, max_k + 1)]
 
 
 def compute_panel_decoding(
     ctx: TaskVizContext,
     *,
     max_k: int = _DEFAULT_MAX_K,
+    neuron_sampling: str = "variance",
+    n_random_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
+    neuron_rng_seed: int = 0,
 ) -> dict[str, Any]:
     """Decode all features for one (task, seed) checkpoint."""
     feature_data = prepare_decoding_data(ctx)
@@ -300,7 +345,12 @@ def compute_panel_decoding(
         n_samples = max(n_samples, len(y_feat))
         label_null = empirical_null_chance(feat, y_feat)
         curve_pca = decode_feature_curve(x_feat, y_feat, max_k=max_k, basis="pca")
-        curve_neu = decode_feature_curve(x_feat, y_feat, max_k=max_k, basis="neuron")
+        curve_neu = decode_feature_curve(
+            x_feat, y_feat, max_k=max_k, basis="neuron",
+            neuron_sampling=neuron_sampling,
+            n_random_trials=n_random_trials,
+            neuron_rng_seed=neuron_rng_seed,
+        )
         if curve_pca is None and curve_neu is None:
             features_out[feat] = {"error": "insufficient samples or classes"}
             continue
@@ -322,6 +372,12 @@ def compute_panel_decoding(
         if curve_neu is not None:
             entry["full_hidden_neurons"] = curve_neu["full_hidden"]
             entry["by_k_neurons"] = _curve_to_list(curve_neu, max_k=max_k)
+            if curve_neu.get("neuron_sampling") == "random":
+                entry["neuron_sampling"] = "random"
+                entry["n_neuron_trials"] = curve_neu.get("n_random_trials")
+                entry["by_k_neurons_std"] = _curve_to_list(
+                    curve_neu, max_k=max_k, field="by_k_std",
+                )
         features_out[feat] = entry
 
     null_chance = {

@@ -348,12 +348,16 @@ def plot_hidden_states_heatmap(
         vmax = None if use_relu else 1.0
 
     default_title = (
-        f"Hidden state activations ({act_label} output) over the input sequence"
+        f"h activations ({act_label}) · timesteps (input letters)"
         if y_label == "hidden unit"
         else f"{y_label} over the input sequence"
     )
     if cluster_units:
-        default_title += " · units hierarchically clustered"
+        default_title += " · units clustered"
+
+    axis_ylabel = "h" if y_label == "hidden unit" else y_label
+    heat_h = float(min(8.0, max(4.0, hidden_size * 0.12)))
+    heat_w = float(max(10.0, length * 0.12))
 
     if cluster_units:
         unit_labels = [
@@ -365,6 +369,7 @@ def plot_hidden_states_heatmap(
             index=unit_labels,
             columns=x_labels,
         )
+        cb_label = colorbar_label or (f"activation ({act_label})" if not use_raw else "value")
         grid = sns.clustermap(
             data,
             row_cluster=True,
@@ -375,9 +380,10 @@ def plot_hidden_states_heatmap(
             vmin=vmin,
             vmax=vmax,
             center=None if use_relu or use_raw else 0.0,
-            figsize=(max(12, length * 0.15), max(2.5, hidden_size * 0.35)),
+            figsize=(heat_w + 0.8, min(6.8, heat_h)),
             dendrogram_ratio=(0.08, 0.0),
-            cbar_kws={"label": colorbar_label or (f"activation ({act_label})" if not use_raw else "value")},
+            cbar=False,
+            cbar_pos=None,
             xticklabels=True,
             yticklabels=True,
         )
@@ -393,9 +399,21 @@ def plot_hidden_states_heatmap(
             _color_tick_labels_by_state_ids(grid.ax_heatmap.get_xticklabels(), state_ids)
             x_axis += " · tick color = min DFA state"
         grid.ax_heatmap.set_xlabel(x_axis)
-        grid.ax_heatmap.set_ylabel(y_label)
-        grid.ax_heatmap.tick_params(axis="x", labelsize=7)
-        grid.ax_heatmap.tick_params(axis="y", labelsize=8)
+        # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title
+        # that seaborn places to the right and can collide with the colorbar.
+        grid.ax_heatmap.set_ylabel("")
+        grid.ax_heatmap.tick_params(axis="x", labelsize=9)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=7)
+        for tick in grid.ax_heatmap.get_xticklabels():
+            tick.set_fontweight("bold")
+        # Colorbar to the right of the heatmap, clear of the row dendrogram.
+        mappable = grid.ax_heatmap.collections[0]
+        cbar = grid.fig.colorbar(
+            mappable, ax=grid.ax_heatmap,
+            fraction=0.03, pad=0.12, shrink=0.45,
+        )
+        cbar.set_label(cb_label, fontsize=8)
+        cbar.ax.tick_params(labelsize=7)
         grid.fig.suptitle(
             _condensed_plot_title(title or default_title, condensed),
             y=1.02,
@@ -406,8 +424,7 @@ def plot_hidden_states_heatmap(
         print(f"wrote {save_path}")
         return
 
-    fig, ax = plt.subplots(figsize=(max(12, length * 0.15),
-                                    max(2.5, hidden_size * 0.35)))
+    fig, ax = plt.subplots(figsize=(heat_w, heat_h))
     im = ax.imshow(
         hidden_states.T,
         aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax,
@@ -431,13 +448,13 @@ def plot_hidden_states_heatmap(
         _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
         x_axis += " · tick color = min DFA state"
     ax.set_xlabel(x_axis)
-    ax.set_ylabel(y_label)
+    ax.set_ylabel(axis_ylabel)
     ax.set_title(
         _condensed_plot_title(title or default_title, condensed)
     )
 
     cb_label = colorbar_label or (f"activation ({act_label})" if not use_raw else "value")
-    fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01, label=cb_label)
+    fig.colorbar(im, ax=ax, fraction=0.02, pad=0.02, shrink=0.6, label=cb_label)
     fig.tight_layout()
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
@@ -1844,7 +1861,7 @@ def plot_hidden_states_clustermap(
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
     repr_label: str = "hidden state",
-    dim_label: str = "hidden unit",
+    dim_label: str = "h",
 ):
     """Heatmap (dims × timesteps) with seaborn clustermap layout."""
     prefix_keys: list[str] | None = None
@@ -1863,9 +1880,13 @@ def plot_hidden_states_clustermap(
     n_rows, n_cols = hidden_states.shape
     if n_rows == 0:
         return
-    col_labels = [f"{dim_label}{i}" for i in range(n_cols)]
+    unit_prefix = "h" if dim_label in ("h", "hidden unit") else dim_label
+    axis_ylabel = "h" if dim_label in ("h", "hidden unit") else dim_label
+    col_labels = [f"{unit_prefix}{i}" for i in range(n_cols)]
     # Flip orientation: units on rows, timesteps on columns (makes long sequences readable).
     data = pd.DataFrame(hidden_states, index=row_labels, columns=col_labels).T
+    heat_w = float(max(10.0, n_rows * 0.18))
+    heat_h = float(min(9.0, max(5.0, n_cols * 0.14)))
 
     grid = sns.clustermap(
         data,
@@ -1875,8 +1896,8 @@ def plot_hidden_states_clustermap(
         vmin=-1,
         vmax=1,
         center=0,
-        figsize=(max(10, n_rows * 0.24), max(6, n_cols * 0.55)),
-        dendrogram_ratio=(0.12, 0.1),
+        figsize=(heat_w, heat_h),
+        dendrogram_ratio=(0.10, 0.08),
         cbar=False,
         cbar_pos=None,
         xticklabels=True,
@@ -1898,16 +1919,22 @@ def plot_hidden_states_clustermap(
         )
         xlabel += " · tick color = min DFA state"
     grid.ax_heatmap.set_xlabel(xlabel)
-    grid.ax_heatmap.set_ylabel(dim_label)
-    grid.ax_heatmap.tick_params(axis="y", labelsize=8)
-    grid.ax_heatmap.tick_params(axis="x", labelsize=7)
-    grid.fig.suptitle(
-        _condensed_plot_title(
-            f"{repr_label} clustered (dims × timesteps) · {original_vocabulary_title(chars, text)}",
-            condensed,
-        ),
-        y=1.02, fontsize=11,
+    grid.ax_heatmap.set_ylabel("")
+    grid.ax_heatmap.tick_params(axis="y", labelsize=7)
+    grid.ax_heatmap.tick_params(axis="x", labelsize=9)
+    for tick in grid.ax_heatmap.get_xticklabels():
+        tick.set_fontweight("bold")
+    short_title = (
+        f"{'h' if repr_label == 'hidden state' else repr_label} clustered by prefix"
+        if condensed is not None
+        else f"{'h' if repr_label == 'hidden state' else repr_label} clustered (timesteps)"
     )
+    if condensed is not None:
+        short_title = (
+            f"{short_title} · {len(condensed.labels)} prefixes "
+            f"(avg over {sum(condensed.counts)} steps)"
+        )
+    grid.fig.suptitle(short_title, y=1.02, fontsize=11)
     grid.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(grid.fig)
     print(f"wrote {save_path}")
@@ -3844,7 +3871,12 @@ def _color_tick_labels_by_state_ids(
         order = list(range(min(len(ticks), len(state_ids))))
     for tick, idx in zip(ticks, order):
         if 0 <= idx < len(state_ids):
-            tick.set_color(state_colors[state_ids[idx]])
+            # Darken for readability on white backgrounds.
+            rgba = plt.matplotlib.colors.to_rgba(state_colors[state_ids[idx]])
+            rgb = np.asarray(rgba[:3], dtype=float)
+            dark = tuple(np.clip(rgb * 0.55, 0.0, 0.55)) + (1.0,)
+            tick.set_color(dark)
+            tick.set_fontweight("bold")
 
 
 def prefix_annotation_label(
@@ -4515,6 +4547,7 @@ def _plot_2d_feature_colored_pca_panel(
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
     annot_style = (annot_style or "compact").lower()
     text_only = annot_style == "annots_only"
+    draw_labels = annot_style not in ("none", "points", "")
 
     point_colors, cat_to_color, legend_labels = _feature_point_colors_for_timesteps(
         feat, timestep_labels, automaton, n, bold=text_only,
@@ -4537,12 +4570,12 @@ def _plot_2d_feature_colored_pca_panel(
         )
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
-    if annot_style == "compact":
+    if draw_labels and annot_style == "compact":
         _annotate_feature_panel_within_axes(
             ax, projected, display_prefixes, point_colors,
             xlim=xlim, ylim=ylim, fontsize=7,
         )
-    elif annot_style == "annots_only":
+    elif draw_labels and annot_style == "annots_only":
         label_stroke = path_effects.withStroke(linewidth=0.6, foreground="black")
         for xy, prefix, color in zip(projected, display_prefixes, point_colors):
             ax.text(
@@ -4551,7 +4584,7 @@ def _plot_2d_feature_colored_pca_panel(
                 ha="center", va="center", zorder=5, clip_on=True,
                 path_effects=[label_stroke, path_effects.Normal()],
             )
-    elif annot_style == "leaders":
+    elif draw_labels and annot_style == "leaders":
         _annotate_trajectory_labels(
             ax, projected, display_prefixes,
             label_colors=point_colors,
@@ -4655,7 +4688,7 @@ def _feature_pca_suptitle(
     if repr_name:
         base = f"{repr_name} · {dim_label} · {vocab_part}"
     else:
-        base = f"{dim_label} of hidden states · {vocab_part}"
+        base = f"{dim_label} of h · {vocab_part}"
     return _condensed_plot_title(base, condensed)
 
 
@@ -4736,7 +4769,7 @@ def plot_dimred_context_panels(
     label_words: list[str] | None = None,
     embed_method: str = "pca",
 ) -> None:
-    """2×2 embedding panels colored by char, position, position-from-end, and DFA state."""
+    """Large prefix-labeled PCA on top; feature-colored circles (no labels) below."""
     _ = chars
     ctx = _pca_feature_panel_context(
         text, hidden_states,
@@ -4760,17 +4793,45 @@ def plot_dimred_context_panels(
     xlim = (float(pca_xy[:, 0].min() - pad_x), float(pca_xy[:, 0].max() + pad_x))
     ylim = (float(pca_xy[:, 1].min() - pad_y), float(pca_xy[:, 1].max() + pad_y))
 
-    fig = plt.figure(figsize=(22, 19))
-    axes = _feature_pca_figure_gridspec(fig, 2, 2)
-    for ax, feat in zip(axes, ctx["features"]):
+    features = list(ctx["features"])
+    n_feat = len(features)
+    fig = plt.figure(figsize=(15, 9.5))
+    gs = fig.add_gridspec(
+        2, n_feat,
+        height_ratios=[1.35, 1.0],
+        top=0.88,
+        bottom=0.08,
+        left=0.06,
+        right=0.98,
+        wspace=0.28,
+        hspace=0.32,
+    )
+    ax_main = fig.add_subplot(gs[0, :])
+    # Prefer DFA coloring on the overview when available.
+    main_feat = "dfa" if "dfa" in features else features[0]
+    _plot_2d_feature_colored_pca_panel(
+        ax_main, pca_xy, ctx["prefix_labels"], main_feat, ctx["timestep_labels"], automaton,
+        title="prefixes",
+        xlabel=xlabel,
+        ylabel=ylabel,
+        xlim=xlim,
+        ylim=ylim,
+        annot_style=annot_style if annot_style != "none" else "leaders",
+        show_legend=True,
+    )
+
+    for col, feat in enumerate(features):
+        ax = fig.add_subplot(gs[1, col])
         _plot_2d_feature_colored_pca_panel(
             ax, pca_xy, ctx["prefix_labels"], feat, ctx["timestep_labels"], automaton,
             title=ctx["feature_display"].get(feat, feat),
             xlabel=xlabel,
-            ylabel=ylabel,
+            ylabel=ylabel if col == 0 else "",
             xlim=xlim,
             ylim=ylim,
-            annot_style=annot_style,
+            annot_style="none",
+            show_legend=True,
+            minimal_axes=(col > 0),
         )
 
     fig.suptitle(
@@ -4778,7 +4839,7 @@ def plot_dimred_context_panels(
             repr_name=None, words=words, chars=chars, condensed=condensed,
             dim_label=embed_dim_label(embed_method),
         ),
-        fontsize=13,
+        fontsize=12,
         y=0.97,
     )
     fig.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -6875,6 +6936,105 @@ def _style_trajectory_row_3d(
         ax.grid(True, linestyle=":", alpha=0.35)
 
 
+def plot_closed_loop_trajectory_panel(
+    text: str,
+    hidden_states: np.ndarray,
+    save_path: str,
+    *,
+    model=None,
+    closed_loop_steps: int | None = None,
+    closed_loop_seed: int = 0,
+    spaced: bool = False,
+    words: list[str] | None = None,
+    embed_method: str = "pca",
+    condensed: CondensedView | None = None,
+    automaton: MinimizedVocabAutomaton | None = None,
+    annot_style: str = "leaders",
+) -> None:
+    """Single large closed-loop PCA panel with prefix annotations."""
+    _ = automaton
+    _ = annot_style
+    if model is None:
+        print(f"skip {save_path}: closed-loop panel needs a model")
+        return
+    if condensed is not None:
+        words = condensed.words or words
+        spaced = condensed.spaced
+        hidden_states = condensed.hidden_states
+    vocab_words = _trajectory_vocabulary_words(text, words)
+    if not vocab_words:
+        print(f"skip {save_path}: no vocabulary words")
+        return
+
+    segments = corpus_segments(text, list(_corpus_vocab(text, vocab_words) or []), spaced=spaced)
+    trajs = trajectories_for_embed(hidden_states, segments=segments) if segments else None
+    projected, mean, components, evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
+    del projected
+    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
+    seed_letters = _trajectory_seed_letters(model, vocab_words)
+    seed_char = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=spaced)
+    if closed_loop_steps is not None:
+        steps = max(1, int(closed_loop_steps))
+    else:
+        steps = _one_vocab_cycle_steps(vocab_words, spaced=spaced)
+    word_colors = _vocab_word_colors(vocab_words)
+
+    fig, ax = plt.subplots(figsize=(11, 9), constrained_layout=True)
+    limit_arrays: list[np.ndarray] = []
+    rng = np.random.default_rng(int(closed_loop_seed))
+    gen_z, prefix_labels, word_at_step = _closed_loop_rollout_pca(
+        model,
+        seed_text=seed_char,
+        steps=steps,
+        rng=rng,
+        mean=mean,
+        components=components,
+        vocab_words=vocab_words,
+        spaced=spaced,
+    )
+    if len(gen_z) < 2:
+        plt.close(fig)
+        print(f"skip {save_path}: closed-loop rollout too short")
+        return
+    limit_arrays.append(gen_z)
+    _plot_segmented_closed_loop_rollout(
+        ax, gen_z, prefix_labels, word_at_step,
+        word_colors=word_colors,
+        vocab_words=vocab_words,
+        annotate=False,
+        annotate_fontsize=8.0,
+        is_3d=False,
+        linewidth=2.0,
+        alpha=0.85,
+    )
+    display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
+    _annotate_trajectory_labels(
+        ax, gen_z, display_prefixes,
+        fontsize=8.0,
+        dedupe=True,
+        use_leaders=True,
+        leader_linewidth=0.45,
+        label_colors=[
+            word_colors.get(word_at_step[i], word_colors["?"])
+            for i in range(len(display_prefixes))
+        ],
+    )
+    _style_trajectory_row_2d(
+        [ax], limit_arrays,
+        xlabel=xlabel, ylabel=ylabel, model=model,
+        mean=mean, components=components, fig=fig,
+    )
+    ax.set_title(
+        f"Closed-loop generation · seed '{seed_char}' · {steps} steps · prefix labels"
+    )
+    _add_trajectory_word_legend(fig, word_colors)
+    fig.savefig(save_path, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
 def plot_space_to_space_trajectories(
     text: str,
     hidden_states: np.ndarray,
@@ -8523,11 +8683,12 @@ def main() -> None:
         cv = condensed_view
 
         with timer.section("activations"):
+            # Timestep heatmap: actual input letters on the x-axis (not condensed).
             plot_hidden_states_heatmap(
                 text, hidden_states,
-                save_path=plot_path("activation_heatmap.png"),
+                save_path=str(numbered_plot_path(out_dir, "activation_heatmap.png")),
                 act_label=act_label,
-                condensed=cv,
+                condensed=None,
                 exp_name=args.exp,
                 automaton=automaton,
                 spaced=spaced,
@@ -8617,6 +8778,13 @@ def main() -> None:
                 _plot_embed_variants(
                     plot_space_to_space_trajectories,
                     plot_path("word_trajectories_pca.png"),
+                    text=text, hidden_states=hidden_states, model=model,
+                    spaced=spaced, automaton=automaton,
+                    annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,
+                )
+                _plot_embed_variants(
+                    plot_closed_loop_trajectory_panel,
+                    plot_path("word_trajectories_closed_loop.png"),
                     text=text, hidden_states=hidden_states, model=model,
                     spaced=spaced, automaton=automaton,
                     annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,

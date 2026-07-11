@@ -62,7 +62,7 @@ def _chance_correct_curve(
     return y_corr, np.asarray(y_std, dtype=float) * scale
 
 
-def _apply_k_ticks(ax, max_k: int, *, fontsize: float = 8, show_labels: bool = True) -> None:
+def _apply_k_ticks(ax, max_k: int, *, fontsize: float = 10, show_labels: bool = True) -> None:
     full_x = float(max_k) + 1.5
     xticks = [t for t in (1, 5, 10, 15, 20) if t <= max_k]
     if max_k not in xticks:
@@ -70,7 +70,12 @@ def _apply_k_ticks(ax, max_k: int, *, fontsize: float = 8, show_labels: bool = T
     ax.set_xlim(0.6, full_x + 0.6)
     ax.set_xticks([*xticks, full_x])
     if show_labels:
-        ax.set_xticklabels([*(str(t) for t in xticks), "full"], fontsize=fontsize)
+        ax.set_xticklabels(
+            [*(str(t) for t in xticks), "full"],
+            fontsize=fontsize,
+            fontweight="bold",
+        )
+        ax.tick_params(axis="x", length=5, width=1.1, pad=4)
     else:
         hide_x_tick_labels(ax)
 
@@ -369,7 +374,7 @@ def plot_aggregated_seed_decode_curves(
     for ax in axes:
         ax.set_ylim(-0.05, 1.05)
         ax.grid(True, alpha=0.3, linewidth=0.5)
-        _apply_k_ticks(ax, max_k, fontsize=8, show_labels=True)
+        _apply_k_ticks(ax, max_k, fontsize=11, show_labels=True)
     legend_handles, legend_labels = axes[0].get_legend_handles_labels()
     if legend_handles:
         fig.legend(
@@ -379,7 +384,7 @@ def plot_aggregated_seed_decode_curves(
         )
     finalize_grid_figure(
         fig,
-        suptitle=f"Linear readout decoding · {task} · mean ± std across seeds {list(seeds)}",
+        suptitle=f"Linear readout decoding · mean ± std across {len(seeds)} seeds",
         top=0.86,
         wspace=0.18,
     )

@@ -32,6 +32,92 @@ from visualize import (
 )
 
 
+def plot_closed_loop_run_seed_row(
+    task: str,
+    *,
+    seeds: tuple[int, ...] = (1, 2, 3, 5, 7, 8, 11, 13, 17, 19, 23, 29),
+    out_path: Path | None = None,
+    model_type: str = "rnn",
+    embed_method: str = "pca",
+    rollout_seed: int = 0,
+    text_chars: int = 100,
+    ncols: int = 4,
+    panel_inches: float = 1.35,
+) -> Path:
+    """Grid of closed-loop trajectories for the same task across training seeds.
+
+    Panel physical size is fixed (``panel_inches``) so the grid stays readable
+    without huge or tiny cells as seed count changes.
+    """
+    from experiment import TASKS, plots_dir
+    from viz.plot_layout import finalize_grid_figure, save_figure
+
+    cap = min(int(TASKS[task].get("viz_length", 80)), text_chars)
+    n = len(seeds)
+    ncols = max(1, int(ncols))
+    nrows = int(np.ceil(n / ncols))
+    panel = float(panel_inches)
+    fig_w = panel * ncols + 0.55
+    fig_h = panel * nrows + 0.45
+    fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h), squeeze=False)
+    xlabel, ylabel = "PC1", "PC2"
+    for idx, seed in enumerate(seeds):
+        row, col = divmod(idx, ncols)
+        ax = axes[row, col]
+        try:
+            ctx = load_task_viz_context(
+                task, model_type=model_type, seed=seed, text_chars=cap,
+            )
+        except Exception as exc:  # noqa: BLE001
+            ax.set_visible(False)
+            ax.text(0.5, 0.5, f"missing\n{exc.__class__.__name__}", ha="center", va="center", fontsize=6)
+            continue
+        _plot_task_closed_loop_panel(
+            ax, ctx, is_3d=False, rollout_seed=rollout_seed,
+            embed_method=embed_method, average_trials=1,
+            minimal_axes=True, annotate=False, annotate_fontsize=4.5,
+            linewidth=1.05, arrow_mutation_scale=7.0,
+        )
+        ax.set_title(f"seed {seed}", fontsize=7, pad=1)
+
+    for idx in range(n, nrows * ncols):
+        row, col = divmod(idx, ncols)
+        axes[row, col].set_visible(False)
+
+    for row in range(nrows):
+        for col in range(ncols):
+            ax = axes[row, col]
+            if not ax.get_visible():
+                continue
+            show_x = row == nrows - 1
+            show_y = col == 0
+            ax.tick_params(
+                labelsize=4.5, left=show_y, bottom=show_x,
+                labelleft=show_y, labelbottom=show_x, length=2, pad=1,
+            )
+            ax.set_ylabel(ylabel if show_y else "", fontsize=6.5, labelpad=1)
+            ax.set_xlabel(xlabel if (show_x and col == ncols // 2) else "", fontsize=6.5, labelpad=1)
+            ax.grid(True, linestyle=":", alpha=0.28)
+
+    finalize_grid_figure(
+        fig,
+        suptitle="Closed-loop trajectories · same condition · panels = training seed",
+        top=0.94,
+        bottom=0.08,
+        left=0.06,
+        hspace=0.22,
+        wspace=0.12,
+    )
+
+    if out_path is None:
+        out_path = Path(plots_dir(task, model_type)) / "trajectories" / "closed_loop_run_seed_row.png"
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_figure(fig, out_path, dpi=160)
+    print(f"wrote {out_path}")
+    return out_path
+
+
 def _closed_loop_panel_limits(
     ax,
     limit_arrays: list,
@@ -72,6 +158,8 @@ def _plot_task_closed_loop_panel(
     minimal_axes: bool = False,
     annotate: bool = True,
     annotate_fontsize: float = 8.0,
+    linewidth: float = 1.6,
+    arrow_mutation_scale: float = 12.0,
 ) -> list:
     fit_states, trajs = _states_after_first_word(
         ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
@@ -107,6 +195,8 @@ def _plot_task_closed_loop_panel(
         average_trials=average_trials,
         annotate=annotate,
         annotate_fontsize=annotate_fontsize,
+        linewidth=linewidth,
+        arrow_mutation_scale=arrow_mutation_scale,
     )
     _closed_loop_panel_limits(
         ax, limit_arrays, is_3d=is_3d, xlabel=xlabel, ylabel=ylabel, zlabel=zlabel,

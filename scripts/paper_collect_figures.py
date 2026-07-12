@@ -86,6 +86,8 @@ def paper_manifest() -> list[FigureRef]:
                   _anchor("decoding/decoding_curves_seed_mean.png")),
         FigureRef("main", "fig_word_trajectories.jpg",
                   _anchor("trajectories/word_trajectories_closed_loop.png")),
+        FigureRef("main", "fig_word_trajectories_by_start.jpg",
+                  _anchor("trajectories/closed_loop_run_seed_row.png")),
         FigureRef("compare", "fig_traj_by_length.jpg", traj_by_length,
                   as_jpg=traj_by_length.suffix.lower() != ".jpg"),
         FigureRef("compare", "fig_traj_by_wordcount.jpg", traj_by_count,

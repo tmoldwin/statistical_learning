@@ -369,7 +369,7 @@ def plot_aggregated_seed_decode_curves(
     axes[0].set_title("top-k PCA", fontsize=10)
     axes[0].set_xlabel("# PCs  |  ★ = full hidden", fontsize=9)
     axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
-    axes[1].set_title(f"random neurons · mean ± std across {len(seeds)} seeds", fontsize=9)
+    axes[1].set_title("random neurons", fontsize=10)
     axes[1].set_xlabel(f"# neurons  |  ★ = full  |  {n_neuron_trials} draws/seed", fontsize=9)
     for ax in axes:
         ax.set_ylim(-0.05, 1.05)
@@ -379,13 +379,13 @@ def plot_aggregated_seed_decode_curves(
     if legend_handles:
         fig.legend(
             legend_handles, legend_labels,
-            loc="upper center", bbox_to_anchor=(0.5, 1.02),
-            ncol=4, fontsize=8, frameon=False,
+            loc="upper center", bbox_to_anchor=(0.5, 0.915),
+            ncol=4, fontsize=8, frameon=False, columnspacing=1.2,
         )
     finalize_grid_figure(
         fig,
         suptitle=f"Linear readout decoding · mean ± std across {len(seeds)} seeds",
-        top=0.86,
+        top=0.78,
         wspace=0.18,
     )
     save_figure(fig, save_path, dpi=150)

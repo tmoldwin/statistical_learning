@@ -117,9 +117,8 @@ def plot_weight_matrices_by_seed(
     seeds: tuple[int, ...] = (1, 2, 3, 5, 7),
     model_type: str = "rnn",
 ) -> dict[str, Any]:
-    """4×N grid: rows = init/final W_xh, init/final W_hh; columns = seeds.
+    """One row of final clustered W_xh across seeds (compact paper panel).
 
-    Each panel is clustered on its own stage and has its own color scale.
     Also writes motif metrics (init + final) across seeds next to the figure.
     """
     from experiment import checkpoint_path
@@ -129,19 +128,14 @@ def plot_weight_matrices_by_seed(
     save_path.parent.mkdir(parents=True, exist_ok=True)
     n_seeds = len(seeds)
     cmap = plt.cm.RdBu_r
-    row_specs = [
-        ("init_xh", r"Init $W_{xh}$"),
-        ("final_xh", r"Final $W_{xh}$"),
-        ("init_hh", r"Init $W_{hh}$"),
-        ("final_hh", r"Final $W_{hh}$"),
-    ]
 
     fig, axes = plt.subplots(
-        4, n_seeds,
-        figsize=(2.15 * n_seeds + 1.4, 9.6),
+        1, n_seeds,
+        figsize=(1.55 * n_seeds + 1.1, 2.55),
         squeeze=False,
     )
     motif_by_seed: dict[str, Any] = {"seeds": list(seeds), "init": {}, "final": {}}
+    char_labels: list[str] | None = None
 
     for col, seed in enumerate(seeds):
         model = load_model_for_viz(str(checkpoint_path(exp, model_type, seed=seed)), model_type)
@@ -155,61 +149,44 @@ def plot_weight_matrices_by_seed(
                     w_in_i, w_rec_i, _w_out_i, np.zeros(w_in_i.shape[0]), np.asarray(dale_sign),
                 )
 
-        order_i = _cluster_unit_order(w_in_i, w_rec_i)
+        if char_labels is None:
+            chars = list(model["chars"])
+            char_labels = [c if c not in (" ", "\n", "\t") else repr(c)[1:-1] for c in chars]
+
         order_f = _cluster_unit_order(w_in_f, w_rec_f)
-        panels = {
-            "init_xh": w_in_i[order_i].T,
-            "final_xh": w_in_f[order_f].T,
-            "init_hh": w_rec_i[np.ix_(order_i, order_i)],
-            "final_hh": w_rec_f[np.ix_(order_f, order_f)],
-        }
+        data = w_in_f[order_f].T
         motif_by_seed["init"][str(seed)] = compute_weight_motif_metrics(w_in_i, w_rec_i)
         motif_by_seed["final"][str(seed)] = compute_weight_motif_metrics(w_in_f, w_rec_f)
 
-        for row, (key, row_label) in enumerate(row_specs):
-            ax = axes[row, col]
-            data = panels[key]
-            vmax = max(symmetric_abs_vmax(data), 1e-9)
-            im = ax.imshow(
-                data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
-                interpolation="nearest", origin="lower",
-            )
-            is_xh = key.endswith("_xh")
-            x_name = "hidden unit (clustered)" if is_xh else "source h (clustered)"
-            y_name = "input char" if is_xh else "target h (clustered)"
-            if row == 0:
-                ax.set_title(f"seed {seed}", fontsize=9)
-            if col == 0:
-                ax.set_ylabel(f"{row_label}\n{y_name}", fontsize=7)
-            else:
-                ax.set_ylabel("")
-            # Show x label only on the last row of each matrix family.
-            if row in (1, 3):
-                ax.set_xlabel(x_name, fontsize=6)
-            else:
-                ax.set_xlabel("")
-            ny, nx = data.shape
-            ax.set_xticks([0, max(nx - 1, 0)])
+        ax = axes[0, col]
+        vmax = max(symmetric_abs_vmax(data), 1e-9)
+        im = ax.imshow(
+            data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
+            interpolation="nearest", origin="lower",
+        )
+        ax.set_title(f"seed {seed}", fontsize=8, pad=2)
+        ax.set_xlabel("hidden unit", fontsize=6)
+        ny, nx = data.shape
+        ax.set_xticks([0, max(nx - 1, 0)])
+        ax.tick_params(axis="x", labelsize=5)
+        if col == 0:
+            ax.set_ylabel(r"Final $W_{xh}$" + "\ninput char", fontsize=7)
+            ax.set_yticks(np.arange(len(char_labels)))
+            ax.set_yticklabels(char_labels, fontsize=5)
+        else:
+            ax.set_ylabel("")
             ax.set_yticks([0, max(ny - 1, 0)])
-            if row not in (1, 3):
-                ax.tick_params(axis="x", labelbottom=False)
-            else:
-                ax.tick_params(axis="x", labelsize=5)
-            if col == 0:
-                ax.tick_params(axis="y", labelsize=5)
-            else:
-                ax.tick_params(axis="y", labelleft=False)
-            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, shrink=0.82)
-            cbar.ax.tick_params(labelsize=5)
-            cbar.set_label("weight", fontsize=5)
+            ax.tick_params(axis="y", labelleft=False)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.02, shrink=0.9)
+        cbar.ax.tick_params(labelsize=4)
 
     finalize_grid_figure(
         fig,
-        suptitle=f"{exp} · clustered weight matrices across seeds",
-        top=0.93,
-        hspace=0.42,
-        wspace=0.42,
-        bottom=0.06,
+        suptitle=r"Final clustered $W_{xh}$ across seeds",
+        top=0.82,
+        wspace=0.35,
+        bottom=0.22,
+        left=0.08,
     )
     save_figure(fig, save_path)
     print(f"wrote {save_path}")

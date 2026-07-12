@@ -6148,6 +6148,8 @@ def _plot_letter_seed_closed_loop_on_axis(
     unique_word_labels: bool = False,
     average_trials: int = 0,
     normalize_activity: bool = False,
+    linewidth: float = 1.6,
+    arrow_mutation_scale: float = 12.0,
 ) -> None:
     """Long closed-loop rollout(s); color by segmented vocabulary word."""
     seeds = seed_letters if max_rollouts is None else seed_letters[: max(1, int(max_rollouts))]
@@ -6187,9 +6189,10 @@ def _plot_letter_seed_closed_loop_on_axis(
             annotate=annotate and n_trials == 1,
             annotate_fontsize=annotate_fontsize,
             is_3d=is_3d,
-            linewidth=1.6,
+            linewidth=linewidth,
             alpha=0.30 if n_trials > 1 else 0.82,
             unique_word_labels=unique_word_labels,
+            arrow_mutation_scale=arrow_mutation_scale,
         )
         if n_trials > 1:
             avg_z = _same_length_average_trajectory(trial_z)
@@ -6639,6 +6642,8 @@ def _plot_trajectory_closed_loop_panel(
     normalize_activity: bool = False,
     annotate: bool = True,
     annotate_fontsize: float = 8.0,
+    linewidth: float = 1.6,
+    arrow_mutation_scale: float = 12.0,
 ) -> None:
     _plot_letter_seed_closed_loop_on_axis(
         ax, model,
@@ -6658,6 +6663,8 @@ def _plot_trajectory_closed_loop_panel(
         unique_word_labels=unique_word_labels,
         average_trials=average_trials,
         normalize_activity=normalize_activity,
+        linewidth=linewidth,
+        arrow_mutation_scale=arrow_mutation_scale,
     )
 
 

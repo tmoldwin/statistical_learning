@@ -94,12 +94,10 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_compare_separation.jpg", compare_sep),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
-        FigureRef("main", "fig_weight_structure_metrics.jpg",
-                  _anchor("weights/weight_structure_metrics.png")),
-        FigureRef("main", "fig_weight_input_drive.jpg",
-                  _anchor("weights/weight_input_drive_fraction.png")),
-        FigureRef("main", "fig_weight_motif_summary.jpg",
-                  _anchor("weights/weight_motif_summary.png")),
+        FigureRef("main", "fig_weight_matrices_by_seed.jpg",
+                  _anchor("weights/weight_matrices_by_seed.png")),
+        FigureRef("main", "fig_weight_metrics_all_seeds.jpg",
+                  _anchor("weights/weight_metrics_all_seeds.png")),
     ]
 
 

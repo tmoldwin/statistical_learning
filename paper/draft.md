@@ -8,7 +8,7 @@
 
 Eight-month-old infants can segment continuous speech by tracking transitional probabilities between syllables (Saffran, Aslin, & Newport, 1996). We ask whether a vanilla Elman RNN trained only on next-character prediction develops internal representations aligned with word structure. After learning, the network generates legal vocabulary items, and its hidden states become a continuous embedding of the vocabulary’s minimal DFA.
 
-A four-word demo (*cat*, *met*, *ate*, *tea*) introduces the trie, DFA, learning, and generated text. On a 16-word, 4-letter condition, DFA state explains \(\eta^2 \approx 0.95\) of condensed hidden variance and is linearly decodable from a few principal components (mean ± std across six seeds). Word trajectories form labeled geometric motifs. Cross-condition closed-loop grids then vary word length at fixed vocabulary size, and vocabulary size at fixed word length. Weight structure (clustered init vs final; motif metrics) is reported last.
+A four-word demo (*cat*, *met*, *ate*, *tea*) introduces the trie, DFA, learning, and generated text. On a 16-word, 4-letter condition, DFA state explains \(\eta^2 \approx 0.95\) of condensed hidden variance and is linearly decodable from a few principal components (mean ± std across six seeds). Word trajectories form labeled geometric motifs. Weight structure on that same condition shows letter-columnar \(W_{xh}\) and locally clumped \(W_{hh}\). Cross-condition closed-loop grids then vary word length at fixed vocabulary size, and vocabulary size at fixed word length.
 
 ---
 
@@ -18,7 +18,7 @@ Fluent speech arrives without reliable pauses. Infants can use transitional prob
 
 For a finite vocabulary streamed without separators, optimal next-character prediction depends on the state of the vocabulary’s minimal DFA—the equivalence class of in-word prefixes with identical futures. An Elman RNN has no word units and no boundary channel, yet if it solves the prediction task its hidden state \(\mathbf{h}_t\) must carry that information. We test whether the information is geometrically organized.
 
-**Plan.** (1) Four-word demo. (2) Single 16-word condition: next-character probabilities, activations, PCA + separation, decoding, then closed-loop trajectories. (3) Comparisons across length and vocabulary size (trajectory grids; learning; separation). (4) Weight structure.
+**Plan.** (1) Four-word demo. (2) Single 16-word condition: next-character probabilities, activations, PCA + separation, decoding, trajectories, then weight structure. (3) Comparisons across length and vocabulary size.
 
 ---
 
@@ -28,11 +28,11 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Main condition** (`sixteen_word_four_letter_ns`): bake, cake, lake, rake, bank, tank, rank, sank, late, mate, rate, gate, cant, pant, rant, want.
 
-**Comparisons.** Length at 16 words: 3 / 4 / 5 letter. Vocabulary size at 4-letter words: 8 / 16. Seeds \(\{1,2,3\}\) for grids; decoding aggregates seeds \(\{1,2,3,5,7,8\}\).
+**Comparisons.** Length at 16 words: 3 / 4 / 5 letter. Vocabulary size at 4-letter words: 8 / 16. Seeds \(\{1,2,3\}\) for grids; decoding aggregates seeds \(\{1,2,3,5,7,8\}\); weight metrics use all available checkpoints (\(n=16\)).
 
 **Model.** Elman RNN, \(H = 50\), next-character cross-entropy, early stop on word-error \(\leq 3\%\).
 
-**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; PCA embeddings; feature separation (\(\eta^2\), silhouette, …); linear decoding from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds); closed-loop word trajectories; clustered init-vs-final weights and motif scalars.
+**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; PCA embeddings; feature separation (\(\eta^2\), silhouette, …); linear decoding from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds); closed-loop word trajectories; clustered init-vs-final weights and multi-seed motif scalars.
 
 Trie and DFA figures are shown **only** for the four-word demo.
 
@@ -84,7 +84,7 @@ DFA state dominates (\(\eta^2 \approx 0.95\)). Unit selectivity agrees (populati
 
 ![Figure 12. Linear decoding, mean ± std across seeds 1, 2, 3, 5, 7, 8.](figures/main/fig_decoding_seed_mean.jpg)
 
-Position and DFA saturate within a few PCs; character needs more dimensions. This closes the single-condition state analysis.
+Position and DFA saturate within a few PCs; character needs more dimensions.
 
 ### 3.6 Word trajectories
 
@@ -92,15 +92,27 @@ Position and DFA saturate within a few PCs; character needs more dimensions. Thi
 
 Left: autoregressive generation with prefix labels, segments colored by in-word letter position. Right: letter seed then recurrent dynamics with no further input, colored by timestep; background vector field from the no-input map.
 
-### 3.7 Comparisons across length and vocabulary size
+### 3.7 Weight structure (same 16-word condition)
 
-![Figure 14. Closed-loop trajectories: rows = word length, columns = seed (16 words fixed).](figures/compare/fig_traj_by_length.jpg)
+![Figure 14. Init vs final \(W_{xh}\) and \(W_{hh}\) (2×2); each stage clustered on its own weights.](figures/main/fig05_weights_init_final.jpg)
 
-![Figure 15. Closed-loop trajectories: rows = vocabulary size, columns = seed (4-letter words fixed).](figures/compare/fig_traj_by_wordcount.jpg)
+![Figure 15. Same layout across seeds 1, 2, 3, 5, 7.](figures/main/fig_weight_matrices_by_seed.jpg)
 
-![Figure 16. Learning curves across 3 / 4 / 5 / mixed length (16 words).](figures/compare/fig_compare_learning.jpg)
+![Figure 16. Weight metrics (top; mean ± std, \(n=16\)) and pooled init/final distributions (bottom).](figures/main/fig_weight_metrics_all_seeds.jpg)
 
-![Figure 17. Feature separation across those length conditions.](figures/compare/fig_compare_separation.jpg)
+Final \(W_{xh}\) becomes **letter-columnar**: after clustering, units form coherent vertical stripes (shared signed input profiles). Across all seeds, within-block cohesion rises from \(0.02 \pm 0.02\) to \(0.16 \pm 0.09\). The pooled within-block pairwise-correlation histogram shifts right accordingly. Input/recurrent Frobenius ratio rises from \(0.41 \pm 0.09\) to \(1.53 \pm 0.40\); mean input-drive fraction from \(0.49 \pm 0.01\) to \(0.64 \pm 0.09\), with the per-unit drive-fraction histogram moving toward input dominance.
+
+Final \(W_{hh}\) becomes **locally clumped** along the cluster order: adjacent-unit \(|\mathrm{corr}|\) doubles from \(0.13 \pm 0.03\) to \(0.28 \pm 0.04\) (see sample histogram). Mean within/between \(|W_{hh}|\) stays near 1: both within- and between-block magnitude histograms inflate similarly after learning, so the structure is local neighborhood coupling rather than a clean block-diagonal partition.
+
+### 3.8 Comparisons across length and vocabulary size
+
+![Figure 17. Closed-loop trajectories: rows = word length, columns = seed (16 words fixed).](figures/compare/fig_traj_by_length.jpg)
+
+![Figure 18. Closed-loop trajectories: rows = vocabulary size, columns = seed (4-letter words fixed).](figures/compare/fig_traj_by_wordcount.jpg)
+
+![Figure 19. Learning curves across 3 / 4 / 5 / mixed length (16 words).](figures/compare/fig_compare_learning.jpg)
+
+![Figure 20. Feature separation across those length conditions.](figures/compare/fig_compare_separation.jpg)
 
 | Condition | DFA \(\eta^2\) | Char \(\eta^2\) | Position \(\eta^2\) |
 |-----------|---------------:|----------------:|--------------------:|
@@ -113,23 +125,11 @@ Fixed longer words preserve the strongest DFA geometry; mixed length elevates ch
 
 *(PC variance spectra across word count / length are reserved for the comparison section in a later pass.)*
 
-### 3.8 Weight structure
-
-![Figure 18. Clustered init vs final \(W_{xh}\) and \(W_{hh}\) (2×2, no deltas).](figures/main/fig05_weights_init_final.jpg)
-
-![Figure 19. Init vs final feedforward-balance metrics.](figures/main/fig_weight_structure_metrics.jpg)
-
-![Figure 20. Per-unit input-drive fraction.](figures/main/fig_weight_input_drive.jpg)
-
-![Figure 21. Motif scalars on clustered final weights.](figures/main/fig_weight_motif_summary.jpg)
-
-Input/recurrent Frobenius ratio rises from 0.53 to 2.00; mean input-drive fraction from 0.50 to 0.71; block coupling \(\approx 0.68\).
-
 ---
 
 ## 4. Discussion
 
-Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The four-word demo makes the task transparent. On the 16-word condition, population separation and multi-seed decoding show that automaton state is low-dimensional and stable. Trajectories make word structure visible as repeated paths; length and vocabulary-size grids show how that geometry changes with the lexicon. Weight analyses show learning that strengthens letter-specific input columns while building recurrent coupling.
+Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The four-word demo makes the task transparent. On the 16-word condition, population separation and multi-seed decoding show that automaton state is low-dimensional and stable. Trajectories make word structure visible as repeated paths. Weight analyses on that same condition show letter-columnar input weights and locally clumped recurrent connectivity; length and vocabulary-size grids then show how the geometry changes with the lexicon.
 
 **Limits.** Toy character languages; \(H = 50\); small seed counts for grids; no acoustic noise. The model is a hypothesis generator, not a claim that infants are Elman networks.
 
@@ -139,7 +139,7 @@ Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hi
 
 ## 5. Conclusion
 
-Small next-character RNNs discover word structure in unsegmented streams. States cluster by prefix and DFA identity; decoding recovers that structure across seeds; trajectories and cross-condition grids show how the solution scales with length and vocabulary size.
+Small next-character RNNs discover word structure in unsegmented streams. States cluster by prefix and DFA identity; decoding recovers that structure across seeds; weight matrices develop letter-columnar \(W_{xh}\) and locally clumped \(W_{hh}\); trajectories and cross-condition grids show how the solution scales with length and vocabulary size.
 
 ---
 

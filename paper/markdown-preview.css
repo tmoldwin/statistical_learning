@@ -1,0 +1,41 @@
+/* Light paper preview — markdown inherits the editor theme otherwise (Abyss = black). */
+body {
+  background: #faf9f7 !important;
+  color: #1a1a1a !important;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast {
+  background: #faf9f7 !important;
+  color: #1a1a1a !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+p, li, td, th, blockquote, strong, em, a, code {
+  color: inherit;
+}
+
+a {
+  color: #0b57d0 !important;
+}
+
+code, pre {
+  background: #efece6 !important;
+  color: #1a1a1a !important;
+}
+
+img {
+  background: #fff;
+}
+
+hr {
+  border-color: #ccc !important;
+}
+
+table {
+  border-color: #ccc !important;
+}
+
+th, td {
+  border-color: #ccc !important;
+}

@@ -1,5 +1,8 @@
 {
   "workbench.editorAssociations": {
     "*.md": "vscode.markdown.preview.editor"
-  }
+  },
+  "markdown.styles": [
+    "paper/markdown-preview.css"
+  ]
 }

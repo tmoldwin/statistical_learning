@@ -8660,7 +8660,30 @@ def main() -> None:
         action="store_true",
         help="include W_hh eigenspectra plot (supplementary; off by default)",
     )
+    parser.add_argument(
+        "--only",
+        nargs="+",
+        metavar="SECTION",
+        choices=[
+            "weights",
+            "learning",
+            "activations",
+            "embeddings",
+            "trajectories",
+            "correlation",
+            "selectivity",
+            "decoding",
+        ],
+        help="run only these plot sections (canonical selective replot; no sibling regen scripts)",
+    )
     args = parser.parse_args()
+
+    def want(*sections: str) -> bool:
+        if args.trajectories_only:
+            return "trajectories" in sections
+        if not args.only:
+            return True
+        return any(s in args.only for s in sections)
 
     timer = VizTimer()
     model_file, input_file, out_dir, model_type = resolve_paths(args)
@@ -8674,7 +8697,7 @@ def main() -> None:
     print(f"loaded model: hidden_size={model['hidden_size']}, "
           f"vocab_size={model['vocab_size']}, chars={''.join(model['chars'])}")
 
-    if not is_transformer and not args.trajectories_only:
+    if not is_transformer and not args.trajectories_only and want("weights"):
         with timer.section("weight_plots"):
             plot_learned_weights(model, save_path=str(numbered_plot_path(out_dir, "weights.png")))
             if args.weight_eigenspectra:
@@ -8694,7 +8717,7 @@ def main() -> None:
                     numbered_plot_path(out_dir, "weight_init_vs_final.png"),
                     seed=weight_seed,
                 )
-    if not args.trajectories_only:
+    if want("learning") and not args.trajectories_only:
         with timer.section("learning_curve"):
             plot_learning_curve(
                 model,
@@ -8822,96 +8845,100 @@ def main() -> None:
         cv = condensed_view
 
         with timer.section("activations"):
-            # Timestep heatmap: actual input letters on the x-axis (not condensed).
-            plot_hidden_states_heatmap(
-                text, hidden_states,
-                save_path=str(numbered_plot_path(out_dir, "activation_heatmap.png")),
-                act_label=act_label,
-                condensed=None,
-                exp_name=args.exp,
-                automaton=automaton,
-                spaced=spaced,
-                words=words,
-                cluster_units=True,
-            )
-
-            plot_output_probs(
-                text, output_probs, model["chars"],
-                save_path=plot_path("next_char_prob_sequence_heatmap.png"),
-                condensed=cv,
-                exp_name=args.exp,
-                automaton=automaton,
-                spaced=spaced,
-                words=words,
-            )
-
-            plot_per_char_hidden_state_heatmaps(
-                text, hidden_states, model["chars"],
-                save_path=plot_path("activation_by_input_char.png"),
-                cluster_rows=not args.no_cluster_per_char,
-                spaced=spaced,
-                condensed=cv,
-                automaton=automaton,
-            )
-
-        with timer.section("states_pca"):
-            _plot_embed_variants(
-                plot_pca_context_labels,
-                plot_path("embedding_panels_context.png"),
-                text=text, hidden_states=hidden_states, chars=model["chars"],
-                spaced=spaced, automaton=automaton, condensed=cv, words=words,
-                label_words=label_words if not spaced else None,
-                annot_style=args.dfa_annot_style,
-            )
-
-            dfa_viz_text = text
-            dfa_viz_states = hidden_states
-            if automaton is not None and words:
-                dfa_viz_text = build_vocabulary_coverage_text(words, spaced=spaced)
-                dfa_viz_states, _ = run_forward_pass(model, dfa_viz_text, model_type)
-                print(
-                    f"DFA figures: teacher-forced over full vocabulary coverage "
-                    f"({len(dfa_viz_text)} chars, {len(words)} words)",
+            if not want("activations"):
+                pass
+            else:
+                # Timestep heatmap: actual input letters on the x-axis (not condensed).
+                plot_hidden_states_heatmap(
+                    text, hidden_states,
+                    save_path=str(numbered_plot_path(out_dir, "activation_heatmap.png")),
+                    act_label=act_label,
+                    condensed=None,
+                    exp_name=args.exp,
+                    automaton=automaton,
+                    spaced=spaced,
+                    words=words,
+                    cluster_units=True,
                 )
-            _plot_embed_variants(
-                plot_pca_context_labels_3d,
-                plot_path("embedding_panels_context_3d.png"),
-                text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
-                spaced=spaced, automaton=automaton, condensed=None,
-                annot_style=args.dfa_annot_style, words=words,
-                label_words=label_words if not spaced else None,
-            )
 
-            _plot_embed_variants(
-                plot_pca_prediction_regions,
-                plot_path("next_char_regions_pca.png"),
-                model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
-                spaced=spaced, automaton=automaton, condensed=cv,
-            )
+                plot_output_probs(
+                    text, output_probs, model["chars"],
+                    save_path=plot_path("next_char_prob_sequence_heatmap.png"),
+                    condensed=cv,
+                    exp_name=args.exp,
+                    automaton=automaton,
+                    spaced=spaced,
+                    words=words,
+                )
 
-            if automaton is not None and words:
+                plot_per_char_hidden_state_heatmaps(
+                    text, hidden_states, model["chars"],
+                    save_path=plot_path("activation_by_input_char.png"),
+                    cluster_rows=not args.no_cluster_per_char,
+                    spaced=spaced,
+                    condensed=cv,
+                    automaton=automaton,
+                )
+
+        if want("embeddings"):
+            with timer.section("states_pca"):
                 _plot_embed_variants(
-                    plot_pca_dfa_analysis,
-                    plot_path("dfa_and_embedding_pca.png"),
-                    text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
-                    words=words, automaton=automaton, model=model, spaced=spaced,
-                    annot_style=args.dfa_annot_style, condensed=cv,
+                    plot_pca_context_labels,
+                    plot_path("embedding_panels_context.png"),
+                    text=text, hidden_states=hidden_states, chars=model["chars"],
+                    spaced=spaced, automaton=automaton, condensed=cv, words=words,
+                    label_words=label_words if not spaced else None,
+                    annot_style=args.dfa_annot_style,
                 )
 
-            _plot_embed_variants(
-                plot_pca_next_char_probability_panels,
-                plot_path("next_char_prob_panels_pca.png"),
-                model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
-                spaced=spaced, automaton=automaton, condensed=cv,
-            )
+                dfa_viz_text = text
+                dfa_viz_states = hidden_states
+                if automaton is not None and words:
+                    dfa_viz_text = build_vocabulary_coverage_text(words, spaced=spaced)
+                    dfa_viz_states, _ = run_forward_pass(model, dfa_viz_text, model_type)
+                    print(
+                        f"DFA figures: teacher-forced over full vocabulary coverage "
+                        f"({len(dfa_viz_text)} chars, {len(words)} words)",
+                    )
+                _plot_embed_variants(
+                    plot_pca_context_labels_3d,
+                    plot_path("embedding_panels_context_3d.png"),
+                    text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
+                    spaced=spaced, automaton=automaton, condensed=None,
+                    annot_style=args.dfa_annot_style, words=words,
+                    label_words=label_words if not spaced else None,
+                )
 
-            _plot_embed_variants(
-                plot_pca_vector_field,
-                plot_path("vector_field_grid_pca_no_input.png"),
-                text=text, hidden_states=hidden_states, model=model, condensed=cv,
-            )
+                _plot_embed_variants(
+                    plot_pca_prediction_regions,
+                    plot_path("next_char_regions_pca.png"),
+                    model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
+                    spaced=spaced, automaton=automaton, condensed=cv,
+                )
 
-        if words:
+                if automaton is not None and words:
+                    _plot_embed_variants(
+                        plot_pca_dfa_analysis,
+                        plot_path("dfa_and_embedding_pca.png"),
+                        text=dfa_viz_text, hidden_states=dfa_viz_states, chars=model["chars"],
+                        words=words, automaton=automaton, model=model, spaced=spaced,
+                        annot_style=args.dfa_annot_style, condensed=cv,
+                    )
+
+                _plot_embed_variants(
+                    plot_pca_next_char_probability_panels,
+                    plot_path("next_char_prob_panels_pca.png"),
+                    model=model, text=text, hidden_states=hidden_states, chars=model["chars"],
+                    spaced=spaced, automaton=automaton, condensed=cv,
+                )
+
+                _plot_embed_variants(
+                    plot_pca_vector_field,
+                    plot_path("vector_field_grid_pca_no_input.png"),
+                    text=text, hidden_states=hidden_states, model=model, condensed=cv,
+                )
+
+        if words and want("trajectories"):
             traj_words = label_words if label_words is not None else words
             with timer.section("trajectories"):
                 _plot_embed_variants(
@@ -8945,52 +8972,60 @@ def main() -> None:
                         spaced=spaced,
                     )
 
-        with timer.section("states_correlation"):
-            plot_hidden_states_clustermap(
-                text, hidden_states, model["chars"],
-                save_path=plot_path("activation_clustered_heatmap.png"),
-                exp_name=args.exp,
-                condensed=cv,
-                automaton=automaton,
-                spaced=spaced,
-            )
+        if want("correlation"):
+            with timer.section("states_correlation"):
+                # Prefix-clustered heatmap is always condensed (letter timesteps are
+                # activation_heatmap.png). Keep the canonical filename without _condensed.
+                prefix_cv = cv
+                if prefix_cv is None and words:
+                    prefix_cv = condense_hidden_states_by_prefix(
+                        text, hidden_states, output_probs, spaced=spaced, words=words,
+                    )
+                plot_hidden_states_clustermap(
+                    text, hidden_states, model["chars"],
+                    save_path=str(numbered_plot_path(out_dir, "activation_clustered_heatmap.png")),
+                    exp_name=args.exp,
+                    condensed=prefix_cv,
+                    automaton=automaton,
+                    spaced=spaced,
+                )
 
-            plot_hidden_states_correlation_clustermap(
-                text, hidden_states, model["chars"],
-                save_path=plot_path("state_correlation_clustered_heatmap.png"),
-                spaced=spaced,
-                automaton=automaton,
-                words=words,
-                condensed=cv,
-            )
-
-            if automaton is not None:
-                plot_dfa_grouped_state_correlation(
-                    text,
-                    hidden_states,
-                    save_path=plot_path("state_correlation_by_dfa_state.png"),
+                plot_hidden_states_correlation_clustermap(
+                    text, hidden_states, model["chars"],
+                    save_path=plot_path("state_correlation_clustered_heatmap.png"),
                     spaced=spaced,
                     automaton=automaton,
-                    condensed=cv,
-                )
-                plot_dfa_state_distance_comparison(
-                    text, hidden_states, automaton,
-                    save_path=plot_path("dfa_state_distance_comparison.png"),
-                    spaced=spaced,
                     words=words,
                     condensed=cv,
-                )
-                plot_feature_separation_summary(
-                    text, hidden_states, automaton,
-                    save_path=plot_path("feature_separation_summary.png"),
-                    spaced=spaced,
-                    words=words,
-                    label_words=label_words if not spaced else None,
-                    condensed=cv,
-                    output_probs=output_probs,
                 )
 
-        if automaton is not None:
+                if automaton is not None:
+                    plot_dfa_grouped_state_correlation(
+                        text,
+                        hidden_states,
+                        save_path=plot_path("state_correlation_by_dfa_state.png"),
+                        spaced=spaced,
+                        automaton=automaton,
+                        condensed=cv,
+                    )
+                    plot_dfa_state_distance_comparison(
+                        text, hidden_states, automaton,
+                        save_path=plot_path("dfa_state_distance_comparison.png"),
+                        spaced=spaced,
+                        words=words,
+                        condensed=cv,
+                    )
+                    plot_feature_separation_summary(
+                        text, hidden_states, automaton,
+                        save_path=plot_path("feature_separation_summary.png"),
+                        spaced=spaced,
+                        words=words,
+                        label_words=label_words if not spaced else None,
+                        condensed=cv,
+                        output_probs=output_probs,
+                    )
+
+        if automaton is not None and want("selectivity"):
             from unit_selectivity import plot_unit_selectivity_suite
 
             with timer.section("unit_selectivity"):
@@ -9011,7 +9046,7 @@ def main() -> None:
                     output_probs=output_probs,
                 )
 
-            if args.exp:
+            if args.exp and want("decoding"):
                 from experiment import DEFAULT_SEED
                 from viz.single_task_decoding import (
                     run_multi_seed_decoding_analysis,
@@ -9040,6 +9075,35 @@ def main() -> None:
                                 seeds=anchor_seeds,
                                 model_type=model_type,
                             )
+        elif automaton is not None and want("decoding") and args.exp:
+            from experiment import DEFAULT_SEED
+            from viz.single_task_decoding import (
+                run_multi_seed_decoding_analysis,
+                run_task_decoding_analysis,
+            )
+
+            with timer.section("decoding_readout"):
+                decode_dir = Path(out_dir)
+                run_task_decoding_analysis(
+                    args.exp,
+                    decode_dir,
+                    model_type=model_type,
+                    seed=args.seed if args.seed is not None else DEFAULT_SEED,
+                )
+                if args.exp == "sixteen_word_four_letter_ns":
+                    from experiment import seeds_for_task
+
+                    anchor_seeds = tuple(
+                        s for s in (1, 2, 3, 5, 7, 8)
+                        if s in seeds_for_task(args.exp, model_type)
+                    )
+                    if len(anchor_seeds) >= 2:
+                        run_multi_seed_decoding_analysis(
+                            args.exp,
+                            decode_dir,
+                            seeds=anchor_seeds,
+                            model_type=model_type,
+                        )
 
         if model["hidden_size"] == 2:
             with timer.section("state_trajectories_2d"):
@@ -9094,7 +9158,7 @@ def main() -> None:
         except Exception as exc:
             print(f"skip learning dynamics video: {exc}")
 
-    if args.exp:
+    if args.exp and not args.only:
         with timer.section("cleanup"):
             migrate_legacy_states_layout(out_dir)
             remove_legacy_readme_plot_names(out_dir)

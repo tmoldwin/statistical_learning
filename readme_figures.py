@@ -245,6 +245,7 @@ PLOT_SUBDIR: dict[str, str] = {
     "word_trajectories_pca_3d.png": "trajectories",
     "word_trajectories_pca_3d_trained.png": "trajectories",
     "word_trajectories_pca_3d_closed_loop.png": "trajectories",
+    "word_trajectories_closed_loop.png": "trajectories",
 }
 
 # Numbered on-disk slugs that differ from PLOT_SUBDIR keys.

@@ -88,9 +88,9 @@ Position and DFA saturate within a few PCs; character needs more dimensions. Thi
 
 ### 3.6 Word trajectories
 
-![Figure 13. Closed-loop generation in PCA with prefix annotations.](figures/main/fig_word_trajectories.jpg)
+![Figure 13. Closed-loop (self-fed, color = letter position) vs internal dynamics (seed then no input, color = timestep, with vector field).](figures/main/fig_word_trajectories.jpg)
 
-Shared onsets share early path segments; completing a word returns toward a boundary-like region.
+Left: autoregressive generation with prefix labels, segments colored by in-word letter position. Right: letter seed then recurrent dynamics with no further input, colored by timestep; background vector field from the no-input map.
 
 ### 3.7 Comparisons across length and vocabulary size
 

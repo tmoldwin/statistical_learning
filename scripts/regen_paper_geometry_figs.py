@@ -75,12 +75,13 @@ def main() -> None:
     )
     act_label = "relu" if model.get("use_relu") else "tanh"
 
+    # Timestep figure must keep raw letters on x (do NOT pass condensed).
     heat = Path(numbered_plot_path(out_dir, "activation_heatmap.png"))
     plot_hidden_states_heatmap(
         text, hidden_states,
         save_path=str(heat),
         act_label=act_label,
-        condensed=condensed,
+        condensed=None,
         exp_name=EXP,
         automaton=automaton,
         spaced=spaced,

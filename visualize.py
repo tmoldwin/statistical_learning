@@ -356,8 +356,9 @@ def plot_hidden_states_heatmap(
         default_title += " · units clustered"
 
     axis_ylabel = "h" if y_label == "hidden unit" else y_label
-    heat_h = float(min(8.0, max(4.0, hidden_size * 0.12)))
-    heat_w = float(max(10.0, length * 0.12))
+    # Keep paper heatmaps short; row labels stay readable at ~0.09"/unit.
+    heat_h = float(min(5.2, max(3.4, hidden_size * 0.09)))
+    heat_w = float(max(11.0, length * 0.13))
 
     if cluster_units:
         unit_labels = [
@@ -380,8 +381,8 @@ def plot_hidden_states_heatmap(
             vmin=vmin,
             vmax=vmax,
             center=None if use_relu or use_raw else 0.0,
-            figsize=(heat_w + 0.8, min(6.8, heat_h)),
-            dendrogram_ratio=(0.08, 0.0),
+            figsize=(heat_w + 1.2, heat_h),
+            dendrogram_ratio=(0.06, 0.0),
             cbar=False,
             cbar_pos=None,
             xticklabels=True,
@@ -402,21 +403,21 @@ def plot_hidden_states_heatmap(
         # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title
         # that seaborn places to the right and can collide with the colorbar.
         grid.ax_heatmap.set_ylabel("")
-        grid.ax_heatmap.tick_params(axis="x", labelsize=9)
-        grid.ax_heatmap.tick_params(axis="y", labelsize=7)
+        grid.ax_heatmap.tick_params(axis="x", labelsize=8)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=6)
         for tick in grid.ax_heatmap.get_xticklabels():
             tick.set_fontweight("bold")
-        # Colorbar to the right of the heatmap, clear of the row dendrogram.
+        # Compact colorbar to the right of y tick labels (pad clears them).
         mappable = grid.ax_heatmap.collections[0]
         cbar = grid.fig.colorbar(
             mappable, ax=grid.ax_heatmap,
-            fraction=0.03, pad=0.12, shrink=0.45,
+            fraction=0.025, pad=0.08, shrink=0.55,
         )
         cbar.set_label(cb_label, fontsize=8)
         cbar.ax.tick_params(labelsize=7)
         grid.fig.suptitle(
             _condensed_plot_title(title or default_title, condensed),
-            y=1.02,
+            y=1.01,
             fontsize=11,
         )
         grid.savefig(save_path, dpi=150, bbox_inches="tight")
@@ -454,7 +455,7 @@ def plot_hidden_states_heatmap(
     )
 
     cb_label = colorbar_label or (f"activation ({act_label})" if not use_raw else "value")
-    fig.colorbar(im, ax=ax, fraction=0.02, pad=0.02, shrink=0.6, label=cb_label)
+    fig.colorbar(im, ax=ax, fraction=0.02, pad=0.02, shrink=0.55, label=cb_label)
     fig.tight_layout()
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
@@ -1414,13 +1415,17 @@ def _segmented_rollout_styles(
     *,
     color_mode: str = "word",
     max_word_len: int = 4,
+    solid_lines: bool = False,
 ) -> tuple[list, list[str]]:
     word_start = _word_start_segment_flags(prefix_labels, word_at_step)
     gray = word_colors["␣"]
     segment_colors: list = []
     for i in range(n_segments):
-        if _is_return_to_baseline_segment(
-            prefix_labels[i], prefix_labels[i + 1], word_start=word_start[i],
+        if (
+            not solid_lines
+            and _is_return_to_baseline_segment(
+                prefix_labels[i], prefix_labels[i + 1], word_start=word_start[i],
+            )
         ):
             segment_colors.append(gray)
         elif color_mode == "step":
@@ -1428,7 +1433,10 @@ def _segmented_rollout_styles(
             segment_colors.append(_step_palette_rgba(min(plen, max_word_len)))
         else:
             segment_colors.append(word_colors.get(word_at_step[i + 1], word_colors["?"]))
-    segment_linestyles = [":" if is_start else "-" for is_start in word_start]
+    if solid_lines:
+        segment_linestyles = ["-"] * n_segments
+    else:
+        segment_linestyles = [":" if is_start else "-" for is_start in word_start]
     return segment_colors, segment_linestyles
 
 
@@ -1476,6 +1484,9 @@ def _plot_segmented_vocab_rollout(
     unique_word_labels: bool = False,
     color_mode: str = "word",
     max_word_len: int = 4,
+    draw_arrows: bool = True,
+    arrow_mutation_scale: float = 12.0,
+    solid_lines: bool = False,
 ) -> None:
     if len(gen_z) < 2:
         return
@@ -1483,6 +1494,7 @@ def _plot_segmented_vocab_rollout(
     segment_colors, segment_linestyles = _segmented_rollout_styles(
         prefix_labels, word_at_step, word_colors, len(gen_z) - 1,
         color_mode=color_mode, max_word_len=max_word_len,
+        solid_lines=solid_lines,
     )
     plot_path = _plot_step_colored_path_arrows_3d if is_3d else _plot_step_colored_path_arrows
     if is_3d:
@@ -1491,7 +1503,7 @@ def _plot_segmented_vocab_rollout(
             linewidth=linewidth, alpha=alpha,
             segment_colors=segment_colors,
             segment_linestyles=segment_linestyles,
-            arrow_mutation_scale=12.0,
+            arrow_mutation_scale=arrow_mutation_scale,
         )
     else:
         plot_path(
@@ -1499,7 +1511,8 @@ def _plot_segmented_vocab_rollout(
             linewidth=linewidth, alpha=alpha, zorder=2,
             segment_colors=segment_colors,
             segment_linestyles=segment_linestyles,
-            arrow_mutation_scale=12.0,
+            arrow_mutation_scale=arrow_mutation_scale,
+            draw_arrows=draw_arrows,
         )
     if annotate:
         label_fn = _sparse_unique_word_end_labels if unique_word_labels else _sparse_word_end_labels
@@ -1532,6 +1545,11 @@ def _plot_segmented_closed_loop_rollout(
     linewidth: float = 1.5,
     alpha: float = 0.78,
     unique_word_labels: bool = False,
+    color_mode: str = "word",
+    max_word_len: int = 4,
+    draw_arrows: bool = True,
+    arrow_mutation_scale: float = 12.0,
+    solid_lines: bool = False,
 ) -> None:
     _plot_segmented_vocab_rollout(
         ax, gen_z, prefix_labels, word_at_step,
@@ -1543,7 +1561,11 @@ def _plot_segmented_closed_loop_rollout(
         linewidth=linewidth,
         alpha=alpha,
         unique_word_labels=unique_word_labels,
-        color_mode="word",
+        color_mode=color_mode,
+        max_word_len=max_word_len,
+        draw_arrows=draw_arrows,
+        arrow_mutation_scale=arrow_mutation_scale,
+        solid_lines=solid_lines,
     )
 
 
@@ -1885,8 +1907,8 @@ def plot_hidden_states_clustermap(
     col_labels = [f"{unit_prefix}{i}" for i in range(n_cols)]
     # Flip orientation: units on rows, timesteps on columns (makes long sequences readable).
     data = pd.DataFrame(hidden_states, index=row_labels, columns=col_labels).T
-    heat_w = float(max(10.0, n_rows * 0.18))
-    heat_h = float(min(9.0, max(5.0, n_cols * 0.14)))
+    heat_w = float(max(11.0, n_rows * 0.20))
+    heat_h = float(min(5.4, max(3.6, n_cols * 0.09)))
 
     grid = sns.clustermap(
         data,
@@ -1896,8 +1918,8 @@ def plot_hidden_states_clustermap(
         vmin=-1,
         vmax=1,
         center=0,
-        figsize=(heat_w, heat_h),
-        dendrogram_ratio=(0.10, 0.08),
+        figsize=(heat_w + 1.0, heat_h),
+        dendrogram_ratio=(0.08, 0.06),
         cbar=False,
         cbar_pos=None,
         xticklabels=True,
@@ -1920,10 +1942,17 @@ def plot_hidden_states_clustermap(
         xlabel += " · tick color = min DFA state"
     grid.ax_heatmap.set_xlabel(xlabel)
     grid.ax_heatmap.set_ylabel("")
-    grid.ax_heatmap.tick_params(axis="y", labelsize=7)
-    grid.ax_heatmap.tick_params(axis="x", labelsize=9)
+    grid.ax_heatmap.tick_params(axis="y", labelsize=6)
+    grid.ax_heatmap.tick_params(axis="x", labelsize=8)
     for tick in grid.ax_heatmap.get_xticklabels():
         tick.set_fontweight("bold")
+    mappable = grid.ax_heatmap.collections[0]
+    cbar = grid.fig.colorbar(
+        mappable, ax=grid.ax_heatmap,
+        fraction=0.025, pad=0.08, shrink=0.55,
+    )
+    cbar.set_label("activation (tanh)", fontsize=8)
+    cbar.ax.tick_params(labelsize=7)
     short_title = (
         f"{'h' if repr_label == 'hidden state' else repr_label} clustered by prefix"
         if condensed is not None
@@ -1934,7 +1963,7 @@ def plot_hidden_states_clustermap(
             f"{short_title} · {len(condensed.labels)} prefixes "
             f"(avg over {sum(condensed.counts)} steps)"
         )
-    grid.fig.suptitle(short_title, y=1.02, fontsize=11)
+    grid.fig.suptitle(short_title, y=1.01, fontsize=11)
     grid.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(grid.fig)
     print(f"wrote {save_path}")
@@ -5360,13 +5389,14 @@ _DIVERGENT_WORD_PALETTE: tuple[str, ...] = (
     "#AA3377", "#EE7733", "#0077BB", "#33BBEE", "#EE3377",
     "#CC3311", "#009988", "#BBBB44", "#AA4499", "#44AA77", "#882255",
 )
-# Discrete in-word step colors (high contrast; shared by bottom trajectory row).
+# Discrete in-word / timestep colors (Okabe–Ito; colorblind-safe).
 _TRAJECTORY_STEP_PALETTE: tuple[str, ...] = (
-    "#2166AC",  # blue
-    "#D6604D",  # coral
-    "#1A9641",  # green
-    "#E08214",  # orange
-    "#762A83",  # purple
+    "#0072B2",  # blue
+    "#E69F00",  # orange
+    "#009E73",  # bluish green
+    "#CC79A7",  # reddish purple
+    "#D55E00",  # vermillion
+    "#56B4E9",  # sky blue
 )
 _TRAJECTORY_RETURN_COLOR = "#9A9A9A"  # gray — space / return-to-word-start
 
@@ -5452,31 +5482,52 @@ def _midsegment_arrowhead_2d(
     alpha: float,
     zorder: int,
     mutation_scale: float = 12.0,
-    head_frac: float = 0.22,
+    head_frac: float = 0.28,
 ) -> None:
     """Arrowhead only, centered on the segment midpoint (no extra shaft)."""
-    d = p1 - p0
+    from matplotlib.patches import FancyArrowPatch
+
+    d = np.asarray(p1, dtype=float) - np.asarray(p0, dtype=float)
     norm = float(np.linalg.norm(d))
     if norm < 1e-12:
         return
     u = d / norm
-    mid = 0.5 * (p0 + p1)
+    mid = 0.5 * (np.asarray(p0, dtype=float) + np.asarray(p1, dtype=float))
     head_len = norm * head_frac
-    ax.annotate(
-        "",
-        xy=(float(mid[0]), float(mid[1])),
-        xytext=(float(mid[0] - head_len * u[0]), float(mid[1] - head_len * u[1])),
-        arrowprops=dict(
-            arrowstyle="-|>",
-            color=color,
-            lw=0,
-            mutation_scale=mutation_scale,
-            shrinkA=0,
-            shrinkB=0,
-            alpha=alpha,
-        ),
+    tail = mid - head_len * u
+    tip = mid + 0.15 * head_len * u
+    arrow = FancyArrowPatch(
+        (float(tail[0]), float(tail[1])),
+        (float(tip[0]), float(tip[1])),
+        arrowstyle="-|>",
+        mutation_scale=mutation_scale,
+        color=color,
+        lw=0.9,
+        alpha=alpha,
+        shrinkA=0,
+        shrinkB=0,
         zorder=zorder,
+        clip_on=True,
     )
+    ax.add_patch(arrow)
+
+
+def _scaled_arrow_mutation(
+    p0: np.ndarray,
+    p1: np.ndarray,
+    *,
+    base: float,
+    ref_span: float,
+    min_scale: float = 7.0,
+    max_scale: float | None = None,
+) -> float | None:
+    """Arrow size proportional to segment length; None means skip (too short)."""
+    norm = float(np.linalg.norm(np.asarray(p1) - np.asarray(p0)))
+    if ref_span <= 1e-12 or norm < 0.018 * ref_span:
+        return None
+    scale = base * (norm / (0.10 * ref_span))
+    hi = base if max_scale is None else max_scale
+    return float(np.clip(scale, min_scale, hi))
 
 
 def _midsegment_arrowhead_3d(
@@ -5546,6 +5597,19 @@ def _plot_step_colored_path_arrows(
         return
     if segment_colors is None:
         segment_colors = _step_path_colors(len(path), cmap_name)
+    # Prefer data extent over current axes limits (often still default 0..1
+    # when trajectories are drawn before shared limits are applied).
+    path_xy = np.asarray(path[:, :2], dtype=float)
+    ref_span = float(max(np.ptp(path_xy[:, 0]), np.ptp(path_xy[:, 1]), 1e-3))
+    try:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        ax_span = max(abs(xlim[1] - xlim[0]), abs(ylim[1] - ylim[0]))
+        # Only trust axes if already expanded to data-like range.
+        if ax_span > 2.0 * ref_span:
+            ref_span = ax_span
+    except Exception:
+        pass
     for i in range(len(path) - 1):
         color = segment_colors[i] if i < len(segment_colors) else segment_colors[-1]
         if segment_alphas is not None and i < len(segment_alphas):
@@ -5564,11 +5628,17 @@ def _plot_step_colored_path_arrows(
             linestyle=linestyle, solid_capstyle="round", zorder=zorder,
         )
         if draw_arrows:
-            _midsegment_arrowhead_2d(
-                ax, p0, p1,
-                color=color, alpha=min(seg_alpha + 0.12, 1.0), zorder=zorder + 1,
-                mutation_scale=arrow_mutation_scale,
+            ms = _scaled_arrow_mutation(
+                p0, p1, base=arrow_mutation_scale, ref_span=ref_span,
+                min_scale=max(7.0, arrow_mutation_scale * 0.55),
+                max_scale=arrow_mutation_scale * 1.15,
             )
+            if ms is not None:
+                _midsegment_arrowhead_2d(
+                    ax, p0, p1,
+                    color=color, alpha=min(seg_alpha + 0.18, 1.0), zorder=zorder + 1,
+                    mutation_scale=ms,
+                )
 
 
 def _plot_step_colored_path_arrows_3d(
@@ -6951,7 +7021,11 @@ def plot_closed_loop_trajectory_panel(
     automaton: MinimizedVocabAutomaton | None = None,
     annot_style: str = "leaders",
 ) -> None:
-    """Single large closed-loop PCA panel with prefix annotations."""
+    """Two-panel PCA: closed-loop (step-colored) | internal dynamics (step-colored + VF).
+
+    Closed-loop: colored by in-word letter position; no vector field; no word legend.
+    Internal: letter seed then no input; colored by timestep; vector field; no return dashes.
+    """
     _ = automaton
     _ = annot_style
     if model is None:
@@ -6976,18 +7050,24 @@ def plot_closed_loop_trajectory_panel(
     seed_letters = _trajectory_seed_letters(model, vocab_words)
     seed_char = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=spaced)
     if closed_loop_steps is not None:
-        steps = max(1, int(closed_loop_steps))
+        closed_steps = max(1, int(closed_loop_steps))
     else:
-        steps = _one_vocab_cycle_steps(vocab_words, spaced=spaced)
+        closed_steps = _one_vocab_cycle_steps(vocab_words, spaced=spaced)
+    internal_steps = 5
     word_colors = _vocab_word_colors(vocab_words)
+    hidden_size = int(model["hidden_size"])
+    max_word_len = max(internal_steps, _longest_vocabulary_word_length(vocab_words))
 
-    fig, ax = plt.subplots(figsize=(11, 9), constrained_layout=True)
-    limit_arrays: list[np.ndarray] = []
+    fig, axes = plt.subplots(1, 2, figsize=(14.5, 6.5), constrained_layout=True)
+    ax_closed, ax_internal = axes
+    closed_limits: list[np.ndarray] = []
+    internal_limits: list[np.ndarray] = []
+
     rng = np.random.default_rng(int(closed_loop_seed))
     gen_z, prefix_labels, word_at_step = _closed_loop_rollout_pca(
         model,
         seed_text=seed_char,
-        steps=steps,
+        steps=closed_steps,
         rng=rng,
         mean=mean,
         components=components,
@@ -6998,38 +7078,97 @@ def plot_closed_loop_trajectory_panel(
         plt.close(fig)
         print(f"skip {save_path}: closed-loop rollout too short")
         return
-    limit_arrays.append(gen_z)
+    closed_limits.append(gen_z)
     _plot_segmented_closed_loop_rollout(
-        ax, gen_z, prefix_labels, word_at_step,
+        ax_closed, gen_z, prefix_labels, word_at_step,
         word_colors=word_colors,
         vocab_words=vocab_words,
         annotate=False,
         annotate_fontsize=8.0,
         is_3d=False,
-        linewidth=2.0,
-        alpha=0.85,
+        linewidth=1.8,
+        alpha=0.88,
+        color_mode="step",
+        max_word_len=max_word_len,
+        draw_arrows=True,
+        arrow_mutation_scale=14.0,
+        solid_lines=True,
     )
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
+    step_label_colors = [
+        _step_palette_rgba(
+            min(len(p) if p not in ("", "␣") else 1, max_word_len)
+        )
+        for p in prefix_labels
+    ]
     _annotate_trajectory_labels(
-        ax, gen_z, display_prefixes,
+        ax_closed, gen_z, display_prefixes,
         fontsize=8.0,
         dedupe=True,
         use_leaders=True,
         leader_linewidth=0.45,
-        label_colors=[
-            word_colors.get(word_at_step[i], word_colors["?"])
-            for i in range(len(display_prefixes))
-        ],
+        label_colors=step_label_colors,
+    )
+    ax_closed.set_title(
+        f"Closed-loop (self-fed) · seed '{seed_char}' · color = letter position",
+        fontsize=11,
+    )
+
+    # Internal dynamics: uniform line weight; step-colored midsegment arrows
+    # scaled by segment length (skip tiny segs so they don't blob).
+    path_lw = 1.8
+    for seed_letter in seed_letters:
+        zs = _letter_seed_no_input_trajectory_pca(
+            model,
+            seed_char=seed_letter,
+            steps=internal_steps,
+            mean=mean,
+            components=components,
+            hidden_size=hidden_size,
+        )
+        if zs.shape[0] < 2:
+            continue
+        internal_limits.append(zs)
+        _plot_step_colored_path_arrows(
+            ax_internal, zs,
+            linewidth=path_lw, alpha=0.80, zorder=3,
+            draw_arrows=True,
+            arrow_mutation_scale=14.0,
+        )
+        _annotate_trajectory_labels(
+            ax_internal, zs[:1], [seed_letter],
+            colors=_step_path_colors(1), fontsize=9.0,
+        )
+    ax_internal.set_title(
+        f"Internal dynamics · seed then no input · "
+        f"{len(seed_letters)} seeds × {internal_steps} steps · color = timestep",
+        fontsize=11,
+    )
+
+    shared_limits = closed_limits + internal_limits
+    # Closed-loop: no VF. Internal: VF from no-input recurrence.
+    _style_trajectory_row_2d(
+        [ax_closed], closed_limits,
+        xlabel=xlabel, ylabel=ylabel, model=None,
+        mean=mean, components=components, fig=fig,
+        draw_vector_field=False,
     )
     _style_trajectory_row_2d(
-        [ax], limit_arrays,
+        [ax_internal], internal_limits,
         xlabel=xlabel, ylabel=ylabel, model=model,
         mean=mean, components=components, fig=fig,
+        draw_vector_field=True,
     )
-    ax.set_title(
-        f"Closed-loop generation · seed '{seed_char}' · {steps} steps · prefix labels"
+    if shared_limits:
+        xlim, ylim = _square_data_limits(*shared_limits, padding_frac=0.12)
+        for ax in axes:
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_aspect("equal", adjustable="box")
+
+    _add_trajectory_step_colorbar(
+        fig, axes, max_word_len, label="step in word / timestep",
     )
-    _add_trajectory_word_legend(fig, word_colors)
     fig.savefig(save_path, dpi=220, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")

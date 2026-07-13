@@ -36,9 +36,9 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 Trie and DFA figures are shown **only** for the four-word demo.
 
-![Figure 1. Prefix trie for *cat*, *met*, *ate*, *tea*.](/paper/figures/demo/fig01_trie.svg)
+![Figure 1. Prefix trie for *cat*, *met*, *ate*, *tea*.](figures/demo/fig01_trie.svg)
 
-![Figure 2. Minimal DFA for the same four-word lexicon.](/paper/figures/demo/fig02_dfa.svg)
+![Figure 2. Minimal DFA for the same four-word lexicon.](figures/demo/fig02_dfa.svg)
 
 ---
 
@@ -46,59 +46,59 @@ Trie and DFA figures are shown **only** for the four-word demo.
 
 ### 3.1 Four-word demo
 
-![Figure 3. Learning curve (truncated near the validity plateau).](/paper/figures/demo/fig03_learning_curve.jpg)
+![Figure 3. Learning curve (truncated near the validity plateau).](figures/demo/fig03_learning_curve.jpg)
 
-![Figure 4a. Vocabulary and unsegmented training stream.](/paper/figures/demo/fig04_corpus_stream.svg)
+![Figure 4a. Vocabulary and unsegmented training stream.](figures/demo/fig04_corpus_stream.svg)
 
-![Figure 4b. Generation before vs after learning (green = in-vocabulary, red = out-of-vocabulary).](/paper/figures/demo/fig04_samples.svg)
+![Figure 4b. Generation before vs after learning (green = in-vocabulary, red = out-of-vocabulary).](figures/demo/fig04_samples.svg)
 
 Unless noted, the remainder uses the **16-word, 4-letter** condition.
 
 ### 3.2 Next-character probabilities
 
-![Figure 5. Softmax \(P(\text{next char} \mid \text{input so far})\) over time.](/paper/figures/main/fig_next_char_probs.jpg)
+![Figure 5. Softmax \(P(\text{next char} \mid \text{input so far})\) over time.](figures/main/fig_next_char_probs.jpg)
 
 Probability mass concentrates late in words and spreads at ambiguous prefixes.
 
 ### 3.3 Hidden states and clustering
 
-![Figure 6. Activations over timesteps (x = input letters; units clustered).](/paper/figures/main/fig_activation_heatmap.jpg)
+![Figure 6. Activations over timesteps (x = input letters; units clustered).](figures/main/fig_activation_heatmap.jpg)
 
-![Figure 7. Activations clustered by in-word prefix.](/paper/figures/main/fig_activation_clustered.jpg)
+![Figure 7. Activations clustered by in-word prefix.](figures/main/fig_activation_clustered.jpg)
 
 ### 3.4 PCA geometry and population separation
 
-![Figure 8. PCA of \(\mathbf{h}\): large prefix-labeled overview (top); feature-colored points without labels (bottom).](/paper/figures/main/fig11_embedding_panels.jpg)
+![Figure 8. PCA of \(\mathbf{h}\): large prefix-labeled overview (top); feature-colored points without labels (bottom).](figures/main/fig11_embedding_panels.jpg)
 
 Prefix-labeled points form coherent regions in the plane. Coloring by character, within-word position, and DFA state shows the same geometry organized by different features.
 
-![Figure 9. Feature separation summary (condensed prefixes).](/paper/figures/main/fig20_feature_separation.jpg)
+![Figure 9. Feature separation summary (condensed prefixes).](figures/main/fig20_feature_separation.jpg)
 
-![Figure 10. Within- vs between-DFA-state distances.](/paper/figures/main/fig19_dfa_distance.jpg)
+![Figure 10. Within- vs between-DFA-state distances.](figures/main/fig19_dfa_distance.jpg)
 
 DFA state dominates (\(\eta^2 \approx 0.95\)). Unit selectivity agrees (population median \(\eta^2\): DFA 0.97, prefix 0.84, character 0.67, position 0.40).
 
-![Figure 11. Unit selectivity overview.](/paper/figures/main/fig_unit_selectivity.jpg)
+![Figure 11. Unit selectivity overview.](figures/main/fig_unit_selectivity.jpg)
 
 ### 3.5 Decoding
 
-![Figure 12. Linear decoding, mean ± std across seeds 1, 2, 3, 5, 7, 8.](/paper/figures/main/fig_decoding_seed_mean.jpg)
+![Figure 12. Linear decoding, mean ± std across seeds 1, 2, 3, 5, 7, 8.](figures/main/fig_decoding_seed_mean.jpg)
 
 Position and DFA saturate within a few PCs; character needs more dimensions.
 
 ### 3.6 Word trajectories
 
-![Figure 13. Closed-loop (self-fed, color = letter position) vs internal dynamics (seed then no input, color = timestep, with vector field).](/paper/figures/main/fig_word_trajectories.jpg)
+![Figure 13. Closed-loop (self-fed, color = letter position) vs internal dynamics (seed then no input, color = timestep, with vector field).](figures/main/fig_word_trajectories.jpg)
 
 Left: autoregressive generation with prefix labels, segments colored by in-word letter position. Right: letter seed then recurrent dynamics with no further input, colored by timestep; background vector field from the no-input map.
 
-![Figure 14. Closed-loop trajectories across 12 training seeds (same 16-word condition).](/paper/figures/main/fig_word_trajectories_by_start.jpg)
+![Figure 14. Closed-loop trajectories across 12 training seeds (same 16-word condition).](figures/main/fig_word_trajectories_by_start.jpg)
 
 ### 3.7 Weight structure (same 16-word condition)
 
-![Figure 15. Final clustered Wxh across seeds 1, 2, 3, 5, 7 (letter-columnar motifs).](/paper/figures/main/fig_weight_matrices_by_seed.jpg)
+![Figure 15. Init vs final \(W_{xh}\) and \(W_{hh}\) across seeds 1, 2, 3, 5, 7 (each stage clustered).](figures/main/fig_weight_matrices_by_seed.jpg)
 
-![Figure 16. Weight metrics (top; mean ± std, \(n=16\)) and pooled init/final distributions (bottom).](/paper/figures/main/fig_weight_metrics_all_seeds.jpg)
+![Figure 16. Weight metrics (top; mean ± std, \(n=16\)) and pooled init/final distributions (bottom).](figures/main/fig_weight_metrics_all_seeds.jpg)
 
 Final \(W_{xh}\) becomes **letter-columnar**: after clustering, units form coherent vertical stripes (shared signed input profiles). Across all seeds, within-block cohesion rises from \(0.02 \pm 0.02\) to \(0.16 \pm 0.09\). The pooled within-block pairwise-correlation histogram shifts right accordingly. Input/recurrent Frobenius ratio rises from \(0.41 \pm 0.09\) to \(1.53 \pm 0.40\); mean input-drive fraction from \(0.49 \pm 0.01\) to \(0.64 \pm 0.09\), with the per-unit drive-fraction histogram moving toward input dominance.
 
@@ -106,9 +106,9 @@ Final \(W_{hh}\) becomes **locally clumped** along the cluster order: adjacent-u
 
 ### 3.8 Comparisons across length and vocabulary size
 
-![Figure 17. Learning curves across 3 / 4 / 5 / mixed length (16 words).](/paper/figures/compare/fig_compare_learning.jpg)
+![Figure 17. Learning curves across 3 / 4 / 5 / mixed length (16 words).](figures/compare/fig_compare_learning.jpg)
 
-![Figure 18. Feature separation across those length conditions.](/paper/figures/compare/fig_compare_separation.jpg)
+![Figure 18. Feature separation across those length conditions.](figures/compare/fig_compare_separation.jpg)
 
 | Condition | DFA \(\eta^2\) | Char \(\eta^2\) | Position \(\eta^2\) |
 |-----------|---------------:|----------------:|--------------------:|

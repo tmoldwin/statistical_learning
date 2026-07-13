@@ -117,7 +117,7 @@ def plot_weight_matrices_by_seed(
     seeds: tuple[int, ...] = (1, 2, 3, 5, 7),
     model_type: str = "rnn",
 ) -> dict[str, Any]:
-    """One row of final clustered W_xh across seeds (compact paper panel).
+    """Four-row grid across seeds: init/final W_xh and W_hh (each stage clustered).
 
     Also writes motif metrics (init + final) across seeds next to the figure.
     """
@@ -128,10 +128,17 @@ def plot_weight_matrices_by_seed(
     save_path.parent.mkdir(parents=True, exist_ok=True)
     n_seeds = len(seeds)
     cmap = plt.cm.RdBu_r
+    row_specs = (
+        ("init_xh", r"Init $W_{xh}$", "input char", True),
+        ("final_xh", r"Final $W_{xh}$", "input char", True),
+        ("init_hh", r"Init $W_{hh}$", "target h", False),
+        ("final_hh", r"Final $W_{hh}$", "target h", False),
+    )
+    n_rows = len(row_specs)
 
     fig, axes = plt.subplots(
-        1, n_seeds,
-        figsize=(1.55 * n_seeds + 1.1, 2.55),
+        n_rows, n_seeds,
+        figsize=(1.55 * n_seeds + 1.2, 2.15 * n_rows + 0.6),
         squeeze=False,
     )
     motif_by_seed: dict[str, Any] = {"seeds": list(seeds), "init": {}, "final": {}}
@@ -153,40 +160,57 @@ def plot_weight_matrices_by_seed(
             chars = list(model["chars"])
             char_labels = [c if c not in (" ", "\n", "\t") else repr(c)[1:-1] for c in chars]
 
+        order_i = _cluster_unit_order(w_in_i, w_rec_i)
         order_f = _cluster_unit_order(w_in_f, w_rec_f)
-        data = w_in_f[order_f].T
+        panels = {
+            "init_xh": w_in_i[order_i].T,
+            "final_xh": w_in_f[order_f].T,
+            "init_hh": w_rec_i[np.ix_(order_i, order_i)],
+            "final_hh": w_rec_f[np.ix_(order_f, order_f)],
+        }
         motif_by_seed["init"][str(seed)] = compute_weight_motif_metrics(w_in_i, w_rec_i)
         motif_by_seed["final"][str(seed)] = compute_weight_motif_metrics(w_in_f, w_rec_f)
 
-        ax = axes[0, col]
-        vmax = max(symmetric_abs_vmax(data), 1e-9)
-        im = ax.imshow(
-            data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
-            interpolation="nearest", origin="lower",
-        )
-        ax.set_title(f"seed {seed}", fontsize=8, pad=2)
-        ax.set_xlabel("hidden unit", fontsize=6)
-        ny, nx = data.shape
-        ax.set_xticks([0, max(nx - 1, 0)])
-        ax.tick_params(axis="x", labelsize=5)
-        if col == 0:
-            ax.set_ylabel(r"Final $W_{xh}$" + "\ninput char", fontsize=7)
-            ax.set_yticks(np.arange(len(char_labels)))
-            ax.set_yticklabels(char_labels, fontsize=5)
-        else:
-            ax.set_ylabel("")
-            ax.set_yticks([0, max(ny - 1, 0)])
-            ax.tick_params(axis="y", labelleft=False)
-        cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.02, shrink=0.9)
-        cbar.ax.tick_params(labelsize=4)
+        for row, (key, ylabel, _tick_name, is_xh) in enumerate(row_specs):
+            ax = axes[row, col]
+            data = panels[key]
+            vmax = max(symmetric_abs_vmax(data), 1e-9)
+            im = ax.imshow(
+                data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
+                interpolation="nearest", origin="lower",
+            )
+            if row == 0:
+                ax.set_title(f"seed {seed}", fontsize=8, pad=2)
+            ny, nx = data.shape
+            if row == n_rows - 1:
+                ax.set_xlabel("hidden unit" if is_xh else "source h", fontsize=6)
+                ax.set_xticks([0, max(nx - 1, 0)])
+                ax.tick_params(axis="x", labelsize=5)
+            else:
+                ax.set_xticks([])
+            if col == 0:
+                ax.set_ylabel(ylabel, fontsize=7)
+                if is_xh and char_labels is not None:
+                    ax.set_yticks(np.arange(len(char_labels)))
+                    ax.set_yticklabels(char_labels, fontsize=4.5)
+                else:
+                    ax.set_yticks([0, max(ny - 1, 0)])
+                    ax.tick_params(axis="y", labelsize=5)
+            else:
+                ax.set_ylabel("")
+                ax.set_yticks([0, max(ny - 1, 0)])
+                ax.tick_params(axis="y", labelleft=False)
+            cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.02, shrink=0.88)
+            cbar.ax.tick_params(labelsize=4)
 
     finalize_grid_figure(
         fig,
-        suptitle=r"Final clustered $W_{xh}$ across seeds",
-        top=0.82,
-        wspace=0.35,
-        bottom=0.22,
-        left=0.08,
+        suptitle=r"Init vs final $W_{xh}$ and $W_{hh}$ across seeds (each stage clustered)",
+        top=0.94,
+        wspace=0.32,
+        hspace=0.22,
+        bottom=0.06,
+        left=0.07,
     )
     save_figure(fig, save_path)
     print(f"wrote {save_path}")

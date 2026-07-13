@@ -8716,13 +8716,20 @@ def main() -> None:
             )
             if args.exp:
                 from experiment import DEFAULT_SEED
-                from viz.weight_structure import plot_weight_structure_init_vs_final
+                from viz.weight_structure import (
+                    plot_weight_matrices_by_seed,
+                    plot_weight_structure_init_vs_final,
+                )
 
                 weight_seed = args.seed if args.seed is not None else DEFAULT_SEED
                 plot_weight_structure_init_vs_final(
                     model,
                     numbered_plot_path(out_dir, "weight_init_vs_final.png"),
                     seed=weight_seed,
+                )
+                plot_weight_matrices_by_seed(
+                    args.exp,
+                    Path(out_dir) / "weight_matrices_by_seed.png",
                 )
     if want("learning") and not args.trajectories_only:
         with timer.section("learning_curve"):

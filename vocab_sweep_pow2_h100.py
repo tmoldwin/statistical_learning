@@ -1,4 +1,4 @@
-"""Word-count (powers of 2, max 32) x length 1-6 + mixed; fixed 100 hidden units."""
+"""Word-count (5–25 step 5) x length 1-6 + mixed; fixed 100 hidden units."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from vocab_sweep import build_vocab as _build_vocab_general
 
 SweepLength = int | str
 
-POW2_H100_WORD_COUNTS: tuple[int, ...] = (1, 2, 4, 8, 16, 32)
+POW2_H100_WORD_COUNTS: tuple[int, ...] = (5, 10, 15, 20, 25)
 POW2_H100_LENGTHS: tuple[SweepLength, ...] = (1, 2, 3, 4, 5, 6, "mixed")
 POW2_H100_HIDDEN_SIZE = 100
 POW2_H100_DEFAULT_SEEDS: tuple[int, ...] = (1, 2, 3, 4, 5)
@@ -98,7 +98,7 @@ def pow2_h100_sweep_task_config(n_words: int, length: SweepLength) -> dict[str, 
 
     chars = max(30_000, int(n_words * mean_length * 600))
     steps = min(120_000, max(15_000, int(n_words * 600 + mean_length * 2500)))
-    if n_words >= 32:
+    if n_words >= 20:
         steps = max(steps, 80_000)
     if length == 1:
         steps = min(steps, max(10_000, n_words * 500))
@@ -107,22 +107,22 @@ def pow2_h100_sweep_task_config(n_words: int, length: SweepLength) -> dict[str, 
     if length == 1:
         viz_length = min(n_words + 10, 100)
 
-    sequence_length = max(8, 2 * max_length + (8 if n_words >= 32 else 4))
+    sequence_length = max(8, 2 * max_length + (8 if n_words >= 20 else 4))
     if length == 1:
         sequence_length = max(4, min(8, max(n_words, 4)))
 
     metric_rollout_len = min(1000, max(300, int(n_words * mean_length * 2)))
-    if n_words >= 16:
+    if n_words >= 15:
         metric_rollout_len = min(5000, max(metric_rollout_len, int(n_words * mean_length * 20)))
     stall_min_iter = max(
         int(max(1_000, steps * 0.30)),
         max(1_000, int(steps * 0.08)),
     )
     stall_patience_evals = 24
-    if n_words >= 32:
+    if n_words >= 20:
         stall_patience_evals = 40
     if length == "mixed":
-        stall_patience_evals = 60 if n_words >= 32 else 36
+        stall_patience_evals = 60 if n_words >= 20 else 36
     stall_min_delta = 0.0015 if length == "mixed" else 0.001
 
     return {
@@ -142,7 +142,7 @@ def pow2_h100_sweep_task_config(n_words: int, length: SweepLength) -> dict[str, 
         "train_ratio": 0.9,
         "dropout": 0.25,
         "l2_lambda": 1e-4,
-        "learning_rate": 0.04 if max_length >= 5 or n_words >= 32 else 0.1,
+        "learning_rate": 0.04 if max_length >= 5 or n_words >= 20 else 0.1,
         "stall_patience_evals": int(stall_patience_evals),
         "stall_min_delta": float(stall_min_delta),
         "stall_min_iter": int(stall_min_iter),

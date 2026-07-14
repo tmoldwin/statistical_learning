@@ -391,7 +391,7 @@ def run_pow2_sweep_spectrum_plots(
     recompute: bool = True,
     spectra_file: str = "sweep_spectra.json",
     spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
-) -> tuple[Path, Path]:
+) -> tuple[Path, Path, Path]:
     json_path = sweep_data_dir(spec.comparison_name) / spectra_file
     if recompute or not json_path.is_file():
         json_path = write_pow2_sweep_spectra(
@@ -403,6 +403,12 @@ def run_pow2_sweep_spectrum_plots(
         max_pcs=int(payload.get("max_pcs", max_pcs)),
         spec=spec,
     )
+    overlay_path = plot_pow2_sweep_spectra_overlay(
+        payload["panels"],
+        max_pcs=int(payload.get("max_pcs", max_pcs)),
+        spec=spec,
+    )
     print(f"wrote {json_path}")
     print(f"wrote {fig_path}")
-    return json_path, fig_path
+    print(f"wrote {overlay_path}")
+    return json_path, fig_path, overlay_path

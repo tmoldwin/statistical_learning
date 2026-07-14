@@ -185,8 +185,8 @@ def main_for_spec(spec: Pow2SweepSpec, *, description: str, assert_task: tuple[i
 def main_h100() -> None:
     main_for_spec(
         POW2_SWEEP_SPEC_H100,
-        description="Pow2 h100 sweep (L1-6, max 32 words): plan, train, plot",
-        assert_task=(4, 3),
+        description="H100 sweep (L1-6, word counts 5-25 step 5): plan, train, plot",
+        assert_task=(5, 3),
     )
 
 

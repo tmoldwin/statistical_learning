@@ -31,6 +31,7 @@ class FigureRef:
     paper_name: str
     source: Path
     as_jpg: bool = True
+    max_w: int = 1600
 
 
 def _anchor(subpath: str) -> Path:
@@ -100,6 +101,10 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_sweep_all_metrics.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics.png"),
+        FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
+                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
+                  / "weights" / "sweep_all_metrics_scatter2d.png",
+                  max_w=2800),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
         FigureRef("main", "fig_weight_matrices_by_seed.jpg",
@@ -146,7 +151,7 @@ def collect(*, dry_run: bool = False) -> dict:
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         if ref.as_jpg and ref.source.suffix.lower() in {".png", ".jpeg", ".jpg", ".webp"}:
-            _to_jpg(ref.source, dest)
+            _to_jpg(ref.source, dest, max_w=ref.max_w)
         else:
             shutil.copy2(ref.source, dest)
         print(f"paper <- {dest.relative_to(ROOT)} from {ref.source.name}")

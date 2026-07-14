@@ -1,5 +1,5 @@
 {
-  "copied": 7,
+  "copied": 8,
   "missing": [
     "experiments/four_word_overlap_ns/shared/vocabulary_trie.svg",
     "experiments/four_word_overlap_ns/shared/vocabulary_min_dfa.svg",
@@ -183,6 +183,14 @@
       "paper_name": "fig_sweep_all_metrics.jpg",
       "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics.png",
       "dest": "paper/figures/compare/fig_sweep_all_metrics.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_sweep_metrics_scatter2d.jpg",
+      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics_scatter2d.png",
+      "dest": "paper/figures/compare/fig_sweep_metrics_scatter2d.jpg",
       "exists": true,
       "skipped_self": false
     },

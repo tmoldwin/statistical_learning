@@ -260,7 +260,7 @@ def plot_pow2_sweep_spectra_overlay(
     lengths = spec.lengths if lengths is None else lengths
     lookup = {(p["n_words"], p["length"]): p for p in panels}
 
-    fig, ax = plt.subplots(figsize=(8.2, 5.4))
+    fig, ax = plt.subplots(figsize=(6.2, 4.0))
     pc_x = np.arange(1, max_pcs + 1, dtype=float)
 
     global_xmax = 3
@@ -356,13 +356,13 @@ def plot_pow2_sweep_spectra_overlay(
     fig.suptitle(
         "Closed-loop PC variance explained (mean over seeds)\n"
         "color = word length, marker = # words",
-        fontsize=11,
+        fontsize=10,
         y=0.98,
     )
     fig.subplots_adjust(top=0.86, bottom=0.12, left=0.10, right=0.78)
 
     out_path = sweep_figures_dir(spec.comparison_name) / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
     return out_path
 

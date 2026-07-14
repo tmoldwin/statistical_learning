@@ -85,6 +85,6 @@ def condition_bar_colors(n: int) -> list[tuple[float, float, float, float]]:
     return [cmap(i % 20) for i in range(n)]
 
 
-def save_figure(fig, path, *, dpi: int = 160) -> None:
-    fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=0.08)
+def save_figure(fig, path, *, dpi: int = 150) -> None:
+    fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=0.06)
     plt.close(fig)

@@ -115,7 +115,7 @@ def plot_learning_summary(
             groups_by_key[key].append((vals, seed_ids))
 
     fig, axes = plt.subplots(
-        2, 2, figsize=(11.0, 7.0), constrained_layout=True, squeeze=False,
+        2, 2, figsize=(8.0, 5.0), constrained_layout=True, squeeze=False,
     )
     for ax, (key, ylabel) in zip(axes.ravel(), metric_specs):
         _plot_metric_by_condition(
@@ -132,7 +132,7 @@ def plot_learning_summary(
     out_dir = comparison_dir(spec.name, "learning_curves")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "summary.png"
-    fig.savefig(out_path, dpi=160, bbox_inches="tight")
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     return out_path
 

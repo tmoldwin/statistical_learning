@@ -364,10 +364,12 @@ def plot_pow2_sweep_metric_board(
         seeds=seed_set,
     )
     n_metrics = len(catalog)
+    if n_metrics > 20:
+        n_cols = max(n_cols, 5)
     n_rows = int(np.ceil(n_metrics / n_cols))
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(3.15 * n_cols + 0.4, 2.55 * n_rows + 0.8),
+        figsize=(2.05 * n_cols + 0.3, 1.65 * n_rows + 0.55),
         squeeze=False,
     )
     length_labels = [spec.length_label(L) for L in lengths]
@@ -447,7 +449,7 @@ def plot_pow2_sweep_metric_board(
     out_dir = Path("experiments/comparisons") / spec.comparison_name / "weights"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
     return out_path
 
@@ -482,7 +484,7 @@ def plot_pow2_sweep_metric_scatter3d(
     )
     n_metrics = len(catalog)
     n_rows = int(np.ceil(n_metrics / n_cols))
-    fig = plt.figure(figsize=(3.55 * n_cols + 0.8, 3.15 * n_rows + 1.1))
+    fig = plt.figure(figsize=(2.4 * n_cols + 0.5, 2.15 * n_rows + 0.7))
     dfa_states = _dfa_state_lookup(spec)
     dfa_cmap = plt.get_cmap("turbo")
     dfa_levels = sorted({int(v) for v in dfa_states.values() if v > 0})
@@ -654,7 +656,7 @@ def _points_vs_dfa(
 
 
 # Drop definitional duplicates of kept loop geometry / spectra panels.
-_SCATTER2D_SKIP_TITLES = frozenset({
+_REDUNDANT_METRIC_TITLES = frozenset({
     "planarity top-2",              # == loop top-2 var frac
     "PC1+2 % variance (loop)",      # == loop top-2 (spectra %)
     "PCs to 90% variance (loop)",   # == loop dims to 90%
@@ -696,7 +698,7 @@ def _prepare_dfa_scatter_panels(
         str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool, tuple[float, float] | None,
     ]] = []
     for title, final_map, init_map, _cmap, log_scale, lim in catalog:
-        if title in _SCATTER2D_SKIP_TITLES:
+        if title in _REDUNDANT_METRIC_TITLES:
             continue
         dfa_x, metric_y, seed_ids, length_idx, n_words_arr = _points_vs_dfa(
             final_map,
@@ -733,15 +735,20 @@ def plot_pow2_sweep_metric_scatter2d(
     seeds: tuple[int, ...] | None = None,
     spec: Pow2SweepSpec = POW2_SWEEP_SPEC_H100,
     min_r2: float = 0.1,
+    wrap: int = 8,
 ) -> Path:
-    """One figure, 2 rows × N metrics: top colored by length, bottom by #words."""
+    """Metrics vs DFA states in wrapped blocks: each block has length-color then #words-color rows."""
     run_seeds, word_counts, lengths, prepared = _prepare_dfa_scatter_panels(
         spec=spec, seeds=seeds, min_r2=min_r2,
     )
     n_metrics = len(prepared)
+    n_wrap = max(1, min(wrap, n_metrics))
+    n_blocks = int(np.ceil(n_metrics / n_wrap))
+    n_rows = 2 * n_blocks
+    n_cols = n_wrap
     fig, axes = plt.subplots(
-        2, n_metrics,
-        figsize=(2.35 * n_metrics + 1.2, 5.4),
+        n_rows, n_cols,
+        figsize=(1.45 * n_cols + 0.9, 1.85 * n_rows + 0.7),
         squeeze=False,
         sharex="col",
     )
@@ -765,74 +772,86 @@ def plot_pow2_sweep_metric_scatter2d(
     else:
         words_norm = Normalize(vmin=1.0, vmax=float(words_levels[0]))
 
-    for col, (panel_title, x, y_plot, seed_ids, length_idx, n_words_arr, use_log_y, lim) in enumerate(prepared):
+    for mi, (panel_title, x, y_plot, seed_ids, length_idx, n_words_arr, use_log_y, lim) in enumerate(prepared):
+        block, col = divmod(mi, n_wrap)
         jx, _ = _seed_jitter(seed_ids, scale=0.15)
         coef, _ = _fit_line(x, y_plot)
         x_line = np.linspace(float(np.min(x)), float(np.max(x)), 50) if coef is not None else None
 
-        for row, (cvals, cmap, norm) in enumerate((
+        for local_row, (cvals, cmap, norm) in enumerate((
             (length_idx, length_cmap, length_norm),
             (n_words_arr, words_cmap, words_norm),
         )):
+            row = 2 * block + local_row
             ax = axes[row][col]
             ax.scatter(
                 x + jx, y_plot,
                 c=cvals, cmap=cmap, norm=norm,
-                s=12, alpha=0.55, linewidths=0, zorder=2,
+                s=9, alpha=0.55, linewidths=0, zorder=2,
             )
             if coef is not None and x_line is not None:
-                ax.plot(x_line, coef[0] + coef[1] * x_line, color="#222222", lw=1.2, zorder=3)
-            if row == 0:
-                ax.set_title(panel_title, fontsize=7, pad=3)
-            ax.tick_params(labelsize=5.5)
-            if row == 1:
-                ax.set_xlabel("DFA states", fontsize=6.5)
+                ax.plot(x_line, coef[0] + coef[1] * x_line, color="#222222", lw=1.0, zorder=3)
+            if local_row == 0:
+                ax.set_title(panel_title, fontsize=6, pad=2)
+            ax.tick_params(labelsize=5)
+            if local_row == 1 and block == n_blocks - 1:
+                ax.set_xlabel("DFA states", fontsize=6)
             if col == 0:
                 ylab = "log10" if use_log_y else "value"
-                row_tag = "# letters" if row == 0 else "# words"
-                ax.set_ylabel(f"{row_tag}\n{ylab}", fontsize=7)
+                row_tag = "# letters" if local_row == 0 else "# words"
+                ax.set_ylabel(f"{row_tag}\n{ylab}", fontsize=6)
             if lim is not None and not use_log_y:
                 ax.set_ylim(lim)
             ax.grid(True, alpha=0.25, linewidth=0.5)
 
+    # Hide unused axes in the last block.
+    used_in_last = n_metrics - (n_blocks - 1) * n_wrap
+    for col in range(used_in_last, n_cols):
+        for local_row in range(2):
+            axes[2 * (n_blocks - 1) + local_row][col].axis("off")
+
     finalize_grid_figure(
         fig,
-        top=0.90,
-        bottom=0.10,
-        left=0.05,
-        hspace=0.22,
-        wspace=0.28,
+        top=0.93,
+        bottom=0.07,
+        left=0.06,
+        hspace=0.38,
+        wspace=0.30,
         suptitle=(
             f"Metrics vs DFA states (deduped; R²≥{min_r2:g}; "
-            f"row1=#letters, row2=#words; seeds {min(run_seeds)}-{max(run_seeds)}; "
+            f"pairs of rows: #letters then #words; seeds {min(run_seeds)}-{max(run_seeds)}; "
             f"{spec.comparison_name})"
         ),
+        suptitle_fontsize=9,
     )
 
-    # One colorbar per row, anchored to that row's axes.
+    # One colorbar per color scheme, spanning all matching rows.
+    length_axes = [axes[r][c] for r in range(0, n_rows, 2) for c in range(n_cols)]
+    words_axes = [axes[r][c] for r in range(1, n_rows, 2) for c in range(n_cols)]
     sm_len = plt.cm.ScalarMappable(cmap=length_cmap, norm=length_norm)
     sm_len.set_array([])
-    cbar0 = fig.colorbar(sm_len, ax=axes[0, :].tolist(), fraction=0.012, pad=0.01)
+    cbar0 = fig.colorbar(sm_len, ax=length_axes, fraction=0.015, pad=0.01)
     cbar0.set_ticks(np.arange(len(length_labels)))
     cbar0.set_ticklabels(length_labels)
-    cbar0.set_label("# letters", fontsize=8)
-    cbar0.ax.tick_params(labelsize=5.5)
+    cbar0.set_label("# letters", fontsize=7)
+    cbar0.ax.tick_params(labelsize=5)
 
     sm_w = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
     sm_w.set_array([])
-    cbar1 = fig.colorbar(sm_w, ax=axes[1, :].tolist(), fraction=0.012, pad=0.01)
+    cbar1 = fig.colorbar(sm_w, ax=words_axes, fraction=0.015, pad=0.01)
     cbar1.set_ticks(words_levels)
     cbar1.set_ticklabels([str(w) for w in words_levels])
-    cbar1.set_label("# words", fontsize=8)
-    cbar1.ax.tick_params(labelsize=5.5)
+    cbar1.set_label("# words", fontsize=7)
+    cbar1.ax.tick_params(labelsize=5)
 
     out_dir = Path("experiments/comparisons") / spec.comparison_name / "weights"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
     return out_path
 
 
 if __name__ == "__main__":
+    plot_pow2_sweep_metric_board()
     plot_pow2_sweep_metric_scatter2d()

@@ -31,7 +31,7 @@ class FigureRef:
     paper_name: str
     source: Path
     as_jpg: bool = True
-    max_w: int = 1600
+    max_w: int = 1200
 
 
 def _anchor(subpath: str) -> Path:
@@ -83,8 +83,9 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("main", "fig_activation_heatmap.jpg", _anchor("activations/7_activation_heatmap.png")),
         FigureRef("main", "fig_activation_clustered.jpg",
                   _anchor("activations/10_activation_clustered_heatmap.png")),
-        FigureRef("main", "fig_dfa_pca_geometry.jpg",
-                  _anchor("embeddings/12_dfa_and_embedding_pca_condensed.png")),
+        FigureRef("demo", "fig_dfa_pca_geometry.jpg",
+                  ROOT / "experiments" / DEMO / "rnn" / "plots"
+                  / "embeddings" / "12_dfa_and_embedding_pca_condensed.png"),
         FigureRef("main", "fig11_embedding_panels.jpg",
                   _anchor("embeddings/11_embedding_panels_context.png")),
         FigureRef("main", "fig20_feature_separation.jpg",
@@ -93,6 +94,8 @@ def paper_manifest() -> list[FigureRef]:
                   _anchor("separation/19_dfa_state_distance_comparison.png")),
         FigureRef("main", "fig_unit_selectivity.jpg",
                   _anchor("unit_selectivity/unit_selectivity_summary.png")),
+        FigureRef("main", "fig_example_units.jpg",
+                  _anchor("unit_selectivity/example_units_combined.png")),
         FigureRef("main", "fig_decoding_seed_mean.jpg",
                   _anchor("decoding/decoding_curves_seed_mean.png")),
         FigureRef("main", "fig_word_trajectories.jpg",
@@ -114,7 +117,7 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics_scatter2d.png",
-                  max_w=2800),
+                  max_w=1400),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
         FigureRef("main", "fig_weight_matrices_by_seed.jpg",

@@ -18,7 +18,7 @@ Fluent speech arrives without reliable pauses. Infants can use transitional prob
 
 For a finite vocabulary streamed without separators, optimal next-character prediction depends on the state of the vocabulary’s minimal DFA—the equivalence class of in-word prefixes with identical futures. An Elman RNN has no word units and no boundary channel, yet if it solves the prediction task its hidden state \(\mathbf{h}_t\) must carry that information. We test whether the information is geometrically organized.
 
-**Plan.** (1) Five-word demo. (2) Single 16-word condition: next-character probabilities, activations, PCA + separation, decoding, trajectories, then weight structure. (3) Comparisons across length and vocabulary size.
+**Plan.** (1) Five-word demo. (2) Single 16-word condition: next-character probabilities, activations, separation, single-unit selectivity, decoding, trajectories, then weight structure. (3) Comparisons across length and vocabulary size.
 
 ---
 
@@ -32,7 +32,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Model.** Elman RNN, \(H = 50\), next-character cross-entropy, early stop on word-error \(\leq 3\%\).
 
-**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; PCA embeddings (colored by DFA state, position, and character); feature separation (\(\eta^2\), silhouette, …); linear decoding from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds); closed-loop word trajectories; multi-seed clustered init-vs-final weights and motif scalars.
+**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; PCA embeddings (colored by DFA state, position, and character); feature separation (\(\eta^2\), silhouette, …); per-unit selectivity with exemplar units; linear decoding from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds); closed-loop word trajectories; multi-seed clustered init-vs-final weights and motif scalars.
 
 ---
 
@@ -45,6 +45,10 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 ![Figure 2a. Vocabulary and unsegmented training stream.](figures/demo/fig04_corpus_stream.jpg)
 
 ![Figure 2b. Generation before vs after learning (green = in-vocabulary, red = out-of-vocabulary).](figures/demo/fig04_samples.jpg)
+
+![Figure 2c. Minimal DFA for *cat*, *met*, *ate*, *tea*, *eat* (top-left; nodes colored by state) beside PCA of \(\mathbf{h}\) colored by the same DFA states (top-right). Bottom: same PCA colored by position from beginning (left) and current character (right).](figures/demo/fig_dfa_pca_geometry.jpg)
+
+State colors match between the automaton and the DFA-colored PCA. The same geometry reorganized by position and character shows orthogonal feature structure without a separate legend.
 
 Unless noted, the remainder uses the **16-word, 4-letter** condition.
 
@@ -62,23 +66,25 @@ Probability mass concentrates late in words and spreads at ambiguous prefixes.
 
 ### 3.4 PCA geometry and population separation
 
-![Figure 6. Minimal DFA (top-left; nodes colored by state) beside PCA of \(\mathbf{h}\) colored by the same DFA states (top-right). Bottom: same PCA colored by position from beginning (left) and current character (right).](figures/main/fig_dfa_pca_geometry.jpg)
+![Figure 6. Feature separation summary (condensed prefixes).](figures/main/fig20_feature_separation.jpg)
 
-State colors match between the automaton and the DFA-colored PCA. The same geometry reorganized by position and character shows orthogonal feature structure without a separate legend.
+DFA state dominates (\(\eta^2 \approx 0.95\)).
 
-![Figure 7. Feature separation summary (condensed prefixes).](figures/main/fig20_feature_separation.jpg)
+### 3.5 Single-unit selectivity
 
-DFA state dominates (\(\eta^2 \approx 0.95\)). Unit selectivity agrees (population median \(\eta^2\): DFA 0.97, prefix 0.84, character 0.67, position 0.40).
+Per-unit selectivity uses a peak-vs-rest index on category-mean activations (flat units gated to 0). Population medians of per-unit \(\eta^2\) agree with the separation analysis (DFA 0.95, prefix 0.87, character 0.60, position 0.42). Individual units span that spectrum: some are sharply tuned to character or position, others track DFA state more diffusely.
 
-![Figure 8. Unit selectivity overview.](figures/main/fig_unit_selectivity.jpg)
+![Figure 7. Unit selectivity overview (population summary).](figures/main/fig_unit_selectivity.jpg)
 
-### 3.5 Decoding
+![Figure 8. Top-2 units per feature (DFA state, character, position from beginning, position from end) on one shared corpus window. Left: activation vs input characters (color = feature category); right: mean activation by category.](figures/main/fig_example_units.jpg)
+
+### 3.6 Decoding
 
 ![Figure 9. Linear decoding, mean ± std across seeds 1, 2, 3, 5, 7, 8.](figures/main/fig_decoding_seed_mean.jpg)
 
 Position and DFA saturate within a few PCs; character needs more dimensions.
 
-### 3.6 Word trajectories
+### 3.7 Word trajectories
 
 ![Figure 10. Closed-loop (self-fed, color = letter position) vs internal dynamics (seed then no input, color = timestep, with vector field).](figures/main/fig_word_trajectories.jpg)
 
@@ -86,7 +92,7 @@ Left: autoregressive generation with prefix labels, segments colored by in-word 
 
 ![Figure 11. Closed-loop trajectories across 12 training seeds (same 16-word condition).](figures/main/fig_word_trajectories_by_start.jpg)
 
-### 3.7 Weight structure (same 16-word condition)
+### 3.8 Weight structure (same 16-word condition)
 
 ![Figure 12. Init vs final \(W_{xh}\) and \(W_{hh}\) across seeds 1, 2, 3, 5, 7 (each stage clustered).](figures/main/fig_weight_matrices_by_seed.jpg)
 
@@ -96,7 +102,7 @@ Final \(W_{xh}\) becomes **letter-columnar**: after clustering, units form coher
 
 Final \(W_{hh}\) becomes **locally clumped** along the cluster order: adjacent-unit \(|\mathrm{corr}|\) doubles from \(0.13 \pm 0.03\) to \(0.28 \pm 0.04\) (see sample histogram). Mean within/between \(|W_{hh}|\) stays near 1: both within- and between-block magnitude histograms inflate similarly after learning, so the structure is local neighborhood coupling rather than a clean block-diagonal partition.
 
-### 3.8 Comparisons across length and vocabulary size
+### 3.9 Comparisons across length and vocabulary size
 
 ![Figure 14. Learning curves across 3 / 4 / 5 / mixed length (16 words).](figures/compare/fig_compare_learning.jpg)
 
@@ -121,7 +127,7 @@ Smaller lexicons concentrate variance in the first one or two PCs: several 1- an
 
 Reading the heatmaps along each axis separately makes the two knobs of the task explicit. **Increasing vocabulary size** (left→right) is the dominant driver of representational expansion: for every fixed length, loop/corpus top-2 variance falls and effective dimension / dims-to-90% rise as the lexicon grows from 5 to 25 words. Few-word cells remain near-planar closed loops; large lexicons force the hidden trajectory to use many more principal directions. **Increasing word length** (top→bottom) acts in the same direction but more weakly at small \(K\), and most strongly once the lexicon is already nontrivial—especially in the mixed-length row, where prefix ambiguity is highest. Training tracks that complexity: iterations to a 3% word-error target climb toward high-\(K\) and mixed cells, so larger automata are harder to acquire even when asymptotic demo error eventually recovers. Weight structure splits along the same axes. Easy, few-word cells concentrate learned local recurrence (\(W_{xh}\) cohesion and \(W_{hh}\) adjacent \(|\mathrm{corr}|\) peak there). Harder cells become more feedforward-driven: input/recurrent Frobenius ratio and mean input-drive fraction increase with both length and \(K\) relative to init baselines (\(\approx 0.02\) cohesion, \(0.13\) adjacent \(|\mathrm{corr}|\), \(0.29\) Frobenius ratio, \(0.48\) drive fraction).
 
-![Figure 18. Deduped metrics (\(R^2 \ge 0.1\)) vs minimized vocabulary DFA state count; one point per seed × condition (seeds 1–15). Top row colored by letter length; bottom row by \#words. Black line = OLS fit on DFA states.](figures/compare/fig_sweep_metrics_scatter2d.jpg)
+![Figure 18. Deduped metrics (\(R^2 \ge 0.1\)) vs minimized vocabulary DFA state count; one point per seed × condition (seeds 1–15). Blocks of panels: within each block, upper row colored by letter length and lower row by \#words. Black line = OLS fit on DFA states.](figures/compare/fig_sweep_metrics_scatter2d.jpg)
 
 Figure 18 collapses the two-dimensional sweep onto a single task-complexity axis: the number of states in the minimized word DFA. “Corpus” panels summarize the teacher-forced hidden-state cloud; “loop” panels summarize the mean closed-loop trajectory—both are network geometry under different driving regimes, not properties of the string corpus itself. Strong positive slopes for effective dimension and dims-to-90% (\(R^2 \approx 0.5\)–\(0.8\)), and the matching negative slopes for top-2 variance, mean that **automata with more states force higher-dimensional RNN state spaces**. Learning cost follows: iterations to 3% word error rise with DFA size (\(R^2 \approx 0.60\)). Weight readouts move coherently with that same continuum—larger DFAs yield higher input/recurrent drive ratios and lower top-1 \(W_{xh}\) mass / adjacent recurrent correlation. The two color rows show *which* experimental knob is carrying the DFA effect: \#words (bottom) sorts points more cleanly along the DFA axis than letter length (top), so lexicon size is the main constructor of DFA complexity here, while length and especially mixed length add residual spread at a given DFA size. In short, word count builds the automaton; length and mixing thicken the residual geometry and training cost on top of that.
 

@@ -2594,7 +2594,7 @@ def plot_feature_separation_summary(
     colors = [FEATURE_COLORS.get(f, "#888888") for f in feats]
     tick_labels = [FEATURE_DISPLAY.get(f, f) for f in feats]
 
-    fig, axes = plt.subplots(2, 3, figsize=(14, 7.5), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2), constrained_layout=True)
 
     ax = axes[0, 0]
     vals = [stats.centroid_gap[f] for f in feats]
@@ -2779,7 +2779,7 @@ def plot_dfa_state_distance_comparison(
         for label, vals in specs
     }
 
-    fig, ax = plt.subplots(figsize=(18.5, 5.5), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(11.0, 3.4), constrained_layout=True)
     x = np.arange(len(order))
     rng = np.random.default_rng(0)
     max_points = 200
@@ -4375,7 +4375,7 @@ def plot_2d_hidden_state_labels(
     if len(text) == 0:
         return
 
-    fig, ax = plt.subplots(figsize=(14, 11), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(8.0, 6.2), constrained_layout=True)
     text_positions = add_pca_point_annotations(
         ax, text, projected, spaced=spaced, automaton=automaton
     )
@@ -4392,8 +4392,8 @@ def plot_2d_hidden_state_labels(
     ax.set_title(title)
     ax.grid(True, linestyle=":", alpha=0.35)
     if fig_suptitle:
-        fig.suptitle(fig_suptitle, fontsize=11, y=1.02)
-    fig.savefig(save_path, dpi=300)
+        fig.suptitle(fig_suptitle, fontsize=10, y=1.02)
+    fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -4630,7 +4630,7 @@ def _plot_2d_feature_colored_pca_panel(
         ax.set_ylim(ylim[0] - pad_y, ylim[1] + pad_y)
     ax.set_xlabel("" if minimal_axes else xlabel, fontsize=8)
     ax.set_ylabel("" if minimal_axes else ylabel, fontsize=8)
-    ax.set_title(title, fontsize=11, pad=8)
+    ax.set_title(title, fontsize=9, pad=4)
     ax.grid(True, linestyle=":", alpha=0.35)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -4824,7 +4824,7 @@ def plot_dimred_context_panels(
 
     features = list(ctx["features"])
     n_feat = len(features)
-    fig = plt.figure(figsize=(15, 9.5))
+    fig = plt.figure(figsize=(9.5, 6.0))
     gs = fig.add_gridspec(
         2, n_feat,
         height_ratios=[1.35, 1.0],
@@ -4868,10 +4868,10 @@ def plot_dimred_context_panels(
             repr_name=None, words=words, chars=chars, condensed=condensed,
             dim_label=embed_dim_label(embed_method),
         ),
-        fontsize=12,
+        fontsize=10,
         y=0.97,
     )
-    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -4979,7 +4979,7 @@ def plot_dimred_context_panels_3d(
     )
     xlabel, ylabel, zlabel = embed_axis_labels_3d(evr, embed_method)
 
-    fig = plt.figure(figsize=(24, 21))
+    fig = plt.figure(figsize=(10.5, 9.0))
     axes = _feature_pca_figure_gridspec(fig, 2, 2, projection="3d")
     for ax, feat in zip(axes, ctx["features"]):
         _plot_3d_feature_colored_pca_panel(
@@ -4996,10 +4996,10 @@ def plot_dimred_context_panels_3d(
             repr_name=repr_name, words=words, chars=chars, condensed=condensed,
             dim_label=f"3D {embed_dim_label(embed_method)}",
         ),
-        fontsize=13,
+        fontsize=10,
         y=0.97,
     )
-    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7065,7 +7065,7 @@ def plot_closed_loop_trajectory_panel(
     hidden_size = int(model["hidden_size"])
     max_word_len = max(internal_steps, _longest_vocabulary_word_length(vocab_words))
 
-    fig, axes = plt.subplots(1, 2, figsize=(14.5, 6.5), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.2), constrained_layout=True)
     ax_closed, ax_internal = axes
     closed_limits: list[np.ndarray] = []
     internal_limits: list[np.ndarray] = []
@@ -7176,7 +7176,7 @@ def plot_closed_loop_trajectory_panel(
     _add_trajectory_step_colorbar(
         fig, axes, max_word_len, label="step in word / timestep",
     )
-    fig.savefig(save_path, dpi=220, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7835,12 +7835,12 @@ def plot_pca_dfa_analysis(
     ylim = (float(projected[:, 1].min() - pad_y), float(projected[:, 1].max() + pad_y))
 
     state_colors = _dfa_automaton_state_colors(automaton)
-    fig, axes = plt.subplots(2, 2, figsize=(16, 14), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(8.0, 7.0), constrained_layout=True)
     ax_dfa, ax_dfa_pca = axes[0, 0], axes[0, 1]
     ax_pos, ax_char = axes[1, 0], axes[1, 1]
 
     draw_minimized_dfa_on_axes(ax_dfa, automaton, words, state_colors=state_colors)
-    ax_dfa.set_title("Minimal DFA", fontsize=12, pad=8)
+    ax_dfa.set_title("Minimal DFA", fontsize=10, pad=4)
 
     panel_specs = [
         (ax_dfa_pca, "dfa", "PCA · DFA state"),
@@ -7867,10 +7867,10 @@ def plot_pca_dfa_analysis(
             repr_name=rep, words=words, chars=chars, condensed=condensed,
             dim_label=embed_dim_label(embed_method),
         ),
-        fontsize=12,
+        fontsize=10,
         y=1.01,
     )
-    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7923,7 +7923,7 @@ def plot_pca_prediction_regions(
     avoid_radius = plane_span * 0.12
 
     pred_cmap = plt.get_cmap("tab10", vocab_size)
-    fig, axes = plt.subplots(1, 2, figsize=(24, 11), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.8), constrained_layout=True)
     panel_specs = [
         (
             axes[0],
@@ -7986,9 +7986,9 @@ def plot_pca_prediction_regions(
             f"{original_vocabulary_title(chars, text)}",
             condensed,
         ),
-        fontsize=12, y=1.01,
+        fontsize=10, y=1.01,
     )
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -8029,7 +8029,7 @@ def plot_pca_next_char_probability_panels(
     nrows = (vocab_size + ncols - 1) // ncols
     fig, axes = plt.subplots(
         nrows, ncols,
-        figsize=(4.4 * ncols, 3.9 * nrows),
+        figsize=(3.0 * ncols, 2.6 * nrows),
         sharex=True, sharey=True,
         constrained_layout=True,
     )

@@ -138,7 +138,7 @@ def plot_weight_matrices_by_seed(
 
     fig, axes = plt.subplots(
         n_rows, n_seeds,
-        figsize=(1.55 * n_seeds + 1.2, 2.15 * n_rows + 0.6),
+        figsize=(1.25 * n_seeds + 1.0, 1.75 * n_rows + 0.5),
         squeeze=False,
     )
     motif_by_seed: dict[str, Any] = {"seeds": list(seeds), "init": {}, "final": {}}
@@ -596,7 +596,7 @@ def plot_weight_metrics_compact_by_seed(
     n_rows = n_bar_rows + n_hist_rows
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(2.45 * n_cols + 0.5, 2.45 * n_rows + 0.7),
+        figsize=(1.9 * n_cols + 0.4, 1.85 * n_rows + 0.5),
         squeeze=False,
     )
 

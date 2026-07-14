@@ -171,7 +171,7 @@ def plot_feature_separation_comparison(
             if stats is not None:
                 per_task_seed[task][run_seed] = stats
 
-    fig, axes = plt.subplots(2, 3, figsize=(14.5, 8.0))
+    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2))
     for ax, (metric_key, ylabel) in zip(axes.ravel(), _PANEL_SPECS):
         values_by_condition: list[list[float]] = []
         errs_by_condition: list[list[float]] = []
@@ -232,7 +232,7 @@ def plot_feature_separation_comparison(
     out_dir = comparison_dir(spec.name, "feature_separation")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "summary.png"
-    save_figure(fig, out_path, dpi=200)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
 
     json_path = out_dir / "summary.json"

@@ -276,11 +276,11 @@ def plot_task_decode_curves(
 ) -> Path:
     """Chance-corrected PCA vs random neuron subsets (mean ± std) per feature."""
     save_path = Path(save_path)
-    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.8, 3.2), sharey=True)
     finalize_grid_figure(
         fig,
         suptitle="Linear readout: chance-corrected decoding accuracy",
-        top=0.90,
+        top=0.88,
         wspace=0.22,
     )
 
@@ -319,7 +319,7 @@ def plot_aggregated_seed_decode_curves(
     if not seeds:
         raise ValueError("need at least one seed panel")
 
-    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.0), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.8, 3.1), sharey=True)
     legend_handles = None
     legend_labels = None
 

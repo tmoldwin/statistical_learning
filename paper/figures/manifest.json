@@ -1,5 +1,5 @@
 {
-  "copied": 12,
+  "copied": 14,
   "missing": [
     "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/8_next_char_prob_sequence.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/7_activation_heatmap.png",
@@ -7,7 +7,6 @@
     "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/unit_selectivity_summary.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_closed_loop.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/closed_loop_run_seed_row.png",
@@ -112,10 +111,10 @@
       "skipped_self": false
     },
     {
-      "section": "main",
+      "section": "demo",
       "paper_name": "fig_dfa_pca_geometry.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
-      "dest": "paper/figures/main/fig_dfa_pca_geometry.jpg",
+      "source": "experiments/five_word_overlap_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
+      "dest": "paper/figures/demo/fig_dfa_pca_geometry.jpg",
       "exists": true,
       "skipped_self": false
     },
@@ -148,7 +147,15 @@
       "paper_name": "fig_unit_selectivity.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/unit_selectivity_summary.png",
       "dest": "paper/figures/main/fig_unit_selectivity.jpg",
-      "exists": false,
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "main",
+      "paper_name": "fig_example_units.jpg",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/example_units_combined.png",
+      "dest": "paper/figures/main/fig_example_units.jpg",
+      "exists": true,
       "skipped_self": false
     },
     {

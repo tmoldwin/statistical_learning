@@ -7,12 +7,12 @@
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#444"/></marker>
 </defs>
 <path d="M 359.6 105.4 L 138.2 267.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 369.8 113.7 Q 351.7 184.9 309.9 245.4" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 369.8 113.7 Q 328.0 174.2 309.9 245.4" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 369.8 113.7 Q 350.5 187.5 307.6 250.6" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 369.8 113.7 Q 326.8 176.8 307.6 250.6" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 391.3 113.7 L 457.0 258.2" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 401.5 105.4 L 622.9 267.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 124.8 309.1 L 190.3 453.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 308.3 321.9 L 364.4 445.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 305.9 316.7 L 364.4 445.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 458.7 309.1 L 396.8 445.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 636.4 309.1 L 570.9 453.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
 <path d="M 220.6 500.5 L 347.8 640.4" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -23,8 +23,8 @@
 <text x="380.6" y="90.0" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">ε</text>
 <circle cx="114.0" cy="285.5" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
 <text x="114.0" y="285.5" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">a</text>
-<circle cx="291.7" cy="285.5" r="38.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="291.7" y="285.5" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">{c, e}</text>
+<circle cx="291.7" cy="285.5" r="32.3" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="291.7" y="285.5" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">c, e</text>
 <circle cx="469.4" cy="285.5" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
 <text x="469.4" y="285.5" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">m</text>
 <circle cx="647.1" cy="285.5" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
@@ -40,18 +40,18 @@
 <text x="380.6" y="655.1" text-anchor="middle" class="state-label" font-size="7px"><tspan x="380.6" dy="0">ate</tspan><tspan x="380.6" dy="10.66">cat</tspan><tspan x="380.6" dy="10.66">eat</tspan><tspan x="380.6" dy="10.66">met</tspan><tspan x="380.6" dy="10.66">tea</tspan></text>
 <text x="239.4" y="173.7" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
 <text x="239.4" y="173.7" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
-<text x="331.2" y="175.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">c</text>
-<text x="331.2" y="175.6" text-anchor="middle" dominant-baseline="central" class="edge-label">c</text>
-<text x="348.5" y="183.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
-<text x="348.5" y="183.5" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
+<text x="330.0" y="178.2" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">c</text>
+<text x="330.0" y="178.2" text-anchor="middle" dominant-baseline="central" class="edge-label">c</text>
+<text x="347.3" y="186.1" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
+<text x="347.3" y="186.1" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
 <text x="409.6" y="192.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">m</text>
 <text x="409.6" y="192.5" text-anchor="middle" dominant-baseline="central" class="edge-label">m</text>
 <text x="502.8" y="199.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
 <text x="502.8" y="199.5" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
 <text x="142.9" y="387.8" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
 <text x="142.9" y="387.8" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
-<text x="321.7" y="390.2" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
-<text x="321.7" y="390.2" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="320.6" y="387.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="320.6" y="387.6" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
 <text x="413.1" y="370.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
 <text x="413.1" y="370.6" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
 <text x="589.0" y="374.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>

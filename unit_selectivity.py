@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from vocab_diagrams import MinimizedVocabAutomaton
     from visualize import CondensedView
 
-ANALYSIS_FEATURES = ("char", "position", "position_from_end", "dfa")
+ANALYSIS_FEATURES = ("dfa", "char", "position", "position_from_end")
 SELECTIVITY_FEATURES = ("dfa", "prefix", "char", "position", "position_from_end")
 ALL_CATEGORICAL_FEATURES = SELECTIVITY_FEATURES
 LEXICAL_FEATURES = SELECTIVITY_FEATURES
@@ -333,27 +333,75 @@ def _unit_category_means(
     labels: list,
     valid_mask: list[bool] | None,
 ) -> dict[Any, float]:
+    return {
+        lbl: mean
+        for lbl, (mean, _) in _unit_category_stats(
+            unit_acts, labels, valid_mask,
+        ).items()
+    }
+
+
+def _unit_category_stats(
+    unit_acts: np.ndarray,
+    labels: list,
+    valid_mask: list[bool] | None,
+) -> dict[Any, tuple[float, int]]:
+    """Category → (mean, count)."""
     groups: dict[Any, list[float]] = defaultdict(list)
     for i, lbl in enumerate(labels):
         if valid_mask is not None and not valid_mask[i]:
             continue
         groups[lbl].append(float(unit_acts[i]))
-    return {lbl: float(np.mean(v)) for lbl, v in groups.items() if v}
+    return {lbl: (float(np.mean(v)), len(v)) for lbl, v in groups.items() if v}
+
+
+def peak_selectivity_index(
+    category_means: np.ndarray,
+    *,
+    min_range: float = 0.25,
+) -> float:
+    """Peaked tuning: (r_max − r̄_others) / (r_max + r̄_others) on nonnegative rates.
+
+    Category means are shifted by their minimum so rates are ≥ 0. Flat profiles
+    (range < ``min_range``) score 0. One elevated category among lows → ~1.
+    """
+    means = np.asarray(category_means, dtype=float).ravel()
+    if means.size < 2:
+        return 0.0
+    if float(means.max() - means.min()) < min_range:
+        return 0.0
+    rates = means - float(means.min())
+    r_max = float(rates.max())
+    if r_max <= 1e-12:
+        return 0.0
+    others = rates[rates < r_max - 1e-15]
+    if others.size == 0:
+        # ties for max across all → not selective
+        return 0.0
+    r_rest = float(others.mean())
+    return (r_max - r_rest) / (r_max + r_rest + 1e-12)
 
 
 def _unit_peak_metrics(
     unit_acts: np.ndarray,
     labels: list,
     valid_mask: list[bool] | None,
+    *,
+    min_std: float = 0.1,
+    min_range: float = 0.25,
+    min_peak_count: int = 2,
 ) -> tuple[float, float, float, str | None]:
     """
-    Peaked selectivity for one unit vs one feature.
+    Selectivity for one unit vs one feature.
 
-    Returns (selectivity_index, normalized_peak_gap, eta2, peak_category_label).
-    Categories are ranked by |mean − grand_mean| so inverted tuning counts.
+    Returns (SI, normalized_peak_gap, eta2, peak_category_label).
+
+    SI is peak-vs-rest on category means (nonnegative after min-shift).
+    Peak category is argmax |mean − grand_mean|. Near-flat units and peaks
+    supported by fewer than ``min_peak_count`` samples score 0.
     """
-    means = _unit_category_means(unit_acts, labels, valid_mask)
-    if len(means) < 2:
+    stats = _unit_category_stats(unit_acts, labels, valid_mask)
+    if len(stats) < 2:
         return float("nan"), float("nan"), float("nan"), None
 
     values = np.array([
@@ -361,19 +409,30 @@ def _unit_peak_metrics(
         for i in range(len(labels))
         if valid_mask is None or valid_mask[i]
     ])
+    std = float(np.std(values))
     grand = float(values.mean())
-    scale = max(float(np.std(unit_acts)), 1e-9)
 
-    ranked = sorted(means.items(), key=lambda kv: abs(kv[1] - grand), reverse=True)
-    top_lbl, top_mean = ranked[0]
-    _, second_mean = ranked[1]
-    peak_gap_norm = (abs(top_mean - grand) - abs(second_mean - grand)) / scale
+    ranked = sorted(
+        stats.items(),
+        key=lambda kv: abs(kv[1][0] - grand),
+        reverse=True,
+    )
+    top_lbl, (top_mean, top_count) = ranked[0]
+    _, (second_mean, _) = ranked[1]
 
-    abs_devs = sorted((abs(m - grand) for m in means.values()), reverse=True)
-    r_max = abs_devs[0]
-    r_others = float(np.mean(abs_devs[1:])) if len(abs_devs) > 1 else 0.0
-    si = (r_max - r_others) / (r_max + r_others + 1e-9)
+    mean_vec = np.array([m for m, _ in stats.values()], dtype=float)
+    if std < min_std or top_count < min_peak_count:
+        return 0.0, 0.0, 0.0, str(top_lbl)
 
+    si = peak_selectivity_index(mean_vec, min_range=min_range)
+    if si <= 0.0:
+        return 0.0, 0.0, 0.0, str(top_lbl)
+
+    peak_gap_norm = (
+        (abs(top_mean - grand) - abs(second_mean - grand)) / std
+        if std > 1e-12
+        else 0.0
+    )
     return si, peak_gap_norm, _unit_eta2(unit_acts, labels, valid_mask), str(top_lbl)
 
 
@@ -539,6 +598,34 @@ def _top_units(scores: np.ndarray, k: int = 3) -> list[int]:
     return list(order[:k])
 
 
+def _top_selective_units(
+    scores: np.ndarray,
+    activations: np.ndarray,
+    k: int = 2,
+    *,
+    min_std: float = 0.05,
+    exclude: set[int] | frozenset[int] | None = None,
+) -> list[int]:
+    """Top-k by score among units with nontrivial activation variance."""
+    skip = exclude or set()
+    valid = [
+        i for i in range(len(scores))
+        if i not in skip
+        and np.isfinite(scores[i])
+        and float(np.std(activations[:, i])) >= min_std
+    ]
+    if not valid:
+        # Fall back: allow excluded units if nothing else qualifies.
+        valid = [
+            i for i in range(len(scores))
+            if np.isfinite(scores[i]) and float(np.std(activations[:, i])) >= min_std
+        ]
+    if not valid:
+        return _top_units(scores, k=k)
+    order = sorted(valid, key=lambda i: float(scores[i]), reverse=True)
+    return order[:k]
+
+
 def plot_selectivity_heatmap(
     scores: dict[str, np.ndarray],
     features: tuple[str, ...],
@@ -652,7 +739,7 @@ def plot_primary_feature_pie(
             autopct="%1.0f%%",
             startangle=90,
         )
-    axes[0].set_title("Primary feature (max selectivity index)")
+    axes[0].set_title("Primary feature (max SI)")
 
     grp_counts: dict[str, int] = defaultdict(int)
     for g in result.primary_group:
@@ -741,24 +828,48 @@ def _category_color_map(
     return cat_to_color, legend_labels
 
 
-def _timestep_tick_labels(labels: TimestepLabels, indices: list[int]) -> list[str]:
+def _timestep_tick_labels(
+    labels: TimestepLabels,
+    indices: list[int],
+    *,
+    feature: str | None = None,
+    automaton: MinimizedVocabAutomaton | None = None,
+) -> list[str]:
+    # Always show the input character: panels share one chronological sequence.
+    # Feature identity is carried by point/bar color, not by rewriting the x-axis.
+    del feature, automaton
     return [labels.chars[i] for i in indices]
 
 
-def _set_all_timestep_xticks(ax, labels: TimestepLabels, indices: list[int] | None = None) -> None:
+def _set_all_timestep_xticks(
+    ax,
+    labels: TimestepLabels,
+    indices: list[int] | None = None,
+    *,
+    feature: str | None = None,
+    automaton: MinimizedVocabAutomaton | None = None,
+    show_labels: bool = True,
+) -> None:
     n = len(labels.chars)
     if indices is None:
         indices = list(range(n))
     ax.set_xticks(indices)
-    ax.set_xticklabels(
-        _timestep_tick_labels(labels, indices),
-        rotation=90,
-        va="top",
-        ha="center",
-        fontsize=7,
-    )
+    if show_labels:
+        ax.set_xticklabels(
+            _timestep_tick_labels(
+                labels, indices, feature=feature, automaton=automaton,
+            ),
+            rotation=0,
+            va="top",
+            ha="center",
+            fontsize=8,
+            fontfamily="monospace",
+        )
+        ax.set_xlabel("input character (same sequence in every panel)", fontsize=7)
+    else:
+        ax.set_xticklabels([])
+        ax.set_xlabel("")
     ax.tick_params(axis="x", pad=1)
-    ax.set_xlabel("character at each timestep")
 
 
 def _example_panel_figsize(
@@ -768,11 +879,11 @@ def _example_panel_figsize(
     *,
     compact: bool = False,
 ) -> tuple[float, float]:
-    width = max(12.0, 0.14 * n_timesteps + 4.0) * (n_cols / 2)
+    width = max(7.5, 0.12 * n_timesteps + 2.4) * (n_cols / 2)
     if compact:
-        row_h = max(1.6, 0.9 + 0.012 * n_timesteps)
+        row_h = max(1.05, 0.65 + 0.005 * n_timesteps)
     else:
-        row_h = max(3.4, 2.6 + 0.04 * n_timesteps)
+        row_h = max(2.2, 1.6 + 0.02 * n_timesteps)
     height = row_h * n_rows
     return width, height
 
@@ -787,43 +898,57 @@ def _plot_unit_timestep_trace(
     automaton: MinimizedVocabAutomaton | None = None,
     target_prob: np.ndarray | None = None,
     compact: bool = False,
+    show_xticks: bool = True,
+    ylim: tuple[float, float] | None = None,
 ) -> None:
-    """Stem plot of unit activation per corpus timestep; color = feature category."""
+    """Lollipop (stem) plot of activation vs timestep; color = feature category."""
     vals, mask = labels.feature_values(feature)
     n = len(unit_acts)
-    visible = [i for i in range(n) if mask is None or mask[i]]
-    if not visible:
+    # Keep every timestep so all panels share the same x sequence.
+    xs = list(range(n))
+    if not xs:
         ax.set_axis_off()
         return
 
     cat_to_color, legend_labels = _category_color_map(
-        feature, vals, visible, automaton,
+        feature, vals, xs, automaton,
     )
+    ys = [float(unit_acts[i]) for i in xs]
+    colors = [
+        cat_to_color[vals[i]]
+        if (mask is None or mask[i]) and vals[i] in cat_to_color
+        else "#bbbbbb"
+        for i in xs
+    ]
 
-    y0 = 0.0
     lw = 1.0 if compact else 1.4
-    pt = 18 if compact else 36
-    for i in visible:
-        color = cat_to_color[vals[i]]
-        y = float(unit_acts[i])
-        ax.plot([i, i], [y0, y], color=color, linewidth=lw, solid_capstyle="round", zorder=2)
-        ax.scatter(i, y, c=[color], s=pt, zorder=3, edgecolors="0.25", linewidths=0.3)
-
-    ax.axhline(y0, color="0.8", linewidth=0.6, zorder=1)
-    ax.set_xlim(-0.8, n - 0.2)
+    pt = 18 if compact else 32
+    for i, y, color in zip(xs, ys, colors):
+        ax.plot(
+            [i, i], [0.0, y],
+            color=color, linewidth=lw, solid_capstyle="round", zorder=2,
+        )
+        ax.scatter(
+            i, y, c=[color], s=pt, zorder=3, edgecolors="0.25", linewidths=0.3,
+        )
+    ax.axhline(0.0, color="0.8", linewidth=0.6, zorder=1)
+    ax.set_xlim(-0.6, n - 0.4)
+    if ylim is not None:
+        ax.set_ylim(*ylim)
     ax.set_ylabel("activation", fontsize=7 if compact else 9)
     if compact:
-        ax.set_title(unit_label, fontsize=8)
-        _set_all_timestep_xticks(ax, labels)
+        ax.set_title(unit_label, fontsize=8, loc="left")
+        _set_all_timestep_xticks(
+            ax, labels, feature=None, automaton=None, show_labels=show_xticks,
+        )
         ax.tick_params(axis="both", labelsize=7)
-        ax.set_xlabel("character at each timestep", fontsize=7)
     else:
         ax.set_title(
-            f"{unit_label} — each timestep is one character read\n"
-            f"stem color = {FEATURE_DISPLAY[feature]}",
+            f"{unit_label} — chronological input\n"
+            f"lollipop color = {FEATURE_DISPLAY[feature]}",
             fontsize=9,
         )
-        _set_all_timestep_xticks(ax, labels)
+        _set_all_timestep_xticks(ax, labels, feature=None, automaton=None)
         cats = list(cat_to_color.keys())
         if len(cats) <= 10:
             handles = [
@@ -842,7 +967,7 @@ def _plot_unit_timestep_trace(
     if target_prob is not None and feature in PREDICTION_SET:
         ax2 = ax.twinx()
         ax2.plot(
-            visible, [target_prob[i] for i in visible],
+            xs, [target_prob[i] for i in xs],
             color="0.55", linewidth=0.8, linestyle="--", alpha=0.8,
         )
         ax2.set_ylabel("P(correct next char)", fontsize=7 if compact else 8, color="0.45")
@@ -897,10 +1022,12 @@ def _plot_unit_example_panel(
     target_prob: np.ndarray | None,
     automaton: MinimizedVocabAutomaton | None = None,
     compact: bool = False,
+    show_xticks: bool = True,
+    ylim: tuple[float, float] | None = None,
 ) -> None:
     unit_acts = activations[:, unit_ix]
     vals, mask = labels.feature_values(feature)
-    visible = [i for i in range(len(unit_acts)) if mask is None or mask[i]]
+    visible = list(range(len(unit_acts)))
     cat_to_color, legend_labels = _category_color_map(
         feature, vals, visible, automaton,
     )
@@ -910,6 +1037,8 @@ def _plot_unit_example_panel(
         automaton=automaton,
         target_prob=target_prob,
         compact=compact,
+        show_xticks=show_xticks,
+        ylim=ylim,
     )
     _plot_unit_category_bars(
         ax_tune, unit_acts, vals, mask, cat_to_color, legend_labels,
@@ -947,7 +1076,8 @@ def plot_example_units_for_feature(
     automaton: MinimizedVocabAutomaton | None = None,
     k: int = 6,
 ) -> None:
-    units = _top_units(result.si[feature], k=k)
+    scores = result.si[feature]
+    units = _top_selective_units(scores, activations, k=k)
     if not units:
         return
     target_prob = _target_prob_array(
@@ -965,20 +1095,128 @@ def plot_example_units_for_feature(
         _plot_unit_example_panel(
             axes[row, 0], axes[row, 1],
             unit_ix=u,
-            unit_label=unit_labels[u],
+            unit_label=f"{unit_labels[u]} (SI={float(scores[u]):.2f})",
             activations=activations,
             labels=labels,
             feature=feature,
             target_prob=target_prob if feature in PREDICTION_SET else None,
             automaton=automaton,
+            show_xticks=(row == len(units) - 1),
         )
     fig.suptitle(
-        f"Top units for {FEATURE_DISPLAY[feature]} (selectivity index)",
+        f"Top units for {FEATURE_DISPLAY[feature]} "
+        f"(peak vs rest SI)",
         fontsize=11,
     )
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
+
+
+def _si_scores_for_feature(
+    activations: np.ndarray,
+    labels: TimestepLabels,
+    feature: str,
+) -> np.ndarray:
+    """Per-unit peaked selectivity (SI) on the given timestep cloud."""
+    n_units = activations.shape[1]
+    vals, mask = labels.feature_values(feature)
+    out = np.full(n_units, np.nan)
+    for u in range(n_units):
+        si, _, _, _ = _unit_peak_metrics(activations[:, u], vals, mask)
+        if not np.isfinite(si):
+            continue
+        out[u] = float(si)
+    return out
+
+
+def plot_example_units_combined(
+    result: SelectivityResult,
+    activations: np.ndarray,
+    labels: TimestepLabels,
+    save_path: str,
+    *,
+    unit_labels: list[str],
+    text: str,
+    model: dict,
+    automaton: MinimizedVocabAutomaton | None = None,
+    features: tuple[str, ...] = ("dfa", "char", "position", "position_from_end"),
+    k: int = 2,
+    rank_si: dict[str, np.ndarray] | None = None,
+) -> None:
+    """One figure: top-``k`` distinct units per feature on a shared input sequence.
+
+    Ranking uses ``rank_si`` when provided (typically condensed-prefix SI);
+    traces always use the chronological ``activations`` / ``labels`` here.
+    """
+    scores = rank_si if rank_si is not None else {
+        feat: _si_scores_for_feature(activations, labels, feat) for feat in features
+    }
+
+    rows: list[tuple[str, int, float]] = []
+    used: set[int] = set()
+    for feat in features:
+        picks = _top_selective_units(
+            scores[feat], activations, k=k, exclude=used,
+        )
+        used.update(picks)
+        for u in picks:
+            rows.append((feat, u, float(scores[feat][u])))
+    if not rows:
+        return
+
+    unit_ixs = [u for _, u, _ in rows]
+    y_stack = np.concatenate([activations[:, u] for u in unit_ixs])
+    y_lo = float(np.min(y_stack))
+    y_hi = float(np.max(y_stack))
+    pad = 0.06 * max(y_hi - y_lo, 0.2)
+    ylim = (y_lo - pad, y_hi + pad)
+
+    target_prob = _target_prob_array(
+        model, activations, text, next_chars=labels.next_char,
+    )
+    fig, axes = plt.subplots(
+        len(rows), 2,
+        figsize=_example_panel_figsize(len(activations), len(rows), compact=True),
+        constrained_layout=True,
+    )
+    if len(rows) == 1:
+        axes = np.array([axes])
+
+    prev_feat: str | None = None
+    for row, (feat, u, si) in enumerate(rows):
+        rank = 1 + sum(1 for f, uu, _ in rows[:row] if f == feat)
+        title = f"{FEATURE_DISPLAY[feat]} #{rank} · {unit_labels[u]} (SI={si:.2f})"
+        _plot_unit_example_panel(
+            axes[row, 0], axes[row, 1],
+            unit_ix=u,
+            unit_label=title,
+            activations=activations,
+            labels=labels,
+            feature=feat,
+            target_prob=target_prob if feat in PREDICTION_SET else None,
+            automaton=automaton,
+            compact=True,
+            show_xticks=(row == len(rows) - 1),
+            ylim=ylim,
+        )
+        if feat != prev_feat:
+            axes[row, 0].set_ylabel(
+                f"{FEATURE_DISPLAY[feat]}\nactivation",
+                fontsize=7,
+                color=FEATURE_COLORS.get(feat, "#333"),
+            )
+            prev_feat = feat
+
+    fig.suptitle(
+        f"Top-{k} units per feature on one corpus window "
+        f"(lollipop color = feature category; peak SI)",
+        fontsize=11,
+    )
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {save_path}")
+    del result
 
 
 def plot_example_predictor_units(
@@ -1129,6 +1367,30 @@ def _colored_prefix_labels_at_points(
         )
 
 
+def _compact_dfa_state_label(
+    state: int,
+    automaton: MinimizedVocabAutomaton,
+    *,
+    max_chars: int = 18,
+) -> str:
+    """Short DFA-state tick/legend label from the state's prefix set."""
+    from vocab_diagrams import display_prefix
+
+    prefixes = automaton.state_prefixes.get(int(state), set())
+    shown = sorted({display_prefix(p) for p in prefixes}, key=lambda s: (len(s), s))
+    if not shown:
+        return f"s{int(state)}"
+    if len(shown) == 1:
+        lab = shown[0]
+    elif len(shown) == 2:
+        lab = f"{shown[0]},{shown[1]}"
+    else:
+        lab = f"{shown[0]}+{len(shown) - 1}"
+    if len(lab) > max_chars:
+        return f"s{int(state)}"
+    return lab
+
+
 def _panel_feature_colors(
     feat: str,
     vals: list,
@@ -1137,15 +1399,19 @@ def _panel_feature_colors(
     cmap,
 ) -> tuple[dict, dict, list]:
     """Map feature categories to colors and legend labels for one panel."""
-    from vocab_diagrams import dfa_state_label
-
     cats = sorted(set(vals[j] for j in visible), key=lambda x: (str(type(x)), str(x)))
     if feat == "dfa" and automaton is not None:
         from visualize import _state_id_colors
 
         state_colors = _state_id_colors([int(c) for c in cats])
         cat_to_color = {c: state_colors[int(c)] for c in cats}
-        legend_labels = {c: dfa_state_label(int(c), automaton) for c in cats}
+        # Many DFA states: prefer short sN labels so bar ticks stay readable.
+        if len(cats) > 8:
+            legend_labels = {c: f"s{int(c)}" for c in cats}
+        else:
+            legend_labels = {
+                c: _compact_dfa_state_label(int(c), automaton) for c in cats
+            }
     else:
         cat_to_color = {c: cmap(ci % 20) for ci, c in enumerate(cats)}
         legend_labels = {c: str(c) for c in cats}
@@ -1173,7 +1439,7 @@ def _plot_dimred_by_feature(
     ncols = 4
     nrows = (n_feat + ncols - 1) // ncols
     fig, axes = plt.subplots(
-        nrows, ncols, figsize=(5.5 * ncols, 5.0 * nrows), constrained_layout=True,
+        nrows, ncols, figsize=(3.4 * ncols, 3.0 * nrows), constrained_layout=True,
     )
     axes_flat = np.atleast_1d(axes).ravel()
     cmap = plt.cm.tab20
@@ -1219,7 +1485,7 @@ def _plot_dimred_by_feature(
         "(DFA panel uses min-DFA state colors)",
         fontsize=11,
     )
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -1287,17 +1553,17 @@ def plot_unit_selectivity_summary(
     *,
     repr_label: str,
 ) -> None:
-    """Population summary: peaked selectivity (SI), η², peak gap, primary features."""
+    """Population summary: peak SI, η², peak gap, primary features."""
     feats = list(ALL_CATEGORICAL_FEATURES)
     x = np.arange(len(feats))
     colors = [FEATURE_COLORS.get(f, "#888") for f in feats]
     tick = [FEATURE_DISPLAY.get(f, f) for f in feats]
 
-    fig, axes = plt.subplots(2, 3, figsize=(14.5, 8.0), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2), constrained_layout=True)
     fig.suptitle(
         f"Unit selectivity summary ({repr_label}, n={result.n_points} points, "
         f"{len(result.primary_feature)} units)",
-        fontsize=12,
+        fontsize=10,
         y=1.02,
     )
 
@@ -1312,8 +1578,8 @@ def plot_unit_selectivity_summary(
 
     si_med = [float(np.nanmedian(result.si[f])) for f in feats]
     si_p90 = [float(np.nanpercentile(result.si[f], 90)) for f in feats]
-    _bar(axes[0, 0], si_med, "Median selectivity index", (0, 1.05))
-    axes[0, 0].set_title("Peaked tuning (top vs rest)")
+    _bar(axes[0, 0], si_med, "Median SI", (0, 1.05))
+    axes[0, 0].set_title("Peak vs rest SI")
     for i, p in enumerate(si_p90):
         axes[0, 0].text(i, si_med[i], f"p90={p:.2f}", ha="center", va="bottom", fontsize=6)
 
@@ -1366,14 +1632,14 @@ def plot_unit_selectivity_summary(
         )
     ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, alpha=0.35)
     ax.set_xlabel("η²")
-    ax.set_ylabel("selectivity index")
+    ax.set_ylabel("SI")
     ax.set_title("Per-unit SI vs η²")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
     ax.legend(fontsize=6, loc="lower right")
     ax.grid(True, linestyle=":", alpha=0.35)
 
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -1425,6 +1691,15 @@ def plot_unit_selectivity_suite(
 ) -> SelectivityResult | None:
     os.makedirs(save_dir, exist_ok=True)
 
+    # Exemplars use the chronological corpus window so every panel shares one
+    # readable input sequence. Selectivity scores stay on condensed prefixes.
+    chrono_activations = activations
+    chrono_labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=None,
+        model=model, activations=chrono_activations,
+    )
+
     if condensed is None:
         from visualize import condense_hidden_states_by_prefix
 
@@ -1461,7 +1736,7 @@ def plot_unit_selectivity_suite(
     plot_selectivity_heatmap(
         result.si, ALL_CATEGORICAL_FEATURES,
         os.path.join(save_dir, "selectivity_heatmap_si.png"),
-        title=f"{repr_label} — selectivity index (peak vs rest)",
+        title=f"{repr_label} — Peak vs rest SI",
         unit_labels=unit_labels,
         vmin=0.0,
         vmax=1.0,
@@ -1495,7 +1770,7 @@ def plot_unit_selectivity_suite(
     plot_selectivity_distributions(
         result,
         os.path.join(save_dir, "selectivity_distributions.png"),
-        title=f"{repr_label} — selectivity index distributions",
+        title=f"{repr_label} — SI distributions",
     )
     plot_primary_feature_pie(
         result,
@@ -1524,22 +1799,32 @@ def plot_unit_selectivity_suite(
 
     for feat in ALL_CATEGORICAL_FEATURES:
         plot_example_units_for_feature(
-            result, activations, labels, feat,
+            result, chrono_activations, chrono_labels, feat,
             os.path.join(save_dir, f"example_units_{feat}.png"),
             unit_labels=unit_labels, text=text, model=model,
             automaton=automaton,
             k=example_k,
         )
 
+    plot_example_units_combined(
+        result, chrono_activations, chrono_labels,
+        os.path.join(save_dir, "example_units_combined.png"),
+        unit_labels=unit_labels, text=text, model=model,
+        automaton=automaton,
+        features=ANALYSIS_FEATURES,
+        k=2,
+        rank_si=result.si,
+    )
+
     plot_example_predictor_units(
-        result, activations, labels,
+        result, chrono_activations, chrono_labels,
         os.path.join(save_dir, "example_units_predictors.png"),
         unit_labels=unit_labels, text=text, model=model,
         automaton=automaton,
         k=example_k,
     )
     plot_example_mixed_units(
-        result, activations, labels,
+        result, chrono_activations, chrono_labels,
         os.path.join(save_dir, "example_units_mixed.png"),
         unit_labels=unit_labels,
         automaton=automaton,

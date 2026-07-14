@@ -83,7 +83,7 @@ def display_prefix(prefix: str) -> str:
 
 def format_prefix_set(prefixes: set[str]) -> str:
     shown = sorted({display_prefix(p) for p in prefixes}, key=lambda s: (len(s), s))
-    return "{" + ", ".join(shown) + "}"
+    return ", ".join(shown)
 
 
 # ---------------------------------------------------------------------------
@@ -942,20 +942,20 @@ def _scale_trie_positions(
 def _wrap_label(text: str, max_chars: int = 16) -> list[str]:
     if len(text) <= max_chars:
         return [text]
-    if not (text.startswith("{") and text.endswith("}")):
+    if "," not in text:
         return [text]
-    parts = [p.strip() for p in text[1:-1].split(",")]
+    parts = [p.strip() for p in text.split(",")]
     lines: list[str] = []
     chunk: list[str] = []
     for part in parts:
-        trial = "{" + ", ".join(chunk + [part]) + "}"
+        trial = ", ".join(chunk + [part])
         if chunk and len(trial) > max_chars:
-            lines.append("{" + ", ".join(chunk) + ",")
+            lines.append(", ".join(chunk) + ",")
             chunk = [part]
         else:
             chunk.append(part)
     if chunk:
-        lines.append("{" + ", ".join(chunk) + "}")
+        lines.append(", ".join(chunk))
     return lines
 
 

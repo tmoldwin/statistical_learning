@@ -114,6 +114,10 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_sweep_all_metrics.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics.png"),
+        FigureRef("compare", "fig_sweep_metrics_scatter3d.jpg",
+                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
+                  / "weights" / "sweep_all_metrics_scatter3d.png",
+                  max_w=1000),
         FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics_scatter2d.png",

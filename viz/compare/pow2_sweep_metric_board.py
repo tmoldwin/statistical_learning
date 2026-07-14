@@ -342,14 +342,43 @@ def _load_metric_sources(spec: Pow2SweepSpec) -> tuple[
     return geometry, training, spectra, weights
 
 
-# Drop definitional duplicates of kept loop geometry / spectra panels.
+# Drop definitional duplicates and concept-twins of kept panels.
+# Keep one representative per story: loop/corpus top-2, effective dim,
+# training (best err + iters), letter-columnar W_xh, local W_hh, feedforward balance.
 _REDUNDANT_METRIC_TITLES = frozenset({
+    # Exact / near-duplicates of kept geometry / spectra panels
     "planarity top-2",              # == loop top-2 var frac
     "PC1+2 % variance (loop)",      # == loop top-2 (spectra %)
     "PCs to 90% variance (loop)",   # == loop dims to 90%
     "PC1 variance frac",            # nested in corpus PCA / top-2 story
     "PC1 % variance (loop)",        # nested in loop top-2
+    # Weaker twins of the kept dimensionality story
+    "loop dims to 90%",             # ≈ loop effective dim
+    "corpus dims to 90%",           # ≈ corpus effective dim
+    "corpus mean |r|",              # ≈ inverse of corpus top-2 / effective dim
+    # Closed-loop shape family (weak DFA signal; word spread covers "spread")
+    "polygon score",
+    "polygon order m*",
+    "circularity",
+    "turn regularity",
+    # Training: best err dominates a single demo snapshot
+    "word error (demo %)",
+    # Weight twins / near-nulls
+    r"$W_{xh}$ input entropy",      # inverse twin of W_xh top-1 mass
+    r"$W_{hh}$ within/between |w|",  # stays ~1; not informative
+    "mean input-drive fraction",    # twin of input / recurrent Frobenius
 })
+
+
+def _filtered_metric_catalog(**kwargs) -> list[tuple[
+    str,
+    CellMap,
+    CellMap | None,
+    str,
+    bool,
+    tuple[float, float] | None,
+]]:
+    return [s for s in _metric_catalog(**kwargs) if s[0] not in _REDUNDANT_METRIC_TITLES]
 
 
 def plot_pow2_sweep_metric_board(
@@ -366,16 +395,13 @@ def plot_pow2_sweep_metric_board(
     word_counts = tuple(int(w) for w in geometry["word_counts"])
     lengths = tuple(_norm_length(L) for L in geometry["lengths"])
 
-    catalog = [
-        s for s in _metric_catalog(
-            geometry_panels=geometry["panels"],
-            training_panels=training["panels"],
-            spectra_panels=spectra["panels"],
-            weight_panels=weights["panels"],
-            seeds=seed_set,
-        )
-        if s[0] not in _REDUNDANT_METRIC_TITLES
-    ]
+    catalog = _filtered_metric_catalog(
+        geometry_panels=geometry["panels"],
+        training_panels=training["panels"],
+        spectra_panels=spectra["panels"],
+        weight_panels=weights["panels"],
+        seeds=seed_set,
+    )
     n_metrics = len(catalog)
     if n_metrics > 20:
         n_cols = max(n_cols, 5)
@@ -496,7 +522,7 @@ def plot_pow2_sweep_metric_scatter3d(
     length_labels = [spec.length_label(L) for L in lengths]
     log2_ticks = [float(np.log2(w)) for w in word_counts]
 
-    catalog = _metric_catalog(
+    catalog = _filtered_metric_catalog(
         geometry_panels=geometry["panels"],
         training_panels=training["panels"],
         spectra_panels=spectra["panels"],
@@ -505,7 +531,7 @@ def plot_pow2_sweep_metric_scatter3d(
     )
     n_metrics = len(catalog)
     n_rows = int(np.ceil(n_metrics / n_cols))
-    fig = plt.figure(figsize=(2.4 * n_cols + 0.5, 2.15 * n_rows + 0.7))
+    fig = plt.figure(figsize=(2.55 * n_cols + 0.6, 2.2 * n_rows + 0.75))
     dfa_states = _dfa_state_lookup(spec)
     dfa_cmap = plt.get_cmap("turbo")
     dfa_levels = sorted({int(v) for v in dfa_states.values() if v > 0})
@@ -568,7 +594,11 @@ def plot_pow2_sweep_metric_scatter3d(
                 bits.append(f"init µ={init_mu:.3g}")
         if np.isfinite(r2):
             bits.append(f"$R^2$={r2:.2f}")
-        ax.set_title(" | ".join(bits), fontsize=7, pad=4)
+        # Two-line title avoids horizontal bleed between panels.
+        if len(bits) == 1:
+            ax.set_title(bits[0], fontsize=6.5, pad=3)
+        else:
+            ax.set_title(f"{bits[0]}\n" + " · ".join(bits[1:]), fontsize=6, pad=3)
 
         ax.set_xticks(log2_ticks)
         ax.set_xticklabels([str(w) for w in word_counts], fontsize=5)
@@ -588,11 +618,12 @@ def plot_pow2_sweep_metric_scatter3d(
 
     finalize_grid_figure(
         fig,
-        top=0.94,
-        bottom=0.04,
-        left=0.02,
-        hspace=0.28,
-        wspace=0.08,
+        top=0.93,
+        bottom=0.05,
+        left=0.03,
+        right=0.92,
+        hspace=0.42,
+        wspace=0.12,
         suptitle=(
             f"Sweep metrics 3D (one point per seed; color = min-DFA #states; "
             f"OLS plane on log2(#words), length; seeds {min(run_seeds)}-{max(run_seeds)}; "
@@ -873,3 +904,4 @@ def plot_pow2_sweep_metric_scatter2d(
 if __name__ == "__main__":
     plot_pow2_sweep_metric_board()
     plot_pow2_sweep_metric_scatter2d()
+    plot_pow2_sweep_metric_scatter3d()

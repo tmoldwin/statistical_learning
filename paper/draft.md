@@ -119,13 +119,21 @@ Final \(W_{hh}\) becomes **locally clumped** along the cluster order: adjacent-u
 
 Fixed longer words preserve the strongest DFA geometry; mixed length elevates character \(\eta^2\).
 
-*(PC variance spectra across word count / length are reserved for the comparison section in a later pass.)*
+We next expand the grid to powers-of-two vocabulary sizes (\(1\)–\(32\) words) crossed with word lengths \(1\)–\(6\) plus mixed, using a shared hidden size \(H = 100\) (mean over seeds \(1\)–\(5\)).
+
+![Figure 19. Cumulative closed-loop PC variance explained across the \(H{=}100\) word-count × length sweep. Color encodes letter length (green gradient; mixed in black); marker encodes vocabulary size.](figures/compare/fig_sweep_pc_spectra.jpg)
+
+Smaller lexicons concentrate variance in the first one or two PCs: several 1- and 2-word cells reach \(\approx 100\%\) by PC 2. Increasing either word count or letter length stretches the spectrum—more PCs are needed before the cumulative curve saturates. Mixed-length vocabularies are the most distributed: at 32 mixed words, PC 1 accounts for only \(\approx 29\%\) of closed-loop variance and the cumulative share is still climbing slowly past PC 10.
+
+![Figure 20. Sweep metric heatmaps (final weights/geometry/training; rows = letter length including mixed, columns = \#words; mean over seeds 1–5). Weight panels annotate the grid-wide init mean in the title.](figures/compare/fig_sweep_all_metrics.jpg)
+
+Geometry panels track the same expansion of dimensionality: loop and corpus top-2 variance fractions are highest for tiny lexicons and fall as words/letters increase, while effective dimension and “PCs to 90%” climb in the opposite direction. Training difficulty moves with the same axes—iterations to a 3% word-error target and residual demo error rise toward larger/mixed cells—yet TV distance from uniform generation stays modest once models train. Weight structure develops selectively: \(W_{xh}\) cohesion and \(W_{hh}\) adjacent correlation emerge most strongly for the easiest (few-word) cells, whereas input/recurrent Frobenius ratio and per-unit input-drive fraction increase toward longer and larger vocabularies (init baselines near \(0.02\) cohesion, \(0.13\) adjacent \(|\mathrm{corr}|\), \(0.29\) Frobenius ratio, \(0.48\) drive fraction).
 
 ---
 
 ## 4. Discussion
 
-Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The four-word demo makes the task transparent. On the 16-word condition, population separation and multi-seed decoding show that automaton state is low-dimensional and stable. Trajectories form labeled geometric motifs that recur across training seeds. Weight analyses on that same condition show letter-columnar input weights and locally clumped recurrent connectivity; length and vocabulary-size comparisons then show how the geometry changes with the lexicon.
+Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The four-word demo makes the task transparent. On the 16-word condition, population separation and multi-seed decoding show that automaton state is low-dimensional and stable. Trajectories form labeled geometric motifs that recur across training seeds. Weight analyses on that same condition show letter-columnar input weights and locally clumped recurrent connectivity. Length and vocabulary-size comparisons—including a powers-of-two \(H{=}100\) sweep—show that larger and mixed lexicons require higher-dimensional closed-loop representations while shifting feedforward vs recurrent weight balance.
 
 **Limits.** Toy character languages; \(H = 50\); small seed counts for grids; no acoustic noise. The model is a hypothesis generator, not a claim that infants are Elman networks.
 

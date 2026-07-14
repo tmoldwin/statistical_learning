@@ -1,5 +1,5 @@
 {
-  "copied": 5,
+  "copied": 7,
   "missing": [
     "experiments/four_word_overlap_ns/shared/vocabulary_trie.svg",
     "experiments/four_word_overlap_ns/shared/vocabulary_min_dfa.svg",
@@ -167,6 +167,22 @@
       "paper_name": "fig_compare_separation.jpg",
       "source": "experiments/comparisons/sixteen_word_345_ns/feature_separation/summary.png",
       "dest": "paper/figures/compare/fig_compare_separation.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_sweep_pc_spectra.jpg",
+      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/trajectories/sweep_pc_spectra_overlay.png",
+      "dest": "paper/figures/compare/fig_sweep_pc_spectra.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_sweep_all_metrics.jpg",
+      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics.png",
+      "dest": "paper/figures/compare/fig_sweep_all_metrics.jpg",
       "exists": true,
       "skipped_self": false
     },

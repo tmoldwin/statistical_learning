@@ -94,6 +94,12 @@ def paper_manifest() -> list[FigureRef]:
                   as_jpg=traj_by_count.suffix.lower() != ".jpg"),
         FigureRef("compare", "fig_compare_learning.jpg", compare_learn),
         FigureRef("compare", "fig_compare_separation.jpg", compare_sep),
+        FigureRef("compare", "fig_sweep_pc_spectra.jpg",
+                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
+                  / "trajectories" / "sweep_pc_spectra_overlay.png"),
+        FigureRef("compare", "fig_sweep_all_metrics.jpg",
+                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
+                  / "weights" / "sweep_all_metrics.png"),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
         FigureRef("main", "fig_weight_matrices_by_seed.jpg",

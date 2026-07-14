@@ -20,6 +20,7 @@ from visualize import (
     _trajectory_seed_letters,
 )
 from viz.compare.pow2_sweep_spec import POW2_SWEEP_SPEC_NS, Pow2SweepSpec
+from vocab_diagrams import build_minimized_vocabulary_automaton
 from vocab_sweep_pow2 import (
     POW2_DEFAULT_SEEDS,
     POW2_LENGTHS,
@@ -245,6 +246,22 @@ def _length_plot_color(length: object, lengths: tuple[object, ...]) -> str:
     )
 
 
+def _dfa_state_lookup(spec: Pow2SweepSpec) -> dict[tuple[int, object], int]:
+    """Minimized vocabulary DFA state count for each (n_words, length) cell."""
+    out: dict[tuple[int, object], int] = {}
+    for n_words, length in spec.iter_cells():
+        words = spec.build_vocab(n_words, length)
+        automaton = build_minimized_vocabulary_automaton(words)
+        out[(int(n_words), length)] = int(automaton.dfa._n)
+    return out
+
+
+def _hex_from_rgba(rgba) -> str:
+    return "#{:02x}{:02x}{:02x}".format(
+        int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255),
+    )
+
+
 def plot_pow2_sweep_spectra_overlay(
     panels: list[dict[str, Any]],
     *,
@@ -255,111 +272,148 @@ def plot_pow2_sweep_spectra_overlay(
     cumulative: bool = True,
     spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
 ) -> Path:
-    """Single panel: color = word length, marker = # words."""
+    """Two panels: left = length color / #words marker; right = #DFA-states color."""
     word_counts = spec.word_counts if word_counts is None else word_counts
     lengths = spec.lengths if lengths is None else lengths
     lookup = {(p["n_words"], p["length"]): p for p in panels}
+    dfa_states = _dfa_state_lookup(spec)
 
-    fig, ax = plt.subplots(figsize=(5.0, 3.2))
     pc_x = np.arange(1, max_pcs + 1, dtype=float)
 
     global_xmax = 3
-    for n_words in word_counts:
-        for length in lengths:
-            spectrum = lookup.get((n_words, length), {}).get("spectrum_pct") or []
-            if not spectrum:
-                continue
-            y = np.asarray(spectrum, dtype=float)
-            if cumulative:
-                y = np.cumsum(y)
-                # stop once we are essentially flat at ~100
-                n_plot = int(np.searchsorted(y, 99.5, side="left")) + 1
-                n_plot = max(n_plot, _spectrum_display_end(np.asarray(spectrum, dtype=float)))
-            else:
-                n_plot = _spectrum_display_end(y)
-            global_xmax = max(global_xmax, min(n_plot, len(y), max_pcs))
-
-    # Length color legend handles
-    length_handles = []
+    series: list[tuple[object, int, np.ndarray]] = []
     for length in lengths:
-        color = _length_plot_color(length, lengths)
-        h, = ax.plot([], [], color=color, linewidth=2.0, label=spec.length_label(length))
-        length_handles.append(h)
-
-    # Word-count marker legend handles
-    marker_handles = []
-    for wi, n_words in enumerate(word_counts):
-        marker = _WORD_MARKERS[wi % len(_WORD_MARKERS)]
-        h, = ax.plot(
-            [], [], color="0.35", marker=marker, linestyle="None",
-            markersize=7, label=f"{n_words} words",
-        )
-        marker_handles.append(h)
-
-    y_min_seen = float("inf")
-    y_max_seen = float("-inf")
-    for length in lengths:
-        color = _length_plot_color(length, lengths)
         for wi, n_words in enumerate(word_counts):
             spectrum = lookup.get((n_words, length), {}).get("spectrum_pct") or []
             if not spectrum:
                 continue
             raw = np.asarray(spectrum, dtype=float)
-            y = np.cumsum(raw) if cumulative else raw
-            n_plot = min(len(y), global_xmax)
-            y_plot = y[:n_plot]
-            y_min_seen = min(y_min_seen, float(np.min(y_plot)))
-            y_max_seen = max(y_max_seen, float(np.max(y_plot)))
-            marker = _WORD_MARKERS[wi % len(_WORD_MARKERS)]
-            ax.plot(
-                pc_x[:n_plot],
-                y_plot,
-                color=color,
-                linewidth=1.5,
-                alpha=0.9,
-                marker=marker,
-                markersize=5.5,
-                markerfacecolor=color,
-                markeredgecolor="white",
-                markeredgewidth=0.4,
-            )
+            if cumulative:
+                y = np.cumsum(raw)
+                n_plot = int(np.searchsorted(y, 99.5, side="left")) + 1
+                n_plot = max(n_plot, _spectrum_display_end(raw))
+            else:
+                y = raw
+                n_plot = _spectrum_display_end(y)
+            global_xmax = max(global_xmax, min(n_plot, len(y), max_pcs))
+            series.append((length, n_words, y))
 
+    dfa_vals = [
+        float(dfa_states.get((int(n_words), length), 0))
+        for length, n_words, _ in series
+    ]
+    dfa_vmin = min(dfa_vals) if dfa_vals else 0.0
+    dfa_vmax = max(dfa_vals) if dfa_vals else 1.0
+    if dfa_vmax <= dfa_vmin:
+        dfa_vmax = dfa_vmin + 1.0
+    dfa_cmap = plt.cm.viridis
+    dfa_norm = plt.Normalize(vmin=dfa_vmin, vmax=dfa_vmax)
+
+    fig, (ax_len, ax_dfa) = plt.subplots(
+        1, 2, figsize=(10.2, 3.35), sharey=True, gridspec_kw={"wspace": 0.12},
+    )
     ylabel = "cumulative % variance" if cumulative else "% variance"
-    ax.set_xlabel("PC #", fontsize=11)
-    ax.set_ylabel(ylabel, fontsize=11)
-    ax.set_xlim(0.8, global_xmax + 0.35)
-    # Pad around the full plotted envelope so PC1 mins stay visible.
+    y_min_seen = float("inf")
+    y_max_seen = float("-inf")
+
+    for length, n_words, y in series:
+        n_plot = min(len(y), global_xmax)
+        y_plot = y[:n_plot]
+        y_min_seen = min(y_min_seen, float(np.min(y_plot)))
+        y_max_seen = max(y_max_seen, float(np.max(y_plot)))
+        wi = list(word_counts).index(n_words) if n_words in word_counts else 0
+        marker = _WORD_MARKERS[wi % len(_WORD_MARKERS)]
+
+        len_color = _length_plot_color(length, lengths)
+        ax_len.plot(
+            pc_x[:n_plot],
+            y_plot,
+            color=len_color,
+            linewidth=1.5,
+            alpha=0.9,
+            marker=marker,
+            markersize=5.0,
+            markerfacecolor=len_color,
+            markeredgecolor="white",
+            markeredgewidth=0.4,
+        )
+
+        dfa_n = float(dfa_states.get((int(n_words), length), dfa_vmin))
+        dfa_color = _hex_from_rgba(dfa_cmap(dfa_norm(dfa_n)))
+        ax_dfa.plot(
+            pc_x[:n_plot],
+            y_plot,
+            color=dfa_color,
+            linewidth=1.5,
+            alpha=0.9,
+            marker="o",
+            markersize=4.5,
+            markerfacecolor=dfa_color,
+            markeredgecolor="white",
+            markeredgewidth=0.35,
+        )
+
+    length_handles = []
+    for length in lengths:
+        color = _length_plot_color(length, lengths)
+        h, = ax_len.plot([], [], color=color, linewidth=2.0, label=spec.length_label(length))
+        length_handles.append(h)
+    marker_handles = []
+    for wi, n_words in enumerate(word_counts):
+        marker = _WORD_MARKERS[wi % len(_WORD_MARKERS)]
+        h, = ax_len.plot(
+            [], [], color="0.35", marker=marker, linestyle="None",
+            markersize=6.5, label=f"{n_words} words",
+        )
+        marker_handles.append(h)
+
+    for ax in (ax_len, ax_dfa):
+        ax.set_xlabel("PC #", fontsize=10)
+        ax.set_xlim(0.8, global_xmax + 0.35)
+        ax.set_xticks(range(1, global_xmax + 1))
+        ax.grid(axis="y", alpha=0.25, linewidth=0.5)
+        ax.tick_params(labelsize=8)
+
+    ax_len.set_ylabel(ylabel, fontsize=10)
     if np.isfinite(y_min_seen) and np.isfinite(y_max_seen):
         span = max(y_max_seen - y_min_seen, 1.0)
         pad = 0.04 * span
         ymin = max(0.0, y_min_seen - pad)
         ymax = (min(101.5, max(y_max_seen + pad, 100.0)) if cumulative
                 else y_max_seen + pad)
-        ax.set_ylim(ymin, ymax)
+        ax_len.set_ylim(ymin, ymax)
     elif cumulative:
-        ax.set_ylim(0, 105)
-    ax.set_xticks(range(1, global_xmax + 1))
-    ax.grid(axis="y", alpha=0.25, linewidth=0.5)
+        ax_len.set_ylim(0, 105)
 
-    leg1 = ax.legend(
+    ax_len.set_title("color = word length, marker = # words", fontsize=9, pad=4)
+    ax_dfa.set_title("color = # DFA states", fontsize=9, pad=4)
+
+    leg1 = ax_len.legend(
         handles=length_handles, title="word length",
-        bbox_to_anchor=(1.02, 1.0), loc="upper left",
-        fontsize=8, title_fontsize=8, frameon=False, borderaxespad=0.0,
+        bbox_to_anchor=(0.0, -0.22), loc="upper left",
+        fontsize=6.5, title_fontsize=7, frameon=False,
+        ncol=4, borderaxespad=0.0, columnspacing=0.8, handlelength=1.4,
     )
-    ax.add_artist(leg1)
-    ax.legend(
+    ax_len.add_artist(leg1)
+    ax_len.legend(
         handles=marker_handles, title="# words",
-        bbox_to_anchor=(1.02, 0.52), loc="upper left",
-        fontsize=8, title_fontsize=8, frameon=False, borderaxespad=0.0,
+        bbox_to_anchor=(0.0, -0.42), loc="upper left",
+        fontsize=6.5, title_fontsize=7, frameon=False,
+        ncol=5, borderaxespad=0.0, columnspacing=0.8, handlelength=1.2,
     )
+
+    sm = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax_dfa, fraction=0.046, pad=0.02)
+    cbar.set_label("# DFA states", fontsize=8)
+    cbar.ax.tick_params(labelsize=7)
 
     fig.suptitle(
-        "Closed-loop PC variance explained (mean over seeds)\n"
-        "color = word length, marker = # words",
+        "Closed-loop PC variance explained (mean over seeds)",
         fontsize=10,
         y=0.98,
     )
-    fig.subplots_adjust(top=0.86, bottom=0.12, left=0.10, right=0.78)
+    fig.subplots_adjust(top=0.88, bottom=0.28, left=0.07, right=0.96, wspace=0.18)
 
     out_path = sweep_figures_dir(spec.comparison_name) / outfile
     save_figure(fig, out_path, dpi=150)
@@ -371,17 +425,26 @@ def replot_pow2_sweep_spectra(
     *,
     spectra_file: str = "sweep_spectra.json",
     outfile: str = "sweep_pc_spectra.png",
+    overlay_outfile: str = "sweep_pc_spectra_overlay.png",
     spec: Pow2SweepSpec = POW2_SWEEP_SPEC_NS,
-) -> Path:
+) -> tuple[Path, Path]:
     payload = json.loads(
         (sweep_data_dir(spec.comparison_name) / spectra_file).read_text(encoding="utf-8"),
     )
-    return plot_pow2_sweep_spectra(
+    max_pcs = int(payload.get("max_pcs", _DEFAULT_MAX_PCS))
+    grid_path = plot_pow2_sweep_spectra(
         payload["panels"],
-        max_pcs=int(payload.get("max_pcs", _DEFAULT_MAX_PCS)),
+        max_pcs=max_pcs,
         outfile=outfile,
         spec=spec,
     )
+    overlay_path = plot_pow2_sweep_spectra_overlay(
+        payload["panels"],
+        max_pcs=max_pcs,
+        outfile=overlay_outfile,
+        spec=spec,
+    )
+    return grid_path, overlay_path
 
 
 def run_pow2_sweep_spectrum_plots(

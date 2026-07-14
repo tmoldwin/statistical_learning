@@ -60,9 +60,6 @@ def paper_manifest() -> list[FigureRef]:
     if not traj_by_count.is_file():
         traj_by_count = ROOT / "paper" / "figures" / "compare" / "fig_traj_by_wordcount.jpg"
 
-    compare_learn = ROOT / "experiments" / COMPARE / "sixteen_word_345_ns" / "learning_curves" / "summary.png"
-    compare_sep = ROOT / "experiments" / COMPARE / "sixteen_word_345_ns" / "feature_separation" / "summary.png"
-
     return [
         FigureRef("demo", "fig01_trie.svg", _demo_shared("vocabulary_trie.svg"), as_jpg=False),
         FigureRef("demo", "fig01_trie.jpg",
@@ -106,26 +103,19 @@ def paper_manifest() -> list[FigureRef]:
                   as_jpg=traj_by_length.suffix.lower() != ".jpg"),
         FigureRef("compare", "fig_traj_by_wordcount.jpg", traj_by_count,
                   as_jpg=traj_by_count.suffix.lower() != ".jpg"),
-        FigureRef("compare", "fig_compare_learning.jpg", compare_learn),
-        FigureRef("compare", "fig_compare_separation.jpg", compare_sep),
         FigureRef("compare", "fig_sweep_pc_spectra.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "trajectories" / "sweep_pc_spectra_overlay.png"),
-        FigureRef("compare", "fig_sweep_all_metrics.jpg",
-                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
-                  / "weights" / "sweep_all_metrics.png"),
-        FigureRef("compare", "fig_sweep_metrics_scatter3d.jpg",
-                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
-                  / "weights" / "sweep_all_metrics_scatter3d.png",
-                  max_w=1000),
         FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics_scatter2d.png",
                   max_w=1000),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
-        FigureRef("main", "fig_weight_matrices_by_seed.jpg",
-                  _anchor("weights/weight_matrices_by_seed.png")),
+        FigureRef("main", "fig_weight_matrices_by_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
+                  / "weights" / "sweep_weight_matrices_by_dfa.png",
+                  max_w=1200),
         FigureRef("main", "fig_weight_metrics_all_seeds.jpg",
                   _anchor("weights/weight_metrics_all_seeds.png")),
     ]

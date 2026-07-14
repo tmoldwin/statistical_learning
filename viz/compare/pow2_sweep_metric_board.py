@@ -665,6 +665,144 @@ def _fit_line(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray | None, float]:
     return coef, r2
 
 
+def _r2_score(y: np.ndarray, pred: np.ndarray) -> float:
+    ss_res = float(np.sum((y - pred) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    if ss_tot <= 0:
+        return 1.0
+    return 1.0 - ss_res / ss_tot
+
+
+def _adjusted_r2(r2: float, n: int, n_params: int) -> float:
+    if n <= n_params + 1 or not np.isfinite(r2):
+        return float("nan")
+    return 1.0 - (1.0 - r2) * (n - 1) / (n - n_params - 1)
+
+
+def _safe_logistic(x: np.ndarray, lo: float, hi: float, k: float, x0: float) -> np.ndarray:
+    z = np.clip(k * (x - x0), -40.0, 40.0)
+    return lo + (hi - lo) / (1.0 + np.exp(-z))
+
+
+def _safe_exp_asymp(x: np.ndarray, a: float, b: float, c: float) -> np.ndarray:
+    return a + b * np.exp(-np.clip(c * x, -40.0, 40.0))
+
+
+def _safe_hyperbola(x: np.ndarray, a: float, b: float, c: float) -> np.ndarray:
+    return a + b * x / (np.abs(c) + x)
+
+
+def _fit_trend(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    n_grid: int = 80,
+) -> tuple[np.ndarray | None, np.ndarray | None, float, str]:
+    """Fit linear / sigmoid / exp-asymptote / hyperbola; pick best adjusted R².
+
+    Curve parameters are estimated from per-x medians (outlier-resistant);
+    reported ``R²`` is still computed on all points. Returns
+    ``(x_grid, y_hat, r2, model_name)``.
+    """
+    from scipy.optimize import curve_fit
+
+    if x.size < 4:
+        coef, r2 = _fit_line(x, y)
+        if coef is None:
+            return None, None, float("nan"), "none"
+        xg = np.linspace(float(np.min(x)), float(np.max(x)), n_grid)
+        return xg, coef[0] + coef[1] * xg, r2, "linear"
+
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    x_min, x_max = float(np.min(x)), float(np.max(x))
+    # Median y at each distinct DFA count — dampens seed/outlier leverage.
+    x_u = np.unique(x)
+    y_med = np.array([float(np.median(y[x == xu])) for xu in x_u], dtype=float)
+    y_min, y_max = float(np.min(y_med)), float(np.max(y_med))
+    y_span = max(y_max - y_min, 1e-9)
+    x_mid = float(np.median(x_u))
+    if np.std(x_u) > 0 and np.std(y_med) > 0:
+        corr = float(np.corrcoef(x_u, y_med)[0, 1])
+    else:
+        corr = 0.0
+
+    candidates: list[tuple[float, float, int, str, Callable[[np.ndarray], np.ndarray]]] = []
+
+    def _push(name: str, n_params: int, pred_fn: Callable[[np.ndarray], np.ndarray]) -> None:
+        pred_all = np.asarray(pred_fn(x), dtype=float)
+        r2 = _r2_score(y, pred_all)
+        if not np.isfinite(r2):
+            return
+        candidates.append((_adjusted_r2(r2, x.size, n_params), r2, n_params, name, pred_fn))
+
+    coef, _ = _fit_line(x_u, y_med)
+    if coef is not None:
+        _push("linear", 2, (lambda xx, a=float(coef[0]), b=float(coef[1]): a + b * xx))
+
+    # Soft slope bound: transition across the x-range in a few e-folds, not a cliff
+    # unless the medians really demand it (still allow moderately steep).
+    k_lim = 18.0 / max(x_max - x_min, 1.0)
+    try:
+        k0 = (3.0 / max(x_max - x_min, 1.0)) * (1.0 if corr >= 0 else -1.0)
+        p0 = (y_min, y_max, k0, x_mid)
+        bounds = (
+            (y_min - 2.0 * y_span, y_min - 2.0 * y_span, -k_lim, x_min - (x_max - x_min)),
+            (y_max + 2.0 * y_span, y_max + 2.0 * y_span, k_lim, x_max + (x_max - x_min)),
+        )
+        popt, _ = curve_fit(
+            _safe_logistic, x_u, y_med, p0=p0, bounds=bounds, maxfev=8000,
+        )
+        _push("sigmoid", 4, (lambda xx, p=tuple(float(v) for v in popt): _safe_logistic(xx, *p)))
+    except (RuntimeError, ValueError, TypeError):
+        pass
+
+    try:
+        b0 = (y_min - y_max) if corr < 0 else (y_max - y_min)
+        a0 = y_max if corr < 0 else y_min
+        c0 = 2.0 / max(x_max - x_min, 1.0)
+        p0 = (a0, b0, c0)
+        bounds = (
+            (y_min - 3.0 * y_span, -8.0 * y_span, -20.0),
+            (y_max + 3.0 * y_span, 8.0 * y_span, 20.0),
+        )
+        popt, _ = curve_fit(
+            _safe_exp_asymp, x_u, y_med, p0=p0, bounds=bounds, maxfev=8000,
+        )
+        _push("exp", 3, (lambda xx, p=tuple(float(v) for v in popt): _safe_exp_asymp(xx, *p)))
+    except (RuntimeError, ValueError, TypeError):
+        pass
+
+    try:
+        b0 = (y_max - y_min) if corr >= 0 else (y_min - y_max)
+        p0 = (y_min if corr >= 0 else y_max, b0, max(x_mid, 1.0))
+        bounds = (
+            (y_min - 3.0 * y_span, -8.0 * y_span, 1e-3),
+            (y_max + 3.0 * y_span, 8.0 * y_span, max(5.0 * (x_max - x_min), 1.0)),
+        )
+        popt, _ = curve_fit(
+            _safe_hyperbola, x_u, y_med, p0=p0, bounds=bounds, maxfev=8000,
+        )
+        _push("hyperbola", 3, (lambda xx, p=tuple(float(v) for v in popt): _safe_hyperbola(xx, *p)))
+    except (RuntimeError, ValueError, TypeError):
+        pass
+
+    if not candidates:
+        return None, None, float("nan"), "none"
+
+    candidates.sort(key=lambda t: (
+        -t[0] if np.isfinite(t[0]) else 1e9,
+        t[2],
+        -t[1],
+    ))
+    _adj, r2, _npar, name, pred_fn = candidates[0]
+    if not np.isfinite(r2):
+        return None, None, float("nan"), "none"
+    xg = np.linspace(x_min, x_max, n_grid)
+    yg = np.asarray(pred_fn(xg), dtype=float)
+    return xg, yg, float(r2), name
+
+
 def _points_vs_dfa(
     values_by_cell: CellMap,
     *,
@@ -716,7 +854,10 @@ def _prepare_dfa_scatter_panels(
     tuple[int, ...],
     tuple[int, ...],
     tuple[object, ...],
-    list[tuple[str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool, tuple[float, float] | None]],
+    list[tuple[
+        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+        bool, tuple[float, float] | None, np.ndarray | None, np.ndarray | None,
+    ]],
 ]:
     geometry, training, spectra, weights = _load_metric_sources(spec)
     if seeds is None:
@@ -737,7 +878,8 @@ def _prepare_dfa_scatter_panels(
     )
 
     prepared: list[tuple[
-        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool, tuple[float, float] | None,
+        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+        bool, tuple[float, float] | None, np.ndarray | None, np.ndarray | None,
     ]] = []
     for title, final_map, init_map, _cmap, log_scale, lim in catalog:
         if title in _REDUNDANT_METRIC_TITLES:
@@ -752,8 +894,12 @@ def _prepare_dfa_scatter_panels(
             continue
         use_log_y = bool(log_scale and np.all(metric_y > 0))
         y_plot = np.log10(np.clip(metric_y, 1e-12, None)) if use_log_y else metric_y
-        _coef, r2 = _fit_line(dfa_x, y_plot)
-        if not np.isfinite(r2) or r2 < min_r2:
+        # Keep the same panel set as the linear screen; draw the best flexible curve.
+        _coef, r2_lin = _fit_line(dfa_x, y_plot)
+        if not np.isfinite(r2_lin) or r2_lin < min_r2:
+            continue
+        x_fit, y_fit, r2, _model = _fit_trend(dfa_x, y_plot)
+        if x_fit is None or not np.isfinite(r2):
             continue
         bits = [title]
         if init_map is not None:
@@ -763,7 +909,7 @@ def _prepare_dfa_scatter_panels(
         bits.append(f"$R^2$={r2:.2f}")
         prepared.append((
             " | ".join(bits), dfa_x, y_plot, seed_ids, length_idx, n_words_arr,
-            use_log_y, lim,
+            use_log_y, lim, x_fit, y_fit,
         ))
 
     if not prepared:
@@ -779,26 +925,49 @@ def plot_pow2_sweep_metric_scatter2d(
     min_r2: float = 0.1,
     wrap: int = 4,
 ) -> Path:
-    """Metrics vs DFA states in wrapped blocks: each block has length-color then #words-color rows."""
+    """Compact metrics-vs-DFA scatters: color = #words, marker = word length."""
     run_seeds, word_counts, lengths, prepared = _prepare_dfa_scatter_panels(
         spec=spec, seeds=seeds, min_r2=min_r2,
     )
+    # Prefer the strongest DFA-linked panels for a paper-sized figure.
+    _PAPER_PRIORITY = (
+        "loop top-2 var frac",
+        "corpus top-2 var frac",
+        "loop effective dim",
+        "corpus effective dim",
+        "iters to 3% word err",
+        "input / recurrent Frobenius",
+        r"$W_{hh}$ adjacent |corr|",
+        r"$W_{xh}$ top-1 mass",
+    )
+    ranked: list[tuple[int, tuple]] = []
+    for panel in prepared:
+        short = panel[0].split(" | ")[0]
+        for cut in (" (loop)", " (corpus)", " (init"):
+            if cut in short:
+                short = short.split(cut)[0]
+        try:
+            rank = _PAPER_PRIORITY.index(short)
+        except ValueError:
+            rank = 100 + len(ranked)
+        ranked.append((rank, panel))
+    ranked.sort(key=lambda t: t[0])
+    # Keep priority hits first; cap at 8 for a paper-sized figure.
+    core = [p for r, p in ranked if r < 100][:8]
+    if core:
+        prepared = core
+
     n_metrics = len(prepared)
     n_wrap = max(1, min(wrap, n_metrics))
-    n_blocks = int(np.ceil(n_metrics / n_wrap))
-    n_rows = 2 * n_blocks
+    n_rows = int(np.ceil(n_metrics / n_wrap))
     n_cols = n_wrap
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(1.85 * n_cols + 1.0, 1.85 * n_rows + 0.7),
+        figsize=(2.15 * n_cols + 0.55, 1.55 * n_rows + 0.55),
         squeeze=False,
-        sharex="col",
+        sharex=True,
     )
 
-    length_labels = [spec.length_label(L) for L in lengths]
-    # Distinct schemes: sequential cool for length, warm discrete for #words.
-    length_cmap = plt.get_cmap("YlGnBu")
-    length_norm = Normalize(vmin=0, vmax=max(len(lengths) - 1, 1))
     words_cmap = plt.get_cmap("YlOrRd")
     words_levels = list(word_counts)
     if len(words_levels) >= 2:
@@ -814,84 +983,89 @@ def plot_pow2_sweep_metric_scatter2d(
     else:
         words_norm = Normalize(vmin=1.0, vmax=float(words_levels[0]))
 
-    for mi, (panel_title, x, y_plot, seed_ids, length_idx, n_words_arr, use_log_y, lim) in enumerate(prepared):
-        block, col = divmod(mi, n_wrap)
-        jx, _ = _seed_jitter(seed_ids, scale=0.15)
-        coef, _ = _fit_line(x, y_plot)
-        x_line = np.linspace(float(np.min(x)), float(np.max(x)), 50) if coef is not None else None
+    length_markers = ("o", "s", "^", "D", "v", "P", "X")
+    marker_by_length_idx = {
+        i: length_markers[i % len(length_markers)] for i in range(len(lengths))
+    }
 
-        for local_row, (cvals, cmap, norm) in enumerate((
-            (length_idx, length_cmap, length_norm),
-            (n_words_arr, words_cmap, words_norm),
-        )):
-            row = 2 * block + local_row
-            ax = axes[row][col]
+    for mi, (panel_title, x, y_plot, seed_ids, length_idx, n_words_arr, use_log_y, lim, x_fit, y_fit) in enumerate(prepared):
+        row, col = divmod(mi, n_wrap)
+        ax = axes[row][col]
+        jx, _ = _seed_jitter(seed_ids, scale=0.12)
+
+        for li in range(len(lengths)):
+            mask = length_idx == float(li)
+            if not np.any(mask):
+                continue
             ax.scatter(
-                x + jx, y_plot,
-                c=cvals, cmap=cmap, norm=norm,
-                s=9, alpha=0.55, linewidths=0, zorder=2,
+                x[mask] + jx[mask], y_plot[mask],
+                c=n_words_arr[mask], cmap=words_cmap, norm=words_norm,
+                marker=marker_by_length_idx[li],
+                s=11, alpha=0.70, linewidths=0.2, edgecolors="white",
+                zorder=2,
             )
-            if coef is not None and x_line is not None:
-                ax.plot(x_line, coef[0] + coef[1] * x_line, color="#222222", lw=1.0, zorder=3)
-            if local_row == 0:
-                short = panel_title.split(" | ")[0]
-                # Drop verbose metric suffixes that collide between panels.
-                for cut in (" (loop)", " (corpus)", " (init"):
-                    if cut in short:
-                        short = short.split(cut)[0]
-                r2_bits = [b for b in panel_title.split(" | ") if b.startswith("$R")]
-                title = short if not r2_bits else f"{short}\n{r2_bits[-1]}"
-                ax.set_title(title, fontsize=6, pad=2)
-            ax.tick_params(labelsize=5)
-            if local_row == 1 and block == n_blocks - 1:
-                ax.set_xlabel("DFA states", fontsize=6)
-            if col == 0:
-                ylab = "log10" if use_log_y else "value"
-                row_tag = "# letters" if local_row == 0 else "# words"
-                ax.set_ylabel(f"{row_tag}\n{ylab}", fontsize=6)
-            if lim is not None and not use_log_y:
-                ax.set_ylim(lim)
-            ax.grid(True, alpha=0.25, linewidth=0.5)
+        if x_fit is not None and y_fit is not None:
+            ax.plot(x_fit, y_fit, color="#111111", lw=1.15, zorder=3)
 
-    # Hide unused axes in the last block.
-    used_in_last = n_metrics - (n_blocks - 1) * n_wrap
+        short = panel_title.split(" | ")[0]
+        for cut in (" (loop)", " (corpus)", " (init"):
+            if cut in short:
+                short = short.split(cut)[0]
+        r2_bits = [b for b in panel_title.split(" | ") if b.startswith("$R")]
+        title = short if not r2_bits else f"{short}\n{r2_bits[-1]}"
+        ax.set_title(title, fontsize=7, pad=2)
+        ax.tick_params(labelsize=6)
+        if row == n_rows - 1:
+            ax.set_xlabel("DFA states", fontsize=7)
+        if col == 0:
+            ax.set_ylabel("log10" if use_log_y else "value", fontsize=7)
+        if lim is not None and not use_log_y:
+            ax.set_ylim(lim)
+        ax.grid(True, alpha=0.25, linewidth=0.5)
+
+    used_in_last = n_metrics - (n_rows - 1) * n_wrap
     for col in range(used_in_last, n_cols):
-        for local_row in range(2):
-            axes[2 * (n_blocks - 1) + local_row][col].axis("off")
+        axes[n_rows - 1][col].axis("off")
+
+    marker_handles = [
+        plt.Line2D(
+            [0], [0], linestyle="None",
+            marker=marker_by_length_idx[i], color="0.3",
+            markersize=5.5, label=spec.length_label(L),
+        )
+        for i, L in enumerate(lengths)
+    ]
+    fig.legend(
+        handles=marker_handles, title="word length",
+        loc="lower center", ncol=min(len(lengths), 7),
+        fontsize=6, title_fontsize=7, frameon=False,
+        bbox_to_anchor=(0.42, 0.005),
+    )
 
     finalize_grid_figure(
         fig,
-        top=0.93,
-        bottom=0.07,
-        left=0.06,
-        hspace=0.55,
-        wspace=0.40,
+        top=0.90,
+        bottom=0.16,
+        left=0.07,
+        right=0.90,
+        hspace=0.45,
+        wspace=0.28,
         suptitle=(
-            f"Metrics vs DFA states (deduped; R²≥{min_r2:g}; "
-            f"pairs of rows: #letters then #words; seeds {min(run_seeds)}-{max(run_seeds)}; "
-            f"{spec.comparison_name})"
+            f"Metrics vs minimized DFA size "
+            f"(color = #words; marker = word length; "
+            f"curve = best of linear/sigmoid/exp/hyperbola; "
+            f"seeds {min(run_seeds)}–{max(run_seeds)})"
         ),
         suptitle_fontsize=9,
     )
 
-    # One colorbar per color scheme, spanning all matching rows.
-    length_axes = [axes[r][c] for r in range(0, n_rows, 2) for c in range(n_cols)]
-    words_axes = [axes[r][c] for r in range(1, n_rows, 2) for c in range(n_cols)]
-    sm_len = plt.cm.ScalarMappable(cmap=length_cmap, norm=length_norm)
-    sm_len.set_array([])
-    cbar0 = fig.colorbar(sm_len, ax=length_axes, fraction=0.015, pad=0.01)
-    cbar0.set_ticks(np.arange(len(length_labels)))
-    cbar0.set_ticklabels(length_labels)
-    cbar0.set_label("# letters", fontsize=7)
-    cbar0.ax.tick_params(labelsize=5)
-
-    sm_w = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
-    sm_w.set_array([])
-    cbar1 = fig.colorbar(sm_w, ax=words_axes, fraction=0.015, pad=0.01)
-    cbar1.set_ticks(words_levels)
-    cbar1.set_ticklabels([str(w) for w in words_levels])
-    cbar1.set_label("# words", fontsize=7)
-    cbar1.ax.tick_params(labelsize=5)
+    sm = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=axes.ravel().tolist(), fraction=0.025, pad=0.02)
+    cbar.set_ticks(words_levels)
+    cbar.set_ticklabels([str(w) for w in words_levels])
+    cbar.set_label("# words", fontsize=7)
+    cbar.ax.tick_params(labelsize=6)
 
     out_dir = Path("experiments/comparisons") / spec.comparison_name / "weights"
     out_dir.mkdir(parents=True, exist_ok=True)

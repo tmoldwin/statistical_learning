@@ -101,8 +101,9 @@ def cmd_plot(args: argparse.Namespace) -> None:
         return
     if args.spectrum_only:
         if args.replot_only:
-            path = replot_pow2_sweep_spectra()
-            print(f"wrote {path}")
+            grid_path, overlay_path = replot_pow2_sweep_spectra()
+            print(f"wrote {grid_path}")
+            print(f"wrote {overlay_path}")
         else:
             run_pow2_sweep_spectrum_plots(seeds=seeds, recompute=True)
         return

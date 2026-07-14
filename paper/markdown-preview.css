@@ -26,6 +26,16 @@ code, pre {
 
 img {
   background: #fff;
+  display: block;
+  max-width: 100%;
+}
+
+/* Caption lines: **Figure N.** … immediately under each image */
+img + p {
+  margin-top: 0.35em;
+  margin-bottom: 1.4em;
+  font-size: 0.95em;
+  color: #333 !important;
 }
 
 hr {

@@ -1,8 +1,13 @@
 {
-  "copied": 24,
+  "copied": 19,
   "missing": [
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_metrics_all_seeds.png"
+    "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
+    "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
+    "experiments/five_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
+    "experiments/five_word_overlap_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
+    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary_condensed.png",
+    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
+    "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/example_units_combined.png"
   ],
   "figures": [
     {
@@ -10,7 +15,7 @@
       "paper_name": "fig01_trie.svg",
       "source": "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
       "dest": "paper/figures/demo/fig01_trie.svg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -26,7 +31,7 @@
       "paper_name": "fig02_dfa.svg",
       "source": "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
       "dest": "paper/figures/demo/fig02_dfa.svg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -42,7 +47,7 @@
       "paper_name": "fig03_learning_curve.jpg",
       "source": "experiments/five_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
       "dest": "paper/figures/demo/fig03_learning_curve.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -106,7 +111,7 @@
       "paper_name": "fig_dfa_pca_geometry.jpg",
       "source": "experiments/five_word_overlap_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
       "dest": "paper/figures/demo/fig_dfa_pca_geometry.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -114,7 +119,7 @@
       "paper_name": "fig11_embedding_panels.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
       "dest": "paper/figures/main/fig11_embedding_panels.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -122,7 +127,7 @@
       "paper_name": "fig20_feature_separation.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary_condensed.png",
       "dest": "paper/figures/main/fig20_feature_separation.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -130,7 +135,7 @@
       "paper_name": "fig19_dfa_distance.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
       "dest": "paper/figures/main/fig19_dfa_distance.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -146,7 +151,7 @@
       "paper_name": "fig_example_units.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/example_units_combined.png",
       "dest": "paper/figures/main/fig_example_units.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -258,7 +263,7 @@
       "paper_name": "fig_weight_metrics_all_seeds.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_metrics_all_seeds.png",
       "dest": "paper/figures/main/fig_weight_metrics_all_seeds.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     }
   ]

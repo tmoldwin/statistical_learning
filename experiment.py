@@ -367,10 +367,12 @@ TASKS: dict[str, dict] = {
 from vocab_sweep import register_sweep_tasks
 from vocab_sweep_pow2 import register_pow2_sweep_tasks
 from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_tasks
+from vocab_mixed_dfa import register_mixed_dfa_tasks
 
 register_sweep_tasks(TASKS)
 register_pow2_sweep_tasks(TASKS)
 register_pow2_h100_sweep_tasks(TASKS)
+register_mixed_dfa_tasks(TASKS)
 
 # Backward-compatible alias used by training / visualization entry points.
 EXPERIMENT_CONFIG: dict[str, dict] = TASKS
@@ -409,6 +411,7 @@ def spaced_experiment_name(regime: str) -> str:
 POW2_SWEEP_COMPARISON = "word_count_pow2_sweep_ns"
 POW2_SWEEP_H100_COMPARISON = "word_count_pow2_sweep_h100_ns"
 WORD_LENGTH_SWEEP_COMPARISON = "word_length_sweep_ns"
+MIXED_DFA_COMPARISON = "mixed_vocab_dfa_ns"
 
 
 def _pow2_sweep_checkpoint_subpath(name: str, comparison: str) -> Path | None:
@@ -456,6 +459,14 @@ def experiment_subpath(name: str) -> Path:
                 / f"w{n_s}"
                 / f"l{l_s}_ns"
             )
+    if name.startswith("mixeddfa_r") and name.endswith("_ns"):
+        run_s = name.removeprefix("mixeddfa_r").removesuffix("_ns")
+        return (
+            Path("comparisons")
+            / MIXED_DFA_COMPARISON
+            / "checkpoints"
+            / f"r{run_s}"
+        )
     return Path(name)
 
 

@@ -1,0 +1,114 @@
+"""Train and analyze mixed-length English vocab runs (organized by DFA size)."""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from experiment import EXPERIMENTS_ROOT, checkpoint_path, comparison_dir
+from vocab_mixed_dfa import (
+    COMPARISON_NAME,
+    DEFAULT_SEEDS,
+    N_RUNS,
+    iter_runs,
+    task_name,
+    write_run_manifest,
+)
+from viz.compare.mixed_dfa_viz import run_all_mixed_dfa_plots
+from viz.compare.sweep_output import sweep_data_dir
+
+
+def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str) -> None:
+    need = [s for s in seeds if not checkpoint_path(task, "rnn", seed=s).is_file()]
+    if not need:
+        return
+    cmd = [
+        sys.executable, "scripts/run_task.py", task,
+        "--models", "rnn",
+        "--seeds", *[str(s) for s in need],
+        "--skip-viz",
+        "--device", device,
+    ]
+    if smoke:
+        cmd.append("--smoke")
+    subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+
+
+def cmd_plan(args: argparse.Namespace) -> None:
+    seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
+    manifest = write_run_manifest(sweep_data_dir(COMPARISON_NAME) / "run_manifest.json")
+    tasks = [e["task"] for e in iter_runs()]
+    missing = sum(
+        1 for t in tasks for s in seeds
+        if not checkpoint_path(t, "rnn", seed=s).is_file()
+    )
+    print(f"mixed vocab DFA sweep: {N_RUNS} runs  seeds={list(seeds)}")
+    print(f"comparison: {COMPARISON_NAME}")
+    print(f"manifest: {manifest}")
+    print(f"missing checkpoints: {missing} / {len(tasks) * len(seeds)}")
+    # Brief DFA spread.
+    import json
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    dfas = [r["n_dfa_states"] for r in data["runs"]]
+    print(f"DFA states: min={min(dfas)} median={sorted(dfas)[len(dfas)//2]} max={max(dfas)}")
+
+
+def cmd_train(args: argparse.Namespace) -> None:
+    seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
+    tasks = [e["task"] for e in iter_runs()]
+    if args.runs is not None:
+        want = set(args.runs)
+        tasks = [task_name(i) for i in sorted(want)]
+    jobs = max(1, int(args.jobs))
+    if jobs == 1:
+        for task in tasks:
+            _train_one(task, seeds, smoke=args.smoke, device=args.device)
+        return
+    with ProcessPoolExecutor(max_workers=jobs) as pool:
+        futs = [
+            pool.submit(_train_one, task, seeds, smoke=args.smoke, device=args.device)
+            for task in tasks
+        ]
+        for fut in as_completed(futs):
+            fut.result()
+
+
+def cmd_plot(args: argparse.Namespace) -> None:
+    seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
+    run_all_mixed_dfa_plots(seeds=seeds, recompute=not args.replot_only)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("plan", "train", "plot", "all"))
+    parser.add_argument("--seeds", type=int, nargs="+", default=None)
+    parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
+    parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
+    parser.add_argument("--replot-only", action="store_true")
+    args = parser.parse_args()
+
+    (EXPERIMENTS_ROOT / "comparisons" / COMPARISON_NAME).mkdir(parents=True, exist_ok=True)
+
+    if args.command == "plan":
+        cmd_plan(args)
+    elif args.command == "train":
+        cmd_train(args)
+    elif args.command == "plot":
+        cmd_plot(args)
+    elif args.command == "all":
+        cmd_plan(args)
+        cmd_train(args)
+        cmd_plot(args)
+
+
+if __name__ == "__main__":
+    main()

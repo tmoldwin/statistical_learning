@@ -103,21 +103,38 @@ def paper_manifest() -> list[FigureRef]:
                   as_jpg=traj_by_length.suffix.lower() != ".jpg"),
         FigureRef("compare", "fig_traj_by_wordcount.jpg", traj_by_count,
                   as_jpg=traj_by_count.suffix.lower() != ".jpg"),
+        FigureRef("compare", "fig_mixed_scaling_overview.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "scaling_overview.png",
+                  max_w=1400),
+        FigureRef("compare", "fig_mixed_decoding_curves.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "decoding_curves_by_dfa.png",
+                  max_w=1200),
+        FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "metrics_vs_dfa.png",
+                  max_w=1200),
+        # Standalone leftovers (sources still produced; not in main draft).
+        FigureRef("compare", "fig_mixed_pc_spectra.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "pc_spectra_vs_dfa.png"),
+        FigureRef("compare", "fig_mixed_nwords_vs_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "nwords_vs_dfa.png"),
+        # Curated leftovers from the prior H=100 grid (sources deleted; keep paper JPG).
         FigureRef("compare", "fig_sweep_pc_spectra.jpg",
-                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
-                  / "trajectories" / "sweep_pc_spectra_overlay.png"),
+                  ROOT / "paper" / "figures" / "compare" / "fig_sweep_pc_spectra.jpg",
+                  as_jpg=False),
         FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
-                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
-                  / "weights" / "sweep_all_metrics_scatter2d.png",
-                  max_w=1000),
+                  ROOT / "paper" / "figures" / "compare" / "fig_sweep_metrics_scatter2d.jpg",
+                  as_jpg=False),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
         FigureRef("main", "fig_weight_matrices_by_dfa.jpg",
-                  ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
-                  / "weights" / "sweep_weight_matrices_by_dfa.png",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "weight_matrices_by_dfa.png",
                   max_w=1200),
-        FigureRef("main", "fig_weight_metrics_all_seeds.jpg",
-                  _anchor("weights/weight_metrics_all_seeds.png")),
     ]
 
 

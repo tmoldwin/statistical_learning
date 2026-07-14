@@ -1,5 +1,5 @@
 {
-  "copied": 19,
+  "copied": 17,
   "missing": [
     "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
     "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
@@ -196,51 +196,59 @@
     },
     {
       "section": "compare",
-      "paper_name": "fig_compare_learning.jpg",
-      "source": "experiments/comparisons/sixteen_word_345_ns/learning_curves/summary.png",
-      "dest": "paper/figures/compare/fig_compare_learning.jpg",
+      "paper_name": "fig_mixed_scaling_overview.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/scaling_overview.png",
+      "dest": "paper/figures/compare/fig_mixed_scaling_overview.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
       "section": "compare",
-      "paper_name": "fig_compare_separation.jpg",
-      "source": "experiments/comparisons/sixteen_word_345_ns/feature_separation/summary.png",
-      "dest": "paper/figures/compare/fig_compare_separation.jpg",
+      "paper_name": "fig_mixed_decoding_curves.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/decoding_curves_by_dfa.png",
+      "dest": "paper/figures/compare/fig_mixed_decoding_curves.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_mixed_metrics_vs_dfa.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/metrics_vs_dfa.png",
+      "dest": "paper/figures/compare/fig_mixed_metrics_vs_dfa.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_mixed_pc_spectra.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/pc_spectra_vs_dfa.png",
+      "dest": "paper/figures/compare/fig_mixed_pc_spectra.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_mixed_nwords_vs_dfa.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/nwords_vs_dfa.png",
+      "dest": "paper/figures/compare/fig_mixed_nwords_vs_dfa.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
       "section": "compare",
       "paper_name": "fig_sweep_pc_spectra.jpg",
-      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/trajectories/sweep_pc_spectra_overlay.png",
+      "source": "paper/figures/compare/fig_sweep_pc_spectra.jpg",
       "dest": "paper/figures/compare/fig_sweep_pc_spectra.jpg",
       "exists": true,
-      "skipped_self": false
-    },
-    {
-      "section": "compare",
-      "paper_name": "fig_sweep_all_metrics.jpg",
-      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics.png",
-      "dest": "paper/figures/compare/fig_sweep_all_metrics.jpg",
-      "exists": true,
-      "skipped_self": false
-    },
-    {
-      "section": "compare",
-      "paper_name": "fig_sweep_metrics_scatter3d.jpg",
-      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics_scatter3d.png",
-      "dest": "paper/figures/compare/fig_sweep_metrics_scatter3d.jpg",
-      "exists": true,
-      "skipped_self": false
+      "skipped_self": true
     },
     {
       "section": "compare",
       "paper_name": "fig_sweep_metrics_scatter2d.jpg",
-      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics_scatter2d.png",
+      "source": "paper/figures/compare/fig_sweep_metrics_scatter2d.jpg",
       "dest": "paper/figures/compare/fig_sweep_metrics_scatter2d.jpg",
       "exists": true,
-      "skipped_self": false
+      "skipped_self": true
     },
     {
       "section": "main",
@@ -252,17 +260,9 @@
     },
     {
       "section": "main",
-      "paper_name": "fig_weight_matrices_by_seed.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_matrices_by_seed.png",
-      "dest": "paper/figures/main/fig_weight_matrices_by_seed.jpg",
-      "exists": true,
-      "skipped_self": false
-    },
-    {
-      "section": "main",
-      "paper_name": "fig_weight_metrics_all_seeds.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_metrics_all_seeds.png",
-      "dest": "paper/figures/main/fig_weight_metrics_all_seeds.jpg",
+      "paper_name": "fig_weight_matrices_by_dfa.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/weight_matrices_by_dfa.png",
+      "dest": "paper/figures/main/fig_weight_matrices_by_dfa.jpg",
       "exists": true,
       "skipped_self": false
     }

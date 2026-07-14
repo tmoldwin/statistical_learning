@@ -58,14 +58,21 @@ def finalize_grid_figure(
     suptitle: str | None = None,
     suptitle_fontsize: float = 11,
     bottom: float = 0.10,
-    top: float = 0.93,
+    top: float | None = None,
     left: float | None = None,
     right: float | None = None,
     hspace: float = 0.38,
     wspace: float = 0.28,
 ) -> None:
+    """Apply margins so ``suptitle`` never collides with panel titles.
+
+    Default ``top`` is 0.88 when a suptitle is set (≤0.93 per plot-text-layout);
+    use a lower ``top`` (≈0.78–0.84) when panel titles are multi-line.
+    """
+    if top is None:
+        top = 0.84 if suptitle else 0.93
     if suptitle:
-        fig.suptitle(suptitle, fontsize=suptitle_fontsize, y=0.985)
+        fig.suptitle(suptitle, fontsize=suptitle_fontsize, y=0.98)
     kwargs = dict(top=top, bottom=bottom, hspace=hspace, wspace=wspace)
     if left is not None:
         kwargs["left"] = left
@@ -89,5 +96,7 @@ def condition_bar_colors(n: int) -> list[tuple[float, float, float, float]]:
 
 
 def save_figure(fig, path, *, dpi: int = 150) -> None:
-    fig.savefig(path, dpi=dpi, bbox_inches="tight", pad_inches=0.06)
+    # Do not use bbox_inches="tight": it collapses the headroom reserved for
+    # suptitles via subplots_adjust / gridspec and causes title overlap.
+    fig.savefig(path, dpi=dpi, pad_inches=0.20)
     plt.close(fig)

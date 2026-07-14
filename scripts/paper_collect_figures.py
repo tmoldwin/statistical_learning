@@ -31,7 +31,7 @@ class FigureRef:
     paper_name: str
     source: Path
     as_jpg: bool = True
-    max_w: int = 1200
+    max_w: int = 1000
 
 
 def _anchor(subpath: str) -> Path:
@@ -89,9 +89,9 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("main", "fig11_embedding_panels.jpg",
                   _anchor("embeddings/11_embedding_panels_context.png")),
         FigureRef("main", "fig20_feature_separation.jpg",
-                  _anchor("separation/20_feature_separation_summary.png")),
+                  _anchor("separation/20_feature_separation_summary_condensed.png")),
         FigureRef("main", "fig19_dfa_distance.jpg",
-                  _anchor("separation/19_dfa_state_distance_comparison.png")),
+                  _anchor("separation/19_dfa_state_distance_comparison_condensed.png")),
         FigureRef("main", "fig_unit_selectivity.jpg",
                   _anchor("unit_selectivity/unit_selectivity_summary.png")),
         FigureRef("main", "fig_example_units.jpg",
@@ -117,7 +117,7 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_sweep_metrics_scatter2d.jpg",
                   ROOT / "experiments" / COMPARE / "word_count_pow2_sweep_h100_ns"
                   / "weights" / "sweep_all_metrics_scatter2d.png",
-                  max_w=1400),
+                  max_w=1000),
         FigureRef("main", "fig05_weights_init_final.jpg",
                   _anchor("weights/weight_init_vs_final.png")),
         FigureRef("main", "fig_weight_matrices_by_seed.jpg",
@@ -127,7 +127,7 @@ def paper_manifest() -> list[FigureRef]:
     ]
 
 
-def _to_jpg(src: Path, dest: Path, *, max_w: int = 1600, quality: int = 90) -> None:
+def _to_jpg(src: Path, dest: Path, *, max_w: int = 1000, quality: int = 90) -> None:
     im = Image.open(src)
     if im.mode in ("RGBA", "P"):
         im = im.convert("RGB")

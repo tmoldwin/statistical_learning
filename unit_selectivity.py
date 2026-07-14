@@ -57,6 +57,22 @@ FEATURE_COLORS = {
     "prediction_entropy": "#ff7f0e",
 }
 
+# Distinct category palettes so feature panels don't share the same tab20 look.
+FEATURE_CMAPS = {
+    "dfa": "nipy_spectral",
+    "char": "Dark2",
+    "position": "YlGnBu",
+    "position_from_end": "OrRd",
+    "prefix": "Set3",
+    "string": "Accent",
+    "word_start": "Set2",
+    "word_end": "Pastel2",
+    "next_char": "tab10",
+    "next_char_2": "Paired",
+    "next_bigram": "tab20b",
+    "prediction_entropy": "plasma",
+}
+
 LEXICAL_SET = frozenset(ANALYSIS_FEATURES)
 PREDICTION_SET = frozenset(PREDICTION_FEATURES)
 
@@ -821,11 +837,30 @@ def _category_color_map(
     visible: list[int],
     automaton: MinimizedVocabAutomaton | None,
 ) -> tuple[dict, dict]:
-    cmap = plt.cm.tab20
+    cmap = plt.get_cmap(FEATURE_CMAPS.get(feature, "tab20"))
     cat_to_color, legend_labels, _ = _panel_feature_colors(
         feature, vals, visible, automaton, cmap,
     )
     return cat_to_color, legend_labels
+
+
+def _colors_for_categories(feature: str, cats: list, cmap) -> dict:
+    """Assign one color per category using the feature's palette."""
+    n = len(cats)
+    if n == 0:
+        return {}
+    # Ordered numeric features: walk a sequential scale by value.
+    if feature in ("position", "position_from_end", "prediction_entropy") and all(
+        isinstance(c, (int, float, np.integer, np.floating)) for c in cats
+    ):
+        nums = [float(c) for c in cats]
+        lo, hi = min(nums), max(nums)
+        span = max(hi - lo, 1e-9)
+        return {c: cmap(0.15 + 0.75 * ((float(c) - lo) / span)) for c in cats}
+    # Qualitative: spaced samples (avoid wrapping the same first colors).
+    if n == 1:
+        return {cats[0]: cmap(0.35)}
+    return {c: cmap(i / (n - 1)) for i, c in enumerate(cats)}
 
 
 def _timestep_tick_labels(
@@ -879,11 +914,11 @@ def _example_panel_figsize(
     *,
     compact: bool = False,
 ) -> tuple[float, float]:
-    width = max(7.5, 0.12 * n_timesteps + 2.4) * (n_cols / 2)
+    width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
     if compact:
-        row_h = max(1.05, 0.65 + 0.005 * n_timesteps)
+        row_h = max(1.35, 1.0 + 0.006 * n_timesteps)
     else:
-        row_h = max(2.2, 1.6 + 0.02 * n_timesteps)
+        row_h = max(1.7, 1.2 + 0.012 * n_timesteps)
     height = row_h * n_rows
     return width, height
 
@@ -984,6 +1019,7 @@ def _plot_unit_category_bars(
     legend_labels: dict,
     *,
     compact: bool = False,
+    show_xticks: bool = True,
 ) -> None:
     bar_cats, means, sems = _category_means(unit_acts, vals, mask)
     x = np.arange(len(bar_cats))
@@ -991,15 +1027,16 @@ def _plot_unit_category_bars(
     cap = 2 if compact else 4
     ax.bar(x, means, yerr=sems, color=colors, capsize=cap, edgecolor="white", linewidth=0.6)
     ax.set_xticks(x)
-    rot = 45 if compact and len(bar_cats) > 4 else 30
-    fs = 6 if compact else 8
-    ax.set_xticklabels(
-        [legend_labels.get(c, str(c)) for c in bar_cats],
-        rotation=rot,
-        ha="right",
-        fontsize=fs,
-    )
-    ax.set_ylabel("mean activation", fontsize=7 if compact else 9)
+    if show_xticks:
+        rot = 45 if compact and len(bar_cats) > 4 else 30
+        fs = 5.5 if compact else 8
+        labels = [legend_labels.get(c, str(c)) for c in bar_cats]
+        if len(labels) > 10:
+            labels = [lab if i % 2 == 0 else "" for i, lab in enumerate(labels)]
+        ax.set_xticklabels(labels, rotation=rot, ha="right", fontsize=fs)
+    else:
+        ax.set_xticklabels([])
+    ax.set_ylabel("mean" if compact else "mean activation", fontsize=7 if compact else 9)
     if compact:
         ax.set_title("mean by category", fontsize=7)
     else:
@@ -1043,6 +1080,7 @@ def _plot_unit_example_panel(
     _plot_unit_category_bars(
         ax_tune, unit_acts, vals, mask, cat_to_color, legend_labels,
         compact=compact,
+        show_xticks=show_xticks,
     )
 
 
@@ -1201,12 +1239,21 @@ def plot_example_units_combined(
             ylim=ylim,
         )
         if feat != prev_feat:
+            short = {
+                "dfa": "DFA",
+                "char": "char",
+                "position": "pos→",
+                "position_from_end": "←pos",
+            }.get(feat, FEATURE_DISPLAY[feat])
             axes[row, 0].set_ylabel(
-                f"{FEATURE_DISPLAY[feat]}\nactivation",
+                f"{short}\nact.",
                 fontsize=7,
                 color=FEATURE_COLORS.get(feat, "#333"),
             )
             prev_feat = feat
+        else:
+            axes[row, 0].set_ylabel("act.", fontsize=6)
+        axes[row, 1].set_ylabel("")
 
     fig.suptitle(
         f"Top-{k} units per feature on one corpus window "
@@ -1247,8 +1294,8 @@ def plot_example_predictor_units(
         axes = np.array([axes])
     nc = labels.next_char
     cats = sorted(set(nc))
-    cmap = plt.cm.tab20
-    cat_to_color = {c: cmap(i % 20) for i, c in enumerate(cats)}
+    cmap = plt.get_cmap(FEATURE_CMAPS.get("next_char", "tab10"))
+    cat_to_color = _colors_for_categories("next_char", cats, cmap)
     legend_labels = {c: str(c) for c in cats}
     n = len(activations)
 
@@ -1403,9 +1450,12 @@ def _panel_feature_colors(
     if feat == "dfa" and automaton is not None:
         from visualize import _state_id_colors
 
-        state_colors = _state_id_colors([int(c) for c in cats])
-        cat_to_color = {c: state_colors[int(c)] for c in cats}
-        # Many DFA states: prefer short sN labels so bar ticks stay readable.
+        # Prefer project DFA state colors when available; otherwise feature cmap.
+        try:
+            state_colors = _state_id_colors([int(c) for c in cats])
+            cat_to_color = {c: state_colors[int(c)] for c in cats}
+        except Exception:
+            cat_to_color = _colors_for_categories(feat, cats, cmap)
         if len(cats) > 8:
             legend_labels = {c: f"s{int(c)}" for c in cats}
         else:
@@ -1413,7 +1463,7 @@ def _panel_feature_colors(
                 c: _compact_dfa_state_label(int(c), automaton) for c in cats
             }
     else:
-        cat_to_color = {c: cmap(ci % 20) for ci, c in enumerate(cats)}
+        cat_to_color = _colors_for_categories(feat, cats, cmap)
         legend_labels = {c: str(c) for c in cats}
     vis_colors = [cat_to_color[vals[j]] for j in visible]
     return cat_to_color, legend_labels, vis_colors
@@ -1442,7 +1492,6 @@ def _plot_dimred_by_feature(
         nrows, ncols, figsize=(3.4 * ncols, 3.0 * nrows), constrained_layout=True,
     )
     axes_flat = np.atleast_1d(axes).ravel()
-    cmap = plt.cm.tab20
 
     for i, feat in enumerate(features):
         ax = axes_flat[i]
@@ -1451,6 +1500,7 @@ def _plot_dimred_by_feature(
         if not visible:
             ax.axis("off")
             continue
+        cmap = plt.get_cmap(FEATURE_CMAPS.get(feat, "tab20"))
         cat_to_color, legend_labels, vis_colors = _panel_feature_colors(
             feat, vals, visible, automaton, cmap,
         )
@@ -1559,19 +1609,19 @@ def plot_unit_selectivity_summary(
     colors = [FEATURE_COLORS.get(f, "#888") for f in feats]
     tick = [FEATURE_DISPLAY.get(f, f) for f in feats]
 
-    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(10.0, 6.2), constrained_layout=True)
     fig.suptitle(
         f"Unit selectivity summary ({repr_label}, n={result.n_points} points, "
         f"{len(result.primary_feature)} units)",
-        fontsize=10,
+        fontsize=9,
         y=1.02,
     )
 
     def _bar(ax, values, ylabel, ylim=None) -> None:
         ax.bar(x, values, color=colors, edgecolor="0.2", linewidth=0.6)
         ax.set_xticks(x)
-        ax.set_xticklabels(tick, rotation=35, ha="right", fontsize=8)
-        ax.set_ylabel(ylabel, fontsize=9)
+        ax.set_xticklabels(tick, rotation=28, ha="right", fontsize=6.5)
+        ax.set_ylabel(ylabel, fontsize=8)
         ax.grid(True, axis="y", linestyle=":", alpha=0.35)
         if ylim is not None:
             ax.set_ylim(*ylim)
@@ -1579,24 +1629,27 @@ def plot_unit_selectivity_summary(
     si_med = [float(np.nanmedian(result.si[f])) for f in feats]
     si_p90 = [float(np.nanpercentile(result.si[f], 90)) for f in feats]
     _bar(axes[0, 0], si_med, "Median SI", (0, 1.05))
-    axes[0, 0].set_title("Peak vs rest SI")
+    axes[0, 0].set_title("Peak vs rest SI (p90 above)", fontsize=9)
     for i, p in enumerate(si_p90):
-        axes[0, 0].text(i, si_med[i], f"p90={p:.2f}", ha="center", va="bottom", fontsize=6)
+        y = min(si_med[i] + 0.06, 0.98)
+        if si_med[i] < 0.08:
+            y = 0.12
+        axes[0, 0].text(i, y, f"{p:.2f}", ha="center", va="bottom", fontsize=5.5, rotation=0)
 
     eta_med = [float(np.nanmedian(result.eta2[f])) for f in feats]
     _bar(axes[0, 1], eta_med, "Median η²", (0, 1.05))
-    axes[0, 1].set_title("Overall labeled variance")
+    axes[0, 1].set_title("Overall labeled variance", fontsize=9)
 
     pg_med = [float(np.nanmedian(result.peak_gap[f])) for f in feats]
     _bar(axes[0, 2], pg_med, "Median peak gap / σ(unit)")
-    axes[0, 2].set_title("Top − runner-up category")
+    axes[0, 2].set_title("Top − runner-up category", fontsize=9)
 
     frac_strong = [
         float(np.mean(result.si[f] >= 0.5)) if np.isfinite(result.si[f]).any() else 0.0
         for f in feats
     ]
     _bar(axes[1, 0], frac_strong, "Fraction of units", (0, 1.05))
-    axes[1, 0].set_title("Units with SI ≥ 0.5")
+    axes[1, 0].set_title("Units with SI ≥ 0.5", fontsize=9)
 
     feat_counts: dict[str, int] = defaultdict(int)
     for f in result.primary_feature:
@@ -1633,10 +1686,13 @@ def plot_unit_selectivity_summary(
     ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, alpha=0.35)
     ax.set_xlabel("η²")
     ax.set_ylabel("SI")
-    ax.set_title("Per-unit SI vs η²")
+    ax.set_title("Per-unit SI vs η²", fontsize=9)
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(fontsize=6, loc="lower right")
+    ax.legend(
+        fontsize=5.5, loc="center left", bbox_to_anchor=(1.04, 0.5),
+        borderaxespad=0.0, frameon=False, handletextpad=0.3,
+    )
     ax.grid(True, linestyle=":", alpha=0.35)
 
     fig.savefig(save_path, dpi=150, bbox_inches="tight")

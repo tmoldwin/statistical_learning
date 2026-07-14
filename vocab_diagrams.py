@@ -967,18 +967,31 @@ def _state_label_lines(prefix_set: set[str]) -> list[str]:
     if len(shown) == 1:
         return shown
     compact = format_prefix_set(prefix_set)
-    if len(shown) == 2 and len(compact) <= 16:
-        return [compact]
-    if len(shown) > 6:
-        return shown[:5] + [f"…+{len(shown) - 5}"]
-    return shown
+    # Prefer compact comma wrapping so multi-word states stay readable in small panels.
+    if len(shown) <= 6:
+        return _wrap_label(compact, max_chars=12)
+    return shown[:4] + [f"…+{len(shown) - 4}"]
 
 
-def _fit_state(prefix_set: set[str]) -> tuple[list[str], float]:
+def _state_label_lines_compact(prefix_set: set[str]) -> list[str]:
+    """Even tighter labels for DFA diagrams embedded in multipanel figures."""
+    shown = sorted({display_prefix(p) for p in prefix_set}, key=lambda s: (len(s), s))
+    if not shown:
+        return ["ε"]
+    if len(shown) == 1:
+        return shown
+    # Multi-word nodes (esp. accept): avoid stacking; use a count tag.
+    if len(shown) >= 3:
+        shortest = shown[0]
+        return [shortest, f"+{len(shown) - 1}"]
+    return [", ".join(shown)]
+
+
+def _fit_state(prefix_set: set[str], *, compact: bool = False) -> tuple[list[str], float]:
     """Choose line breaks and the smallest radius that still fits the label."""
     import math
 
-    lines = _state_label_lines(prefix_set)
+    lines = _state_label_lines_compact(prefix_set) if compact else _state_label_lines(prefix_set)
     n_lines = len(lines)
     line_step = _state_line_step(n_lines)
     r = float(MIN_NODE_R)
@@ -997,8 +1010,8 @@ def _fit_state(prefix_set: set[str]) -> tuple[list[str], float]:
     return lines, r
 
 
-def _compute_radii(state_labels: dict[int, set[str]]) -> dict[int, float]:
-    return {key: _fit_state(prefixes)[1] for key, prefixes in state_labels.items()}
+def _compute_radii(state_labels: dict[int, set[str]], *, compact: bool = False) -> dict[int, float]:
+    return {key: _fit_state(prefixes, compact=compact)[1] for key, prefixes in state_labels.items()}
 
 
 def _state_font_size(radius: float, n_lines: int = 1) -> int:
@@ -1210,6 +1223,7 @@ def draw_minimized_dfa_on_axes(
     words: list[str],
     *,
     state_colors: dict[int, tuple] | None = None,
+    compact: bool = False,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`."""
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
@@ -1217,8 +1231,8 @@ def draw_minimized_dfa_on_axes(
 
     dfa = automaton.dfa
     state_labels = _dfa_state_label_map(automaton)
-    radii = _compute_radii(state_labels)
-    gap_scale = _gap_scale(radii)
+    radii = _compute_radii(state_labels, compact=compact)
+    gap_scale = _gap_scale(radii) * (1.12 if compact else 1.0)
     coords = _scale_positions(layout_dfa(dfa), gap_scale=gap_scale)
     width, height = _canvas_size(coords, radii)
 
@@ -1227,7 +1241,8 @@ def draw_minimized_dfa_on_axes(
     ax.set_ylim(height, 0)
     ax.set_aspect("equal", adjustable="box")
     ax.axis("off")
-    ax.set_title(f"Minimal DFA · {', '.join(words)}", fontsize=12, pad=12)
+    if not compact:
+        ax.set_title(f"Minimal DFA · {', '.join(words)}", fontsize=12, pad=12)
 
     by_edge: dict[tuple[int, int], list[str]] = {}
     for (s, a), t in sorted(dfa.delta.items()):
@@ -1325,9 +1340,15 @@ def draw_minimized_dfa_on_axes(
                 facecolor=node_fill, edgecolor="#111111", linewidth=1.5, zorder=5,
             )
         )
-        wrapped, _ = _fit_state(prefix_set)
-        fs = _state_font_size(r, len(wrapped))
-        line_step = _state_line_step(len(wrapped))
+        wrapped, _ = _fit_state(prefix_set, compact=compact)
+        # Matplotlib fonts don't scale with data coords; keep them smaller so labels
+        # stay inside nodes when this DFA is embedded in a compact multipanel figure.
+        if compact:
+            fs = 5 if len(wrapped) > 1 else 6
+            line_step = max(fs * 1.55, 9.0)
+        else:
+            fs = max(5, min(8, _state_font_size(r, len(wrapped)) - 2))
+            line_step = max(_state_line_step(len(wrapped)), fs * 1.45)
         if len(wrapped) == 1:
             ax.text(
                 cx, cy, wrapped[0],

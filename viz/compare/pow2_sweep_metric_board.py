@@ -342,6 +342,16 @@ def _load_metric_sources(spec: Pow2SweepSpec) -> tuple[
     return geometry, training, spectra, weights
 
 
+# Drop definitional duplicates of kept loop geometry / spectra panels.
+_REDUNDANT_METRIC_TITLES = frozenset({
+    "planarity top-2",              # == loop top-2 var frac
+    "PC1+2 % variance (loop)",      # == loop top-2 (spectra %)
+    "PCs to 90% variance (loop)",   # == loop dims to 90%
+    "PC1 variance frac",            # nested in corpus PCA / top-2 story
+    "PC1 % variance (loop)",        # nested in loop top-2
+})
+
+
 def plot_pow2_sweep_metric_board(
     *,
     outfile: str = "sweep_all_metrics.png",
@@ -356,20 +366,23 @@ def plot_pow2_sweep_metric_board(
     word_counts = tuple(int(w) for w in geometry["word_counts"])
     lengths = tuple(_norm_length(L) for L in geometry["lengths"])
 
-    catalog = _metric_catalog(
-        geometry_panels=geometry["panels"],
-        training_panels=training["panels"],
-        spectra_panels=spectra["panels"],
-        weight_panels=weights["panels"],
-        seeds=seed_set,
-    )
+    catalog = [
+        s for s in _metric_catalog(
+            geometry_panels=geometry["panels"],
+            training_panels=training["panels"],
+            spectra_panels=spectra["panels"],
+            weight_panels=weights["panels"],
+            seeds=seed_set,
+        )
+        if s[0] not in _REDUNDANT_METRIC_TITLES
+    ]
     n_metrics = len(catalog)
     if n_metrics > 20:
         n_cols = max(n_cols, 5)
     n_rows = int(np.ceil(n_metrics / n_cols))
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(2.05 * n_cols + 0.3, 1.65 * n_rows + 0.55),
+        figsize=(2.05 * n_cols + 0.4, 1.7 * n_rows + 0.6),
         squeeze=False,
     )
     length_labels = [spec.length_label(L) for L in lengths]
@@ -404,7 +417,7 @@ def plot_pow2_sweep_metric_board(
             init_mu = _global_mean(init_map)
             if init_mu is not None:
                 panel_title = f"{title}\n(init µ={init_mu:.3g})"
-        ax.set_title(panel_title, fontsize=8, pad=3)
+        ax.set_title(panel_title, fontsize=7, pad=2)
         ax.set_xticks(np.arange(len(wc_labels)))
         ax.set_xticklabels(wc_labels, fontsize=6)
         ax.set_yticks(np.arange(len(length_labels)))
@@ -420,14 +433,22 @@ def plot_pow2_sweep_metric_board(
                 if not np.isfinite(v):
                     continue
                 if log_scale and v > 0:
-                    txt = f"{v:.0f}" if v >= 100 else f"{v:.2g}"
+                    if v >= 100:
+                        txt = f"{v:.0e}".replace("e+0", "e").replace("e+", "e")
+                    else:
+                        txt = f"{v:.2g}"
                     mid = np.sqrt(max(vmin, 1e-12) * vmax)
                     color = "white" if v >= mid else "black"
                 else:
-                    txt = f"{v:.2f}" if abs(v) < 10 else f"{v:.1f}"
+                    if abs(v) >= 100:
+                        txt = f"{v:.0e}".replace("e+0", "e").replace("e+", "e")
+                    elif abs(v) >= 10:
+                        txt = f"{v:.1f}"
+                    else:
+                        txt = f"{v:.2f}"
                     color = "white" if v >= (vmin + 0.65 * (vmax - vmin)) else "black"
-                ax.text(wi, li, txt, ha="center", va="center", fontsize=4.8, color=color)
-        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+                ax.text(wi, li, txt, ha="center", va="center", fontsize=3.6, color=color)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         cbar.ax.tick_params(labelsize=5)
 
     for idx in range(n_metrics, n_rows * n_cols):
@@ -436,11 +457,11 @@ def plot_pow2_sweep_metric_board(
 
     finalize_grid_figure(
         fig,
-        top=0.94,
-        bottom=0.04,
-        left=0.06,
-        hspace=0.55,
-        wspace=0.35,
+        top=0.93,
+        bottom=0.05,
+        left=0.07,
+        hspace=0.65,
+        wspace=0.45,
         suptitle=(
             f"Sweep metrics (final; mean over seeds {min(run_seeds)}-{max(run_seeds)}; "
             f"{spec.comparison_name})"
@@ -592,7 +613,7 @@ def plot_pow2_sweep_metric_scatter3d(
     out_dir = Path("experiments/comparisons") / spec.comparison_name / "weights"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
     return out_path
 
@@ -653,16 +674,6 @@ def _points_vs_dfa(
         np.asarray(length_idxs, dtype=float),
         np.asarray(n_words_list, dtype=float),
     )
-
-
-# Drop definitional duplicates of kept loop geometry / spectra panels.
-_REDUNDANT_METRIC_TITLES = frozenset({
-    "planarity top-2",              # == loop top-2 var frac
-    "PC1+2 % variance (loop)",      # == loop top-2 (spectra %)
-    "PCs to 90% variance (loop)",   # == loop dims to 90%
-    "PC1 variance frac",            # nested in corpus PCA / top-2 story
-    "PC1 % variance (loop)",        # nested in loop top-2
-})
 
 
 def _prepare_dfa_scatter_panels(
@@ -735,7 +746,7 @@ def plot_pow2_sweep_metric_scatter2d(
     seeds: tuple[int, ...] | None = None,
     spec: Pow2SweepSpec = POW2_SWEEP_SPEC_H100,
     min_r2: float = 0.1,
-    wrap: int = 8,
+    wrap: int = 4,
 ) -> Path:
     """Metrics vs DFA states in wrapped blocks: each block has length-color then #words-color rows."""
     run_seeds, word_counts, lengths, prepared = _prepare_dfa_scatter_panels(
@@ -748,7 +759,7 @@ def plot_pow2_sweep_metric_scatter2d(
     n_cols = n_wrap
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(1.45 * n_cols + 0.9, 1.85 * n_rows + 0.7),
+        figsize=(1.85 * n_cols + 1.0, 1.85 * n_rows + 0.7),
         squeeze=False,
         sharex="col",
     )
@@ -792,7 +803,14 @@ def plot_pow2_sweep_metric_scatter2d(
             if coef is not None and x_line is not None:
                 ax.plot(x_line, coef[0] + coef[1] * x_line, color="#222222", lw=1.0, zorder=3)
             if local_row == 0:
-                ax.set_title(panel_title, fontsize=6, pad=2)
+                short = panel_title.split(" | ")[0]
+                # Drop verbose metric suffixes that collide between panels.
+                for cut in (" (loop)", " (corpus)", " (init"):
+                    if cut in short:
+                        short = short.split(cut)[0]
+                r2_bits = [b for b in panel_title.split(" | ") if b.startswith("$R")]
+                title = short if not r2_bits else f"{short}\n{r2_bits[-1]}"
+                ax.set_title(title, fontsize=6, pad=2)
             ax.tick_params(labelsize=5)
             if local_row == 1 and block == n_blocks - 1:
                 ax.set_xlabel("DFA states", fontsize=6)
@@ -815,8 +833,8 @@ def plot_pow2_sweep_metric_scatter2d(
         top=0.93,
         bottom=0.07,
         left=0.06,
-        hspace=0.38,
-        wspace=0.30,
+        hspace=0.55,
+        wspace=0.40,
         suptitle=(
             f"Metrics vs DFA states (deduped; R²≥{min_r2:g}; "
             f"pairs of rows: #letters then #words; seeds {min(run_seeds)}-{max(run_seeds)}; "

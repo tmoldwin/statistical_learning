@@ -63,16 +63,20 @@ def _chance_correct_curve(
 
 
 def _apply_k_ticks(ax, max_k: int, *, fontsize: float = 10, show_labels: bool = True) -> None:
-    full_x = float(max_k) + 1.5
-    xticks = [t for t in (1, 5, 10, 15, 20) if t <= max_k]
-    if max_k not in xticks:
+    # Keep ★/"full" well clear of the last numeric k so labels never collide.
+    full_x = float(max_k) + 6.5
+    xticks = [t for t in (1, 5, 10, 15) if t < max_k]
+    if max_k >= 20:
+        # Omit 20 as a numeric tick — "full" sits just beyond max_k visually.
+        pass
+    else:
         xticks.append(max_k)
-    ax.set_xlim(0.6, full_x + 0.6)
+    ax.set_xlim(0.6, full_x + 1.0)
     ax.set_xticks([*xticks, full_x])
     if show_labels:
         ax.set_xticklabels(
             [*(str(t) for t in xticks), "full"],
-            fontsize=fontsize,
+            fontsize=max(8, fontsize - 1),
             fontweight="bold",
         )
         ax.tick_params(axis="x", length=5, width=1.1, pad=4)
@@ -133,7 +137,7 @@ def _plot_decode_pca_on_ax(
     compact: bool = False,
     ylim: tuple[float, float] | None = None,
 ) -> None:
-    full_x = float(max_k) + 1.5
+    full_x = float(max_k) + 6.5
     k_x = np.arange(1, max_k + 1, dtype=float)
     lw = 1.2 if compact else 1.8
     ms = 2.5 if compact else 4
@@ -184,7 +188,7 @@ def _plot_decode_neurons_on_ax(
     compact: bool = False,
     ylim: tuple[float, float] | None = None,
 ) -> None:
-    full_x = float(max_k) + 1.5
+    full_x = float(max_k) + 6.5
     k_x = np.arange(1, max_k + 1, dtype=float)
     lw = 1.2 if compact else 1.8
     ms = 2.5 if compact else 4
@@ -276,11 +280,11 @@ def plot_task_decode_curves(
 ) -> Path:
     """Chance-corrected PCA vs random neuron subsets (mean ± std) per feature."""
     save_path = Path(save_path)
-    fig, axes = plt.subplots(1, 2, figsize=(7.8, 3.2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.5), sharey=True)
     finalize_grid_figure(
         fig,
         suptitle="Linear readout: chance-corrected decoding accuracy",
-        top=0.88,
+        top=0.86,
         wspace=0.22,
     )
 
@@ -319,7 +323,7 @@ def plot_aggregated_seed_decode_curves(
     if not seeds:
         raise ValueError("need at least one seed panel")
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.8, 3.1), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.6), sharey=True)
     legend_handles = None
     legend_labels = None
 
@@ -345,7 +349,7 @@ def plot_aggregated_seed_decode_curves(
         xs = np.arange(1, max_k + 1)
         axes[0].plot(xs, pca_mean, color=color, lw=1.8, label=label)
         axes[0].fill_between(xs, pca_mean - pca_std, pca_mean + pca_std, color=color, alpha=0.18)
-        axes[0].scatter([max_k + 1.5], [float(np.nanmean(full_pca))], color=color, marker="*", s=70, zorder=5)
+        axes[0].scatter([max_k + 6.5], [float(np.nanmean(full_pca))], color=color, marker="*", s=70, zorder=5)
 
         # Neuron curves
         neu_rows = []
@@ -364,7 +368,7 @@ def plot_aggregated_seed_decode_curves(
         neu_std = np.nanstd(neu_mat, axis=0)
         axes[1].plot(xs, neu_mean, color=color, lw=1.8, label=label)
         axes[1].fill_between(xs, neu_mean - neu_std, neu_mean + neu_std, color=color, alpha=0.18)
-        axes[1].scatter([max_k + 1.5], [float(np.nanmean(full_neu))], color=color, marker="*", s=70, zorder=5)
+        axes[1].scatter([max_k + 6.5], [float(np.nanmean(full_neu))], color=color, marker="*", s=70, zorder=5)
 
     axes[0].set_title("top-k PCA", fontsize=10)
     axes[0].set_xlabel("# PCs  |  ★ = full hidden", fontsize=9)

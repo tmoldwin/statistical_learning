@@ -113,7 +113,7 @@ def plot_closed_loop_run_seed_row(
         out_path = Path(plots_dir(task, model_type)) / "trajectories" / "closed_loop_run_seed_row.png"
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
     return out_path
 
@@ -231,7 +231,7 @@ def plot_closed_loop_trajectories(
 
     minimal = not is_3d and n_seed_cols > 6
 
-    panel_w = 3.8 if n_seed_cols <= 8 else (2.2 if n_seed_cols <= 12 else 1.55)
+    panel_w = 2.2 if n_seed_cols <= 8 else (1.55 if n_seed_cols <= 12 else 1.25)
     row_h = 4.0 if is_3d else (2.35 if n_seed_cols <= 8 else 1.35)
     if n_seed_cols <= 8:
         head_fs, row_fs, hspace = 9.0, 8.0, 0.18
@@ -304,6 +304,6 @@ def plot_closed_loop_trajectories(
         y=0.98,
     )
     out_dir.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     return out_path

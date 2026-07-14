@@ -60,6 +60,7 @@ def finalize_grid_figure(
     bottom: float = 0.10,
     top: float = 0.93,
     left: float | None = None,
+    right: float | None = None,
     hspace: float = 0.38,
     wspace: float = 0.28,
 ) -> None:
@@ -68,6 +69,8 @@ def finalize_grid_figure(
     kwargs = dict(top=top, bottom=bottom, hspace=hspace, wspace=wspace)
     if left is not None:
         kwargs["left"] = left
+    if right is not None:
+        kwargs["right"] = right
     fig.subplots_adjust(**kwargs)
 
 

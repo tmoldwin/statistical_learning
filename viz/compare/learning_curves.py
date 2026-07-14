@@ -115,7 +115,7 @@ def plot_learning_summary(
             groups_by_key[key].append((vals, seed_ids))
 
     fig, axes = plt.subplots(
-        2, 2, figsize=(8.0, 5.0), constrained_layout=True, squeeze=False,
+        2, 2, figsize=(7.5, 5.0), constrained_layout=True, squeeze=False,
     )
     for ax, (key, ylabel) in zip(axes.ravel(), metric_specs):
         _plot_metric_by_condition(
@@ -123,6 +123,12 @@ def plot_learning_summary(
         )
         if key == "final_word_err_pct":
             ax.axhline(_SUCCESS_WORD_ERR_PCT, color="#cc3333", linestyle="--", linewidth=1.0, alpha=0.7)
+            # Don't let the 15% success line dominate when errors are ~2–3%.
+            ymax = 0.0
+            for vals, _seeds in groups_by_key[key]:
+                if vals:
+                    ymax = max(ymax, float(np.nanmax(vals)))
+            ax.set_ylim(0.0, max(ymax * 1.35, 4.0))
         ax.grid(True, axis="y", linestyle=":", alpha=0.35)
 
     fig.suptitle(

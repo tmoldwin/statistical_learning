@@ -357,8 +357,8 @@ def plot_hidden_states_heatmap(
 
     axis_ylabel = "h" if y_label == "hidden unit" else y_label
     # Keep paper heatmaps short; row labels stay readable at ~0.09"/unit.
-    heat_h = float(min(5.2, max(3.4, hidden_size * 0.09)))
-    heat_w = float(max(11.0, length * 0.13))
+    heat_h = float(min(7.2, max(4.8, hidden_size * 0.12)))
+    heat_w = float(max(8.0, min(11.5, length * 0.12)))
 
     if cluster_units:
         unit_labels = [
@@ -403,8 +403,13 @@ def plot_hidden_states_heatmap(
         # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title
         # that seaborn places to the right and can collide with the colorbar.
         grid.ax_heatmap.set_ylabel("")
-        grid.ax_heatmap.tick_params(axis="x", labelsize=8)
-        grid.ax_heatmap.tick_params(axis="y", labelsize=6)
+        grid.ax_heatmap.tick_params(axis="x", labelsize=7)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=5)
+        # Avoid overlapping unit tick labels when H is large.
+        step = 3 if hidden_size >= 40 else 2 if hidden_size >= 24 else 1
+        for i, tick in enumerate(grid.ax_heatmap.get_yticklabels()):
+            tick.set_visible(i % step == 0)
+            tick.set_fontsize(5)
         for tick in grid.ax_heatmap.get_xticklabels():
             tick.set_fontweight("bold")
         # Compact colorbar to the right of y tick labels (pad clears them).
@@ -1907,8 +1912,8 @@ def plot_hidden_states_clustermap(
     col_labels = [f"{unit_prefix}{i}" for i in range(n_cols)]
     # Flip orientation: units on rows, timesteps on columns (makes long sequences readable).
     data = pd.DataFrame(hidden_states, index=row_labels, columns=col_labels).T
-    heat_w = float(max(11.0, n_rows * 0.20))
-    heat_h = float(min(5.4, max(3.6, n_cols * 0.09)))
+    heat_w = float(max(8.5, n_rows * 0.16))
+    heat_h = float(min(4.6, max(3.2, n_cols * 0.075)))
 
     grid = sns.clustermap(
         data,
@@ -2594,16 +2599,16 @@ def plot_feature_separation_summary(
     colors = [FEATURE_COLORS.get(f, "#888888") for f in feats]
     tick_labels = [FEATURE_DISPLAY.get(f, f) for f in feats]
 
-    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2), constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(9.5, 6.8), constrained_layout=True)
 
     ax = axes[0, 0]
     vals = [stats.centroid_gap[f] for f in feats]
     ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
     ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
     ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel("between − within spread")
-    ax.set_title("Centroid gap (group-balanced)")
+    ax.set_xticklabels([])
+    ax.set_ylabel("between − within spread", fontsize=8)
+    ax.set_title("Centroid gap (group-balanced)", fontsize=9)
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
 
     ax = axes[0, 1]
@@ -2611,9 +2616,9 @@ def plot_feature_separation_summary(
     ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
     ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
     ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel("mean silhouette")
-    ax.set_title("Mean silhouette")
+    ax.set_xticklabels([])
+    ax.set_ylabel("mean silhouette", fontsize=8)
+    ax.set_title("Mean silhouette", fontsize=9)
     ax.set_ylim(-0.05, 1.05)
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
 
@@ -2621,9 +2626,9 @@ def plot_feature_separation_summary(
     vals = [stats.eta2[f] for f in feats]
     ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
     ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel("η²")
-    ax.set_title("Multivariate η²")
+    ax.set_xticklabels([])
+    ax.set_ylabel("η²", fontsize=8)
+    ax.set_title("Multivariate η²", fontsize=9)
     ax.set_ylim(0.0, 1.05)
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
 
@@ -2675,7 +2680,7 @@ def plot_feature_separation_summary(
 
     title = f"Feature separation summary ({repr_label}, n={hidden_states.shape[0]} points)"
     fig.suptitle(_condensed_plot_title(title, condensed), fontsize=12, y=1.02)
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -2779,7 +2784,7 @@ def plot_dfa_state_distance_comparison(
         for label, vals in specs
     }
 
-    fig, ax = plt.subplots(figsize=(11.0, 3.4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(9.0, 3.0), constrained_layout=True)
     x = np.arange(len(order))
     rng = np.random.default_rng(0)
     max_points = 200
@@ -2838,7 +2843,7 @@ def plot_dfa_state_distance_comparison(
     ]
     print("pairwise L2: " + " | ".join(parts) + f" | ratio within/between={ratio:.3f}")
 
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -3599,7 +3604,7 @@ def plot_learning_curve(model, save_path, *, loss_only: bool = False):
         print(f"skip {save_path}: re-run training to record loss history")
         return
 
-    fig, ax = plt.subplots(figsize=(9, 4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(6.5, 3.0), constrained_layout=True)
     title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
     if not plot_learning_curve_on_axes(ax, model, title=title, loss_only=loss_only):
         print(f"skip {save_path}: no loss history in model bundle")
@@ -7065,7 +7070,7 @@ def plot_closed_loop_trajectory_panel(
     hidden_size = int(model["hidden_size"])
     max_word_len = max(internal_steps, _longest_vocabulary_word_length(vocab_words))
 
-    fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.2), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.4), constrained_layout=True)
     ax_closed, ax_internal = axes
     closed_limits: list[np.ndarray] = []
     internal_limits: list[np.ndarray] = []
@@ -7091,7 +7096,7 @@ def plot_closed_loop_trajectory_panel(
         word_colors=word_colors,
         vocab_words=vocab_words,
         annotate=False,
-        annotate_fontsize=8.0,
+        annotate_fontsize=7.0,
         is_3d=False,
         linewidth=1.8,
         alpha=0.88,
@@ -7101,25 +7106,8 @@ def plot_closed_loop_trajectory_panel(
         arrow_mutation_scale=14.0,
         solid_lines=True,
     )
-    display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
-    step_label_colors = [
-        _step_palette_rgba(
-            min(len(p) if p not in ("", "␣") else 1, max_word_len)
-        )
-        for p in prefix_labels
-    ]
-    _annotate_trajectory_labels(
-        ax_closed, gen_z, display_prefixes,
-        fontsize=8.0,
-        dedupe=True,
-        use_leaders=True,
-        leader_linewidth=0.45,
-        label_colors=step_label_colors,
-    )
-    ax_closed.set_title(
-        f"Closed-loop (self-fed) · seed '{seed_char}' · color = letter position",
-        fontsize=11,
-    )
+    # No in-plot word labels: 16-word endpoints collide in PCA; color = letter position.
+    ax_closed.set_title(f"Closed-loop · seed '{seed_char}'", fontsize=10)
 
     # Internal dynamics: uniform line weight; step-colored midsegment arrows
     # scaled by segment length (skip tiny segs so they don't blob).
@@ -7142,14 +7130,10 @@ def plot_closed_loop_trajectory_panel(
             draw_arrows=True,
             arrow_mutation_scale=14.0,
         )
-        _annotate_trajectory_labels(
-            ax_internal, zs[:1], [seed_letter],
-            colors=_step_path_colors(1), fontsize=9.0,
-        )
+        # Skip per-seed letter labels — they pile up in the center of dense VF plots.
     ax_internal.set_title(
-        f"Internal dynamics · seed then no input · "
-        f"{len(seed_letters)} seeds × {internal_steps} steps · color = timestep",
-        fontsize=11,
+        f"Internal · {len(seed_letters)} seeds × {internal_steps} steps",
+        fontsize=10,
     )
 
     shared_limits = closed_limits + internal_limits
@@ -7242,7 +7226,7 @@ def plot_space_to_space_trajectories(
         )
         ax.legend(title="word", loc="best", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.35)
-        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {save_path}")
         return
@@ -7405,7 +7389,7 @@ def plot_space_to_space_trajectories(
         )
 
         fig.subplots_adjust(left=0.03, right=0.88, bottom=0.04, top=0.96)
-        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {save_path}")
         return
@@ -7455,7 +7439,7 @@ def plot_space_to_space_trajectories(
         f"{n_trained} vocabulary words · labels = in-word prefix"
     )
 
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7467,7 +7451,7 @@ def _trajectory_figure_sibling(save_path: str, suffix: str) -> str:
 
 
 def _save_trajectory_figure(fig, save_path: str) -> None:
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7525,7 +7509,7 @@ def plot_space_to_space_trajectories_3d(
         )
         ax.legend(title="word", loc="best", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.35)
-        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {save_path}")
         return
@@ -7788,7 +7772,7 @@ def plot_pca_vector_field(
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
     ax.grid(True, linestyle=":", alpha=0.35)
-    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
 
@@ -7835,11 +7819,15 @@ def plot_pca_dfa_analysis(
     ylim = (float(projected[:, 1].min() - pad_y), float(projected[:, 1].max() + pad_y))
 
     state_colors = _dfa_automaton_state_colors(automaton)
-    fig, axes = plt.subplots(2, 2, figsize=(8.0, 7.0), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(8.8, 7.6), constrained_layout=True,
+        gridspec_kw={"width_ratios": [1.25, 1.0], "height_ratios": [1.2, 1.0]},
+    )
     ax_dfa, ax_dfa_pca = axes[0, 0], axes[0, 1]
     ax_pos, ax_char = axes[1, 0], axes[1, 1]
 
-    draw_minimized_dfa_on_axes(ax_dfa, automaton, words, state_colors=state_colors)
+    draw_minimized_dfa_on_axes(
+        ax_dfa, automaton, words, state_colors=state_colors, compact=True,
+    )
     ax_dfa.set_title("Minimal DFA", fontsize=10, pad=4)
 
     panel_specs = [
@@ -8518,7 +8506,9 @@ def plot_output_probs(
     length = output_probs.shape[0]
     target_indices = np.array([chars.index(c) for c in targets])
 
-    fig, ax = plt.subplots(figsize=(max(12, length * 0.15), 4))
+    fig_w = float(max(8.5, min(12.0, length * 0.14)))
+    fig_h = float(max(3.4, vocab_size * 0.22 + 0.9))
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     im = ax.imshow(
         output_probs.T,
         aspect="auto", cmap="viridis", vmin=0, vmax=1,
@@ -8526,9 +8516,13 @@ def plot_output_probs(
     )
 
     ax.set_yticks(range(vocab_size))
-    ax.set_yticklabels(chars)
+    ax.set_yticklabels(chars, fontsize=8)
     ax.set_xticks(range(length))
-    ax.set_xticklabels(x_labels, fontsize=7)
+    ax.set_xticklabels(x_labels, fontsize=6)
+    # Thin crowded x ticks when the window is long.
+    if length > 40:
+        for i, tick in enumerate(ax.get_xticklabels()):
+            tick.set_visible(i % 2 == 0)
     if automaton is not None:
         if prefix_keys is not None:
             state_ids = _dfa_state_ids_for_prefixes(
@@ -8713,7 +8707,7 @@ def main() -> None:
                 )
                 plot_weight_matrices_by_seed(
                     args.exp,
-                    Path(out_dir) / "weight_matrices_by_seed.png",
+                    Path(out_dir) / "weights" / "weight_matrices_by_seed.png",
                 )
     if want("learning") and not args.trajectories_only:
         with timer.section("learning_curve"):

@@ -1,16 +1,7 @@
 {
-  "copied": 14,
+  "copied": 23,
   "missing": [
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/8_next_char_prob_sequence.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/7_activation_heatmap.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_closed_loop.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/closed_loop_run_seed_row.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_init_vs_final.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_metrics_all_seeds.png"
   ],
   "figures": [
@@ -91,7 +82,7 @@
       "paper_name": "fig_next_char_probs.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/8_next_char_prob_sequence.png",
       "dest": "paper/figures/main/fig_next_char_probs.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -99,7 +90,7 @@
       "paper_name": "fig_activation_heatmap.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/7_activation_heatmap.png",
       "dest": "paper/figures/main/fig_activation_heatmap.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -107,7 +98,7 @@
       "paper_name": "fig_activation_clustered.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
       "dest": "paper/figures/main/fig_activation_clustered.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -129,17 +120,17 @@
     {
       "section": "main",
       "paper_name": "fig20_feature_separation.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary.png",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary_condensed.png",
       "dest": "paper/figures/main/fig20_feature_separation.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
       "section": "main",
       "paper_name": "fig19_dfa_distance.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison.png",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
       "dest": "paper/figures/main/fig19_dfa_distance.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -163,7 +154,7 @@
       "paper_name": "fig_decoding_seed_mean.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
       "dest": "paper/figures/main/fig_decoding_seed_mean.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -171,7 +162,7 @@
       "paper_name": "fig_word_trajectories.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_closed_loop.png",
       "dest": "paper/figures/main/fig_word_trajectories.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -179,7 +170,7 @@
       "paper_name": "fig_word_trajectories_by_start.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/closed_loop_run_seed_row.png",
       "dest": "paper/figures/main/fig_word_trajectories_by_start.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -243,7 +234,7 @@
       "paper_name": "fig05_weights_init_final.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_init_vs_final.png",
       "dest": "paper/figures/main/fig05_weights_init_final.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {

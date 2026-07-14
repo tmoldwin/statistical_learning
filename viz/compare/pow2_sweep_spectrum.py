@@ -147,7 +147,7 @@ def plot_pow2_sweep_spectra(
     n_rows = int(np.ceil(n_word_panels / n_cols))
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(5.2 * n_cols, 3.8 * n_rows),
+        figsize=(3.6 * n_cols, 2.5 * n_rows),
         squeeze=False,
         sharex=True,
         sharey=True,
@@ -215,7 +215,7 @@ def plot_pow2_sweep_spectra(
         wspace=0.28,
     )
     out_path = sweep_figures_dir(spec.comparison_name) / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     return out_path
 
 
@@ -260,7 +260,7 @@ def plot_pow2_sweep_spectra_overlay(
     lengths = spec.lengths if lengths is None else lengths
     lookup = {(p["n_words"], p["length"]): p for p in panels}
 
-    fig, ax = plt.subplots(figsize=(6.2, 4.0))
+    fig, ax = plt.subplots(figsize=(5.0, 3.2))
     pc_x = np.arange(1, max_pcs + 1, dtype=float)
 
     global_xmax = 3

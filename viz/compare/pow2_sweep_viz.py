@@ -31,9 +31,9 @@ from vocab_sweep_pow2 import (
 POW2_SWEEP_COMPARISON_NAME = POW2_SWEEP_SPEC_NS.comparison_name
 _DEMO_SNIPPET_CAP = 56
 _VOCAB_LABEL_MAX = 30
-_SEED_CMP_COL_FONTSIZE = 18
-_SEED_CMP_ROW_FONTSIZE = 16
-_SEED_CMP_ROW_LABELPAD = 22
+_SEED_CMP_COL_FONTSIZE = 8
+_SEED_CMP_ROW_FONTSIZE = 7
+_SEED_CMP_ROW_LABELPAD = 8
 
 
 def _demo_snippet_len(task: str) -> int:
@@ -117,7 +117,7 @@ def plot_pow2_sweep_demo_sequences(
     for run_seed in seeds:
         fig, axes = plt.subplots(
             n_rows, n_cols,
-            figsize=(2.8 * n_cols, 2.4 * n_rows),
+            figsize=(1.85 * n_cols, 1.55 * n_rows),
             squeeze=False,
         )
         for li, length in enumerate(spec.lengths):
@@ -150,17 +150,17 @@ def plot_pow2_sweep_demo_sequences(
             wspace=0.30,
         )
         out_path = out_dir / f"demo_sequences{suffix}.png"
-        save_figure(fig, out_path, dpi=160)
+        save_figure(fig, out_path, dpi=150)
         paths.append(out_path)
     return paths
 
 
 def _seed_comparison_grid_axes(n_rows: int, n_cols: int):
-    """Large cells so closed-loop panels stay readable."""
-    cell_w, cell_h = 3.1, 3.5
+    """Compact cells — readable but not poster-sized."""
+    cell_w, cell_h = 1.45, 1.55
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(cell_w * n_cols + 1.6, cell_h * n_rows + 0.9),
+        figsize=(cell_w * n_cols + 0.9, cell_h * n_rows + 0.5),
         squeeze=False,
     )
     return fig, axes
@@ -196,7 +196,7 @@ def _plot_closed_loop_seed_comparison_grid(
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     if is_3d:
-        fig = plt.figure(figsize=(3.0 * n_cols + 0.9, 3.4 * n_rows + 0.6))
+        fig = plt.figure(figsize=(1.55 * n_cols + 0.6, 1.7 * n_rows + 0.4))
         axes = np.empty((n_rows, n_cols), dtype=object)
         for ri in range(n_rows):
             for ci in range(n_cols):
@@ -214,16 +214,16 @@ def _plot_closed_loop_seed_comparison_grid(
                 ctx = _load_closed_loop_ctx(task, model_type=model_type, run_seed=run_seed)
             except (FileNotFoundError, KeyError, ValueError):
                 ax.set_visible(False)
-                ax.text(0.5, 0.5, "missing", ha="center", va="center", fontsize=9)
+                ax.text(0.5, 0.5, "missing", ha="center", va="center", fontsize=6)
                 continue
             _plot_task_closed_loop_panel(
                 ax, ctx, is_3d=is_3d, rollout_seed=0,
                 embed_method=embed_method, minimal_axes=True,
                 annotate=_annotate_for_word_count(n_words),
-                annotate_fontsize=7.0 if n_words <= 4 else 5.5,
+                annotate_fontsize=5.5 if n_words <= 4 else 4.5,
             )
             if ri == 0:
-                ax.set_title(f"seed {run_seed}", fontsize=_SEED_CMP_COL_FONTSIZE, pad=14)
+                ax.set_title(f"seed {run_seed}", fontsize=_SEED_CMP_COL_FONTSIZE, pad=4)
         if not is_3d:
             axes[ri, 0].set_ylabel(
                 row_label_fn(n_words, length),
@@ -240,14 +240,14 @@ def _plot_closed_loop_seed_comparison_grid(
     finalize_grid_figure(
         fig,
         suptitle=suptitle,
-        suptitle_fontsize=14,
-        top=0.93,
+        suptitle_fontsize=10,
+        top=0.92,
         bottom=0.04,
-        left=0.14,
-        hspace=0.35,
-        wspace=0.18,
+        left=0.10,
+        hspace=0.28,
+        wspace=0.14,
     )
-    save_figure(fig, out_path, dpi=200)
+    save_figure(fig, out_path, dpi=150)
     return out_path
 
 
@@ -312,7 +312,7 @@ def plot_pow2_sweep_closed_loop_seed_comparison(
 
 def _grid_axes(n_rows: int, n_cols: int, *, is_3d: bool = False):
     if is_3d:
-        fig = plt.figure(figsize=(2.6 * n_cols, 2.2 * n_rows))
+        fig = plt.figure(figsize=(1.55 * n_cols, 1.4 * n_rows))
         axes = np.empty((n_rows, n_cols), dtype=object)
         for li in range(n_rows):
             for wi in range(n_cols):
@@ -322,7 +322,7 @@ def _grid_axes(n_rows: int, n_cols: int, *, is_3d: bool = False):
         return fig, axes
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(2.6 * n_cols, 2.0 * n_rows),
+        figsize=(1.55 * n_cols, 1.25 * n_rows),
         squeeze=False,
     )
     return fig, axes
@@ -384,7 +384,7 @@ def plot_pow2_sweep_learning_curves(
             wspace=0.28,
         )
         out_path = out_dir / f"overview{suffix}.png"
-        save_figure(fig, out_path, dpi=160)
+        save_figure(fig, out_path, dpi=150)
         paths.append(out_path)
     return paths
 
@@ -443,7 +443,7 @@ def plot_pow2_sweep_closed_loop(
             wspace=0.22,
         )
         out_path = out_dir / outfile
-        save_figure(fig, out_path, dpi=160)
+        save_figure(fig, out_path, dpi=150)
         paths.append(out_path)
     return paths
 

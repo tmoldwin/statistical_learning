@@ -136,13 +136,22 @@ def plot_weight_matrices_by_seed(
     )
     n_rows = len(row_specs)
 
-    fig, axes = plt.subplots(
-        n_rows, n_seeds,
-        figsize=(1.25 * n_seeds + 1.0, 1.75 * n_rows + 0.5),
-        squeeze=False,
+    fig = plt.figure(figsize=(1.4 * n_seeds + 1.35, 1.55 * n_rows + 0.55))
+    gs = fig.add_gridspec(
+        n_rows, n_seeds + 1,
+        width_ratios=[1.0] * n_seeds + [0.06],
+        wspace=0.18,
+        hspace=0.32,
+        left=0.08,
+        right=0.97,
+        top=0.90,
+        bottom=0.08,
     )
+    axes = np.array([[fig.add_subplot(gs[r, c]) for c in range(n_seeds)] for r in range(n_rows)])
+    cax_by_row = [fig.add_subplot(gs[r, n_seeds]) for r in range(n_rows)]
     motif_by_seed: dict[str, Any] = {"seeds": list(seeds), "init": {}, "final": {}}
     char_labels: list[str] | None = None
+    panel_data: dict[tuple[int, int], np.ndarray] = {}
 
     for col, seed in enumerate(seeds):
         model = load_model_for_viz(str(checkpoint_path(exp, model_type, seed=seed)), model_type)
@@ -170,20 +179,34 @@ def plot_weight_matrices_by_seed(
         }
         motif_by_seed["init"][str(seed)] = compute_weight_motif_metrics(w_in_i, w_rec_i)
         motif_by_seed["final"][str(seed)] = compute_weight_motif_metrics(w_in_f, w_rec_f)
+        for row, (key, *_rest) in enumerate(row_specs):
+            panel_data[(row, col)] = panels[key]
 
-        for row, (key, ylabel, _tick_name, is_xh) in enumerate(row_specs):
+    row_vmax = []
+    for row in range(n_rows):
+        vmax = max(
+            (symmetric_abs_vmax(panel_data[(row, col)]) for col in range(n_seeds)),
+            default=1e-9,
+        )
+        row_vmax.append(max(float(vmax), 1e-9))
+
+    last_im_by_row: list[Any] = [None] * n_rows
+    for col, seed in enumerate(seeds):
+        for row, (_key, ylabel, _tick_name, is_xh) in enumerate(row_specs):
             ax = axes[row, col]
-            data = panels[key]
-            vmax = max(symmetric_abs_vmax(data), 1e-9)
+            data = panel_data[(row, col)]
+            vmax = row_vmax[row]
             im = ax.imshow(
                 data, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax,
                 interpolation="nearest", origin="lower",
             )
+            last_im_by_row[row] = im
             if row == 0:
                 ax.set_title(f"seed {seed}", fontsize=8, pad=2)
             ny, nx = data.shape
             if row == n_rows - 1:
-                ax.set_xlabel("hidden unit" if is_xh else "source h", fontsize=6)
+                if col == 0:
+                    ax.set_xlabel("hidden unit" if is_xh else "source h", fontsize=6)
                 ax.set_xticks([0, max(nx - 1, 0)])
                 ax.tick_params(axis="x", labelsize=5)
             else:
@@ -200,17 +223,17 @@ def plot_weight_matrices_by_seed(
                 ax.set_ylabel("")
                 ax.set_yticks([0, max(ny - 1, 0)])
                 ax.tick_params(axis="y", labelleft=False)
-            cbar = fig.colorbar(im, ax=ax, fraction=0.055, pad=0.02, shrink=0.88)
-            cbar.ax.tick_params(labelsize=4)
 
-    finalize_grid_figure(
-        fig,
-        suptitle=r"Init vs final $W_{xh}$ and $W_{hh}$ across seeds (each stage clustered)",
-        top=0.94,
-        wspace=0.32,
-        hspace=0.22,
-        bottom=0.06,
-        left=0.07,
+    for row, im in enumerate(last_im_by_row):
+        if im is None:
+            continue
+        cbar = fig.colorbar(im, cax=cax_by_row[row])
+        cbar.ax.tick_params(labelsize=4)
+
+    fig.suptitle(
+        r"Init vs final $W_{xh}$ and $W_{hh}$ across seeds (each stage clustered)",
+        fontsize=11,
+        y=0.98,
     )
     save_figure(fig, save_path)
     print(f"wrote {save_path}")
@@ -241,11 +264,11 @@ def plot_weight_init_vs_final_clustered(
     cmap = plt.cm.RdBu_r
     char_labels = [c if c not in (" ", "\n", "\t") else repr(c)[1:-1] for c in chars]
 
-    fig, axes = plt.subplots(2, 2, figsize=(10.2, 8.2))
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.8))
     finalize_grid_figure(
         fig,
         suptitle="Weights: random init vs after learning (each stage clustered)",
-        top=0.92,
+        top=0.90,
         hspace=0.42,
         wspace=0.45,
     )
@@ -596,7 +619,7 @@ def plot_weight_metrics_compact_by_seed(
     n_rows = n_bar_rows + n_hist_rows
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(1.9 * n_cols + 0.4, 1.85 * n_rows + 0.5),
+        figsize=(1.45 * n_cols + 0.3, 1.4 * n_rows + 0.4),
         squeeze=False,
     )
 

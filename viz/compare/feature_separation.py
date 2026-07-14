@@ -171,43 +171,48 @@ def plot_feature_separation_comparison(
             if stats is not None:
                 per_task_seed[task][run_seed] = stats
 
-    fig, axes = plt.subplots(2, 3, figsize=(9.5, 5.2))
-    for ax, (metric_key, ylabel) in zip(axes.ravel(), _PANEL_SPECS):
-        values_by_condition: list[list[float]] = []
-        errs_by_condition: list[list[float]] = []
-        for task in tasks:
-            feat_vals: list[list[float]] = [[] for _ in features]
-            for run_seed in run_seeds:
-                stats = per_task_seed[task].get(run_seed)
-                if stats is None:
-                    continue
-                for fi, feat in enumerate(features):
-                    val = _metric_value(stats, metric_key, feat)
-                    if np.isfinite(val):
-                        feat_vals[fi].append(val)
-            means = [
-                float(np.mean(v)) if v else float("nan")
-                for v in feat_vals
-            ]
-            sems = [
-                float(np.std(v, ddof=1) / np.sqrt(len(v))) if len(v) > 1 else 0.0
-                for v in feat_vals
-            ]
-            values_by_condition.append(means)
-            errs_by_condition.append(sems)
+    fig, axes = plt.subplots(2, 3, figsize=(9.5, 6.4))
+    for r, ax_row in enumerate(axes):
+        for c, ax in enumerate(ax_row):
+            metric_key, ylabel = _PANEL_SPECS[r * 3 + c]
+            values_by_condition: list[list[float]] = []
+            errs_by_condition: list[list[float]] = []
+            for task in tasks:
+                feat_vals: list[list[float]] = [[] for _ in features]
+                for run_seed in run_seeds:
+                    stats = per_task_seed[task].get(run_seed)
+                    if stats is None:
+                        continue
+                    for fi, feat in enumerate(features):
+                        val = _metric_value(stats, metric_key, feat)
+                        if np.isfinite(val):
+                            feat_vals[fi].append(val)
+                means = [
+                    float(np.mean(v)) if v else float("nan")
+                    for v in feat_vals
+                ]
+                sems = [
+                    float(np.std(v, ddof=1) / np.sqrt(len(v))) if len(v) > 1 else 0.0
+                    for v in feat_vals
+                ]
+                values_by_condition.append(means)
+                errs_by_condition.append(sems)
 
-        ylim = (0.0, 1.05) if metric_key == "eta2" else None
-        if metric_key == "silhouette":
-            ylim = (-0.05, 1.05)
-        _plot_grouped_feature_bars(
-            ax,
-            features=features,
-            condition_labels=condition_labels,
-            values_by_condition=values_by_condition,
-            errs_by_condition=errs_by_condition,
-            ylabel=ylabel,
-            ylim=ylim,
-        )
+            ylim = (0.0, 1.05) if metric_key == "eta2" else None
+            if metric_key == "silhouette":
+                ylim = (-0.05, 1.05)
+            _plot_grouped_feature_bars(
+                ax,
+                features=features,
+                condition_labels=condition_labels,
+                values_by_condition=values_by_condition,
+                errs_by_condition=errs_by_condition,
+                ylabel=ylabel,
+                ylim=ylim,
+            )
+            if r == 0:
+                ax.set_xticklabels([])
+                ax.set_xlabel("")
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(
@@ -216,7 +221,7 @@ def plot_feature_separation_comparison(
         ncol=len(condition_labels),
         fontsize=8,
         frameon=False,
-        bbox_to_anchor=(0.5, 1.02),
+        bbox_to_anchor=(0.5, 0.98),
     )
     finalize_grid_figure(
         fig,
@@ -224,9 +229,12 @@ def plot_feature_separation_comparison(
             f"{spec.display_title}: feature separation "
             f"({spec.model_type}, n={len(run_seeds)} seeds, prefix-condensed)"
         ),
-        top=0.90,
-        bottom=0.12,
-        hspace=0.42,
+        top=0.88,
+        bottom=0.14,
+        left=0.08,
+        right=0.98,
+        hspace=0.55,
+        wspace=0.45,
     )
 
     out_dir = comparison_dir(spec.name, "feature_separation")

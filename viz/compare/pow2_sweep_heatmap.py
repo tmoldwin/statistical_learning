@@ -221,7 +221,7 @@ def plot_pow2_sweep_heatmaps(
     n_rows = int(np.ceil(n_metrics / n_cols))
     fig, axes = plt.subplots(
         n_rows, n_cols,
-        figsize=(3.4 * n_cols, 2.8 * n_rows),
+        figsize=(2.2 * n_cols, 1.85 * n_rows),
         squeeze=False,
     )
 
@@ -278,7 +278,7 @@ def plot_pow2_sweep_heatmaps(
         wspace=0.45,
     )
     out_path = sweep_figures_dir(spec.comparison_name) / outfile
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     return out_path
 
 

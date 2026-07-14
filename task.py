@@ -33,8 +33,10 @@ REGIMES: dict[str, list[str]] = {
     "three_word_ca_hub": ["can", "cat", "cab"],
     # Minimal sandbox: three words sharing -at (for 2D transformer/RNN prototyping).
     "three_word_overlap": ["cat", "hat", "mat"],
-    # Four-word demo: two vowels (a, e), overlapping structure (not one shared suffix).
+    # Four-word demo (legacy): two vowels (a, e), overlapping structure.
     "four_word_overlap": ["cat", "met", "ate", "tea"],
+    # Five-word paper demo: same a/e overlap family, plus *eat* (ties *ate*/*tea*).
+    "five_word_overlap": ["cat", "met", "ate", "tea", "eat"],
     # 10 words, length 3; overlap on -at/-et/-ea; vowels a, e, i.
     "ten_word_overlap": [
         "cat", "hat", "mat", "rat",

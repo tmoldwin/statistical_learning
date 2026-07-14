@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420">
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="440" viewBox="0 0 1100 440">
 <defs>
 <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
 <path d="M0,0 L8,4 L0,8 Z" fill="#555"/></marker>
@@ -9,25 +9,27 @@
 <path d="M0,0 L8,4 L0,8 Z" fill="#F58518"/></marker>
 </defs>
 <style>text { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1a1a1a; }</style>
-<rect width="1100" height="420" fill="#ffffff"/>
+<rect width="1100" height="440" fill="#ffffff"/>
 <text x="56" y="44" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#1a1a1a">Generation before vs after learning</text>
-<text x="56" y="72" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#666">Four-word lexicon: cat, met, ate, tea</text>
-<rect x="56" y="100" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
-<text x="83.5" y="120.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
-<rect x="121" y="100" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
-<text x="148.5" y="120.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">met</text>
-<rect x="186" y="100" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
-<text x="213.5" y="120.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">ate</text>
-<rect x="251" y="100" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
-<text x="278.5" y="120.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">tea</text>
-<text x="56" y="180" font-size="16" font-weight="600" fill="#1a1a1a">Before training</text>
-<text x="56" y="204" font-size="13" fill="#666">high out-of-vocabulary rate</text>
-<text x="56" y="236" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="20"><tspan style="fill:#d62728">eactacctemacae</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">accmaactettccam</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">temceacmaammc</tspan></text>
-<text x="56" y="290" font-size="16" font-weight="600" fill="#1a1a1a">After training</text>
-<text x="56" y="314" font-size="13" fill="#666">mostly vocabulary words</text>
-<text x="56" y="346" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="20"><tspan style="fill:#d62728">at</tspan><tspan style="fill:#2ca02c">ate</tspan><tspan style="fill:#2ca02c">cat</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">ate</tspan><tspan style="fill:#2ca02c">ate</tspan><tspan style="fill:#2ca02c">tea</tspan><tspan style="fill:#2ca02c">ate</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">cat</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#2ca02c">tea</tspan><tspan style="fill:#d62728">a</tspan></text>
-<rect x="56" y="380" width="14" height="14" fill="#2ca02c"/>
-<text x="76" y="392" font-size="13" fill="#666">in-vocabulary</text>
-<rect x="256" y="380" width="14" height="14" fill="#d62728"/>
-<text x="276" y="392" font-size="13" fill="#666">out-of-vocabulary</text>
+<text x="56" y="72" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#666">Five-word lexicon: cat, met, ate, tea, eat</text>
+<rect x="56" y="86" width="55" height="30" rx="7" fill="#eef4fb" stroke="#4477AA" stroke-width="1.4"/>
+<text x="83.5" y="106.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#4477AA">cat</text>
+<rect x="121" y="86" width="55" height="30" rx="7" fill="#fff4e8" stroke="#F58518" stroke-width="1.4"/>
+<text x="148.5" y="106.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#F58518">met</text>
+<rect x="186" y="86" width="55" height="30" rx="7" fill="#fdeef0" stroke="#EE6677" stroke-width="1.4"/>
+<text x="213.5" y="106.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#EE6677">ate</text>
+<rect x="251" y="86" width="55" height="30" rx="7" fill="#e8f5ea" stroke="#228833" stroke-width="1.4"/>
+<text x="278.5" y="106.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#228833">tea</text>
+<rect x="316" y="86" width="55" height="30" rx="7" fill="#faf6e3" stroke="#CCBB44" stroke-width="1.4"/>
+<text x="343.5" y="106.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="14" fill="#CCBB44">eat</text>
+<text x="56" y="190" font-size="16" font-weight="600" fill="#1a1a1a">Before training</text>
+<text x="56" y="214" font-size="13" fill="#666">high out-of-vocabulary rate</text>
+<text x="56.0" y="246.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18"><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">ecmaeme</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">tatcmece</tspan><tspan style="fill:#2ca02c">catcat</tspan><tspan style="fill:#d62728">emaa</tspan><tspan style="fill:#2ca02c">met</tspan><tspan style="fill:#d62728">ammamctett</tspan><tspan style="fill:#2ca02c">cat</tspan><tspan style="fill:#d62728">ctamtmt</tspan></text>
+<text x="56" y="300" font-size="16" font-weight="600" fill="#1a1a1a">After training</text>
+<text x="56" y="324" font-size="13" fill="#666">mostly vocabulary words</text>
+<text x="56.0" y="356.0" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18"><tspan style="fill:#2ca02c">meteateatmetateeatteaeatcateatcatteaateeatmetmetteaeat</tspan></text>
+<rect x="56" y="387" width="14" height="14" fill="#2ca02c"/>
+<text x="76" y="400" font-size="13" fill="#666">in-vocabulary</text>
+<rect x="256" y="387" width="14" height="14" fill="#d62728"/>
+<text x="276" y="400" font-size="13" fill="#666">out-of-vocabulary</text>
 </svg>

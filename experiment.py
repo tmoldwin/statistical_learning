@@ -329,6 +329,12 @@ TASKS: dict[str, dict] = {
         "viz_length": 24,
         "demo_snippet_len": 60,
     },
+    "five_word_overlap_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "five_word_overlap",
+        "viz_length": 30,
+        "demo_snippet_len": 72,
+    },
     "three_word_permutation_ns": {
         **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
         "regime": "three_word_permutation",

@@ -1,9 +1,6 @@
 {
-  "copied": 8,
+  "copied": 12,
   "missing": [
-    "experiments/four_word_overlap_ns/shared/vocabulary_trie.svg",
-    "experiments/four_word_overlap_ns/shared/vocabulary_min_dfa.svg",
-    "experiments/four_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/8_next_char_prob_sequence.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/7_activation_heatmap.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
@@ -21,25 +18,41 @@
     {
       "section": "demo",
       "paper_name": "fig01_trie.svg",
-      "source": "experiments/four_word_overlap_ns/shared/vocabulary_trie.svg",
+      "source": "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
       "dest": "paper/figures/demo/fig01_trie.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig01_trie.jpg",
+      "source": "paper/figures/demo/fig01_trie.jpg",
+      "dest": "paper/figures/demo/fig01_trie.jpg",
+      "exists": true,
+      "skipped_self": true
     },
     {
       "section": "demo",
       "paper_name": "fig02_dfa.svg",
-      "source": "experiments/four_word_overlap_ns/shared/vocabulary_min_dfa.svg",
+      "source": "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
       "dest": "paper/figures/demo/fig02_dfa.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
       "section": "demo",
+      "paper_name": "fig02_dfa.jpg",
+      "source": "paper/figures/demo/fig02_dfa.jpg",
+      "dest": "paper/figures/demo/fig02_dfa.jpg",
+      "exists": true,
+      "skipped_self": true
+    },
+    {
+      "section": "demo",
       "paper_name": "fig03_learning_curve.jpg",
-      "source": "experiments/four_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
+      "source": "experiments/five_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
       "dest": "paper/figures/demo/fig03_learning_curve.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -52,9 +65,25 @@
     },
     {
       "section": "demo",
+      "paper_name": "fig04_corpus_stream.jpg",
+      "source": "paper/figures/demo/fig04_corpus_stream.jpg",
+      "dest": "paper/figures/demo/fig04_corpus_stream.jpg",
+      "exists": true,
+      "skipped_self": true
+    },
+    {
+      "section": "demo",
       "paper_name": "fig04_samples.svg",
       "source": "paper/figures/demo/fig04_samples.svg",
       "dest": "paper/figures/demo/fig04_samples.svg",
+      "exists": true,
+      "skipped_self": true
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig04_samples.jpg",
+      "source": "paper/figures/demo/fig04_samples.jpg",
+      "dest": "paper/figures/demo/fig04_samples.jpg",
       "exists": true,
       "skipped_self": true
     },
@@ -80,6 +109,14 @@
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
       "dest": "paper/figures/main/fig_activation_clustered.jpg",
       "exists": false,
+      "skipped_self": false
+    },
+    {
+      "section": "main",
+      "paper_name": "fig_dfa_pca_geometry.jpg",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
+      "dest": "paper/figures/main/fig_dfa_pca_geometry.jpg",
+      "exists": true,
       "skipped_self": false
     },
     {

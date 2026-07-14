@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPER_ROOT = ROOT / "paper" / "figures"
 
 ANCHOR = "sixteen_word_four_letter_ns"
-DEMO = "four_word_overlap_ns"
+DEMO = "five_word_overlap_ns"
 COMPARE = "comparisons"
 
 
@@ -65,16 +65,26 @@ def paper_manifest() -> list[FigureRef]:
 
     return [
         FigureRef("demo", "fig01_trie.svg", _demo_shared("vocabulary_trie.svg"), as_jpg=False),
+        FigureRef("demo", "fig01_trie.jpg",
+                  ROOT / "paper" / "figures" / "demo" / "fig01_trie.jpg", as_jpg=False),
         FigureRef("demo", "fig02_dfa.svg", _demo_shared("vocabulary_min_dfa.svg"), as_jpg=False),
+        FigureRef("demo", "fig02_dfa.jpg",
+                  ROOT / "paper" / "figures" / "demo" / "fig02_dfa.jpg", as_jpg=False),
         FigureRef("demo", "fig03_learning_curve.jpg", _demo("training/3_learning_curve.png")),
         FigureRef("demo", "fig04_corpus_stream.svg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_corpus_stream.svg", as_jpg=False),
+        FigureRef("demo", "fig04_corpus_stream.jpg",
+                  ROOT / "paper" / "figures" / "demo" / "fig04_corpus_stream.jpg", as_jpg=False),
         FigureRef("demo", "fig04_samples.svg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.svg", as_jpg=False),
+        FigureRef("demo", "fig04_samples.jpg",
+                  ROOT / "paper" / "figures" / "demo" / "fig04_samples.jpg", as_jpg=False),
         FigureRef("main", "fig_next_char_probs.jpg", _anchor("activations/8_next_char_prob_sequence.png")),
         FigureRef("main", "fig_activation_heatmap.jpg", _anchor("activations/7_activation_heatmap.png")),
         FigureRef("main", "fig_activation_clustered.jpg",
                   _anchor("activations/10_activation_clustered_heatmap.png")),
+        FigureRef("main", "fig_dfa_pca_geometry.jpg",
+                  _anchor("embeddings/12_dfa_and_embedding_pca_condensed.png")),
         FigureRef("main", "fig11_embedding_panels.jpg",
                   _anchor("embeddings/11_embedding_panels_context.png")),
         FigureRef("main", "fig20_feature_separation.jpg",

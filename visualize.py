@@ -7809,82 +7809,66 @@ def plot_pca_dfa_analysis(
     embedding: str | None = None,
     embed_method: str = "pca",
 ):
-    """Embedding beside the min-DFA with matching state colors."""
-    if condensed is not None:
-        hidden_states = condensed.hidden_states
-        prefix_labels = condensed.labels
-        spaced = condensed.spaced
-    else:
-        prefix_labels = None
-    if hidden_states.shape[0] < 2:
+    """2×2: colored min-DFA | PCA(DFA); PCA(position) | PCA(char). No legends."""
+    _ = chars, annot_style, embedding
+    from unit_selectivity import FEATURE_DISPLAY
+
+    ctx = _pca_feature_panel_context(
+        text, hidden_states,
+        spaced=spaced, automaton=automaton, words=words,
+        label_words=None, condensed=condensed,
+    )
+    if ctx is None or ctx["n"] < 2:
         return
 
-    trajs = trajectories_for_embed(hidden_states)
+    hidden_states = ctx["hidden_states"]
+    trajs = _embed_trajectories_for_text(
+        text, hidden_states, spaced=ctx["spaced"], words=words,
+    )
     projected, _, _, evr = fit_embed_2d_with_evr(
         hidden_states, method=embed_method, trajectories=trajs,
     )
     xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
-    embed_title = f"2D {embed_dim_label(embed_method)}"
-    if embed_method == "jpca":
-        embed_subtitle = f"rotation rate: ω={float(evr[0]):.3f}" if len(evr) else ""
-    else:
-        embed_subtitle = (
-            f"variance explained: PC1 {100.0 * float(evr[0]):.1f}%, PC2 {100.0 * float(evr[1]):.1f}%"
-            if len(evr) > 1
-            else ""
-        )
-    if prefix_labels is not None:
-        state_ids = [
-            dfa_state_for_prefix(p, automaton, spaced=spaced) for p in prefix_labels
-        ]
-    else:
-        state_ids = [
-            dfa_state_at_position(
-                text, i, automaton, spaced=spaced, vocab=_corpus_vocab(text),
-            ) for i in range(len(text))
-        ]
-    state_colors = _dfa_automaton_state_colors(automaton)
+    pad_x = max((projected[:, 0].max() - projected[:, 0].min()) * 0.12, 0.08)
+    pad_y = max((projected[:, 1].max() - projected[:, 1].min()) * 0.12, 0.08)
+    xlim = (float(projected[:, 0].min() - pad_x), float(projected[:, 0].max() + pad_x))
+    ylim = (float(projected[:, 1].min() - pad_y), float(projected[:, 1].max() + pad_y))
 
-    fig, axes = plt.subplots(1, 2, figsize=(28, 11), constrained_layout=True)
-    ax_dfa, ax_embed = axes[0], axes[1]
+    state_colors = _dfa_automaton_state_colors(automaton)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 14), constrained_layout=True)
+    ax_dfa, ax_dfa_pca = axes[0, 0], axes[0, 1]
+    ax_pos, ax_char = axes[1, 0], axes[1, 1]
 
     draw_minimized_dfa_on_axes(ax_dfa, automaton, words, state_colors=state_colors)
-    ax_dfa.set_title("Minimal DFA", fontsize=12, pad=12)
+    ax_dfa.set_title("Minimal DFA", fontsize=12, pad=8)
 
-    text_positions = add_dfa_state_annotations(
-        ax_embed, text, projected, automaton,
-        spaced=spaced, state_colors=state_colors,
-        point_size=160,
-        label_fontsize=18,
-        leader_linewidth=0.65,
-        annot_style=annot_style,
-        prefix_labels=prefix_labels,
-    )
-    _expand_limits_for_annotations(
-        ax_embed, projected, text_positions,
-        (projected[:, 0].min(), projected[:, 0].max()),
-        (projected[:, 1].min(), projected[:, 1].max()),
-    )
-    ax_embed.axhline(0, color="lightgrey", linewidth=0.6, zorder=0)
-    ax_embed.axvline(0, color="lightgrey", linewidth=0.6, zorder=0)
-    ax_embed.set_xlabel(xlabel)
-    ax_embed.set_ylabel(ylabel)
-    ctx = prefix_axis_label(spaced=spaced, text=text)
-    subtitle = f"\n{embed_subtitle}" if embed_subtitle else ""
+    panel_specs = [
+        (ax_dfa_pca, "dfa", "PCA · DFA state"),
+        (ax_pos, "position", FEATURE_DISPLAY.get("position", "position from beginning")),
+        (ax_char, "char", FEATURE_DISPLAY.get("char", "current char")),
+    ]
+    for ax, feat, title in panel_specs:
+        _plot_2d_feature_colored_pca_panel(
+            ax, projected, ctx["prefix_labels"], feat, ctx["timestep_labels"], automaton,
+            title=title,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            xlim=xlim,
+            ylim=ylim,
+            annot_style="none",
+            show_legend=False,
+        )
+
     rep = representation_label(model, repr_name=repr_name) if model is not None else (
         repr_name or "hidden state h"
     )
-    ax_embed.set_title(
-        f"{embed_title} of {rep} (min DFA state · {ctx}){subtitle}"
-    )
-    ax_embed.grid(True, linestyle=":", alpha=0.35)
-    ax_embed.spines["top"].set_visible(False)
-    ax_embed.spines["right"].set_visible(False)
-    ax_embed.tick_params(top=False, right=False)
-
     fig.suptitle(
-        _condensed_plot_title(", ".join(words), condensed),
-        fontsize=12, y=1.01,
+        _feature_pca_suptitle(
+            repr_name=rep, words=words, chars=chars, condensed=condensed,
+            dim_label=embed_dim_label(embed_method),
+        ),
+        fontsize=12,
+        y=1.01,
     )
     fig.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)

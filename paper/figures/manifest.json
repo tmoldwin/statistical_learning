@@ -1,5 +1,5 @@
 {
-  "copied": 23,
+  "copied": 28,
   "missing": [
     "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
     "experiments/sixteen_word_four_letter_ns/rnn/plots/weights/weight_metrics_all_seeds.png"
@@ -110,11 +110,27 @@
       "skipped_self": false
     },
     {
+      "section": "demo",
+      "paper_name": "fig_embedding_panels_3d.jpg",
+      "source": "experiments/five_word_overlap_ns/rnn/plots/embeddings/embedding_panels_context_3d_condensed.png",
+      "dest": "paper/figures/demo/fig_embedding_panels_3d.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
       "section": "main",
       "paper_name": "fig11_embedding_panels.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
       "dest": "paper/figures/main/fig11_embedding_panels.jpg",
       "exists": false,
+      "skipped_self": false
+    },
+    {
+      "section": "main",
+      "paper_name": "fig_embedding_panels_3d.jpg",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/embedding_panels_context_3d_condensed.png",
+      "dest": "paper/figures/main/fig_embedding_panels_3d.jpg",
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -162,6 +178,22 @@
       "paper_name": "fig_word_trajectories.jpg",
       "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_closed_loop.png",
       "dest": "paper/figures/main/fig_word_trajectories.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "main",
+      "paper_name": "fig_word_trajectories_3d.jpg",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_pca_3d.png",
+      "dest": "paper/figures/main/fig_word_trajectories_3d.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "main",
+      "paper_name": "fig_word_trajectories_3d_trained.jpg",
+      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_pca_3d_trained.png",
+      "dest": "paper/figures/main/fig_word_trajectories_3d_trained.jpg",
       "exists": true,
       "skipped_self": false
     },
@@ -226,6 +258,14 @@
       "paper_name": "fig_sweep_metrics_scatter2d.jpg",
       "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics_scatter2d.png",
       "dest": "paper/figures/compare/fig_sweep_metrics_scatter2d.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_sweep_metrics_scatter3d.jpg",
+      "source": "experiments/comparisons/word_count_pow2_sweep_h100_ns/weights/sweep_all_metrics_scatter3d.png",
+      "dest": "paper/figures/compare/fig_sweep_metrics_scatter3d.jpg",
       "exists": true,
       "skipped_self": false
     },

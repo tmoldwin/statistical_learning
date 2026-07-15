@@ -318,6 +318,7 @@ def _plot_task_closed_loop_panel(
     annotate_fontsize: float = 8.0,
     linewidth: float = 1.6,
     arrow_mutation_scale: float = 12.0,
+    closed_loop_steps: int | None = None,
 ) -> list:
     fit_states, trajs = _states_after_first_word(
         ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
@@ -339,9 +340,12 @@ def _plot_task_closed_loop_panel(
     summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
     # Extra word length so after dropping the seed-primed first word we still
     # cover roughly one full vocabulary cycle of complete words.
-    summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
-    if vocab_words:
-        summary_steps += max(len(w) for w in vocab_words)
+    if closed_loop_steps is not None:
+        summary_steps = max(1, int(closed_loop_steps))
+    else:
+        summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+        if vocab_words:
+            summary_steps += max(len(w) for w in vocab_words)
     word_colors = _vocab_word_colors(vocab_words)
     limit_arrays: list = []
 

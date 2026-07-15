@@ -9173,73 +9173,131 @@ def plot_output_probs(
     spaced: bool = False,
     words: list[str] | None = None,
 ):
-    """Heatmap of P(next char) over time; overlay the true next char."""
+    """Heatmap of P(next char); overlay true next char.
+
+    With ``condensed``, draws two rows: prefix-averaged (top) and sequential
+    teacher-forced timesteps (bottom). Otherwise sequential only.
+    """
+    from viz.plot_layout import apply_category_tick_labels, finalize_grid_figure, save_figure
+
+    del exp_name  # reserved for callers; title stays self-contained
     vocab_size = len(chars)
-    prefix_keys: list[str] | None = None
+    panels: list[tuple[np.ndarray, list[str], list[str], str, list[str] | None, bool]] = []
+    # Each: probs, x_labels, targets, x_axis, prefix_keys_or_None, is_sequence
+
     if condensed is not None:
-        output_probs = condensed.output_probs
-        if output_probs is None:
+        if condensed.output_probs is None:
             return
-        prefix_keys = condensed.labels
-        x_labels = [_display_prefix_label(l) for l in prefix_keys]
-        targets = condensed.next_chars
-        x_axis = prefix_axis_label(
-            spaced=condensed.spaced, text=text, words=condensed.words,
-        )
+        panels.append((
+            np.asarray(condensed.output_probs, dtype=float),
+            [_display_prefix_label(l) for l in condensed.labels],
+            list(condensed.next_chars),
+            prefix_axis_label(
+                spaced=condensed.spaced, text=text, words=condensed.words,
+            ),
+            list(condensed.labels),
+            False,
+        ))
         spaced = condensed.spaced
         words = condensed.words
-    else:
-        x_labels = list(text)
-        targets = list(text[1:]) + [text[0]]
-        x_axis = "timestep / input character"
-    length = output_probs.shape[0]
-    target_indices = np.array([chars.index(c) for c in targets])
 
-    fig_w = float(max(8.5, min(12.0, length * 0.14)))
-    fig_h = float(max(3.4, vocab_size * 0.22 + 0.9))
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
-    im = ax.imshow(
-        output_probs.T,
-        aspect="auto", cmap="viridis", vmin=0, vmax=1,
-        interpolation="nearest", origin="lower",
+    seq_probs = np.asarray(output_probs, dtype=float)
+    panels.append((
+        seq_probs,
+        list(text),
+        list(text[1:]) + [text[0]],
+        "timestep / input character",
+        None,
+        True,
+    ))
+
+    n_rows = len(panels)
+    max_len = max(p[0].shape[0] for p in panels)
+    fig_w = float(max(8.5, min(14.0, max_len * 0.16 + 1.2)))
+    fig_h = float(max(3.2, vocab_size * 0.20 + 1.0) * n_rows + (0.55 if n_rows > 1 else 0.0))
+    fig, axes = plt.subplots(
+        n_rows, 1, figsize=(fig_w, fig_h), squeeze=False, sharey=True,
     )
 
-    ax.set_yticks(range(vocab_size))
-    ax.set_yticklabels(chars, fontsize=8)
-    ax.set_xticks(range(length))
-    ax.set_xticklabels(x_labels, fontsize=6)
-    # Thin crowded x ticks when the window is long.
-    if length > 40:
-        for i, tick in enumerate(ax.get_xticklabels()):
-            tick.set_visible(i % 2 == 0)
-    if automaton is not None:
-        if prefix_keys is not None:
-            state_ids = _dfa_state_ids_for_prefixes(
-                prefix_keys, automaton, spaced=spaced,
-            )
-        else:
-            state_ids = _dfa_state_ids_at_timesteps(
-                text, automaton, spaced=spaced, words=words,
-            )
-        _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
-        x_axis += " · tick color = min DFA state"
-    ax.set_xlabel(x_axis)
-    ax.set_ylabel("predicted next char")
-    ax.set_title(
-        _condensed_plot_title(
-            "P(next char | input so far)  —  red dots = actual next char",
-            condensed,
+    last_im = None
+    for ri, (probs, x_labels, targets, x_axis, prefix_keys, is_sequence) in enumerate(panels):
+        ax = axes[ri, 0]
+        length = probs.shape[0]
+        target_indices = np.array([chars.index(c) for c in targets], dtype=int)
+        last_im = ax.imshow(
+            probs.T,
+            aspect="auto", cmap="viridis", vmin=0, vmax=1,
+            interpolation="nearest", origin="lower",
         )
-    )
+        ax.set_yticks(range(vocab_size))
+        ax.set_yticklabels(chars, fontsize=7)
+        tick_fs = 5.5 if (is_sequence and length > 28) else 6.5
+        apply_category_tick_labels(ax, x_labels, fontsize=tick_fs)
+        if is_sequence and length > 48:
+            for i, tick in enumerate(ax.get_xticklabels()):
+                tick.set_visible(i % 2 == 0)
+        axis_label = x_axis
+        if automaton is not None:
+            if prefix_keys is not None:
+                state_ids = _dfa_state_ids_for_prefixes(
+                    prefix_keys, automaton, spaced=spaced,
+                )
+            else:
+                state_ids = _dfa_state_ids_at_timesteps(
+                    text, automaton, spaced=spaced, words=words,
+                )
+            _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
+            axis_label += " · tick color = min DFA state"
+        ax.set_xlabel(axis_label if ri == n_rows - 1 else "", fontsize=8)
+        ax.set_ylabel("predicted next char", fontsize=8)
+        if n_rows > 1:
+            row_title = (
+                "sequential timesteps"
+                if is_sequence
+                else (
+                    f"prefix-condensed "
+                    f"({len(x_labels)} prefixes, avg over {sum(condensed.counts)} steps)"
+                )
+            )
+            ax.set_title(row_title, fontsize=9, pad=3)
+        else:
+            ax.set_title(
+                "P(next char | input so far)  —  red dots = actual next char",
+                fontsize=10,
+            )
+        ax.scatter(
+            np.arange(length), target_indices,
+            color="red", s=14 if is_sequence else 18,
+            edgecolor="white", linewidth=0.45, zorder=3,
+        )
 
-    ax.scatter(
-        np.arange(length), target_indices,
-        color="red", s=18, edgecolor="white", linewidth=0.5, zorder=3,
-    )
+    if last_im is not None:
+        cbar = fig.colorbar(
+            last_im, ax=axes.ravel().tolist(),
+            fraction=0.025, pad=0.02, label="probability",
+        )
+        cbar.ax.tick_params(labelsize=7)
 
-    fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01, label="probability")
-    fig.tight_layout()
-    fig.savefig(save_path, dpi=150)
+    if n_rows > 1:
+        finalize_grid_figure(
+            fig,
+            # Condensed prefixes (top) + teacher-forced sequence (bottom).
+            suptitle="P(next char | input so far)  —  red dots = actual next char",
+            top=0.90,
+            bottom=0.10,
+            left=0.07,
+            right=0.90,
+            hspace=0.42,
+        )
+    else:
+        finalize_grid_figure(
+            fig,
+            top=0.90,
+            bottom=0.14,
+            left=0.08,
+            right=0.90,
+        )
+    save_figure(fig, save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
 

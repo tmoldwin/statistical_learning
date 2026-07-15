@@ -110,6 +110,10 @@ def paper_manifest() -> list[FigureRef]:
                   as_jpg=traj_by_length.suffix.lower() != ".jpg"),
         FigureRef("compare", "fig_traj_by_wordcount.jpg", traj_by_count,
                   as_jpg=traj_by_count.suffix.lower() != ".jpg"),
+        FigureRef("compare", "fig_mixed_traj_by_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "closed_loop_by_dfa_vocab_grid.png",
+                  max_w=1400),
         FigureRef("compare", "fig_mixed_scaling_overview.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "scaling_overview.png",
@@ -118,6 +122,7 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_curves_by_dfa.png",
                   max_w=1200),
+        # Leftover metrics board (not in draft; weight scatters live on fig_weight_matrices).
         FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "metrics_vs_dfa.png",
@@ -141,7 +146,7 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("main", "fig_weight_matrices_by_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "weight_matrices_by_dfa.png",
-                  max_w=1200),
+                  max_w=1400),
     ]
 
 

@@ -25,6 +25,7 @@ from rnn.learning_snaps import list_learning_snaps
 from viz.compare.mixed_dfa_viz import (
     collect_learning_decode,
     plot_learning_decode,
+    plot_mixed_dfa_trajectory_vocab_grid,
     run_all_mixed_dfa_plots,
 )
 from viz.compare.mixed_dfa_learning_decode import (
@@ -193,7 +194,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("plan", "train", "plot", "all", "learning-decode", "learning-decode-bins"),
+        choices=(
+            "plan", "train", "plot", "all",
+            "learning-decode", "learning-decode-bins", "trajectory-grid",
+        ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=1)
@@ -220,6 +224,9 @@ def main() -> None:
         cmd_learning_decode(args)
     elif args.command == "learning-decode-bins":
         cmd_learning_decode_bins(args)
+    elif args.command == "trajectory-grid":
+        out = plot_mixed_dfa_trajectory_vocab_grid()
+        print(f"wrote {out}", flush=True)
     elif args.command == "all":
         cmd_plan(args)
         cmd_train(args)

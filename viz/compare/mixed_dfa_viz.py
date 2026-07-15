@@ -630,10 +630,16 @@ def plot_nwords_vs_dfa_sanity(
 
 
 _OVERVIEW_METRICS: tuple[tuple[str, str, bool], ...] = (
-    ("geometry.state_space.loop_top2_variance_frac", "loop top-2 var frac", False),
-    ("geometry.state_space.loop_effective_dim", "loop effective dim", False),
     ("training.iter_to_threshold", "iters to 3% word err", True),
 )
+# Spectrum summaries implied by the overview scree; iters shown on overview.
+_METRICS_BOARD_SKIP_TITLES: frozenset[str] = frozenset({
+    "loop top-2 var frac",
+    "loop effective dim",
+    "iters to 3% word err",
+    "pos-from-end readout",
+    "DFA-state readout",
+})
 
 
 def plot_mixed_dfa_scaling_overview(
@@ -642,7 +648,7 @@ def plot_mixed_dfa_scaling_overview(
     outfile: str = "scaling_overview.png",
     recompute: bool = False,
 ) -> Path:
-    """Paper overview: vocab–DFA sanity + PC spectra + key metric-vs-DFA scatters."""
+    """Paper overview: vocab–DFA + PC spectra + training iters (equal panels)."""
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     decode_payload = payload or _load_panels()
@@ -656,14 +662,7 @@ def plot_mixed_dfa_scaling_overview(
         if "error" not in p
     ]
 
-    n_met = len(_OVERVIEW_METRICS)
-    fig = plt.figure(figsize=(10.8, 7.0))
-    gs = fig.add_gridspec(2, 6, height_ratios=[1.2, 1.0])
-    ax_nw = fig.add_subplot(gs[0, 0:2])
-    ax_sp = fig.add_subplot(gs[0, 2:6])
-    metric_axes = [
-        fig.add_subplot(gs[1, i * 2:(i + 1) * 2]) for i in range(n_met)
-    ]
+    fig, (ax_nw, ax_sp, ax_it) = plt.subplots(1, 3, figsize=(10.2, 3.5))
 
     xs, ys = _nwords_dfa_xy(decode_payload)
     ax_nw.scatter(xs, ys, s=28, alpha=0.8, color="#E45756", edgecolors="white", linewidths=0.4)
@@ -690,7 +689,7 @@ def plot_mixed_dfa_scaling_overview(
         )
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar_sp = fig.colorbar(sm, ax=ax_sp, pad=0.015, fraction=0.035)
+    cbar_sp = fig.colorbar(sm, ax=ax_sp, pad=0.02, fraction=0.055)
     cbar_sp.set_label("DFA states", fontsize=7)
     cbar_sp.ax.tick_params(labelsize=6)
     ax_sp.set_xlabel("PC index", fontsize=8)
@@ -700,61 +699,59 @@ def plot_mixed_dfa_scaling_overview(
     ax_sp.grid(True, alpha=0.25)
     ax_sp.tick_params(labelsize=7)
 
+    path_key, title, log_y = _OVERVIEW_METRICS[0]
     words_cmap = plt.get_cmap("YlOrRd")
     words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
-    for ax, (path_key, title, log_y) in zip(metric_axes, _OVERVIEW_METRICS):
-        mx: list[float] = []
-        my: list[float] = []
-        mn: list[float] = []
-        for p in metric_panels:
-            y = _dig(p, path_key)
-            if y is None:
-                continue
-            mx.append(float(p["n_dfa_states"]))
-            my.append(y)
-            mn.append(float(p["n_words"]))
-        if len(mx) < 3:
-            ax.set_axis_off()
+    mx: list[float] = []
+    my: list[float] = []
+    mn: list[float] = []
+    for p in metric_panels:
+        y = _dig(p, path_key)
+        if y is None:
             continue
+        mx.append(float(p["n_dfa_states"]))
+        my.append(y)
+        mn.append(float(p["n_words"]))
+    if len(mx) >= 3:
         x = np.asarray(mx, dtype=float)
         y = np.asarray(my, dtype=float)
         n_words = np.asarray(mn, dtype=float)
         use_log = bool(log_y and np.all(y > 0))
         y_plot = np.log10(np.clip(y, 1e-12, None)) if use_log else y
-        ax.scatter(
+        ax_it.scatter(
             x, y_plot,
             c=n_words, cmap=words_cmap, norm=words_norm,
-            s=16, alpha=0.75, linewidths=0.25, edgecolors="white", zorder=2,
+            s=18, alpha=0.75, linewidths=0.25, edgecolors="white", zorder=2,
         )
         x_fit, y_fit, r2, _model = _fit_trend(x, y_plot)
         panel_title = title
         if x_fit is not None and y_fit is not None and np.isfinite(r2):
-            ax.plot(x_fit, y_fit, color="#111111", lw=1.15, zorder=3)
+            ax_it.plot(x_fit, y_fit, color="#111111", lw=1.15, zorder=3)
             panel_title = f"{title}\n$R^2$={r2:.2f}"
-        ax.set_title(panel_title, fontsize=8, pad=4)
-        ax.set_xlabel("DFA states", fontsize=7)
+        ax_it.set_title(panel_title, fontsize=8, pad=4)
+        ax_it.set_xlabel("DFA states", fontsize=8)
         if use_log:
-            ax.set_ylabel("log10", fontsize=7)
-        ax.grid(True, alpha=0.25)
-        ax.tick_params(labelsize=6)
-
-    cax = fig.add_axes([0.92, 0.12, 0.015, 0.30])
-    cbar_w = fig.colorbar(
-        plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
-        cax=cax,
-    )
-    cbar_w.set_label("# words", fontsize=7)
-    cbar_w.ax.tick_params(labelsize=6)
+            ax_it.set_ylabel("log10", fontsize=8)
+        ax_it.grid(True, alpha=0.25)
+        ax_it.tick_params(labelsize=7)
+        cbar_w = fig.colorbar(
+            plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
+            ax=ax_it, pad=0.02, fraction=0.055,
+        )
+        cbar_w.set_label("# words", fontsize=7)
+        cbar_w.ax.tick_params(labelsize=6)
+    else:
+        ax_it.set_axis_off()
 
     finalize_grid_figure(
         fig,
+        # Equal panels: vocab–DFA, scree, training cost (no spectrum-summary scrapes).
         suptitle="Mixed-vocab scaling with DFA size",
-        bottom=0.10,
-        left=0.07,
-        right=0.90,
-        top=0.88,
-        wspace=0.35,
-        hspace=0.45,
+        bottom=0.16,
+        left=0.06,
+        right=0.98,
+        top=0.84,
+        wspace=0.32,
     )
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -763,6 +760,12 @@ def plot_mixed_dfa_scaling_overview(
 
 
 _WEIGHT_DFA_N_FINAL = 5
+_WEIGHT_FIGURE_METRICS: tuple[tuple[str, str, bool], ...] = (
+    ("weights.final.input_over_recurrent_norm", "input / recurrent Frobenius", False),
+    ("weights.motif_final.hh_adjacent_corr", r"$W_{hh}$ adjacent |corr|", False),
+    ("weights.motif_final.xh_top1_mass", r"$W_{xh}$ top-1 mass", False),
+    ("weights.final.mean_input_drive_fraction", "mean input-drive fraction", False),
+)
 
 
 def _pick_mixed_dfa_span_examples(
@@ -799,13 +802,15 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
     seed: int = 1,
     n_final: int = _WEIGHT_DFA_N_FINAL,
     model_type: str = "rnn",
+    recompute_metrics: bool = False,
 ) -> Path:
-    """Init Wxh/Whh plus clustered finals at the smallest successive DFA sizes.
+    """Init/final weight matrices by DFA size, plus vs-DFA weight-structure scatters.
 
-    Each matrix panel is color-scaled independently. A third row shows, per column,
-    overlaid histograms of W_xh and W_hh (signed).
+    Top: clustered W_xh / W_hh (+ init) and signed-weight histograms.
+    Bottom: four weight metrics vs DFA over the full mixed sweep (color = # words).
     """
     from visualize import load_model_for_viz, weights_for_plot
+    from viz.compare.pow2_sweep_metric_board import _fit_trend
     from viz.weight_structure import _cluster_unit_order, init_weights_for_model
 
     examples = _pick_mixed_dfa_span_examples(n_final=n_final, seed=seed, model_type=model_type)
@@ -833,18 +838,18 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
         finals.append((label, w_in_f[order_f].T, w_rec_f[np.ix_(order_f, order_f)]))
 
     n_cols = 1 + len(finals)
-    fig = plt.figure(figsize=(1.55 * n_cols + 0.6, 4.55))
-    gs = fig.add_gridspec(
-        3, n_cols,
-        height_ratios=[0.55, 1.0, 0.62],
-        wspace=0.22,
-        hspace=0.42,
-        left=0.09,
-        right=0.99,
-        top=0.86,
-        bottom=0.09,
+    n_met = len(_WEIGHT_FIGURE_METRICS)
+    fig = plt.figure(figsize=(1.55 * n_cols + 0.85, 6.35))
+    outer = fig.add_gridspec(
+        2, 1, height_ratios=[2.55, 1.15], hspace=0.32,
+        left=0.08, right=0.90, top=0.93, bottom=0.07,
     )
-    axes = np.array([[fig.add_subplot(gs[r, c]) for c in range(n_cols)] for r in range(3)])
+    gs_mat = outer[0].subgridspec(
+        3, n_cols, height_ratios=[0.55, 1.0, 0.58], wspace=0.22, hspace=0.38,
+    )
+    gs_met = outer[1].subgridspec(1, n_met, wspace=0.30)
+    axes = np.array([[fig.add_subplot(gs_mat[r, c]) for c in range(n_cols)] for r in range(3)])
+    met_axes = [fig.add_subplot(gs_met[0, i]) for i in range(n_met)]
     cmap = plt.cm.RdBu_r
 
     xh_panels = [init_xh] + [xh for _lab, xh, _hh in finals]
@@ -936,10 +941,61 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
         else:
             ax.tick_params(axis="y", labelleft=False)
 
+    metric_path = collect_mixed_dfa_metric_board(recompute=recompute_metrics)
+    metric_panels = [
+        p for p in json.loads(metric_path.read_text(encoding="utf-8"))["panels"]
+        if "error" not in p
+    ]
+    words_cmap = plt.get_cmap("YlOrRd")
+    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
+    for ax, (path_key, title, log_y) in zip(met_axes, _WEIGHT_FIGURE_METRICS):
+        mx: list[float] = []
+        my: list[float] = []
+        mn: list[float] = []
+        for p in metric_panels:
+            y = _dig(p, path_key)
+            if y is None:
+                continue
+            mx.append(float(p["n_dfa_states"]))
+            my.append(y)
+            mn.append(float(p["n_words"]))
+        if len(mx) < 3:
+            ax.set_axis_off()
+            continue
+        x = np.asarray(mx, dtype=float)
+        y = np.asarray(my, dtype=float)
+        n_words = np.asarray(mn, dtype=float)
+        use_log = bool(log_y and np.all(y > 0))
+        y_plot = np.log10(np.clip(y, 1e-12, None)) if use_log else y
+        ax.scatter(
+            x, y_plot,
+            c=n_words, cmap=words_cmap, norm=words_norm,
+            s=16, alpha=0.75, linewidths=0.25, edgecolors="white", zorder=2,
+        )
+        x_fit, y_fit, r2, _model = _fit_trend(x, y_plot)
+        panel_title = title
+        if x_fit is not None and y_fit is not None and np.isfinite(r2):
+            ax.plot(x_fit, y_fit, color="#111111", lw=1.1, zorder=3)
+            panel_title = f"{title}\n$R^2$={r2:.2f}"
+        ax.set_title(panel_title, fontsize=7, pad=3)
+        ax.set_xlabel("DFA states", fontsize=6.5)
+        if use_log:
+            ax.set_ylabel("log10", fontsize=6.5)
+        ax.grid(True, alpha=0.25)
+        ax.tick_params(labelsize=5.5)
+
+    cax = fig.add_axes([0.915, 0.09, 0.015, 0.22])
+    cbar_w = fig.colorbar(
+        plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
+        cax=cax,
+    )
+    cbar_w.set_label("# words", fontsize=7)
+    cbar_w.ax.tick_params(labelsize=6)
+
     fig.suptitle(
-        rf"Weight matrices by DFA size (seed {seed})",
+        rf"Weight structure by DFA size (seed {seed})",
         fontsize=10,
-        y=0.97,
+        y=0.98,
     )
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out, dpi=150)
@@ -1105,11 +1161,8 @@ def plot_metrics_vs_dfa(
     if not prepared:
         raise ValueError(f"no metrics with R^2 >= {min_r2}")
 
-    # Prefer paper priority; skip overview + full-hidden decoding (shown in fig 15/16).
-    skip_titles = {t for _k, t, _log in _OVERVIEW_METRICS} | {
-        "pos-from-end readout",
-        "DFA-state readout",
-    }
+    # Prefer paper priority; skip spectrum summaries + full-hidden decode curves.
+    skip_titles = set(_METRICS_BOARD_SKIP_TITLES)
     priority = (
         "corpus top-2 var frac",
         "corpus effective dim",
@@ -1876,6 +1929,166 @@ def plot_learning_decode_by_dfa_bins(
     return out
 
 
+_TRAJECTORY_GRID_N = 5
+_TRAJECTORY_GRID_SEED = 1
+
+
+def _panel_closed_loop_steps(words: list[str], *, spaced: bool) -> int:
+    """Default per-panel length: one vocab cycle plus one max word."""
+    steps = _one_vocab_cycle_steps(words, spaced=spaced)
+    if words:
+        steps += max(len(w) for w in words)
+    return max(1, int(steps))
+
+
+def _pick_mixed_dfa_trajectory_span_tasks(
+    *,
+    n_panels: int = _TRAJECTORY_GRID_N * _TRAJECTORY_GRID_N,
+    seed: int = _TRAJECTORY_GRID_SEED,
+    model_type: str = "rnn",
+) -> list[tuple[int, int, str, tuple[str, ...]]]:
+    """Rank-uniform distinct vocabs across DFA size (seed-1 checkpoints)."""
+    ranked: list[tuple[int, int, str, tuple[str, ...]]] = []
+    for entry in iter_runs():
+        task = entry["task"]
+        if not checkpoint_path(task, model_type, seed=seed).is_file():
+            continue
+        words = tuple(entry["words"])
+        ranked.append((_dfa_states(list(words)), int(entry["n_words"]), task, words))
+    ranked.sort(key=lambda t: (t[0], t[1], t[2]))
+    if not ranked:
+        raise FileNotFoundError(f"no mixed-dfa checkpoints for seed {seed}")
+    n = max(1, min(int(n_panels), len(ranked)))
+    if n == 1:
+        return [ranked[0]]
+    idxs = np.linspace(0, len(ranked) - 1, n).round().astype(int)
+    out: list[tuple[int, int, str, tuple[str, ...]]] = []
+    seen: set[str] = set()
+    for i in idxs:
+        item = ranked[int(i)]
+        if item[2] in seen:
+            # Advance to next unused rank if linspace collides.
+            for j in range(int(i), len(ranked)):
+                alt = ranked[j]
+                if alt[2] not in seen:
+                    item = alt
+                    break
+            else:
+                continue
+        seen.add(item[2])
+        out.append(item)
+    return out[:n]
+
+
+def plot_mixed_dfa_trajectory_vocab_grid(
+    *,
+    n: int = _TRAJECTORY_GRID_N,
+    seed: int = _TRAJECTORY_GRID_SEED,
+    outfile: str = "closed_loop_by_dfa_vocab_grid.png",
+    model_type: str = "rnn",
+    embed_method: str = "pca",
+    text_chars: int = 100,
+    annotate_max_words: int = 4,
+    closed_loop_steps: int | None = None,
+) -> Path:
+    """n×n grid: each panel a different mixed vocab (seed 1), shared rollout length."""
+    from experiment import TASKS
+    from viz.compare._data import load_task_viz_context
+    from viz.compare.trajectories import _plot_task_closed_loop_panel
+
+    n = max(1, int(n))
+    panels = _pick_mixed_dfa_trajectory_span_tasks(
+        n_panels=n * n, seed=seed, model_type=model_type,
+    )
+    # Same #timesteps for every panel (max of default cycle lengths unless given).
+    if closed_loop_steps is None:
+        fixed_steps = max(
+            _panel_closed_loop_steps(list(words), spaced=False)
+            for _d, _nw, _t, words in panels
+        )
+    else:
+        fixed_steps = max(1, int(closed_loop_steps))
+
+    fig, axes = plt.subplots(
+        n, n,
+        figsize=(1.45 * n + 0.55, 1.45 * n + 0.70),
+        squeeze=False,
+    )
+    for idx, (n_dfa, n_words, task, _words) in enumerate(panels):
+        ri, ci = divmod(idx, n)
+        ax = axes[ri, ci]
+        cap = min(int(TASKS[task].get("viz_length", 80)), text_chars)
+        try:
+            ctx = load_task_viz_context(
+                task, model_type=model_type, seed=seed, text_chars=cap,
+            )
+        except Exception as exc:  # noqa: BLE001
+            ax.set_visible(False)
+            ax.text(
+                0.5, 0.5, f"missing\n{exc.__class__.__name__}",
+                ha="center", va="center", fontsize=6, transform=ax.transAxes,
+            )
+            continue
+        _plot_task_closed_loop_panel(
+            ax, ctx, is_3d=False, rollout_seed=0,
+            embed_method=embed_method, average_trials=1,
+            minimal_axes=True,
+            annotate=n_words <= annotate_max_words,
+            annotate_fontsize=4.5 if n_words <= 3 else 3.8,
+            linewidth=0.95,
+            arrow_mutation_scale=6.0,
+            closed_loop_steps=fixed_steps,
+        )
+        ax.set_title(f"DFA={n_dfa} · {n_words}w", fontsize=6.5, pad=1)
+        ax.tick_params(
+            labelsize=4,
+            left=(ci == 0),
+            bottom=(ri == n - 1),
+            labelleft=(ci == 0),
+            labelbottom=(ri == n - 1),
+            length=2,
+            pad=1,
+        )
+        if ri == n - 1 and ci == n // 2:
+            ax.set_xlabel("PC1", fontsize=7, labelpad=1)
+        else:
+            ax.set_xlabel("")
+        if ci == 0 and ri == n // 2:
+            ax.set_ylabel("PC2", fontsize=7, labelpad=2)
+        else:
+            ax.set_ylabel("")
+        ax.grid(True, linestyle=":", alpha=0.28)
+
+    for idx in range(len(panels), n * n):
+        ri, ci = divmod(idx, n)
+        axes[ri, ci].set_visible(False)
+
+    finalize_grid_figure(
+        fig,
+        # One vocab per panel; shared autoregressive length for fair comparison.
+        suptitle=(
+            f"Closed-loop trajectories · {len(panels)} mixed vocabs "
+            f"(seed {seed}; {fixed_steps} steps each; ordered by DFA size)"
+        ),
+        top=0.92,
+        bottom=0.05,
+        left=0.06,
+        right=0.995,
+        hspace=0.35,
+        wspace=0.12,
+    )
+    out = comparison_dir(COMPARISON_NAME, "trajectories") / outfile
+    out.parent.mkdir(parents=True, exist_ok=True)
+    save_figure(fig, out, dpi=160)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+# Back-compat alias for older CLI/import names.
+plot_mixed_dfa_trajectory_seed_grid = plot_mixed_dfa_trajectory_vocab_grid
+
+
 def run_all_mixed_dfa_plots(
     *,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
@@ -1892,6 +2105,7 @@ def run_all_mixed_dfa_plots(
         plot_metrics_vs_dfa(recompute=recompute),
         plot_mixed_dfa_scaling_overview(payload, recompute=False),
         plot_mixed_dfa_weight_matrices_by_dfa(),
+        plot_mixed_dfa_trajectory_vocab_grid(),
     ]
     for p in outs:
         print(f"wrote {p}", flush=True)

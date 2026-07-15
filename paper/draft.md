@@ -50,7 +50,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 ![Next-character probabilities](figures/demo/fig_next_char_probs.jpg)
 
-**Figure 3.** Softmax \(P(\text{next char} \mid \text{input so far})\) over unique in-word prefixes (condensed). Probability mass concentrates late in words and spreads at ambiguous prefixes and word boundaries.
+**Figure 3.** Softmax \(P(\text{next char} \mid \text{input so far})\). Top: unique in-word prefixes (condensed). Bottom: sequential teacher-forced timesteps on the same corpus window. Red dots mark the actual next character. Probability mass concentrates late in words and spreads at ambiguous prefixes and word boundaries.
 
 ### 3.3 Hidden states and clustering
 
@@ -100,23 +100,23 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Mixed-vocab scaling overview](figures/compare/fig_mixed_scaling_overview.jpg)
 
-**Figure 11.** Mixed-vocab scaling with minimized DFA size. Top-left: sampled vocabulary size vs DFA state count. Top-right: closed-loop PC spectra colored by DFA size. Bottom: key metrics vs DFA (color = \# words; black = best trend by adjusted \(R^2\)): loop top-2 variance fraction, loop effective dimensionality, and iterations to 3\% word error.
+**Figure 11.** Mixed-vocab scaling with minimized DFA size. Left: sampled vocabulary size vs DFA state count. Middle: closed-loop PC spectra colored by DFA size (larger automata flatten the scree). Right: iterations to 3\% word error (color = \# words).
+
+![Closed-loop trajectories by DFA span](figures/compare/fig_mixed_traj_by_dfa.jpg)
+
+**Figure 12.** Closed-loop trajectories for 25 mixed vocabularies spanning minimized DFA size (left→right, top→bottom; seed 1). Each panel uses the same number of autoregressive steps. Small automata show sparse word motifs; larger DFAs crowd the PC plane with denser, more interleaved loops.
 
 ![Readout curves PCA vs neurons](figures/compare/fig_mixed_decoding_curves.jpg)
 
-**Figure 12.** Chance-corrected readouts. Top two rows: curves binned by DFA size from top-\(k\) PCA and from random subsets of \(k\) neurons. Bottom three rows: accuracy vs DFA size for each feature using the top 1 PC, top 5 PCs, or the full hidden state (color = \# words).
-
-![Metrics vs DFA size](figures/compare/fig_mixed_metrics_vs_dfa.jpg)
-
-**Figure 13.** Complementary corpus / weight metrics vs minimized DFA size (one point per run; color = \# words; Figure 11 overview metrics and full-hidden decode panels omitted). Black curve = best of linear / sigmoid / exponential-asymptote / hyperbola by adjusted \(R^2\).
+**Figure 13.** Chance-corrected readouts. Top two rows: curves binned by DFA size from top-\(k\) PCA and from random subsets of \(k\) neurons. Bottom three rows: accuracy vs DFA size for each feature using the top 1 PC, top 5 PCs, or the full hidden state (color = \# words).
 
 ### 3.9 Weight structure
 
 ![Weight matrices by DFA size](figures/main/fig_weight_matrices_by_dfa.jpg)
 
-**Figure 14.** Clustered weight matrices from the mixed-vocab runs (\(H{=}100\), seed 1). Left column: one random init for \(W_{xh}\) / \(W_{hh}\). Remaining columns: after learning at the smallest successive minimized DFA sizes (titles also note \#words). Each matrix is color-scaled independently (± inset). Bottom row: density histograms of signed \(W_{xh}\) and \(W_{hh}\) with one shared \(x\)/\(y\) scale across columns.
+**Figure 14.** Weight structure from the mixed-vocab runs (\(H{=}100\), seed 1). Top: clustered \(W_{xh}\) / \(W_{hh}\) (left = random init; remaining columns = after learning at successive small minimized DFA sizes; titles also note \#words). Each matrix is color-scaled independently (± inset); bottom matrix row = signed-weight density histograms on one shared \(x\)/\(y\) scale. Bottom: four weight metrics vs DFA over all 50 runs (color = \# words; black = best trend by adjusted \(R^2\)): input/recurrent Frobenius ratio, \(W_{hh}\) adjacent absolute correlation, \(W_{xh}\) top-1 mass, and mean input-drive fraction.
 
-Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer \(W_{xh}\) letter stripes; larger DFAs yield denser, more feedforward-looking weight maps.
+Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer \(W_{xh}\) letter stripes; larger DFAs yield denser, more feedforward-looking weight maps. The scatters quantify that shift across the full sweep.
 
 ---
 

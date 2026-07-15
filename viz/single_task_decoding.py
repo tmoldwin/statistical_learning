@@ -62,26 +62,78 @@ def _chance_correct_curve(
     return y_corr, np.asarray(y_std, dtype=float) * scale
 
 
+def _full_marker_x(max_k: int) -> float:
+    """X position for the ★ = full-hidden marker (just past the k curve)."""
+    return float(max_k) + 3.0
+
+
+def _staggered_full_xs(max_k: int, n_features: int) -> np.ndarray:
+    """Spread ★ markers so near-ceiling full-hidden scores stay readable."""
+    base = _full_marker_x(max_k)
+    if n_features <= 1:
+        return np.asarray([base], dtype=float)
+    # One feature-width (~1.0) between adjacent ★ so char/DFA at ~1.0 don't cover.
+    span = 1.05 * (n_features - 1)
+    return base + np.linspace(-span / 2, span / 2, n_features)
+
+
 def _apply_k_ticks(ax, max_k: int, *, fontsize: float = 10, show_labels: bool = True) -> None:
-    # Keep ★/"full" well clear of the last numeric k so labels never collide.
-    full_x = float(max_k) + 6.5
-    xticks = [t for t in (1, 5, 10, 15) if t < max_k]
-    if max_k >= 20:
-        # Omit 20 as a numeric tick — "full" sits just beyond max_k visually.
-        pass
-    else:
+    # Keep ★/"full" clear of the last numeric k without a huge empty gap.
+    full_x = _full_marker_x(max_k)
+    n_feat_pad = 4  # room for staggered ★ fan
+    xticks = [t for t in (1, 5, 10, 15, 20) if t <= max_k]
+    if max_k not in xticks:
         xticks.append(max_k)
-    ax.set_xlim(0.6, full_x + 1.0)
+    ax.set_xlim(0.6, full_x + 0.55 * n_feat_pad + 0.8)
     ax.set_xticks([*xticks, full_x])
     if show_labels:
         ax.set_xticklabels(
             [*(str(t) for t in xticks), "full"],
             fontsize=max(8, fontsize - 1),
-            fontweight="bold",
         )
-        ax.tick_params(axis="x", length=5, width=1.1, pad=4)
+        ax.tick_params(axis="x", length=4, width=0.9, pad=3)
     else:
         hide_x_tick_labels(ax)
+
+
+def _plot_curve_to_full(
+    ax,
+    *,
+    xs: np.ndarray,
+    y_mean: np.ndarray,
+    y_std: np.ndarray | None,
+    full_x: float,
+    full_y: float,
+    color: str,
+    label: str | None,
+    lw: float = 1.8,
+) -> None:
+    """Plot finite mean±std, then a dashed bridge to the full-hidden ★."""
+    finite = np.isfinite(y_mean)
+    if not np.any(finite):
+        if np.isfinite(full_y):
+            ax.scatter(
+                [full_x], [full_y], color=color, marker="*", s=70,
+                zorder=5, edgecolors="white", linewidths=0.4,
+            )
+        return
+    x_plot = xs[finite]
+    y_plot = y_mean[finite]
+    ax.plot(x_plot, y_plot, color=color, lw=lw, label=label)
+    if y_std is not None:
+        s_plot = np.asarray(y_std, dtype=float)[finite]
+        ax.fill_between(
+            x_plot, y_plot - s_plot, y_plot + s_plot, color=color, alpha=0.18,
+        )
+    if np.isfinite(full_y):
+        ax.plot(
+            [float(x_plot[-1]), full_x], [float(y_plot[-1]), full_y],
+            color=color, lw=lw, ls="-", alpha=0.9,
+        )
+        ax.scatter(
+            [full_x], [full_y], color=color, marker="*", s=90,
+            zorder=5, edgecolors="0.15", linewidths=0.55,
+        )
 
 
 def _panel_y_range(
@@ -137,12 +189,13 @@ def _plot_decode_pca_on_ax(
     compact: bool = False,
     ylim: tuple[float, float] | None = None,
 ) -> None:
-    full_x = float(max_k) + 6.5
+    full_x = _full_marker_x(max_k)
     k_x = np.arange(1, max_k + 1, dtype=float)
     lw = 1.2 if compact else 1.8
     ms = 2.5 if compact else 4
+    full_xs = _staggered_full_xs(max_k, len(features))
 
-    for feat in features:
+    for fi, feat in enumerate(features):
         feat_data = panel.get("features", {}).get(feat, {})
         by_k = feat_data.get("by_k") or []
         if not by_k:
@@ -166,8 +219,13 @@ def _plot_decode_pca_on_ax(
         if full_acc is not None and np.isfinite(full_acc):
             corr_full = chance_corrected(float(full_acc), null_ch)
             if np.isfinite(corr_full):
+                fx = float(full_xs[fi])
+                ax.plot(
+                    [float(k_x[n_plot - 1]), fx], [float(y[-1]), corr_full],
+                    color=color, lw=0.9, ls="--", alpha=0.7,
+                )
                 ax.scatter(
-                    [full_x], [corr_full], color=color, s=28 if compact else 55, marker="*",
+                    [fx], [corr_full], color=color, s=28 if compact else 55, marker="*",
                     zorder=5, edgecolors="white", linewidths=0.35,
                 )
 
@@ -188,12 +246,12 @@ def _plot_decode_neurons_on_ax(
     compact: bool = False,
     ylim: tuple[float, float] | None = None,
 ) -> None:
-    full_x = float(max_k) + 6.5
     k_x = np.arange(1, max_k + 1, dtype=float)
     lw = 1.2 if compact else 1.8
     ms = 2.5 if compact else 4
+    full_xs = _staggered_full_xs(max_k, len(features))
 
-    for feat in features:
+    for fi, feat in enumerate(features):
         feat_data = panel.get("features", {}).get(feat, {})
         by_k = feat_data.get("by_k_neurons") or []
         if not by_k:
@@ -228,8 +286,13 @@ def _plot_decode_neurons_on_ax(
         if full_acc is not None and np.isfinite(full_acc):
             corr_full = chance_corrected(float(full_acc), null_ch)
             if np.isfinite(corr_full):
+                fx = float(full_xs[fi])
+                ax.plot(
+                    [float(x_plot[-1]), fx], [float(y[-1]), corr_full],
+                    color=color, lw=0.9, ls="--", alpha=0.7,
+                )
                 ax.scatter(
-                    [full_x], [corr_full], color=color, s=28 if compact else 55, marker="*",
+                    [fx], [corr_full], color=color, s=28 if compact else 55, marker="*",
                     zorder=5, edgecolors="white", linewidths=0.35,
                 )
 
@@ -308,6 +371,81 @@ def plot_task_decode_curves(
     return save_path
 
 
+def _load_task_si_arrays(
+    task: str,
+    *,
+    model_type: str = "rnn",
+    features: tuple[str, ...] = DECODING_FEATURES,
+) -> dict[str, np.ndarray] | None:
+    """Per-unit SI from unit-selectivity summary JSON (default checkpoint)."""
+    from experiment import plots_dir
+
+    path = plots_dir(task, model_type) / "unit_selectivity" / "selectivity_summary.json"
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    si = payload.get("si") or {}
+    out: dict[str, np.ndarray] = {}
+    for feat in features:
+        vals = si.get(feat)
+        if vals is None:
+            continue
+        arr = np.asarray(vals, dtype=float)
+        arr = arr[np.isfinite(arr)]
+        if arr.size:
+            out[feat] = arr
+    return out or None
+
+
+def _pooled_si_arrays_across_seeds(
+    task: str,
+    seeds: tuple[int, ...],
+    *,
+    model_type: str = "rnn",
+    features: tuple[str, ...] = DECODING_FEATURES,
+) -> dict[str, np.ndarray] | None:
+    """Concatenate per-unit SI across training seeds (one population per checkpoint)."""
+    from unit_selectivity import build_timestep_labels, compute_selectivity
+    from visualize import condense_hidden_states_by_prefix
+    from vocab_diagrams import build_minimized_vocabulary_automaton
+
+    buckets: dict[str, list[np.ndarray]] = {feat: [] for feat in features}
+    for seed in seeds:
+        try:
+            ctx = load_task_viz_context(task, model_type=model_type, seed=seed)
+        except Exception as exc:  # noqa: BLE001
+            print(f"skip SI seed {seed}: {exc.__class__.__name__}")
+            continue
+        automaton = build_minimized_vocabulary_automaton(ctx.words)
+        condensed = condense_hidden_states_by_prefix(
+            ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+        )
+        if condensed.hidden_states.shape[0] < 2:
+            continue
+        labels = build_timestep_labels(
+            ctx.text, automaton,
+            spaced=ctx.spaced, words=ctx.words, condensed=condensed,
+            model=ctx.model, activations=condensed.hidden_states,
+        )
+        result = compute_selectivity(
+            condensed.hidden_states, labels, ctx.model, ctx.text,
+        )
+        for feat in features:
+            vals = result.si.get(feat)
+            if vals is None:
+                continue
+            arr = np.asarray(vals, dtype=float)
+            arr = arr[np.isfinite(arr)]
+            if arr.size:
+                buckets[feat].append(arr)
+
+    out: dict[str, np.ndarray] = {}
+    for feat, parts in buckets.items():
+        if parts:
+            out[feat] = np.concatenate(parts)
+    return out or None
+
+
 def plot_aggregated_seed_decode_curves(
     panels: dict[int, dict[str, Any]],
     save_path: str | Path,
@@ -316,18 +454,30 @@ def plot_aggregated_seed_decode_curves(
     max_k: int = _DEFAULT_MAX_PCS,
     features: tuple[str, ...] = DECODING_FEATURES,
     n_neuron_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
+    model_type: str = "rnn",
 ) -> Path:
-    """Mean ± std decoding curves across seeds (no per-seed panels / trajectory insets)."""
+    """Mean ± std decoding curves across seeds, plus pooled per-unit SI density."""
     save_path = Path(save_path)
     seeds = tuple(sorted(panels))
     if not seeds:
         raise ValueError("need at least one seed panel")
 
-    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.6), sharey=True)
-    legend_handles = None
-    legend_labels = None
+    si_by_feat = _pooled_si_arrays_across_seeds(
+        task, seeds, model_type=model_type, features=features,
+    )
+    if si_by_feat is None:
+        si_by_feat = _load_task_si_arrays(task, model_type=model_type, features=features)
+    n_cols = 3 if si_by_feat else 2
+    fig, axes = plt.subplots(
+        1, n_cols,
+        figsize=(12.6 if si_by_feat else 9.6, 3.6),
+        sharey=False,
+    )
+    axes = np.atleast_1d(axes)
+    full_xs = _staggered_full_xs(max_k, len(features))
+    xs = np.arange(1, max_k + 1, dtype=float)
 
-    for feat in features:
+    for fi, feat in enumerate(features):
         color = DECODE_FEATURE_COLORS.get(feat, "#333333")
         label = feature_display_name(feat)
 
@@ -346,10 +496,13 @@ def plot_aggregated_seed_decode_curves(
         pca_mat = np.vstack(pca_rows)
         pca_mean = np.nanmean(pca_mat, axis=0)
         pca_std = np.nanstd(pca_mat, axis=0)
-        xs = np.arange(1, max_k + 1)
-        axes[0].plot(xs, pca_mean, color=color, lw=1.8, label=label)
-        axes[0].fill_between(xs, pca_mean - pca_std, pca_mean + pca_std, color=color, alpha=0.18)
-        axes[0].scatter([max_k + 6.5], [float(np.nanmean(full_pca))], color=color, marker="*", s=70, zorder=5)
+        _plot_curve_to_full(
+            axes[0],
+            xs=xs, y_mean=pca_mean, y_std=pca_std,
+            full_x=float(full_xs[fi]),
+            full_y=float(np.nanmean(full_pca)),
+            color=color, label=label,
+        )
 
         # Neuron curves
         neu_rows = []
@@ -366,32 +519,64 @@ def plot_aggregated_seed_decode_curves(
         neu_mat = np.vstack(neu_rows)
         neu_mean = np.nanmean(neu_mat, axis=0)
         neu_std = np.nanstd(neu_mat, axis=0)
-        axes[1].plot(xs, neu_mean, color=color, lw=1.8, label=label)
-        axes[1].fill_between(xs, neu_mean - neu_std, neu_mean + neu_std, color=color, alpha=0.18)
-        axes[1].scatter([max_k + 6.5], [float(np.nanmean(full_neu))], color=color, marker="*", s=70, zorder=5)
+        _plot_curve_to_full(
+            axes[1],
+            xs=xs, y_mean=neu_mean, y_std=neu_std,
+            full_x=float(full_xs[fi]),
+            full_y=float(np.nanmean(full_neu)),
+            color=color, label=label,
+        )
 
     axes[0].set_title("top-k PCA", fontsize=10)
     axes[0].set_xlabel("# PCs  |  ★ = full hidden", fontsize=9)
     axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
     axes[1].set_title("random neurons", fontsize=10)
     axes[1].set_xlabel(f"# neurons  |  ★ = full  |  {n_neuron_trials} draws/seed", fontsize=9)
-    for ax in axes:
-        ax.set_ylim(-0.05, 1.05)
+    for ax in axes[:2]:
+        ax.set_ylim(-0.05, 1.12)
         ax.grid(True, alpha=0.3, linewidth=0.5)
+        ax.tick_params(axis="y", which="both", labelleft=True, labelsize=8)
         _apply_k_ticks(ax, max_k, fontsize=11, show_labels=True)
+    axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
+    axes[1].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
+
+    if si_by_feat is not None:
+        from unit_selectivity import plot_selectivity_si_on_ax
+
+        ax_si = axes[2]
+        plot_selectivity_si_on_ax(
+            ax_si, si_by_feat, features=features, show_legend=False,
+        )
+        ax_si.set_title(f"unit SI density · {len(seeds)} seeds (SI > 0)", fontsize=10)
+        ax_si.set_xlabel("SI (peak vs rest)", fontsize=9)
+        # Keep density curves fully inside the axes (no clipped peaks).
+        y_top = 0.0
+        for line in ax_si.lines:
+            yd = np.asarray(line.get_ydata(), dtype=float)
+            if yd.size:
+                y_top = max(y_top, float(np.nanmax(yd)))
+        if y_top > 0:
+            ax_si.set_ylim(0.0, y_top * 1.12)
+
     legend_handles, legend_labels = axes[0].get_legend_handles_labels()
     if legend_handles:
         fig.legend(
             legend_handles, legend_labels,
-            loc="upper center", bbox_to_anchor=(0.5, 0.915),
+            loc="upper center", bbox_to_anchor=(0.5, 0.98),
             ncol=4, fontsize=8, frameon=False, columnspacing=1.2,
         )
     finalize_grid_figure(
         fig,
         suptitle=f"Linear readout decoding · mean ± std across {len(seeds)} seeds",
-        top=0.78,
-        wspace=0.18,
+        top=0.80,
+        bottom=0.18,
+        left=0.08,
+        right=0.99,
+        wspace=0.32 if si_by_feat else 0.18,
     )
+    # finalize_grid_figure / tight packing can hide y labels on non-left panels.
+    for ax in axes[:2]:
+        ax.tick_params(axis="y", which="both", labelleft=True, labelsize=8)
     save_figure(fig, save_path, dpi=150)
     print(f"wrote {save_path}")
     return save_path
@@ -575,5 +760,6 @@ def run_multi_seed_decoding_analysis(
         task=task,
         max_k=max_k,
         n_neuron_trials=n_neuron_trials,
+        model_type=model_type,
     )
     return bundle

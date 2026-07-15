@@ -93,6 +93,16 @@ parser.add_argument(
     help='record weight snapshots during training (large files; only needed '
          'for learning-dynamics videos/analysis)',
 )
+parser.add_argument(
+    '--save-learning-snaps', action='store_true',
+    help='save sparse loadable weight checkpoints for learning-dynamics '
+         'decode analysis (word-error crossings + coarse iter grid)',
+)
+parser.add_argument(
+    '--learning-snap-every', type=int, default=500,
+    help='also save a learning snap every N iterations when --save-learning-snaps '
+         '(default: 500)',
+)
 args = parser.parse_args()
 
 # ----- data I/O ---------------------------------------------------------------
@@ -780,6 +790,9 @@ demo_word_error_frac = float("nan")
 demo_rng_seed = 0
 demo_seed_char = " " if (" " in char_to_index) else train_text[0]
 
+_learning_crossed: set[float] = set()
+_learning_saved_iters: set[int] = set()
+
 while iteration < max_iterations:
   if iteration == 0 and args.save_snapshots:
     _append_weight_snapshot(0)
@@ -821,6 +834,38 @@ while iteration < max_iterations:
         f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
         encoding="utf-8",
     )
+
+    if args.save_learning_snaps:
+        from rnn.learning_snaps import (
+            mark_crossings,
+            save_learning_snap,
+            should_save_learning_snap,
+        )
+        if should_save_learning_snap(
+            iteration=iteration,
+            word_err=float(word_err),
+            crossed=_learning_crossed,
+            already_saved=_learning_saved_iters,
+            iter_every=max(1, int(args.learning_snap_every)),
+        ):
+            save_learning_snap(
+                args.model,
+                iteration=iteration,
+                weights=snapshot_params(),
+                chars=unique_chars,
+                hidden_size=hidden_size,
+                vocab_size=vocab_size,
+                word_err=float(word_err),
+                smooth_loss=float(smooth_loss),
+                extra={
+                    "sequence_length": np.array(sequence_length, dtype=np.int32),
+                    "vocab_words": np.array(sorted(vocab_words)),
+                    "dale_law": np.array(dale_law),
+                    "use_relu": np.array(use_relu),
+                },
+            )
+            _learning_saved_iters.add(iteration)
+        mark_crossings(float(word_err), _learning_crossed)
 
     if (
         iteration >= MIN_CHECKPOINT_ITER
@@ -932,6 +977,33 @@ sampled_indices = sample(previous_hidden_state, char_to_index[train_text[0]], 50
 sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
 print('----\n %s \n----' % (sampled_text,))
 print('iter %d, loss: %f (done)' % (iteration, smooth_loss))
+
+if args.save_learning_snaps:
+    from rnn.learning_snaps import save_learning_snap
+    last_err = float(metric_word_error_frac[-1]) if metric_word_error_frac else float("nan")
+    if iteration not in _learning_saved_iters:
+        save_learning_snap(
+            args.model,
+            iteration=iteration,
+            weights=snapshot_params(),
+            chars=unique_chars,
+            hidden_size=hidden_size,
+            vocab_size=vocab_size,
+            word_err=last_err,
+            smooth_loss=float(smooth_loss),
+            extra={
+                "sequence_length": np.array(sequence_length, dtype=np.int32),
+                "vocab_words": np.array(sorted(vocab_words)),
+                "dale_law": np.array(dale_law),
+                "use_relu": np.array(use_relu),
+            },
+        )
+        _learning_saved_iters.add(iteration)
+    print(
+        f"learning snaps: {len(_learning_saved_iters)} files under "
+        f"{Path(args.model).parent / (Path(args.model).stem + '_learning')}",
+        flush=True,
+    )
 
 if best_state is not None and best_iter >= MIN_CHECKPOINT_ITER:
     use_best = (not _legacy_zero_stop) or best_word_err <= _stop_threshold

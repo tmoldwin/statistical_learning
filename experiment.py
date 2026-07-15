@@ -335,6 +335,14 @@ TASKS: dict[str, dict] = {
         "viz_length": 30,
         "demo_snippet_len": 72,
     },
+    "six_word_mixed_demo_ns": {
+        **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
+        "regime": "six_word_mixed_demo",
+        "viz_length": 36,
+        "demo_snippet_len": 72,
+        "sequence_length": 12,
+        "chars": 30_000,
+    },
     "three_word_permutation_ns": {
         **dict(_MICRO_CURRICULUM_NS_DEFAULTS),
         "regime": "three_word_permutation",

@@ -73,10 +73,10 @@ Optional scale-up set (~8 runs): mid 4 + 2 low + 2 high DFA from the existing ma
 
 ## Tomorrow checklist
 
-- [ ] Implement sparse learning-checkpoint save + load
-- [ ] Retrain `mixeddfa_r26_ns` seed 1
-- [ ] Compute decode curves over snaps
-- [ ] Plot Phase A figure; stare at feature timing
+- [x] Implement sparse learning-checkpoint save + load (`--save-learning-snaps`)
+- [x] Retrain `mixeddfa_r26_ns` seed 1 (23 snaps → `model_seed1_learning/`)
+- [x] Compute decode curves over snaps (`decoding/learning_decode_mixeddfa_r26_ns.json`)
+- [x] Plot Phase A figure (`decoding/learning_decode_r26.png`)
 - [ ] Decide yes/no on Phase B stratum
 - [ ] If yes: pick ≤10 runs, aggregate **ranks / emergence times** only
 

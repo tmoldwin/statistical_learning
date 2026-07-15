@@ -91,6 +91,11 @@ def main() -> None:
     parser.add_argument("--target-word-error", type=float, default=None)
     parser.add_argument("--device", default="cuda", choices=["cpu", "cuda", "auto"])
     parser.add_argument("--save-snapshots", action="store_true")
+    parser.add_argument(
+        "--save-learning-snaps", action="store_true",
+        help="sparse loadable checkpoints for learning-dynamics decode analysis",
+    )
+    parser.add_argument("--learning-snap-every", type=int, default=500)
     args = parser.parse_args()
 
     if args.save_snapshots:
@@ -173,6 +178,8 @@ def main() -> None:
     sample_before_text = ""
     demo_before = ""
     demo_rng_seed = METRIC_RNG_BASE
+    _learning_crossed: set[float] = set()
+    _learning_saved_iters: set[int] = set()
 
     data_pointer = 0
     h = torch.zeros(hidden_size, 1, device=device)
@@ -223,6 +230,38 @@ def main() -> None:
             metric_iters.append(iteration)
             metric_valid_letter_frac.append(letter_frac)
             metric_word_error_frac.append(word_err)
+
+            if args.save_learning_snaps:
+                from rnn.learning_snaps import (
+                    mark_crossings,
+                    save_learning_snap,
+                    should_save_learning_snap,
+                )
+                if should_save_learning_snap(
+                    iteration=iteration,
+                    word_err=float(word_err),
+                    crossed=_learning_crossed,
+                    already_saved=_learning_saved_iters,
+                    iter_every=max(1, int(args.learning_snap_every)),
+                ):
+                    save_learning_snap(
+                        args.model,
+                        iteration=iteration,
+                        weights=weights,
+                        chars=unique_chars,
+                        hidden_size=hidden_size,
+                        vocab_size=vocab_size,
+                        word_err=float(word_err),
+                        smooth_loss=float(smooth_loss),
+                        extra={
+                            "sequence_length": np.array(sequence_length, dtype=np.int32),
+                            "vocab_words": np.array(sorted(vocab_words)),
+                            "dale_law": np.array(False),
+                            "use_relu": np.array(False),
+                        },
+                    )
+                    _learning_saved_iters.add(iteration)
+                mark_crossings(float(word_err), _learning_crossed)
 
             if iteration >= min_checkpoint_iter and vocab_words and np.isfinite(word_err):
                 if word_err < best_word_err:
@@ -284,6 +323,30 @@ def main() -> None:
 
         data_pointer += sequence_length
         iteration += 1
+
+    if args.save_learning_snaps:
+        from rnn.learning_snaps import save_learning_snap
+        last_err = float(metric_word_error_frac[-1]) if metric_word_error_frac else float("nan")
+        live = model.numpy_weights()
+        if iteration not in _learning_saved_iters:
+            save_learning_snap(
+                args.model,
+                iteration=iteration,
+                weights=live,
+                chars=unique_chars,
+                hidden_size=hidden_size,
+                vocab_size=vocab_size,
+                word_err=last_err,
+                smooth_loss=float(smooth_loss),
+                extra={
+                    "sequence_length": np.array(sequence_length, dtype=np.int32),
+                    "vocab_words": np.array(sorted(vocab_words)),
+                    "dale_law": np.array(False),
+                    "use_relu": np.array(False),
+                },
+            )
+            _learning_saved_iters.add(iteration)
+        print(f"learning snaps: {len(_learning_saved_iters)} files", flush=True)
 
     if best_state is not None and best_iter >= min_checkpoint_iter:
         print(

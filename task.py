@@ -35,8 +35,11 @@ REGIMES: dict[str, list[str]] = {
     "three_word_overlap": ["cat", "hat", "mat"],
     # Four-word demo (legacy): two vowels (a, e), overlapping structure.
     "four_word_overlap": ["cat", "met", "ate", "tea"],
-    # Five-word paper demo: same a/e overlap family, plus *eat* (ties *ate*/*tea*).
+    # Five-word paper demo (legacy fixed-length): same a/e overlap family, plus *eat*.
     "five_word_overlap": ["cat", "met", "ate", "tea", "eat"],
+    # Six-word mixed-length paper demo: 3-/4-/5-letter words with a/e/t overlap so
+    # position-from-beginning ≠ position-from-end.
+    "six_word_mixed_demo": ["cat", "ate", "tea", "cake", "late", "plant"],
     # 10 words, length 3; overlap on -at/-et/-ea; vowels a, e, i.
     "ten_word_overlap": [
         "cat", "hat", "mat", "rat",

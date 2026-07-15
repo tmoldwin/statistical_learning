@@ -1,21 +1,13 @@
 {
-  "copied": 17,
-  "missing": [
-    "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
-    "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
-    "experiments/five_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
-    "experiments/five_word_overlap_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary_condensed.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
-    "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/example_units_combined.png"
-  ],
+  "copied": 25,
+  "missing": [],
   "figures": [
     {
       "section": "demo",
       "paper_name": "fig01_trie.svg",
-      "source": "experiments/five_word_overlap_ns/shared/vocabulary_trie.svg",
+      "source": "experiments/six_word_mixed_demo_ns/shared/vocabulary_trie.svg",
       "dest": "paper/figures/demo/fig01_trie.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -29,9 +21,9 @@
     {
       "section": "demo",
       "paper_name": "fig02_dfa.svg",
-      "source": "experiments/five_word_overlap_ns/shared/vocabulary_min_dfa.svg",
+      "source": "experiments/six_word_mixed_demo_ns/shared/vocabulary_min_dfa.svg",
       "dest": "paper/figures/demo/fig02_dfa.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -45,9 +37,17 @@
     {
       "section": "demo",
       "paper_name": "fig03_learning_curve.jpg",
-      "source": "experiments/five_word_overlap_ns/rnn/plots/training/3_learning_curve.png",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/training/3_learning_curve.png",
       "dest": "paper/figures/demo/fig03_learning_curve.jpg",
-      "exists": false,
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig03_learning_with_samples.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/training/learning_curve_with_samples.png",
+      "dest": "paper/figures/demo/fig03_learning_with_samples.jpg",
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -83,41 +83,73 @@
       "skipped_self": true
     },
     {
-      "section": "main",
+      "section": "demo",
       "paper_name": "fig_next_char_probs.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/8_next_char_prob_sequence.png",
-      "dest": "paper/figures/main/fig_next_char_probs.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/8_next_char_prob_sequence_condensed.png",
+      "dest": "paper/figures/demo/fig_next_char_probs.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
-      "section": "main",
+      "section": "demo",
       "paper_name": "fig_activation_heatmap.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/7_activation_heatmap.png",
-      "dest": "paper/figures/main/fig_activation_heatmap.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/7_activation_heatmap.png",
+      "dest": "paper/figures/demo/fig_activation_heatmap.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
-      "section": "main",
+      "section": "demo",
       "paper_name": "fig_activation_clustered.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
-      "dest": "paper/figures/main/fig_activation_clustered.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
+      "dest": "paper/figures/demo/fig_activation_clustered.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig_state_correlation.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/correlation/17_state_correlation_clustered_condensed.png",
+      "dest": "paper/figures/demo/fig_state_correlation.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
       "section": "demo",
       "paper_name": "fig_dfa_pca_geometry.jpg",
-      "source": "experiments/five_word_overlap_ns/rnn/plots/embeddings/12_dfa_and_embedding_pca_condensed.png",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/separation/dfa_pca_geometry_and_separation.png",
       "dest": "paper/figures/demo/fig_dfa_pca_geometry.jpg",
-      "exists": false,
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig_example_units.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/unit_selectivity/example_units_combined.png",
+      "dest": "paper/figures/demo/fig_example_units.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig_decoding_seed_mean.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
+      "dest": "paper/figures/demo/fig_decoding_seed_mean.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig_word_trajectories.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/trajectories/dfa_and_trajectory_by_seed.png",
+      "dest": "paper/figures/demo/fig_word_trajectories.jpg",
+      "exists": true,
       "skipped_self": false
     },
     {
       "section": "main",
       "paper_name": "fig11_embedding_panels.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/embeddings/11_embedding_panels_context.png",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/embeddings/11_embedding_panels_context_condensed.png",
       "dest": "paper/figures/main/fig11_embedding_panels.jpg",
       "exists": true,
       "skipped_self": false
@@ -125,48 +157,16 @@
     {
       "section": "main",
       "paper_name": "fig20_feature_separation.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/20_feature_separation_summary_condensed.png",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/separation/feature_separation_summary_seed_mean.png",
       "dest": "paper/figures/main/fig20_feature_separation.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
       "section": "main",
       "paper_name": "fig19_dfa_distance.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
+      "source": "experiments/six_word_mixed_demo_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
       "dest": "paper/figures/main/fig19_dfa_distance.jpg",
-      "exists": false,
-      "skipped_self": false
-    },
-    {
-      "section": "main",
-      "paper_name": "fig_unit_selectivity.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/unit_selectivity_summary.png",
-      "dest": "paper/figures/main/fig_unit_selectivity.jpg",
-      "exists": true,
-      "skipped_self": false
-    },
-    {
-      "section": "main",
-      "paper_name": "fig_example_units.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/unit_selectivity/example_units_combined.png",
-      "dest": "paper/figures/main/fig_example_units.jpg",
-      "exists": false,
-      "skipped_self": false
-    },
-    {
-      "section": "main",
-      "paper_name": "fig_decoding_seed_mean.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
-      "dest": "paper/figures/main/fig_decoding_seed_mean.jpg",
-      "exists": true,
-      "skipped_self": false
-    },
-    {
-      "section": "main",
-      "paper_name": "fig_word_trajectories.jpg",
-      "source": "experiments/sixteen_word_four_letter_ns/rnn/plots/trajectories/word_trajectories_closed_loop.png",
-      "dest": "paper/figures/main/fig_word_trajectories.jpg",
       "exists": true,
       "skipped_self": false
     },

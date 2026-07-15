@@ -21,14 +21,21 @@ from vocab_mixed_dfa import (
     task_name,
     write_run_manifest,
 )
-from viz.compare.mixed_dfa_viz import run_all_mixed_dfa_plots
+from viz.compare.mixed_dfa_viz import (
+    collect_learning_decode,
+    plot_learning_decode,
+    run_all_mixed_dfa_plots,
+)
 from viz.compare.sweep_output import sweep_data_dir
 
 
-def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str) -> None:
+def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str,
+               save_learning_snaps: bool = False) -> None:
     need = [s for s in seeds if not checkpoint_path(task, "rnn", seed=s).is_file()]
-    if not need:
+    if not need and not save_learning_snaps:
         return
+    if save_learning_snaps:
+        need = list(seeds)
     cmd = [
         sys.executable, "scripts/run_task.py", task,
         "--models", "rnn",
@@ -38,6 +45,8 @@ def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str) -
     ]
     if smoke:
         cmd.append("--smoke")
+    if save_learning_snaps:
+        cmd.append("--save-learning-snaps")
     subprocess.run(cmd, check=True, cwd=REPO_ROOT)
 
 
@@ -85,15 +94,35 @@ def cmd_plot(args: argparse.Namespace) -> None:
     run_all_mixed_dfa_plots(seeds=seeds, recompute=not args.replot_only)
 
 
+def cmd_learning_decode(args: argparse.Namespace) -> None:
+    run_id = int(args.run_id)
+    task = task_name(run_id)
+    seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
+    seed = int(seeds[0])
+    if args.retrain:
+        _train_one(task, (seed,), smoke=False, device=args.device, save_learning_snaps=True)
+    json_path = collect_learning_decode(task, seed=seed)
+    out = plot_learning_decode(task, json_path=json_path)
+    print(f"wrote {out}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "train", "plot", "all"))
+    parser.add_argument(
+        "command",
+        choices=("plan", "train", "plot", "all", "learning-decode"),
+    )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
     parser.add_argument("--replot-only", action="store_true")
+    parser.add_argument("--run-id", type=int, default=26, help="run id for learning-decode")
+    parser.add_argument(
+        "--retrain", action="store_true",
+        help="with learning-decode: force retrain with --save-learning-snaps",
+    )
     args = parser.parse_args()
 
     (EXPERIMENTS_ROOT / "comparisons" / COMPARISON_NAME).mkdir(parents=True, exist_ok=True)
@@ -104,6 +133,8 @@ def main() -> None:
         cmd_train(args)
     elif args.command == "plot":
         cmd_plot(args)
+    elif args.command == "learning-decode":
+        cmd_learning_decode(args)
     elif args.command == "all":
         cmd_plan(args)
         cmd_train(args)

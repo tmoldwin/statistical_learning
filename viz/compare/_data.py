@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -29,9 +30,10 @@ def load_task_viz_context(
     model_type: str = "rnn",
     seed: int | None = None,
     text_chars: int | None = None,
+    checkpoint: Path | str | None = None,
 ) -> TaskVizContext:
     run_seed = DEFAULT_SEED if seed is None else seed
-    ckpt = checkpoint_path(task, model_type, seed=run_seed)
+    ckpt = Path(checkpoint) if checkpoint is not None else checkpoint_path(task, model_type, seed=run_seed)
     if not ckpt.is_file():
         raise FileNotFoundError(f"missing {model_type} checkpoint for task {task!r}: {ckpt}")
 

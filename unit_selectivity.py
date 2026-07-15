@@ -42,12 +42,14 @@ FEATURE_DISPLAY = {
     "prediction_entropy": "pred. entropy",
 }
 
+# Match DECODE_FEATURE_COLORS (Okabe–Ito) so every feature type is visually
+# distinct in separation bars, selectivity summaries, and decoding curves.
 FEATURE_COLORS = {
-    "char": "#55a868",
-    "position": "#8172b3",
-    "position_from_end": "#9372b3",
-    "dfa": "#4c72b0",
-    "prefix": "#9467bd",
+    "char": "#E69F00",
+    "dfa": "#0072B2",
+    "position": "#009E73",
+    "position_from_end": "#CC79A7",
+    "prefix": "#56B4E9",
     "string": "#8c564b",
     "word_start": "#17becf",
     "word_end": "#9edae5",
@@ -413,8 +415,9 @@ def _unit_peak_metrics(
     Returns (SI, normalized_peak_gap, eta2, peak_category_label).
 
     SI is peak-vs-rest on category means (nonnegative after min-shift).
-    Peak category is argmax |mean − grand_mean|. Near-flat units and peaks
-    supported by fewer than ``min_peak_count`` samples score 0.
+    Peak category is argmax |mean − grand_mean| among categories with at least
+    ``min_peak_count`` samples (falls back to all categories if none qualify).
+    Near-flat units score SI = 0 but still report population ``eta2``.
     """
     stats = _unit_category_stats(unit_acts, labels, valid_mask)
     if len(stats) < 2:
@@ -427,9 +430,17 @@ def _unit_peak_metrics(
     ])
     std = float(np.std(values))
     grand = float(values.mean())
+    eta = _unit_eta2(unit_acts, labels, valid_mask)
+
+    supported = {
+        lbl: (mean, count)
+        for lbl, (mean, count) in stats.items()
+        if count >= min_peak_count
+    }
+    rank_pool = supported if len(supported) >= 2 else stats
 
     ranked = sorted(
-        stats.items(),
+        rank_pool.items(),
         key=lambda kv: abs(kv[1][0] - grand),
         reverse=True,
     )
@@ -438,18 +449,18 @@ def _unit_peak_metrics(
 
     mean_vec = np.array([m for m, _ in stats.values()], dtype=float)
     if std < min_std or top_count < min_peak_count:
-        return 0.0, 0.0, 0.0, str(top_lbl)
+        return 0.0, 0.0, eta, str(top_lbl)
 
     si = peak_selectivity_index(mean_vec, min_range=min_range)
     if si <= 0.0:
-        return 0.0, 0.0, 0.0, str(top_lbl)
+        return 0.0, 0.0, eta, str(top_lbl)
 
     peak_gap_norm = (
         (abs(top_mean - grand) - abs(second_mean - grand)) / std
         if std > 1e-12
         else 0.0
     )
-    return si, peak_gap_norm, _unit_eta2(unit_acts, labels, valid_mask), str(top_lbl)
+    return si, peak_gap_norm, eta, str(top_lbl)
 
 
 def compute_unit_selectivity_matrix(
@@ -706,31 +717,74 @@ def plot_prediction_encoding_heatmap(
     print(f"wrote {save_path}")
 
 
+def _si_arrays(
+    result: SelectivityResult | dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
+    if isinstance(result, dict):
+        return result
+    return result.si
+
+
+def plot_selectivity_si_on_ax(
+    ax,
+    result: SelectivityResult | dict[str, np.ndarray],
+    *,
+    features: tuple[str, ...] = ANALYSIS_FEATURES,
+    show_legend: bool = True,
+    min_si: float = 1e-6,
+) -> None:
+    """Overlapped smooth SI density curves (Gaussian KDE) for one unit population.
+
+    Exact zeros (flat / gated units) are omitted so the density reflects the
+    distribution among units with peaked tuning.
+    """
+    from scipy.stats import gaussian_kde
+
+    from viz.compare.decoding import DECODE_FEATURE_COLORS
+
+    si = _si_arrays(result)
+    xs = np.linspace(0.0, 1.0, 256)
+    y_hi = 0.0
+    for feat in features:
+        vals = np.asarray(si.get(feat, []), dtype=float)
+        vals = vals[np.isfinite(vals) & (vals > min_si)]
+        if vals.size < 2:
+            continue
+        color = DECODE_FEATURE_COLORS.get(feat, FEATURE_COLORS.get(feat, "#888"))
+        # Slightly wider than Scott so curves stay smooth with n≈10–50.
+        try:
+            kde = gaussian_kde(vals, bw_method=lambda k: max(k.scotts_factor() * 1.6, 0.08))
+        except Exception:
+            continue
+        dens = kde(xs)
+        dens = np.clip(dens, 0.0, None)
+        ax.fill_between(xs, dens, color=color, alpha=0.18, linewidth=0)
+        ax.plot(xs, dens, color=color, lw=1.8, label=FEATURE_DISPLAY.get(feat, feat))
+        y_hi = max(y_hi, float(np.nanmax(dens)) if dens.size else 0.0)
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, max(y_hi * 1.12, 0.1))
+    ax.set_xlabel("selectivity index (peak vs rest)", fontsize=9)
+    ax.set_ylabel("density", fontsize=9)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+    if show_legend:
+        ax.legend(fontsize=7, frameon=False, loc="upper right")
+
+
 def plot_selectivity_distributions(
     result: SelectivityResult,
     save_path: str,
     *,
     title: str,
+    features: tuple[str, ...] = ANALYSIS_FEATURES,
 ) -> None:
-    n_feat = len(ALL_CATEGORICAL_FEATURES)
-    ncols = 3
-    nrows = (n_feat + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(12, 3.2 * nrows), constrained_layout=True)
-    axes_flat = np.atleast_1d(axes).ravel()
-    for i, feat in enumerate(ALL_CATEGORICAL_FEATURES):
-        ax = axes_flat[i]
-        vals = result.si[feat]
-        vals = vals[np.isfinite(vals)]
-        ax.hist(vals, bins=20, color=FEATURE_COLORS.get(feat, "#888"), alpha=0.85, edgecolor="white")
-        ax.set_title(FEATURE_DISPLAY[feat])
-        ax.set_xlabel("selectivity index (peak vs rest)")
-        ax.set_ylabel("units")
-        ax.set_xlim(0, 1.05)
-    for j in range(n_feat, len(axes_flat)):
-        axes_flat[j].axis("off")
-    fig.suptitle(title, fontsize=11)
-    fig.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    """Single-panel overlapped SI density curves (per-unit peak-vs-rest index)."""
+    from viz.plot_layout import finalize_grid_figure, save_figure
+
+    fig, ax = plt.subplots(figsize=(5.6, 3.6))
+    plot_selectivity_si_on_ax(ax, result, features=features)
+    finalize_grid_figure(fig, top=0.86, bottom=0.16, left=0.12, right=0.97)
+    fig.suptitle(title, fontsize=11, y=0.98)
+    save_figure(fig, save_path, dpi=150)
     print(f"wrote {save_path}")
 
 
@@ -884,6 +938,8 @@ def _set_all_timestep_xticks(
     feature: str | None = None,
     automaton: MinimizedVocabAutomaton | None = None,
     show_labels: bool = True,
+    show_xlabel: bool = True,
+    fontsize: float = 8,
 ) -> None:
     n = len(labels.chars)
     if indices is None:
@@ -897,14 +953,17 @@ def _set_all_timestep_xticks(
             rotation=0,
             va="top",
             ha="center",
-            fontsize=8,
+            fontsize=fontsize,
             fontfamily="monospace",
         )
-        ax.set_xlabel("input character (same sequence in every panel)", fontsize=7)
+        if show_xlabel:
+            ax.set_xlabel("input character (same sequence in every panel)", fontsize=7)
+        else:
+            ax.set_xlabel("")
     else:
         ax.set_xticklabels([])
         ax.set_xlabel("")
-    ax.tick_params(axis="x", pad=1)
+    ax.tick_params(axis="x", pad=1, labelbottom=True)
 
 
 def _example_panel_figsize(
@@ -916,7 +975,7 @@ def _example_panel_figsize(
 ) -> tuple[float, float]:
     width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
     if compact:
-        row_h = max(1.35, 1.0 + 0.006 * n_timesteps)
+        row_h = max(1.85, 1.45 + 0.006 * n_timesteps)
     else:
         row_h = max(1.7, 1.2 + 0.012 * n_timesteps)
     height = row_h * n_rows
@@ -974,9 +1033,10 @@ def _plot_unit_timestep_trace(
     if compact:
         ax.set_title(unit_label, fontsize=8, loc="left")
         _set_all_timestep_xticks(
-            ax, labels, feature=None, automaton=None, show_labels=show_xticks,
+            ax, labels, feature=None, automaton=None,
+            show_labels=show_xticks, show_xlabel=False, fontsize=5.5,
         )
-        ax.tick_params(axis="both", labelsize=7)
+        ax.tick_params(axis="both", labelsize=6, labelbottom=show_xticks)
     else:
         ax.set_title(
             f"{unit_label} — chronological input\n"
@@ -1216,7 +1276,6 @@ def plot_example_units_combined(
     fig, axes = plt.subplots(
         len(rows), 2,
         figsize=_example_panel_figsize(len(activations), len(rows), compact=True),
-        constrained_layout=True,
     )
     if len(rows) == 1:
         axes = np.array([axes])
@@ -1235,9 +1294,20 @@ def plot_example_units_combined(
             target_prob=target_prob if feat in PREDICTION_SET else None,
             automaton=automaton,
             compact=True,
-            show_xticks=(row == len(rows) - 1),
+            show_xticks=True,
             ylim=ylim,
         )
+        for col in (0, 1):
+            axes[row, col].tick_params(axis="x", labelbottom=True, labelsize=5.5)
+            # Labels sit in the inter-row gap; don't let the next axes cover them.
+            for tick in axes[row, col].get_xticklabels():
+                tick.set_clip_on(False)
+                tick.set_zorder(10)
+        if row == len(rows) - 1:
+            axes[row, 0].set_xlabel(
+                "input character (same sequence in every panel)", fontsize=7,
+            )
+            axes[row, 0].xaxis.label.set_clip_on(False)
         if feat != prev_feat:
             short = {
                 "dfa": "DFA",
@@ -1259,8 +1329,12 @@ def plot_example_units_combined(
         f"Top-{k} units per feature on one corpus window "
         f"(lollipop color = feature category; peak SI)",
         fontsize=11,
+        y=0.995,
     )
-    fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    fig.subplots_adjust(
+        left=0.07, right=0.99, top=0.96, bottom=0.05, hspace=1.05, wspace=0.22,
+    )
+    fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
     del result
@@ -1826,7 +1900,7 @@ def plot_unit_selectivity_suite(
     plot_selectivity_distributions(
         result,
         os.path.join(save_dir, "selectivity_distributions.png"),
-        title=f"{repr_label} — SI distributions",
+        title="Per-unit selectivity index",
     )
     plot_primary_feature_pie(
         result,

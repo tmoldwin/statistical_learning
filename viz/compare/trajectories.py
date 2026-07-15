@@ -25,11 +25,14 @@ from visualize import (
     _cube_data_limits,
     _one_vocab_cycle_steps,
     _plot_trajectory_closed_loop_panel,
+    _project_hidden_to_pca,
     _square_data_limits,
     _states_after_first_word,
     _trajectory_seed_letters,
     _vocab_word_colors,
+    condense_hidden_states_by_prefix,
 )
+from vocab_diagrams import build_minimized_vocabulary_automaton
 
 
 def plot_closed_loop_run_seed_row(
@@ -114,6 +117,161 @@ def plot_closed_loop_run_seed_row(
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     save_figure(fig, out_path, dpi=150)
+    print(f"wrote {out_path}")
+    return out_path
+
+
+def plot_dfa_and_trajectory_seed_grid(
+    task: str,
+    *,
+    seeds: tuple[int, ...] = (1, 2, 3, 5, 7),
+    out_path: Path | None = None,
+    model_type: str = "rnn",
+    embed_method: str = "pca",
+    rollout_seed: int = 0,
+    text_chars: int = 100,
+    panel_inches: float = 2.55,
+) -> Path:
+    """2×N grid: top = prefix-labeled PCA colored by DFA; bottom = closed-loop traj.
+
+    Columns are training seeds. Within each column both rows share the same PCA
+    basis (fit on teacher-forced states after the first word).
+    """
+    from experiment import TASKS, plots_dir
+    from vocab_diagrams import vocabulary_for_experiment
+    from viz.plot_layout import finalize_grid_figure, save_figure
+    from visualize import (
+        _dfa_automaton_state_colors,
+        add_dfa_state_annotations,
+    )
+
+    run_seeds = tuple(seeds)
+    n_cols = len(run_seeds)
+    if n_cols < 1:
+        raise ValueError("need at least one seed")
+
+    cap = min(int(TASKS[task].get("viz_length", 80)), text_chars)
+    words = vocabulary_for_experiment(task)
+    automaton = build_minimized_vocabulary_automaton(words)
+    state_colors = _dfa_automaton_state_colors(automaton)
+
+    panel = float(panel_inches)
+    fig_w = panel * n_cols + 0.95
+    fig_h = panel * 2 + 0.85
+    fig, axes = plt.subplots(2, n_cols, figsize=(fig_w, fig_h), squeeze=False)
+
+    for col, seed in enumerate(run_seeds):
+        ax_dfa = axes[0, col]
+        ax_traj = axes[1, col]
+        try:
+            ctx = load_task_viz_context(
+                task, model_type=model_type, seed=seed, text_chars=cap,
+            )
+        except Exception as exc:  # noqa: BLE001
+            for ax in (ax_dfa, ax_traj):
+                ax.set_visible(False)
+                ax.text(
+                    0.5, 0.5, f"missing\n{exc.__class__.__name__}",
+                    ha="center", va="center", fontsize=7, transform=ax.transAxes,
+                )
+            continue
+
+        fit_states, trajs = _states_after_first_word(
+            ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+        )
+        _proj, mean, components, evr = fit_embed_2d_with_evr(
+            fit_states, method=embed_method, trajectories=trajs,
+        )
+        del _proj, evr
+
+        condensed = condense_hidden_states_by_prefix(
+            ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+        )
+        z_dfa = _project_hidden_to_pca(condensed.hidden_states, mean, components)
+
+        vocab_words = list(ctx.words)
+        seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
+        summary_seed = _closed_loop_summary_seed(vocab_words, seed_letters, spaced=ctx.spaced)
+        summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+        if vocab_words:
+            summary_steps += max(len(w) for w in vocab_words)
+        word_colors = _vocab_word_colors(vocab_words)
+        limit_arrays: list = [np.asarray(z_dfa, dtype=float)]
+        _plot_trajectory_closed_loop_panel(
+            ax_traj, ctx.model, [summary_seed], summary_steps, rollout_seed,
+            mean, components, limit_arrays,
+            vocab_words=vocab_words, word_colors=word_colors,
+            spaced=ctx.spaced, is_3d=False,
+            average_trials=1,
+            annotate=False,
+            annotate_fontsize=5.0,
+            linewidth=1.15,
+            arrow_mutation_scale=8.0,
+        )
+        xlim, ylim = _square_data_limits(*limit_arrays, padding_frac=0.14)
+
+        add_dfa_state_annotations(
+            ax_dfa,
+            ctx.text,
+            z_dfa,
+            automaton,
+            spaced=ctx.spaced,
+            state_colors=state_colors,
+            annot_style="leaders",
+            point_size=36,
+            label_fontsize=6.5,
+            leader_linewidth=0.40,
+            prefix_labels=list(condensed.labels),
+            show_legend=False,
+        )
+        ax_dfa.set_xlim(xlim)
+        ax_dfa.set_ylim(ylim)
+        ax_dfa.set_aspect("equal", adjustable="box")
+        ax_dfa.set_title(f"seed {seed}", fontsize=9, pad=2)
+        ax_dfa.tick_params(
+            labelsize=5.5, left=(col == 0), bottom=False,
+            labelleft=(col == 0), labelbottom=False, length=2, pad=1,
+        )
+        ax_dfa.set_ylabel("DFA states" if col == 0 else "", fontsize=8, labelpad=2)
+        ax_dfa.set_xlabel("")
+        ax_dfa.grid(True, linestyle=":", alpha=0.28)
+        ax_dfa.spines["top"].set_visible(False)
+        ax_dfa.spines["right"].set_visible(False)
+
+        ax_traj.set_xlim(xlim)
+        ax_traj.set_ylim(ylim)
+        ax_traj.set_aspect("equal", adjustable="box")
+        ax_traj.set_title("")
+        ax_traj.tick_params(
+            labelsize=5.5, left=(col == 0), bottom=True,
+            labelleft=(col == 0), labelbottom=(col == n_cols // 2),
+            length=2, pad=1,
+        )
+        ax_traj.set_ylabel("trajectory" if col == 0 else "", fontsize=8, labelpad=2)
+        ax_traj.set_xlabel("PC1" if col == n_cols // 2 else "", fontsize=7.5, labelpad=1)
+        ax_traj.grid(True, linestyle=":", alpha=0.28)
+
+    finalize_grid_figure(
+        fig,
+        suptitle="DFA-labeled states (top) and closed-loop trajectories (bottom) across seeds",
+        suptitle_fontsize=11,
+        top=0.90,
+        bottom=0.08,
+        left=0.07,
+        right=0.99,
+        hspace=0.18,
+        wspace=0.12,
+    )
+
+    if out_path is None:
+        out_path = (
+            Path(plots_dir(task, model_type))
+            / "trajectories"
+            / "dfa_and_trajectory_by_seed.png"
+        )
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_figure(fig, out_path, dpi=160)
     print(f"wrote {out_path}")
     return out_path
 

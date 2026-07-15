@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from experiment import TASKS
-from unit_selectivity import FEATURE_DISPLAY, build_timestep_labels
+from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY, build_timestep_labels
 from vocab_diagrams import build_minimized_vocabulary_automaton
 
 from viz.compare._data import TaskVizContext
@@ -15,11 +15,9 @@ from viz.compare._data import TaskVizContext
 DECODING_FEATURES: tuple[str, ...] = (
     "char", "dfa", "position", "position_from_end",
 )
+# Alias of the shared feature-type palette (keep in sync via FEATURE_COLORS).
 DECODE_FEATURE_COLORS: dict[str, str] = {
-    "char": "#E69F00",
-    "dfa": "#0072B2",
-    "position": "#009E73",
-    "position_from_end": "#CC79A7",
+    f: FEATURE_COLORS[f] for f in DECODING_FEATURES
 }
 _DEFAULT_MAX_PCS = 20
 _DEFAULT_MAX_K = _DEFAULT_MAX_PCS
@@ -112,9 +110,11 @@ def _k_values_for_split(
     n_classes: int,
     max_k: int,
 ) -> list[int]:
-    upper = min(max_k, hidden_dim, n_train - 1)
-    if n_classes > 1:
-        upper = min(upper, max(1, n_train // n_classes))
+    # Cap by geometry / sample size. Do not use n_train//n_classes — that
+    # truncates many-state DFA curves early even though L2 logistic probes
+    # remain well-defined (C is already scaled by class/sample ratio).
+    del n_classes
+    upper = min(max_k, hidden_dim, max(1, n_train - 1))
     if upper < 1:
         return []
     return list(range(1, upper + 1))

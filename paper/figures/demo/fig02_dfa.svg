@@ -1,65 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="847" height="943" viewBox="0 0 847 943">
+<svg xmlns="http://www.w3.org/2000/svg" width="1107" height="1214" viewBox="0 0 1107 1214">
 <style>text { font-family: ui-monospace, Consolas, monospace; font-size: 13px; fill: #111; }.edge-label { font-size: 12px; fill: #222; }.state-label { font-size: 11px; fill: #1a1a1a; }.title { font-size: 15px; font-weight: 600; fill: #111; }</style>
-<rect x="0" y="0" width="847" height="943" fill="#f4f1ea"/>
-<text x="50" y="28" class="title">Minimal DFA · cat, met, ate, tea, eat</text>
+<rect x="0" y="0" width="1107" height="1214" fill="#f4f1ea"/>
+<text x="50" y="28" class="title">Minimal DFA · cat, ate, tea, cake, late, plant</text>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#444"/></marker>
 </defs>
-<path d="M 422.5 105.4 L 138.2 313.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 432.7 113.7 Q 403.0 210.6 349.5 296.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 432.7 113.7 Q 379.3 199.8 349.5 296.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 454.3 113.7 L 540.9 304.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 464.5 105.4 L 748.8 313.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 124.8 355.3 L 211.2 545.6" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 347.9 362.9 L 419.2 519.8" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 542.6 355.3 L 467.8 519.8" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 762.2 355.3 L 675.8 545.6" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 241.6 592.8 L 407.2 774.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 443.5 628.0 L 443.5 760.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<path d="M 645.4 592.8 L 479.8 774.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<line x1="383.5" y1="90.0" x2="417.5" y2="90.0" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
-<circle cx="443.5" cy="90.0" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="443.5" y="90.0" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">ε</text>
-<circle cx="114.0" cy="331.6" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="114.0" y="331.6" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">a</text>
-<circle cx="333.7" cy="331.6" r="32.3" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="333.7" y="331.6" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">c, e</text>
-<circle cx="553.3" cy="331.6" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="553.3" y="331.6" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">m</text>
-<circle cx="773.0" cy="331.6" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="773.0" y="331.6" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">t</text>
-<circle cx="223.8" cy="573.3" r="24.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="223.8" y="573.3" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">at</text>
-<circle cx="443.5" cy="573.3" r="52.7" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="443.5" y="573.3" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="9px">ca, ea, me</text>
-<circle cx="663.2" cy="573.3" r="24.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="663.2" y="573.3" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">te</text>
-<circle cx="443.5" cy="814.9" r="52.0" fill="none" stroke="#111" stroke-width="1.5"/>
-<circle cx="443.5" cy="814.9" r="48.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
-<text x="443.5" y="803.5" text-anchor="middle" class="state-label" font-size="8px"><tspan x="443.5" dy="0">ate, cat,</tspan><tspan x="443.5" dy="11.44">eat, met,</tspan><tspan x="443.5" dy="11.44">tea</tspan></text>
-<text x="270.9" y="196.7" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
-<text x="270.9" y="196.7" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
-<text x="382.5" y="201.3" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">c</text>
-<text x="382.5" y="201.3" text-anchor="middle" dominant-baseline="central" class="edge-label">c</text>
-<text x="399.8" y="209.1" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
-<text x="399.8" y="209.1" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
-<text x="483.0" y="215.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">m</text>
-<text x="483.0" y="215.6" text-anchor="middle" dominant-baseline="central" class="edge-label">m</text>
-<text x="597.2" y="222.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
-<text x="597.2" y="222.5" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
-<text x="153.4" y="457.1" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
-<text x="153.4" y="457.1" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
-<text x="369.0" y="448.0" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
-<text x="369.0" y="448.0" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
-<text x="490.6" y="430.9" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
-<text x="490.6" y="430.9" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
-<text x="704.4" y="443.8" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
-<text x="704.4" y="443.8" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
-<text x="312.5" y="694.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
-<text x="312.5" y="694.6" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
-<text x="427.5" y="694.4" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
-<text x="427.5" y="694.4" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
-<text x="550.8" y="673.1" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
-<text x="550.8" y="673.1" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<path d="M 551.0 102.5 L 151.2 322.4" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 556.2 109.2 L 364.0 320.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 573.7 116.0 L 573.7 312.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 591.2 109.2 L 783.4 320.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 596.5 102.5 L 1007.2 328.4" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 129.9 377.8 L 203.6 540.0" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 354.6 366.5 L 446.2 568.0" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 547.7 342.9 L 156.4 342.9" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 792.8 366.5 L 701.3 568.0" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 1022.7 366.5 L 931.1 568.0" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 267.4 638.0 L 418.6 804.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 432.4 595.7 L 290.1 595.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 458.8 622.1 L 458.8 788.8" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 688.7 622.1 L 688.7 814.3" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 895.4 608.4 L 511.2 819.7" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 676.2 876.1 L 589.6 1066.5" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M 559.5 1070.2 L 483.5 903.0" fill="none" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<line x1="513.7" y1="90.0" x2="547.7" y2="90.0" stroke="#444" stroke-width="1.2" marker-end="url(#arrow)"/>
+<circle cx="573.7" cy="90.0" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="573.7" y="90.0" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">ε</text>
+<circle cx="114.0" cy="342.9" r="36.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="114.0" y="342.9" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">a, la</text>
+<circle cx="343.9" cy="342.9" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="343.9" y="342.9" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">c</text>
+<circle cx="573.7" cy="342.9" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="573.7" y="342.9" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">l</text>
+<circle cx="803.6" cy="342.9" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="803.6" y="342.9" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">p</text>
+<circle cx="1033.5" cy="342.9" r="24.0" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="1033.5" y="342.9" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">t</text>
+<circle cx="228.9" cy="595.7" r="55.2" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="228.9" y="595.7" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="8px">at, cak, lat</text>
+<circle cx="458.8" cy="595.7" r="24.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="458.8" y="595.7" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">ca</text>
+<circle cx="688.7" cy="595.7" r="24.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="688.7" y="595.7" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">pl</text>
+<circle cx="918.5" cy="595.7" r="24.4" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="918.5" y="595.7" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">te</text>
+<circle cx="458.8" cy="848.6" r="57.8" fill="none" stroke="#111" stroke-width="1.5"/>
+<circle cx="458.8" cy="848.6" r="53.8" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="458.8" y="837.1" text-anchor="middle" class="state-label" font-size="8px"><tspan x="458.8" dy="0">ate, cat,</tspan><tspan x="458.8" dy="11.44">tea, cake,</tspan><tspan x="458.8" dy="11.44">late, plant</tspan></text>
+<circle cx="688.7" cy="848.6" r="28.2" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="688.7" y="848.6" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">pla</text>
+<circle cx="573.7" cy="1101.4" r="32.3" fill="#ffffff" stroke="#111" stroke-width="1.5"/>
+<text x="573.7" y="1101.4" text-anchor="middle" dominant-baseline="central" class="state-label" font-size="10px">plan</text>
+<text x="343.3" y="198.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="343.3" y="198.5" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="448.3" y="204.2" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">c</text>
+<text x="448.3" y="204.2" text-anchor="middle" dominant-baseline="central" class="edge-label">c</text>
+<text x="557.7" y="214.4" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">l</text>
+<text x="557.7" y="214.4" text-anchor="middle" dominant-baseline="central" class="edge-label">l</text>
+<text x="675.5" y="225.7" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">p</text>
+<text x="675.5" y="225.7" text-anchor="middle" dominant-baseline="central" class="edge-label">p</text>
+<text x="794.1" y="229.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
+<text x="794.1" y="229.5" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
+<text x="152.2" y="465.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
+<text x="152.2" y="465.5" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
+<text x="385.9" y="473.9" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="385.9" y="473.9" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="352.1" y="326.9" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="352.1" y="326.9" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="732.5" y="460.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">l</text>
+<text x="732.5" y="460.6" text-anchor="middle" dominant-baseline="central" class="edge-label">l</text>
+<text x="962.4" y="460.6" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
+<text x="962.4" y="460.6" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
+<text x="331.1" y="731.9" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">e</text>
+<text x="331.1" y="731.9" text-anchor="middle" dominant-baseline="central" class="edge-label">e</text>
+<text x="361.2" y="579.7" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">k</text>
+<text x="361.2" y="579.7" text-anchor="middle" dominant-baseline="central" class="edge-label">k</text>
+<text x="442.8" y="705.5" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
+<text x="442.8" y="705.5" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
+<text x="672.7" y="718.2" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="672.7" y="718.2" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="695.6" y="700.1" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">a</text>
+<text x="695.6" y="700.1" text-anchor="middle" dominant-baseline="central" class="edge-label">a</text>
+<text x="618.3" y="964.7" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">n</text>
+<text x="618.3" y="964.7" text-anchor="middle" dominant-baseline="central" class="edge-label">n</text>
+<text x="536.1" y="980.0" text-anchor="middle" dominant-baseline="central" class="edge-label" stroke="#f4f1ea" stroke-width="5" paint-order="stroke">t</text>
+<text x="536.1" y="980.0" text-anchor="middle" dominant-baseline="central" class="edge-label">t</text>
 </svg>

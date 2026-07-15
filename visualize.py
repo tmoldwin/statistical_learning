@@ -2278,6 +2278,11 @@ SEPARATION_FEATURES = (
     "dfa", "char", "position", "position_from_end",
 )
 
+# Paper summary features include both position axes (meaningful when word lengths vary).
+SEPARATION_SUMMARY_FEATURES: tuple[str, ...] = (
+    "dfa", "char", "position", "position_from_end",
+)
+
 
 @dataclass
 class FeatureSeparationStats:
@@ -2289,8 +2294,15 @@ class FeatureSeparationStats:
     eta2: dict[str, float]
     pairwise_within_median: dict[str, float]
     pairwise_between_median: dict[str, float]
+    within_corr: dict[str, float]
     shuffle_z: dict[str, float]
     shuffle_p: dict[str, float]
+    shuffle_silhouette: dict[str, float]
+    shuffle_within_corr: dict[str, float]
+    shuffle_pairwise_within_median: dict[str, float]
+    shuffle_pairwise_between_median: dict[str, float]
+    shuffle_pairwise_ratio: dict[str, float]
+    shuffle_centroid_gap: dict[str, float]
     n_groups: dict[str, int]
     n_points: dict[str, int]
 
@@ -2424,79 +2436,117 @@ def _pairwise_within_between_medians(
     return within_med, between_med
 
 
-def _label_shuffle_centroid_gap(
+def _mean_within_group_correlation(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> float:
+    """Mean Pearson correlation of hidden-state pairs that share a feature label."""
+    corrs: list[float] = []
+    for idxs in group_map.values():
+        if len(idxs) < 2:
+            continue
+        pts = states[idxs]
+        # Row-wise Pearson among group members (exclude diagonal).
+        centered = pts - pts.mean(axis=1, keepdims=True)
+        norms = np.linalg.norm(centered, axis=1, keepdims=True)
+        norms = np.maximum(norms, 1e-12)
+        standardized = centered / norms
+        corr_mat = standardized @ standardized.T
+        iu = np.triu_indices(len(idxs), k=1)
+        corrs.extend(float(v) for v in corr_mat[iu] if np.isfinite(v))
+    return float(np.mean(corrs)) if corrs else float("nan")
+
+
+def _label_shuffle_null_summary(
     states: np.ndarray,
     labels: list[Any],
     valid_mask: list[bool] | None,
-    observed_gap: float,
     *,
+    observed_gap: float,
+    observed_ratio: float,
     n_shuffle: int = 199,
     rng: np.random.Generator | None = None,
-) -> tuple[float, float]:
+) -> dict[str, float]:
+    """One label-shuffle null: means for each summary metric, plus gap z and ratio p."""
     rng = rng or np.random.default_rng(0)
     valid_indices = [
         i for i in range(len(labels))
         if valid_mask is None or valid_mask[i]
     ]
-    if len(valid_indices) < 2 or not np.isfinite(observed_gap):
-        return float("nan"), float("nan")
+    empty = {
+        "shuffle_z": float("nan"),
+        "shuffle_p": float("nan"),
+        "shuffle_silhouette": float("nan"),
+        "shuffle_within_corr": float("nan"),
+        "shuffle_pairwise_within_median": float("nan"),
+        "shuffle_pairwise_between_median": float("nan"),
+        "shuffle_pairwise_ratio": float("nan"),
+        "shuffle_centroid_gap": float("nan"),
+    }
+    if len(valid_indices) < 2:
+        return empty
 
     base_labels = [labels[i] for i in valid_indices]
     null_gaps: list[float] = []
+    null_sil: list[float] = []
+    null_corr: list[float] = []
+    null_w: list[float] = []
+    null_b: list[float] = []
+    null_ratio: list[float] = []
+
     for _ in range(n_shuffle):
         shuffled = list(base_labels)
         rng.shuffle(shuffled)
         group_map: dict[Any, list[int]] = defaultdict(list)
         for idx, lbl in zip(valid_indices, shuffled):
             group_map[lbl].append(idx)
-        gap, _, _ = _centroid_separation_metrics(states, dict(group_map))
+        gm = dict(group_map)
+
+        gap, _, _ = _centroid_separation_metrics(states, gm)
         if np.isfinite(gap):
             null_gaps.append(gap)
 
-    if not null_gaps:
-        return float("nan"), float("nan")
+        sil = _mean_silhouette(states, gm)
+        if np.isfinite(sil):
+            null_sil.append(sil)
 
-    null_arr = np.asarray(null_gaps, dtype=float)
-    z = float((observed_gap - null_arr.mean()) / (null_arr.std() + 1e-12))
-    p = float((np.sum(null_arr >= observed_gap) + 1) / (len(null_arr) + 1))
-    return z, p
+        corr = _mean_within_group_correlation(states, gm)
+        if np.isfinite(corr):
+            null_corr.append(corr)
 
-
-def _label_shuffle_pairwise_ratio_p(
-    states: np.ndarray,
-    labels: list[Any],
-    valid_mask: list[bool] | None,
-    observed_ratio: float,
-    *,
-    n_shuffle: int = 199,
-    rng: np.random.Generator | None = None,
-) -> float:
-    """One-sided p-value: fraction of shuffles with ratio <= observed (within closer than chance)."""
-    rng = rng or np.random.default_rng(1)
-    valid_indices = [
-        i for i in range(len(labels))
-        if valid_mask is None or valid_mask[i]
-    ]
-    if len(valid_indices) < 2 or not np.isfinite(observed_ratio):
-        return float("nan")
-
-    base_labels = [labels[i] for i in valid_indices]
-    null_ratios: list[float] = []
-    for _ in range(n_shuffle):
-        shuffled = list(base_labels)
-        rng.shuffle(shuffled)
-        group_map: dict[Any, list[int]] = defaultdict(list)
-        for idx, lbl in zip(valid_indices, shuffled):
-            group_map[lbl].append(idx)
-        w_med, b_med = _pairwise_within_between_medians(states, dict(group_map))
+        w_med, b_med = _pairwise_within_between_medians(states, gm)
+        if np.isfinite(w_med):
+            null_w.append(w_med)
+        if np.isfinite(b_med):
+            null_b.append(b_med)
         if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0:
-            null_ratios.append(w_med / b_med)
+            null_ratio.append(w_med / b_med)
 
-    if not null_ratios:
-        return float("nan")
-
-    null_arr = np.asarray(null_ratios, dtype=float)
-    return float((np.sum(null_arr <= observed_ratio) + 1) / (len(null_arr) + 1))
+    out = dict(empty)
+    if null_gaps:
+        gap_arr = np.asarray(null_gaps, dtype=float)
+        out["shuffle_centroid_gap"] = float(gap_arr.mean())
+        if np.isfinite(observed_gap):
+            out["shuffle_z"] = float(
+                (observed_gap - gap_arr.mean()) / (gap_arr.std() + 1e-12)
+            )
+    if null_sil:
+        out["shuffle_silhouette"] = float(np.mean(null_sil))
+    if null_corr:
+        out["shuffle_within_corr"] = float(np.mean(null_corr))
+    if null_w:
+        out["shuffle_pairwise_within_median"] = float(np.mean(null_w))
+    if null_b:
+        out["shuffle_pairwise_between_median"] = float(np.mean(null_b))
+    if null_ratio:
+        ratio_arr = np.asarray(null_ratio, dtype=float)
+        out["shuffle_pairwise_ratio"] = float(ratio_arr.mean())
+        if np.isfinite(observed_ratio):
+            # One-sided: within closer than chance => ratio smaller than null.
+            out["shuffle_p"] = float(
+                (np.sum(ratio_arr <= observed_ratio) + 1) / (len(ratio_arr) + 1)
+            )
+    return out
 
 
 def compute_feature_separation_stats(
@@ -2515,8 +2565,15 @@ def compute_feature_separation_stats(
     eta2: dict[str, float] = {}
     pairwise_within_median: dict[str, float] = {}
     pairwise_between_median: dict[str, float] = {}
+    within_corr: dict[str, float] = {}
     shuffle_z: dict[str, float] = {}
     shuffle_p: dict[str, float] = {}
+    shuffle_silhouette: dict[str, float] = {}
+    shuffle_within_corr: dict[str, float] = {}
+    shuffle_pairwise_within_median: dict[str, float] = {}
+    shuffle_pairwise_between_median: dict[str, float] = {}
+    shuffle_pairwise_ratio: dict[str, float] = {}
+    shuffle_centroid_gap: dict[str, float] = {}
     n_groups: dict[str, int] = {}
     n_points: dict[str, int] = {}
 
@@ -2535,15 +2592,28 @@ def compute_feature_separation_stats(
         w_med, b_med = _pairwise_within_between_medians(hidden_states, group_map)
         pairwise_within_median[feat] = w_med
         pairwise_between_median[feat] = b_med
+        within_corr[feat] = _mean_within_group_correlation(hidden_states, group_map)
 
-        z, _ = _label_shuffle_centroid_gap(
-            hidden_states, vals, mask, gap, n_shuffle=n_shuffle, rng=rng,
+        ratio = (
+            w_med / b_med
+            if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0
+            else float("nan")
         )
-        shuffle_z[feat] = z
-        ratio = w_med / b_med if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0 else float("nan")
-        shuffle_p[feat] = _label_shuffle_pairwise_ratio_p(
-            hidden_states, vals, mask, ratio, n_shuffle=n_shuffle, rng=rng,
+        nulls = _label_shuffle_null_summary(
+            hidden_states, vals, mask,
+            observed_gap=gap,
+            observed_ratio=ratio,
+            n_shuffle=n_shuffle,
+            rng=rng,
         )
+        shuffle_z[feat] = nulls["shuffle_z"]
+        shuffle_p[feat] = nulls["shuffle_p"]
+        shuffle_silhouette[feat] = nulls["shuffle_silhouette"]
+        shuffle_within_corr[feat] = nulls["shuffle_within_corr"]
+        shuffle_pairwise_within_median[feat] = nulls["shuffle_pairwise_within_median"]
+        shuffle_pairwise_between_median[feat] = nulls["shuffle_pairwise_between_median"]
+        shuffle_pairwise_ratio[feat] = nulls["shuffle_pairwise_ratio"]
+        shuffle_centroid_gap[feat] = nulls["shuffle_centroid_gap"]
 
     return FeatureSeparationStats(
         features=features,
@@ -2554,8 +2624,15 @@ def compute_feature_separation_stats(
         eta2=eta2,
         pairwise_within_median=pairwise_within_median,
         pairwise_between_median=pairwise_between_median,
+        within_corr=within_corr,
         shuffle_z=shuffle_z,
         shuffle_p=shuffle_p,
+        shuffle_silhouette=shuffle_silhouette,
+        shuffle_within_corr=shuffle_within_corr,
+        shuffle_pairwise_within_median=shuffle_pairwise_within_median,
+        shuffle_pairwise_between_median=shuffle_pairwise_between_median,
+        shuffle_pairwise_ratio=shuffle_pairwise_ratio,
+        shuffle_centroid_gap=shuffle_centroid_gap,
         n_groups=n_groups,
         n_points=n_points,
     )
@@ -2594,95 +2671,15 @@ def plot_feature_separation_summary(
     stats = compute_feature_separation_stats(
         hidden_states, ts_labels, n_shuffle=n_shuffle,
     )
-    feats = list(stats.features)
-    x = np.arange(len(feats))
-    colors = [FEATURE_COLORS.get(f, "#888888") for f in feats]
-    tick_labels = [FEATURE_DISPLAY.get(f, f) for f in feats]
-
-    fig, axes = plt.subplots(2, 3, figsize=(9.5, 6.8), constrained_layout=True)
-
-    ax = axes[0, 0]
-    vals = [stats.centroid_gap[f] for f in feats]
-    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
-    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.set_ylabel("between − within spread", fontsize=8)
-    ax.set_title("Centroid gap (group-balanced)", fontsize=9)
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    ax = axes[0, 1]
-    vals = [stats.silhouette[f] for f in feats]
-    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
-    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.set_ylabel("mean silhouette", fontsize=8)
-    ax.set_title("Mean silhouette", fontsize=9)
-    ax.set_ylim(-0.05, 1.05)
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    ax = axes[0, 2]
-    vals = [stats.eta2[f] for f in feats]
-    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.set_ylabel("η²", fontsize=8)
-    ax.set_title("Multivariate η²", fontsize=9)
-    ax.set_ylim(0.0, 1.05)
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    ax = axes[1, 0]
-    width = 0.36
-    w_vals = [stats.pairwise_within_median[f] for f in feats]
-    b_vals = [stats.pairwise_between_median[f] for f in feats]
-    ax.bar(x - width / 2, w_vals, width, label="within", color="#4c72b0", alpha=0.85)
-    ax.bar(x + width / 2, b_vals, width, label="between", color="#dd8452", alpha=0.85)
-    ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel(f"L2 distance ({repr_label})")
-    ax.set_title("Pairwise within vs between (median)")
-    ax.legend(fontsize=8, loc="upper right")
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    ax = axes[1, 1]
-    vals = [stats.shuffle_z[f] for f in feats]
-    ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.6)
-    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
-    ax.axhline(1.96, color="0.5", linewidth=0.8, linestyle="--", alpha=0.6)
-    ax.axhline(-1.96, color="0.5", linewidth=0.8, linestyle="--", alpha=0.6)
-    ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel("z-score")
-    ax.set_title("Centroid gap vs label shuffle")
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    ax = axes[1, 2]
-    ratios = []
-    for f in feats:
-        w_med = stats.pairwise_within_median[f]
-        b_med = stats.pairwise_between_median[f]
-        ratios.append(w_med / b_med if np.isfinite(w_med) and np.isfinite(b_med) and b_med > 0 else float("nan"))
-    ax.bar(x, ratios, color=colors, edgecolor="white", linewidth=0.6)
-    ax.axhline(1.0, color="0.3", linewidth=0.8, linestyle=":")
-    ymax = float(np.nanmax(ratios)) if np.any(np.isfinite(ratios)) else 1.0
-    for i, (f, r) in enumerate(zip(feats, ratios)):
-        p = stats.shuffle_p[f]
-        if np.isfinite(p) and np.isfinite(r):
-            stars = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
-            label = f"p={p:.3f}{stars}"
-            ax.text(i, r + 0.02 * max(ymax, 0.01), label, ha="center", va="bottom", fontsize=7)
-    ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels, rotation=35, ha="right", fontsize=8)
-    ax.set_ylabel("within / between")
-    ax.set_title("Pairwise ratio (shuffle p-value)")
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    title = f"Feature separation summary ({repr_label}, n={hidden_states.shape[0]} points)"
-    fig.suptitle(_condensed_plot_title(title, condensed), fontsize=12, y=1.02)
-    fig.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"wrote {save_path}")
+    feat_list = [f for f in SEPARATION_SUMMARY_FEATURES if f in stats.features]
+    _plot_feature_separation_summary_figure(
+        save_path,
+        features=feat_list,
+        per_seed_stats={0: stats},
+        n_points=int(hidden_states.shape[0]),
+        condensed=condensed,
+        repr_label=repr_label,
+    )
 
     json_path = str(Path(save_path).with_suffix(".json"))
 
@@ -2698,17 +2695,387 @@ def plot_feature_separation_summary(
         "eta2": {k: _json_float(v) for k, v in stats.eta2.items()},
         "pairwise_within_median": {k: _json_float(v) for k, v in stats.pairwise_within_median.items()},
         "pairwise_between_median": {k: _json_float(v) for k, v in stats.pairwise_between_median.items()},
+        "within_corr": {k: _json_float(v) for k, v in stats.within_corr.items()},
         "shuffle_z": {k: _json_float(v) for k, v in stats.shuffle_z.items()},
         "shuffle_p": {k: _json_float(v) for k, v in stats.shuffle_p.items()},
+        "shuffle_silhouette": {k: _json_float(v) for k, v in stats.shuffle_silhouette.items()},
+        "shuffle_within_corr": {k: _json_float(v) for k, v in stats.shuffle_within_corr.items()},
+        "shuffle_pairwise_within_median": {
+            k: _json_float(v) for k, v in stats.shuffle_pairwise_within_median.items()
+        },
+        "shuffle_pairwise_between_median": {
+            k: _json_float(v) for k, v in stats.shuffle_pairwise_between_median.items()
+        },
+        "shuffle_pairwise_ratio": {
+            k: _json_float(v) for k, v in stats.shuffle_pairwise_ratio.items()
+        },
+        "shuffle_centroid_gap": {
+            k: _json_float(v) for k, v in stats.shuffle_centroid_gap.items()
+        },
         "n_groups": stats.n_groups,
         "n_points": stats.n_points,
         "n_shuffle": n_shuffle,
+        "summary_panels": [
+            "silhouette", "within_corr", "pairwise_within_between", "pairwise_ratio",
+        ],
     }
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     print(f"wrote {json_path}")
 
     return stats
+
+
+def _metric_from_stats(stats: FeatureSeparationStats, metric_key: str, feature: str) -> float:
+    if metric_key == "pairwise_ratio":
+        w_med = stats.pairwise_within_median[feature]
+        b_med = stats.pairwise_between_median[feature]
+        if not np.isfinite(w_med) or not np.isfinite(b_med) or b_med <= 0:
+            return float("nan")
+        return float(w_med / b_med)
+    return float(getattr(stats, metric_key)[feature])
+
+
+def _seed_mean_std(vals: list[float]) -> tuple[float, float]:
+    clean = [v for v in vals if np.isfinite(v)]
+    if not clean:
+        return float("nan"), 0.0
+    mean = float(np.mean(clean))
+    std = float(np.std(clean, ddof=1)) if len(clean) > 1 else 0.0
+    return mean, std
+
+
+def _padded_ylim(
+    *series: list[float],
+    pad_frac: float = 0.12,
+    include: tuple[float, ...] = (),
+    floor: float | None = None,
+    ceil: float | None = None,
+) -> tuple[float, float]:
+    vals: list[float] = []
+    for series_vals in series:
+        vals.extend(v for v in series_vals if np.isfinite(v))
+    vals.extend(v for v in include if np.isfinite(v))
+    if not vals:
+        return (0.0, 1.0)
+    lo = float(np.min(vals))
+    hi = float(np.max(vals))
+    if hi <= lo:
+        lo, hi = lo - 0.05, hi + 0.05
+    pad = (hi - lo) * pad_frac
+    y0, y1 = lo - pad, hi + pad
+    if floor is not None:
+        y0 = max(y0, floor)
+    if ceil is not None:
+        y1 = min(y1, ceil)
+    if y1 <= y0:
+        y1 = y0 + 0.1
+    return y0, y1
+
+
+def _draw_obs_vs_shuffle_bars(
+    ax,
+    *,
+    x: np.ndarray,
+    colors: list[str],
+    obs_means: list[float],
+    obs_errs: list[float],
+    shuf_means: list[float],
+    shuf_errs: list[float],
+    n_seeds: int,
+    width: float = 0.36,
+    show_legend: bool = False,
+    legend_loc: str = "best",
+) -> None:
+    err_kw = {"elinewidth": 0.9, "ecolor": "#333333", "capthick": 0.9}
+    ax.bar(
+        x - width / 2, obs_means, width,
+        color=colors, edgecolor="white", linewidth=0.6, label="observed",
+        yerr=obs_errs if n_seeds > 1 else None, capsize=2.5, error_kw=err_kw,
+    )
+    ax.bar(
+        x + width / 2, shuf_means, width,
+        color=colors, alpha=0.35, hatch="///", edgecolor=colors, linewidth=0.7,
+        label="label shuffle",
+        yerr=shuf_errs if n_seeds > 1 else None, capsize=2.5, error_kw=err_kw,
+    )
+    if show_legend:
+        ax.legend(fontsize=7, loc=legend_loc, frameon=True, framealpha=0.9)
+
+
+def _draw_feature_separation_panels_on_axes(
+    axes: np.ndarray,
+    *,
+    features: list[str],
+    per_seed_stats: dict[int, FeatureSeparationStats],
+    repr_label: str,
+    show_bottom_tick_labels: bool = True,
+) -> None:
+    """Fill a 2×2 axes grid: silhouette | within-corr; pairwise distances | ratio.
+
+    Every panel shows observed vs label-shuffle; bars colored by feature.
+    """
+    from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
+    from viz.plot_layout import apply_category_tick_labels
+
+    n_seeds = len(per_seed_stats)
+    seed_stats = list(per_seed_stats.values())
+    x = np.arange(len(features))
+    colors = [FEATURE_COLORS.get(f, "#888888") for f in features]
+    tick_labels = [
+        {
+            "dfa": "DFA",
+            "char": "char",
+            "position": "pos begin",
+            "position_from_end": "pos end",
+        }.get(f, FEATURE_DISPLAY.get(f, f))
+        for f in features
+    ]
+    err_kw = {"elinewidth": 0.9, "ecolor": "#333333", "capthick": 0.9}
+
+    def _means_errs(metric_key: str) -> tuple[list[float], list[float]]:
+        means, errs = [], []
+        for feat in features:
+            m, s = _seed_mean_std([_metric_from_stats(st, metric_key, feat) for st in seed_stats])
+            means.append(m)
+            errs.append(s)
+        return means, errs
+
+    # --- (0,0) silhouette observed vs shuffle ---
+    ax = axes[0, 0]
+    sil_m, sil_e = _means_errs("silhouette")
+    sh_sil_m, sh_sil_e = _means_errs("shuffle_silhouette")
+    _draw_obs_vs_shuffle_bars(
+        ax, x=x, colors=colors,
+        obs_means=sil_m, obs_errs=sil_e,
+        shuf_means=sh_sil_m, shuf_errs=sh_sil_e,
+        n_seeds=n_seeds, show_legend=True, legend_loc="upper right",
+    )
+    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
+    ax.set_xticks(x)
+    ax.set_xticklabels([])
+    ax.set_ylabel("mean silhouette", fontsize=8)
+    ax.set_title("Mean silhouette", fontsize=9)
+    y_lo = [m - e for m, e in zip(sil_m, sil_e)] + [m - e for m, e in zip(sh_sil_m, sh_sil_e)]
+    y_hi = [m + e for m, e in zip(sil_m, sil_e)] + [m + e for m, e in zip(sh_sil_m, sh_sil_e)]
+    ax.set_ylim(*_padded_ylim(y_lo, y_hi, include=(0.0,), floor=-1.0, ceil=1.0))
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    # --- (0,1) within-feature mean correlation observed vs shuffle ---
+    ax = axes[0, 1]
+    corr_m, corr_e = _means_errs("within_corr")
+    sh_corr_m, sh_corr_e = _means_errs("shuffle_within_corr")
+    _draw_obs_vs_shuffle_bars(
+        ax, x=x, colors=colors,
+        obs_means=corr_m, obs_errs=corr_e,
+        shuf_means=sh_corr_m, shuf_errs=sh_corr_e,
+        n_seeds=n_seeds, show_legend=False,
+    )
+    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
+    ax.set_xticks(x)
+    ax.set_xticklabels([])
+    ax.set_ylabel("mean Pearson r", fontsize=8)
+    ax.set_title("Within-feature state correlation", fontsize=9)
+    y_lo = [m - e for m, e in zip(corr_m, corr_e)] + [m - e for m, e in zip(sh_corr_m, sh_corr_e)]
+    y_hi = [m + e for m, e in zip(corr_m, corr_e)] + [m + e for m, e in zip(sh_corr_m, sh_corr_e)]
+    ax.set_ylim(*_padded_ylim(y_lo, y_hi, include=(0.0,), floor=-1.0, ceil=1.05))
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    # --- (1,0) pairwise within / between / shuffle-within (feature-colored) ---
+    ax = axes[1, 0]
+    width = 0.24
+    w_means, w_errs, b_means, b_errs = [], [], [], []
+    sw_means, sw_errs = [], []
+    for feat in features:
+        wm, ws = _seed_mean_std([st.pairwise_within_median[feat] for st in seed_stats])
+        bm, bs = _seed_mean_std([st.pairwise_between_median[feat] for st in seed_stats])
+        sm, ss = _seed_mean_std([st.shuffle_pairwise_within_median[feat] for st in seed_stats])
+        w_means.append(wm)
+        w_errs.append(ws)
+        b_means.append(bm)
+        b_errs.append(bs)
+        sw_means.append(sm)
+        sw_errs.append(ss)
+    ax.bar(
+        x - width, w_means, width, label="within", color=colors, edgecolor="white",
+        linewidth=0.6, yerr=w_errs if n_seeds > 1 else None, capsize=2.0, error_kw=err_kw,
+    )
+    ax.bar(
+        x, b_means, width, label="between", color=colors, alpha=0.45, hatch="xx",
+        edgecolor=colors, linewidth=0.6,
+        yerr=b_errs if n_seeds > 1 else None, capsize=2.0, error_kw=err_kw,
+    )
+    ax.bar(
+        x + width, sw_means, width, label="shuffle within", color=colors, alpha=0.25,
+        hatch="///", edgecolor=colors, linewidth=0.6,
+        yerr=sw_errs if n_seeds > 1 else None, capsize=2.0, error_kw=err_kw,
+    )
+    if show_bottom_tick_labels:
+        apply_category_tick_labels(ax, tick_labels, fontsize=7)
+    else:
+        ax.set_xticks(x)
+        ax.set_xticklabels([])
+    ax.set_ylabel(f"L2 distance ({repr_label})", fontsize=8)
+    ax.set_title("Pairwise within / between / shuffle", fontsize=9)
+    y_hi = (
+        [m + e for m, e in zip(w_means, w_errs)]
+        + [m + e for m, e in zip(b_means, b_errs)]
+        + [m + e for m, e in zip(sw_means, sw_errs)]
+    )
+    finite_hi = [v for v in y_hi if np.isfinite(v)]
+    y_top = (max(finite_hi) * 1.28) if finite_hi else 1.0
+    ax.set_ylim(0.0, y_top)
+    ax.legend(
+        fontsize=6.0, loc="upper left", frameon=True, framealpha=0.94, ncol=1,
+        handlelength=1.3, borderpad=0.3, labelspacing=0.25,
+    )
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+    # --- (1,1) pairwise ratio observed vs shuffle ---
+    ax = axes[1, 1]
+    ratio_m, ratio_e = _means_errs("pairwise_ratio")
+    sh_ratio_m, sh_ratio_e = _means_errs("shuffle_pairwise_ratio")
+    p_means = []
+    for feat in features:
+        pm, _ = _seed_mean_std([st.shuffle_p[feat] for st in seed_stats])
+        p_means.append(pm)
+    _draw_obs_vs_shuffle_bars(
+        ax, x=x, colors=colors,
+        obs_means=ratio_m, obs_errs=ratio_e,
+        shuf_means=sh_ratio_m, shuf_errs=sh_ratio_e,
+        n_seeds=n_seeds, show_legend=False,
+    )
+    ax.axhline(1.0, color="0.3", linewidth=0.8, linestyle=":")
+    y_lo = [m - e for m, e in zip(ratio_m, ratio_e)] + [m - e for m, e in zip(sh_ratio_m, sh_ratio_e)]
+    y_hi = [m + e for m, e in zip(ratio_m, ratio_e)] + [m + e for m, e in zip(sh_ratio_m, sh_ratio_e)]
+    finite_lo = [v for v in y_lo if np.isfinite(v)]
+    finite_hi = [v for v in y_hi if np.isfinite(v)]
+    # Zoom near 1 so obs vs shuffle is readable; leave room for p labels.
+    y0 = max(0.0, (min(finite_lo) if finite_lo else 0.5) - 0.08)
+    y1 = max(1.08, (max(finite_hi) if finite_hi else 1.0) + 0.14)
+    for i, (r, p, e) in enumerate(zip(ratio_m, p_means, ratio_e)):
+        if np.isfinite(p) and np.isfinite(r):
+            stars = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
+            y_text = (r + (e if np.isfinite(e) else 0.0)) + 0.025 * (y1 - y0)
+            ax.text(
+                i - 0.18, min(y_text, y1 - 0.02 * (y1 - y0)), f"p={p:.3f}{stars}",
+                ha="center", va="bottom", fontsize=5.5,
+            )
+    ax.set_ylim(y0, y1)
+    if show_bottom_tick_labels:
+        apply_category_tick_labels(ax, tick_labels, fontsize=7)
+    else:
+        ax.set_xticks(x)
+        ax.set_xticklabels([])
+    ax.set_ylabel("within / between", fontsize=8)
+    ax.set_title("Pairwise ratio (obs vs shuffle)", fontsize=9)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
+
+
+def _plot_feature_separation_summary_figure(
+    save_path: str,
+    *,
+    features: list[str],
+    per_seed_stats: dict[int, FeatureSeparationStats],
+    n_points: int,
+    condensed: CondensedView | None,
+    repr_label: str,
+) -> None:
+    """2×2: silhouette | within-corr; pairwise distances | pairwise ratio (obs vs shuffle)."""
+    from viz.plot_layout import save_figure
+
+    n_seeds = len(per_seed_stats)
+    fig, axes = plt.subplots(2, 2, figsize=(9.2, 6.8))
+    _draw_feature_separation_panels_on_axes(
+        axes,
+        features=features,
+        per_seed_stats=per_seed_stats,
+        repr_label=repr_label,
+    )
+
+    seed_bit = f", mean ± std across {n_seeds} seeds" if n_seeds > 1 else ""
+    title = f"Feature separation summary ({repr_label}, n={n_points} points{seed_bit})"
+    if condensed is None and n_seeds > 1:
+        title = f"{title} (prefix-condensed)"
+    fig.suptitle(_condensed_plot_title(title, condensed), fontsize=11, y=0.98)
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.14, hspace=0.48, wspace=0.35)
+    save_figure(fig, save_path, dpi=150)
+    print(f"wrote {save_path}")
+
+
+def run_multi_seed_feature_separation(
+    task: str,
+    out_dir: str | Path,
+    *,
+    model_type: str = "rnn",
+    seeds: tuple[int, ...] | None = None,
+) -> Path | None:
+    """Aggregate feature-separation metrics across seeds; write seed-mean bar plot + JSON."""
+    from viz.compare.feature_separation import compute_task_feature_separation
+    from experiment import seeds_for_task
+
+    if seeds is None:
+        seeds = tuple(sorted(seeds_for_task(task, model_type)))
+    per_seed: dict[int, FeatureSeparationStats] = {}
+    for seed in seeds:
+        stats = compute_task_feature_separation(task, model_type=model_type, seed=seed)
+        if stats is not None:
+            per_seed[seed] = stats
+    if len(per_seed) < 1:
+        print(f"skip multi-seed feature separation: no stats for {task}")
+        return None
+
+    features = [f for f in SEPARATION_SUMMARY_FEATURES if f in next(iter(per_seed.values())).features]
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    save_path = out_dir / "feature_separation_summary_seed_mean.png"
+    n_points = int(next(iter(per_seed.values())).n_points.get(features[0], 0))
+    _plot_feature_separation_summary_figure(
+        str(save_path),
+        features=features,
+        per_seed_stats=per_seed,
+        n_points=n_points,
+        condensed=None,
+        repr_label="hidden state",
+    )
+
+    json_path = save_path.with_suffix(".json")
+    payload = {
+        "task": task,
+        "model_type": model_type,
+        "seeds": list(per_seed.keys()),
+        "features": features,
+        "summary_panels": [
+            "silhouette", "within_corr", "pairwise_within_between", "pairwise_ratio",
+        ],
+        "mean": {},
+        "std": {},
+    }
+    for metric_key in (
+        "silhouette", "eta2", "centroid_gap", "within_corr", "shuffle_z", "pairwise_ratio",
+        "pairwise_within_median", "pairwise_between_median", "shuffle_p",
+        "shuffle_silhouette", "shuffle_within_corr",
+        "shuffle_pairwise_within_median", "shuffle_pairwise_between_median",
+        "shuffle_pairwise_ratio", "shuffle_centroid_gap",
+    ):
+        payload["mean"][metric_key] = {}
+        payload["std"][metric_key] = {}
+        for feat in features:
+            if metric_key in (
+                "pairwise_within_median", "pairwise_between_median", "shuffle_p",
+                "within_corr", "shuffle_silhouette", "shuffle_within_corr",
+                "shuffle_pairwise_within_median", "shuffle_pairwise_between_median",
+                "shuffle_pairwise_ratio", "shuffle_centroid_gap",
+            ):
+                vals = [float(getattr(st, metric_key)[feat]) for st in per_seed.values()]
+            else:
+                vals = [_metric_from_stats(st, metric_key, feat) for st in per_seed.values()]
+            m, s = _seed_mean_std(vals)
+            payload["mean"][metric_key][feat] = m
+            payload["std"][metric_key][feat] = s
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {json_path}")
+    return save_path
 
 
 def plot_dfa_state_distance_comparison(
@@ -3482,6 +3849,8 @@ def plot_learning_curve_on_axes(
     compact: bool = False,
     loss_only: bool = False,
     show_legend: bool = True,
+    legend_loc: str = "upper right",
+    legend_bbox_to_anchor: tuple[float, float] | None = None,
     show_ylabel: bool = True,
     show_metric_ylabel: bool = True,
     smoothed: bool = False,
@@ -3546,7 +3915,11 @@ def plot_learning_curve_on_axes(
 
     if loss_only:
         if show_legend:
-            ax.legend(loc="upper right", fontsize=fs)
+            kw = dict(loc=legend_loc, fontsize=fs)
+            if legend_bbox_to_anchor is not None:
+                kw["bbox_to_anchor"] = legend_bbox_to_anchor
+                kw["frameon"] = False
+            ax.legend(**kw)
         return True
 
     metric_line = None
@@ -3594,7 +3967,12 @@ def plot_learning_curve_on_axes(
         legend_labels.append(metric_line.get_label())
 
     if show_legend and legend_lines:
-        ax.legend(legend_lines, legend_labels, loc="upper right", fontsize=fs)
+        kw = dict(loc=legend_loc, fontsize=fs)
+        if legend_bbox_to_anchor is not None:
+            kw["bbox_to_anchor"] = legend_bbox_to_anchor
+            kw["frameon"] = False
+            kw["ncol"] = min(len(legend_lines), 2)
+        ax.legend(legend_lines, legend_labels, **kw)
     return True
 
 
@@ -3606,11 +3984,117 @@ def plot_learning_curve(model, save_path, *, loss_only: bool = False):
 
     fig, ax = plt.subplots(figsize=(6.5, 3.0), constrained_layout=True)
     title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
-    if not plot_learning_curve_on_axes(ax, model, title=title, loss_only=loss_only):
+    if not plot_learning_curve_on_axes(
+        ax, model, title=title, loss_only=loss_only, truncate_to_plateau=True,
+    ):
         print(f"skip {save_path}: no loss history in model bundle")
         plt.close(fig)
         return
 
+    fig.savefig(save_path, dpi=150)
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def _draw_before_after_generation_panel(ax, model, *, max_len: int = 42) -> bool:
+    """Compact before/after generation panel from checkpoint strings (no hardcoded text)."""
+    if "sample_before" not in model or "sample_after" not in model:
+        return False
+
+    vocab_list = [str(w) for w in model.get("vocab_words", [])]
+    vocab = set(vocab_list)
+    demo_before = str(model.get("demo_before", "")) or str(model["sample_before"])
+    demo_after = str(model.get("demo_after", "")) or str(model["sample_after"])
+    demo_snippet = str(model.get("demo_snippet", ""))
+    demo_before = demo_before[:max_len]
+    demo_after = demo_after[:max_len]
+    spaced = " " in demo_snippet or " " in demo_after
+    if model.get("model_config", {}).get("word_space") is False:
+        spaced = False
+
+    ax.set_axis_off()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    vocab_label = ", ".join(vocab_list) if vocab_list else "(vocab unknown)"
+    ax.text(
+        0.06, 0.93, "Generation before vs after learning",
+        transform=ax.transAxes, fontsize=11, fontweight="600", va="top",
+    )
+    ax.text(
+        0.06, 0.84, vocab_label,
+        transform=ax.transAxes, fontsize=9, color="0.35", va="top",
+    )
+
+    ax.text(
+        0.06, 0.70, "Before training",
+        transform=ax.transAxes, fontsize=10, fontweight="600", va="top",
+    )
+    ax.text(
+        0.06, 0.62, "high out-of-vocabulary rate",
+        transform=ax.transAxes, fontsize=8, color="0.45", va="top",
+    )
+    _draw_sample_chars(
+        ax, demo_before, 0.48,
+        vocab=vocab, spaced=spaced, color_by_vocab=True, show_word_separators=False,
+        max_len=max_len, fontsize=12, x0=0.06, x_span=0.88,
+    )
+
+    ax.text(
+        0.06, 0.34, "After training",
+        transform=ax.transAxes, fontsize=10, fontweight="600", va="top",
+    )
+    ax.text(
+        0.06, 0.26, "mostly vocabulary words",
+        transform=ax.transAxes, fontsize=8, color="0.45", va="top",
+    )
+    _draw_sample_chars(
+        ax, demo_after, 0.12,
+        vocab=vocab, spaced=spaced, color_by_vocab=True, show_word_separators=False,
+        max_len=max_len, fontsize=12, x0=0.06, x_span=0.88,
+    )
+
+    from matplotlib.patches import Rectangle
+    ax.add_patch(Rectangle((0.06, 0.015), 0.028, 0.05, transform=ax.transAxes,
+                           facecolor="#2ca02c", edgecolor="none", clip_on=False))
+    ax.text(0.10, 0.04, "in-vocabulary", transform=ax.transAxes, fontsize=8,
+            color="0.35", va="center")
+    ax.add_patch(Rectangle((0.42, 0.015), 0.028, 0.05, transform=ax.transAxes,
+                           facecolor="#d62728", edgecolor="none", clip_on=False))
+    ax.text(0.46, 0.04, "out-of-vocabulary", transform=ax.transAxes, fontsize=8,
+            color="0.35", va="center")
+    return True
+
+
+def plot_learning_curve_with_samples(model, save_path: str) -> None:
+    """Learning curve (left) beside before/after generation from the same checkpoint."""
+    if _learning_curve_series(model) is None:
+        print(f"skip {save_path}: re-run training to record loss history")
+        return
+    if "sample_before" not in model or "sample_after" not in model:
+        print(f"skip {save_path}: re-run min-char-rnn.py to record samples")
+        return
+
+    fig = plt.figure(figsize=(12.6, 3.8))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.2, 1.05], wspace=0.22)
+    ax_curve = fig.add_subplot(gs[0, 0])
+    ax_samples = fig.add_subplot(gs[0, 1])
+
+    ok_curve = plot_learning_curve_on_axes(
+        ax_curve,
+        model,
+        title="Training: cross-entropy vs word-validity rollout",
+        truncate_to_plateau=True,
+        legend_loc="upper left",
+        legend_bbox_to_anchor=(0.0, -0.18),
+    )
+    ok_samples = _draw_before_after_generation_panel(ax_samples, model, max_len=42)
+    if not ok_curve or not ok_samples:
+        plt.close(fig)
+        print(f"skip {save_path}: missing curve or samples")
+        return
+
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.88, bottom=0.24, wspace=0.22)
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -3687,24 +4171,28 @@ def _draw_sample_chars(
     spaced: bool = False,
     color_by_vocab: bool = True,
     show_word_separators: bool = True,
+    max_len: int = SAMPLE_DISPLAY_LEN,
+    fontsize: float = 10,
+    x0: float = 0.0,
+    x_span: float = 0.96,
 ) -> None:
-    snippet = text[:SAMPLE_DISPLAY_LEN]
+    snippet = text[:max_len]
     if not snippet:
         return
-    x_step = min(0.019, 0.98 / max(len(snippet) - 1, 1))
+    x_step = min(0.022, x_span / max(len(snippet) - 1, 1))
 
     if vocab and not spaced and show_word_separators:
-        parts = _unspaced_display_parts(snippet, vocab)
+        parts = _unspaced_display_parts(snippet, vocab, max_len=max_len)
         n_glyphs = sum(len(chunk) for chunk, _ in parts)
-        x_step = min(0.019, 0.98 / max(n_glyphs - 1, 1))
-        x = 0.0
+        x_step = min(0.022, x_span / max(n_glyphs - 1, 1))
+        x = x0
         for chunk, valid in parts:
             if valid is None:
                 ax.text(
                     x, y, chunk,
                     transform=ax.transAxes,
                     fontfamily="monospace",
-                    fontsize=9,
+                    fontsize=max(fontsize - 1, 7),
                     color="0.45",
                     va="center",
                     ha="left",
@@ -3720,7 +4208,7 @@ def _draw_sample_chars(
                     x, y, display_char(ch),
                     transform=ax.transAxes,
                     fontfamily="monospace",
-                    fontsize=10,
+                    fontsize=fontsize,
                     color=color,
                     va="center",
                     ha="left",
@@ -3730,10 +4218,10 @@ def _draw_sample_chars(
 
     if vocab is None or not color_by_vocab:
         ax.text(
-            0.0, y, snippet,
+            x0, y, snippet,
             transform=ax.transAxes,
             fontfamily="monospace",
-            fontsize=10,
+            fontsize=fontsize,
             color="0.15",
             va="center",
             ha="left",
@@ -3743,10 +4231,10 @@ def _draw_sample_chars(
     for i, ch in enumerate(snippet):
         color = "#2ca02c" if mask[i] else "#d62728"
         ax.text(
-            i * x_step, y, display_char(ch),
+            x0 + i * x_step, y, display_char(ch),
             transform=ax.transAxes,
             fontfamily="monospace",
-            fontsize=10,
+            fontsize=fontsize,
             color=color,
             va="center",
             ha="left",
@@ -4448,11 +4936,14 @@ def _feature_point_colors_for_timesteps(
     bold: bool = False,
 ) -> tuple[list, dict, dict]:
     """Per-timestep RGBA colors and category maps for one analysis feature."""
-    from unit_selectivity import _panel_feature_colors
+    from unit_selectivity import FEATURE_CMAPS, _panel_feature_colors
 
     vals, mask = timestep_labels.feature_values(feat)
     visible = [j for j in range(n) if mask is None or mask[j]]
-    cmap = plt.get_cmap("Set1") if bold else plt.cm.tab20
+    # One colormap per feature type so PCA panels don't all look like the same
+    # tab20 recycling (DFA / char / pos-begin / pos-end must read as different).
+    cmap_name = FEATURE_CMAPS.get(feat, "tab20")
+    cmap = plt.get_cmap("Set1") if bold else plt.get_cmap(cmap_name)
     if feat == "dfa" and automaton is not None:
         visible_states = sorted(set(int(vals[j]) for j in visible))
         if bold:
@@ -4576,6 +5067,7 @@ def _plot_2d_feature_colored_pca_panel(
     minimal_axes: bool = False,
     path_indices: list[list[int]] | None = None,
     faint_paths: bool = False,
+    title_color: str | None = None,
 ) -> None:
     n = projected.shape[0]
     display_prefixes = ["␣" if p == " " else p for p in prefix_labels]
@@ -4635,7 +5127,7 @@ def _plot_2d_feature_colored_pca_panel(
         ax.set_ylim(ylim[0] - pad_y, ylim[1] + pad_y)
     ax.set_xlabel("" if minimal_axes else xlabel, fontsize=8)
     ax.set_ylabel("" if minimal_axes else ylabel, fontsize=8)
-    ax.set_title(title, fontsize=9, pad=4)
+    ax.set_title(title, fontsize=9, pad=4, color=title_color or "black")
     ax.grid(True, linestyle=":", alpha=0.35)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -7819,14 +8311,16 @@ def plot_pca_dfa_analysis(
     ylim = (float(projected[:, 1].min() - pad_y), float(projected[:, 1].max() + pad_y))
 
     state_colors = _dfa_automaton_state_colors(automaton)
-    fig, axes = plt.subplots(2, 2, figsize=(8.8, 7.6), constrained_layout=True,
-        gridspec_kw={"width_ratios": [1.25, 1.0], "height_ratios": [1.2, 1.0]},
+    fig, axes = plt.subplots(
+        2, 2, figsize=(9.2, 7.8), constrained_layout=True,
+        gridspec_kw={"width_ratios": [1.45, 1.0], "height_ratios": [1.3, 1.0]},
     )
     ax_dfa, ax_dfa_pca = axes[0, 0], axes[0, 1]
     ax_pos, ax_char = axes[1, 0], axes[1, 1]
 
     draw_minimized_dfa_on_axes(
         ax_dfa, automaton, words, state_colors=state_colors, compact=True,
+        node_scale=2.0,
     )
     ax_dfa.set_title("Minimal DFA", fontsize=10, pad=4)
 
@@ -7861,6 +8355,201 @@ def plot_pca_dfa_analysis(
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {save_path}")
+
+
+def plot_dfa_pca_and_separation_combined(
+    save_path: str,
+    *,
+    text: str,
+    hidden_states: np.ndarray,
+    chars,
+    words: list[str],
+    automaton: MinimizedVocabAutomaton,
+    model=None,
+    spaced: bool = False,
+    condensed: CondensedView | None = None,
+    embed_method: str = "pca",
+    separation_per_seed: dict[int, FeatureSeparationStats],
+    separation_features: list[str] | None = None,
+    separation_n_points: int | None = None,
+    separation_task_label: str | None = None,
+) -> None:
+    """Paper composite: DFA + PCA (incl. position-from-end) + separation metrics below."""
+    from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
+    from viz.plot_layout import save_figure
+
+    if not separation_per_seed:
+        print(f"skip {save_path}: no separation stats")
+        return
+
+    ctx = _pca_feature_panel_context(
+        text, hidden_states,
+        spaced=spaced, automaton=automaton, words=words,
+        label_words=None, condensed=condensed,
+    )
+    if ctx is None or ctx["n"] < 2:
+        print(f"skip {save_path}: need PCA geometry context")
+        return
+
+    hidden_states = ctx["hidden_states"]
+    trajs = _embed_trajectories_for_text(
+        text, hidden_states, spaced=ctx["spaced"], words=words,
+    )
+    projected, _, _, evr = fit_embed_2d_with_evr(
+        hidden_states, method=embed_method, trajectories=trajs,
+    )
+    xlabel, ylabel = embed_axis_labels_2d(evr, embed_method)
+    pad_x = max((projected[:, 0].max() - projected[:, 0].min()) * 0.12, 0.08)
+    pad_y = max((projected[:, 1].max() - projected[:, 1].min()) * 0.12, 0.08)
+    xlim = (float(projected[:, 0].min() - pad_x), float(projected[:, 0].max() + pad_x))
+    ylim = (float(projected[:, 1].min() - pad_y), float(projected[:, 1].max() + pad_y))
+
+    features = separation_features or [
+        f for f in SEPARATION_SUMMARY_FEATURES
+        if f in next(iter(separation_per_seed.values())).features
+    ]
+    n_pts = separation_n_points
+    if n_pts is None and features:
+        n_pts = int(next(iter(separation_per_seed.values())).n_points.get(features[0], 0))
+
+    state_colors = _dfa_automaton_state_colors(automaton)
+    fig = plt.figure(figsize=(10.5, 14.8))
+    outer = fig.add_gridspec(
+        3, 1,
+        height_ratios=[1.45, 0.12, 1.35],
+        hspace=0.18,
+        left=0.07, right=0.98, top=0.92, bottom=0.07,
+    )
+    gs_geo = outer[0].subgridspec(
+        2, 3,
+        width_ratios=[1.45, 1.0, 1.0],
+        height_ratios=[1.2, 1.0],
+        hspace=0.48,
+        wspace=0.34,
+    )
+    ax_band = fig.add_subplot(outer[1])
+    ax_band.axis("off")
+    gs_sep = outer[2].subgridspec(2, 2, hspace=0.72, wspace=0.40)
+
+    ax_dfa = fig.add_subplot(gs_geo[:, 0])
+    ax_dfa_pca = fig.add_subplot(gs_geo[0, 1])
+    ax_char = fig.add_subplot(gs_geo[0, 2])
+    ax_pos = fig.add_subplot(gs_geo[1, 1])
+    ax_pos_end = fig.add_subplot(gs_geo[1, 2])
+    sep_axes = np.array([
+        [fig.add_subplot(gs_sep[0, 0]), fig.add_subplot(gs_sep[0, 1])],
+        [fig.add_subplot(gs_sep[1, 0]), fig.add_subplot(gs_sep[1, 1])],
+    ])
+
+    draw_minimized_dfa_on_axes(
+        ax_dfa, automaton, words, state_colors=state_colors, compact=True,
+        node_scale=2.6,
+    )
+    ax_dfa.set_title("Minimal DFA", fontsize=11, pad=6)
+
+    for ax, feat, title in [
+        (ax_dfa_pca, "dfa", "PCA · DFA state"),
+        (ax_char, "char", FEATURE_DISPLAY.get("char", "current char")),
+        (ax_pos, "position", FEATURE_DISPLAY.get("position", "position from beginning")),
+        (ax_pos_end, "position_from_end", FEATURE_DISPLAY.get("position_from_end", "position from end")),
+    ]:
+        _plot_2d_feature_colored_pca_panel(
+            ax, projected, ctx["prefix_labels"], feat, ctx["timestep_labels"], automaton,
+            title=title,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            xlim=xlim,
+            ylim=ylim,
+            annot_style="none",
+            show_legend=False,
+            title_color=FEATURE_COLORS.get(feat),
+        )
+
+    _draw_feature_separation_panels_on_axes(
+        sep_axes,
+        features=features,
+        per_seed_stats=separation_per_seed,
+        repr_label="hidden state",
+    )
+
+    rep = representation_label(model, repr_name=None) if model is not None else "hidden state h"
+    geo_title = _feature_pca_suptitle(
+        repr_name=rep, words=words, chars=chars, condensed=condensed,
+        dim_label=embed_dim_label(embed_method),
+    )
+    n_seeds = len(separation_per_seed)
+    seed_bit = f", mean ± std across {n_seeds} seeds" if n_seeds > 1 else ""
+    task_bit = separation_task_label or "demo vocabulary"
+    fig.suptitle(geo_title, fontsize=10, y=0.98)
+    ax_band.text(
+        0.5, 0.5,
+        f"Feature separation · {task_bit} (n={n_pts} condensed prefixes{seed_bit})",
+        transform=ax_band.transAxes,
+        ha="center", va="center", fontsize=10, fontweight="600",
+    )
+    save_figure(fig, save_path, dpi=150)
+    print(f"wrote {save_path}")
+
+
+def write_paper_figure_dfa_geometry_and_separation(
+    save_path: str | Path,
+    *,
+    separation_task: str = "six_word_mixed_demo_ns",
+    geometry_task: str = "six_word_mixed_demo_ns",
+    model_type: str = "rnn",
+    geometry_seed: int = 1,
+    separation_seeds: tuple[int, ...] | None = None,
+) -> Path | None:
+    """Build paper Fig 6: mixed-length demo DFA/PCA + multi-seed separation."""
+    from experiment import checkpoint_path, seeds_for_task
+    from viz.compare.feature_separation import compute_task_feature_separation
+
+    demo_ckpt = checkpoint_path(geometry_task, model_type, seed=geometry_seed)
+    if not demo_ckpt.is_file():
+        print(f"skip paper composite: missing {demo_ckpt}")
+        return None
+
+    demo_model = load_model_for_viz(str(demo_ckpt), model_type)
+    demo_words = vocabulary_for_experiment(geometry_task)
+    demo_automaton = build_minimized_vocabulary_automaton(demo_words)
+    dfa_viz_text = build_vocabulary_coverage_text(demo_words, spaced=False)
+    demo_states, demo_probs = run_forward_pass(demo_model, dfa_viz_text, model_type)
+    demo_condensed = condense_hidden_states_by_prefix(
+        dfa_viz_text, demo_states, demo_probs, spaced=False, words=demo_words,
+    )
+
+    if separation_seeds is None:
+        separation_seeds = tuple(
+            s for s in (1, 2, 3, 5, 7, 8)
+            if s in seeds_for_task(separation_task, model_type)
+        )
+    per_seed: dict[int, FeatureSeparationStats] = {}
+    for seed in separation_seeds:
+        stats = compute_task_feature_separation(
+            separation_task, model_type=model_type, seed=seed,
+        )
+        if stats is not None:
+            per_seed[seed] = stats
+    if not per_seed:
+        print(f"skip paper composite: no separation stats for {separation_task}")
+        return None
+
+    out = Path(save_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    plot_dfa_pca_and_separation_combined(
+        str(out),
+        text=dfa_viz_text,
+        hidden_states=demo_states,
+        chars=demo_model["chars"],
+        words=demo_words,
+        automaton=demo_automaton,
+        model=demo_model,
+        spaced=False,
+        condensed=demo_condensed,
+        separation_per_seed=per_seed,
+        separation_task_label=f"{len(demo_words)}-word mixed-length demo",
+    )
+    return out
 
 
 def plot_pca_prediction_regions(
@@ -8720,6 +9409,11 @@ def main() -> None:
                 model,
                 save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
             )
+        with timer.section("learning_curve_with_samples"):
+            plot_learning_curve_with_samples(
+                model,
+                save_path=str(numbered_plot_path(out_dir, "learning_curve_with_samples.png")),
+            )
 
     with timer.section("prepare_corpus"):
         if args.exp and args.seed is not None:
@@ -9016,6 +9710,41 @@ def main() -> None:
                         condensed=cv,
                         output_probs=output_probs,
                     )
+                    if args.exp == "six_word_mixed_demo_ns":
+                        from experiment import seeds_for_task
+
+                        sep_seeds = tuple(
+                            s for s in (1, 2, 3, 5, 7, 8)
+                            if s in seeds_for_task(args.exp, model_type)
+                        )
+                        if len(sep_seeds) >= 1:
+                            run_multi_seed_feature_separation(
+                                args.exp,
+                                Path(out_dir) / "separation",
+                                model_type=model_type,
+                                seeds=sep_seeds if len(sep_seeds) >= 2 else sep_seeds,
+                            )
+                            write_paper_figure_dfa_geometry_and_separation(
+                                Path(out_dir) / "separation"
+                                / "dfa_pca_geometry_and_separation.png",
+                                separation_task=args.exp,
+                                geometry_task=args.exp,
+                                separation_seeds=sep_seeds,
+                            )
+                    elif args.exp == "sixteen_word_four_letter_ns":
+                        from experiment import seeds_for_task
+
+                        sep_seeds = tuple(
+                            s for s in (1, 2, 3, 5, 7, 8)
+                            if s in seeds_for_task(args.exp, model_type)
+                        )
+                        if len(sep_seeds) >= 2:
+                            run_multi_seed_feature_separation(
+                                args.exp,
+                                Path(out_dir) / "separation",
+                                model_type=model_type,
+                                seeds=sep_seeds,
+                            )
 
         if automaton is not None and want("selectivity"):
             from unit_selectivity import plot_unit_selectivity_suite
@@ -9053,7 +9782,7 @@ def main() -> None:
                         model_type=model_type,
                         seed=args.seed if args.seed is not None else DEFAULT_SEED,
                     )
-                    if args.exp == "sixteen_word_four_letter_ns":
+                    if args.exp in ("sixteen_word_four_letter_ns", "six_word_mixed_demo_ns"):
                         from experiment import seeds_for_task
 
                         anchor_seeds = tuple(
@@ -9082,7 +9811,7 @@ def main() -> None:
                     model_type=model_type,
                     seed=args.seed if args.seed is not None else DEFAULT_SEED,
                 )
-                if args.exp == "sixteen_word_four_letter_ns":
+                if args.exp in ("sixteen_word_four_letter_ns", "six_word_mixed_demo_ns"):
                     from experiment import seeds_for_task
 
                     anchor_seeds = tuple(

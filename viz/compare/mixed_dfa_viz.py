@@ -1193,6 +1193,185 @@ def plot_metrics_vs_dfa(
     return out
 
 
+def collect_learning_decode(
+    task: str = "mixeddfa_r26_ns",
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    pc_ks: tuple[int | None, ...] = (1, 5, None),
+) -> Path:
+    """Decode each sparse learning snap; write JSON next to the learning directory."""
+    from experiment import checkpoint_path
+    from rnn.learning_snaps import list_learning_snaps
+    from viz.compare._data import load_task_viz_context
+    from viz.compare.decoding import chance_corrected, compute_panel_decoding
+
+    ckpt = checkpoint_path(task, model_type, seed=seed)
+    snaps = list_learning_snaps(ckpt)
+    if not snaps:
+        raise FileNotFoundError(
+            f"no learning snaps for {task} seed {seed} under {ckpt.stem}_learning/"
+        )
+
+    from experiment import TASKS
+    cfg = TASKS[task]
+    text_chars = int(cfg.get("metric_rollout_len", cfg.get("viz_length", 50)))
+
+    rows: list[dict[str, Any]] = []
+    for snap in snaps:
+        print(f"  decode {snap.name}", flush=True)
+        meta = np.load(snap, allow_pickle=True)
+        iteration = int(meta["learning_snap_iteration"]) if "learning_snap_iteration" in meta.files else int(
+            snap.stem.split("_")[1]
+        )
+        word_err = (
+            float(meta["learning_snap_word_err"])
+            if "learning_snap_word_err" in meta.files
+            else float("nan")
+        )
+        ctx = load_task_viz_context(
+            task,
+            model_type=model_type,
+            seed=seed,
+            text_chars=text_chars,
+            checkpoint=snap,
+        )
+        panel = compute_panel_decoding(
+            ctx,
+            max_k=max((k for k in pc_ks if k is not None), default=5),
+        )
+        feat_out: dict[str, Any] = {}
+        for feat in _FEATURE_ORDER:
+            blob = panel.get("features", {}).get(feat, {})
+            if blob.get("error"):
+                feat_out[feat] = {"error": blob["error"]}
+                continue
+            chance = float(blob.get("chance", float("nan")))
+            by_k = blob.get("by_k") or []
+            basis_vals: dict[str, float] = {}
+            for k in pc_ks:
+                if k is None:
+                    full = blob.get("full_hidden")
+                    y = blob.get("full_hidden_cc")
+                    if y is None and full is not None and np.isfinite(full) and np.isfinite(chance):
+                        y = chance_corrected(float(full), chance)
+                    basis_vals["full"] = float(y) if y is not None and np.isfinite(y) else float("nan")
+                else:
+                    raw = by_k[k - 1] if k <= len(by_k) else None
+                    if raw is None or not np.isfinite(raw) or not np.isfinite(chance):
+                        basis_vals[f"pc{k}"] = float("nan")
+                    else:
+                        basis_vals[f"pc{k}"] = float(chance_corrected(float(raw), chance))
+            feat_out[feat] = {"chance": chance, **basis_vals}
+        rows.append({
+            "iteration": iteration,
+            "word_err": word_err,
+            "snap": snap.name,
+            "features": feat_out,
+        })
+
+    rows.sort(key=lambda r: int(r["iteration"]))
+    stop_iter = max(int(r["iteration"]) for r in rows) if rows else 1
+    for r in rows:
+        r["progress"] = float(r["iteration"]) / float(max(stop_iter, 1))
+
+    out = sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}.json"
+    payload = {
+        "task": task,
+        "seed": seed,
+        "model_type": model_type,
+        "pc_ks": [k if k is not None else "full" for k in pc_ks],
+        "stop_iter": stop_iter,
+        "snaps": rows,
+    }
+    out.write_text(json.dumps(_sanitize(payload), indent=2), encoding="utf-8")
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def plot_learning_decode(
+    task: str = "mixeddfa_r26_ns",
+    *,
+    json_path: Path | None = None,
+    outfile: str | None = None,
+) -> Path:
+    """Rows = 1 PC / 5 PCs / full H; columns = features; x = normalized progress."""
+    path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}.json")
+    if not path.is_file():
+        path = collect_learning_decode(task)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rows = payload["snaps"]
+    if not rows:
+        raise FileNotFoundError(f"no snaps in {path}")
+
+    basis_keys = (
+        ("pc1", "1 PC"),
+        ("pc5", "5 PCs"),
+        ("full", "full hidden"),
+    )
+    progress = np.asarray([r["progress"] for r in rows], dtype=float)
+    word_err = np.asarray([r["word_err"] for r in rows], dtype=float)
+
+    fig, axes = plt.subplots(
+        len(basis_keys), len(_FEATURE_ORDER),
+        figsize=(2.8 * len(_FEATURE_ORDER), 2.4 * len(basis_keys) + 0.6),
+        sharex=True,
+        sharey=True,
+        squeeze=False,
+    )
+    for ri, (bkey, blabel) in enumerate(basis_keys):
+        for ci, feat in enumerate(_FEATURE_ORDER):
+            ax = axes[ri, ci]
+            ys = []
+            for r in rows:
+                blob = r.get("features", {}).get(feat, {})
+                ys.append(float(blob.get(bkey, float("nan"))))
+            y = np.asarray(ys, dtype=float)
+            color = DECODE_FEATURE_COLORS[feat]
+            ax.plot(progress, y, color=color, lw=1.8, marker="o", ms=3.5)
+            if ri == 0:
+                ax.set_title(feature_display_name(feat), fontsize=9, color=color, pad=4)
+            if ci == 0:
+                ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=7, labelpad=6)
+            if ri == len(basis_keys) - 1:
+                ax.set_xlabel("progress (iter / stop)", fontsize=8)
+            else:
+                hide_x_tick_labels(ax)
+            ax.set_ylim(-0.05, 1.05)
+            ax.set_xlim(0.0, 1.02)
+            ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
+            ax.grid(True, alpha=0.25)
+            ax.tick_params(labelsize=6)
+            # Twin word-error on rightmost column for context.
+            if ci == len(_FEATURE_ORDER) - 1 and np.any(np.isfinite(word_err)):
+                ax2 = ax.twinx()
+                ax2.plot(progress, word_err, color="0.45", lw=1.0, ls="--", alpha=0.8)
+                ax2.set_ylim(-0.02, 1.05)
+                ax2.tick_params(labelsize=5, colors="0.45")
+                if ri == 0:
+                    ax2.set_ylabel("word err", fontsize=6, color="0.45")
+
+    finalize_grid_figure(
+        fig,
+        suptitle=f"Readout over learning ({task})",
+        bottom=0.09,
+        left=0.10,
+        right=0.92,
+        top=0.88,
+        wspace=0.22,
+        hspace=0.35,
+    )
+    out_name = outfile or f"learning_decode_{task.replace('mixeddfa_', '').replace('_ns', '')}.png"
+    # Prefer plan name learning_decode_r26.png for primary pilot.
+    if task.startswith("mixeddfa_r") and task.endswith("_ns"):
+        rid = task[len("mixeddfa_"):-len("_ns")]
+        out_name = outfile or f"learning_decode_{rid}.png"
+    out = sweep_decoding_dir(COMPARISON_NAME) / out_name
+    save_figure(fig, out)
+    plt.close(fig)
+    return out
+
+
 def run_all_mixed_dfa_plots(
     *,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,

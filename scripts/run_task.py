@@ -37,6 +37,7 @@ def train_task(
     model_type: str = "rnn",
     multi_seed: bool = False,
     save_snapshots: bool = False,
+    save_learning_snaps: bool = False,
     device: str = "cpu",
 ) -> None:
     cfg = TASKS[name]
@@ -88,6 +89,8 @@ def train_task(
             train_cmd.extend(["--target-word-error", str(cfg["target_word_error_frac"])])
         if save_snapshots:
             train_cmd.append("--save-snapshots")
+        if save_learning_snaps:
+            train_cmd.append("--save-learning-snaps")
         if model_uses_dale(model_type) and "dale_steps" in cfg:
             steps = 500 if smoke else int(cfg["dale_steps"])
         else:
@@ -157,6 +160,10 @@ def main() -> None:
              "only needed for learning-dynamics videos/analysis)",
     )
     parser.add_argument(
+        "--save-learning-snaps", action="store_true",
+        help="save sparse loadable checkpoints for learning-dynamics decode analysis",
+    )
+    parser.add_argument(
         "--device",
         default="cpu",
         choices=["cpu", "cuda", "auto"],
@@ -179,6 +186,7 @@ def main() -> None:
                     model_type=model_type,
                     multi_seed=multi_seed,
                     save_snapshots=args.save_snapshots,
+                    save_learning_snaps=args.save_learning_snaps,
                     device=args.device,
                 )
             if not args.skip_viz and not multi_seed:

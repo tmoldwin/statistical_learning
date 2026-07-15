@@ -198,12 +198,11 @@ README_FIGURES: list[ReadmeFigure] = [
     ),
     ReadmeFigure(
         20, "feature_separation_summary", "feature_separation_summary.png",
-        "Six-panel comparison of feature separation metrics (centroid gap, silhouette, "
-        "multivariate η², pairwise within/between medians, shuffle z-scores, ratio p-values) "
-        "across lexical features on prefix-condensed hidden states.",
-        "Principled separation metrics that avoid all-pairs sampling bias. Centroid gap uses "
-        "group-balanced within spread and between-centroid distances. Label shuffles test "
-        "whether observed structure exceeds chance.",
+        "Three-panel feature separation summary (multivariate η², mean silhouette, "
+        "centroid gap) on prefix-condensed hidden states; multi-seed paper figure adds "
+        "mean ± std error bars across training seeds.",
+        "Principled separation metrics. Centroid gap uses group-balanced within spread "
+        "and between-centroid distances. η² is the main claimed population effect size.",
     ),
 ]
 
@@ -216,6 +215,7 @@ PLOT_SUBDIR: dict[str, str] = {
     "vocabulary_trie.png": "vocabulary",
     "vocabulary_min_dfa.png": "vocabulary",
     "learning_curve.png": "training",
+    "learning_curve_with_samples.png": "training",
     "samples_before_after.png": "training",
     "weights.png": "weights",
     "weights_eigenspectra.png": "weights",

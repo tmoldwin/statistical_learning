@@ -3,6 +3,7 @@
 
 Replot via the canonical CLI, e.g.:
   python visualize.py --exp sixteen_word_four_letter_ns --seed 2 --only activations trajectories
+  python -c "from viz.compare.trajectories import plot_dfa_and_trajectory_seed_grid as f; f('sixteen_word_four_letter_ns')"
 Then sync:
   python scripts/paper_collect_figures.py
 """
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPER_ROOT = ROOT / "paper" / "figures"
 
 ANCHOR = "sixteen_word_four_letter_ns"
-DEMO = "five_word_overlap_ns"
+DEMO = "six_word_mixed_demo_ns"
 COMPARE = "comparisons"
 
 
@@ -68,6 +69,8 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("demo", "fig02_dfa.jpg",
                   ROOT / "paper" / "figures" / "demo" / "fig02_dfa.jpg", as_jpg=False),
         FigureRef("demo", "fig03_learning_curve.jpg", _demo("training/3_learning_curve.png")),
+        FigureRef("demo", "fig03_learning_with_samples.jpg",
+                  _demo("training/learning_curve_with_samples.png")),
         FigureRef("demo", "fig04_corpus_stream.svg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_corpus_stream.svg", as_jpg=False),
         FigureRef("demo", "fig04_corpus_stream.jpg",
@@ -76,27 +79,31 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.svg", as_jpg=False),
         FigureRef("demo", "fig04_samples.jpg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.jpg", as_jpg=False),
-        FigureRef("main", "fig_next_char_probs.jpg", _anchor("activations/8_next_char_prob_sequence.png")),
-        FigureRef("main", "fig_activation_heatmap.jpg", _anchor("activations/7_activation_heatmap.png")),
-        FigureRef("main", "fig_activation_clustered.jpg",
-                  _anchor("activations/10_activation_clustered_heatmap.png")),
+        # Demo narrative figs 3–10 (same six-word mixed-length vocab through trajectories).
+        FigureRef("demo", "fig_next_char_probs.jpg",
+                  _demo("activations/8_next_char_prob_sequence_condensed.png")),
+        FigureRef("demo", "fig_activation_heatmap.jpg", _demo("activations/7_activation_heatmap.png")),
+        FigureRef("demo", "fig_activation_clustered.jpg",
+                  _demo("activations/10_activation_clustered_heatmap.png")),
+        FigureRef("demo", "fig_state_correlation.jpg",
+                  _demo("correlation/17_state_correlation_clustered_condensed.png")),
         FigureRef("demo", "fig_dfa_pca_geometry.jpg",
-                  ROOT / "experiments" / DEMO / "rnn" / "plots"
-                  / "embeddings" / "12_dfa_and_embedding_pca_condensed.png"),
+                  _demo("separation/dfa_pca_geometry_and_separation.png"),
+                  max_w=1200),
+        FigureRef("demo", "fig_example_units.jpg",
+                  _demo("unit_selectivity/example_units_combined.png")),
+        FigureRef("demo", "fig_decoding_seed_mean.jpg",
+                  _demo("decoding/decoding_curves_seed_mean.png")),
+        FigureRef("demo", "fig_word_trajectories.jpg",
+                  _demo("trajectories/dfa_and_trajectory_by_seed.png"),
+                  max_w=1600),
+        # Leftovers / alt copies still useful for supplements.
         FigureRef("main", "fig11_embedding_panels.jpg",
-                  _anchor("embeddings/11_embedding_panels_context.png")),
+                  _demo("embeddings/11_embedding_panels_context_condensed.png")),
         FigureRef("main", "fig20_feature_separation.jpg",
-                  _anchor("separation/20_feature_separation_summary_condensed.png")),
+                  _demo("separation/feature_separation_summary_seed_mean.png")),
         FigureRef("main", "fig19_dfa_distance.jpg",
-                  _anchor("separation/19_dfa_state_distance_comparison_condensed.png")),
-        FigureRef("main", "fig_unit_selectivity.jpg",
-                  _anchor("unit_selectivity/unit_selectivity_summary.png")),
-        FigureRef("main", "fig_example_units.jpg",
-                  _anchor("unit_selectivity/example_units_combined.png")),
-        FigureRef("main", "fig_decoding_seed_mean.jpg",
-                  _anchor("decoding/decoding_curves_seed_mean.png")),
-        FigureRef("main", "fig_word_trajectories.jpg",
-                  _anchor("trajectories/word_trajectories_closed_loop.png")),
+                  _demo("separation/19_dfa_state_distance_comparison_condensed.png")),
         FigureRef("main", "fig_word_trajectories_by_start.jpg",
                   _anchor("trajectories/closed_loop_run_seed_row.png")),
         FigureRef("compare", "fig_traj_by_length.jpg", traj_by_length,

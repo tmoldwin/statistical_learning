@@ -1224,6 +1224,8 @@ def draw_minimized_dfa_on_axes(
     *,
     state_colors: dict[int, tuple] | None = None,
     compact: bool = False,
+    label_fontsize: float | None = None,
+    node_scale: float = 1.0,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`."""
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
@@ -1231,7 +1233,10 @@ def draw_minimized_dfa_on_axes(
 
     dfa = automaton.dfa
     state_labels = _dfa_state_label_map(automaton)
-    radii = _compute_radii(state_labels, compact=compact)
+    radii = {
+        key: val * float(node_scale)
+        for key, val in _compute_radii(state_labels, compact=compact).items()
+    }
     gap_scale = _gap_scale(radii) * (1.12 if compact else 1.0)
     coords = _scale_positions(layout_dfa(dfa), gap_scale=gap_scale)
     width, height = _canvas_size(coords, radii)
@@ -1343,8 +1348,12 @@ def draw_minimized_dfa_on_axes(
         wrapped, _ = _fit_state(prefix_set, compact=compact)
         # Matplotlib fonts don't scale with data coords; keep them smaller so labels
         # stay inside nodes when this DFA is embedded in a compact multipanel figure.
-        if compact:
-            fs = 5 if len(wrapped) > 1 else 6
+        if label_fontsize is not None:
+            fs = float(label_fontsize)
+            line_step = max(fs * 1.45, 9.0)
+        elif compact:
+            base = 5 if len(wrapped) > 1 else 6
+            fs = base + (1.5 if node_scale >= 1.4 else 0.0)
             line_step = max(fs * 1.55, 9.0)
         else:
             fs = max(5, min(8, _state_font_size(r, len(wrapped)) - 2))

@@ -122,6 +122,10 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_curves_by_dfa.png",
                   max_w=1200),
+        FigureRef("compare", "fig_mixed_cosine_within.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "cosine_within_vs_dfa.png",
+                  max_w=1100),
         # Leftover metrics board (not in draft; weight scatters live on fig_weight_matrices).
         FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"

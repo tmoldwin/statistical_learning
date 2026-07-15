@@ -7,6 +7,44 @@
     "position",
     "position_from_end"
   ],
+  "metric_panels": [
+    {
+      "obs": "within_corr",
+      "shuffle": "shuffle_within_corr",
+      "title": "Pearson within",
+      "ylabel": "mean within-pair correlation"
+    },
+    {
+      "obs": "within_cosine",
+      "shuffle": "shuffle_within_cosine",
+      "title": "cosine within",
+      "ylabel": "mean within-pair cosine similarity"
+    },
+    {
+      "obs": "pairwise_within_median",
+      "shuffle": "shuffle_pairwise_within_median",
+      "title": "Euclidean within",
+      "ylabel": "median within-pair distance"
+    },
+    {
+      "obs": "pairwise_ratio",
+      "shuffle": "shuffle_pairwise_ratio",
+      "title": "Euclidean within / between",
+      "ylabel": "median within / median between"
+    },
+    {
+      "obs": "silhouette",
+      "shuffle": "shuffle_silhouette",
+      "title": "silhouette (Euclidean)",
+      "ylabel": "mean silhouette"
+    },
+    {
+      "obs": "centroid_gap",
+      "shuffle": "shuffle_centroid_gap",
+      "title": "centroid gap (Euclidean)",
+      "ylabel": "between \u2212 within spread"
+    }
+  ],
   "panels": [
     {
       "task": "mixeddfa_r00_ns",
@@ -25,6 +63,66 @@
         "char": NaN,
         "position": NaN,
         "position_from_end": NaN
+      },
+      "within_cosine": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_within_cosine": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "pairwise_within_median": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "pairwise_ratio": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "silhouette": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_silhouette": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "centroid_gap": {
+        "dfa": 8.613050568630088,
+        "char": 8.613050568630088,
+        "position": 8.613050568630088,
+        "position_from_end": 8.613050568630088
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.613050568630088,
+        "char": 8.613050568630088,
+        "position": 8.613050568630088,
+        "position_from_end": 8.613050568630088
       }
     },
     {
@@ -44,6 +142,66 @@
         "char": NaN,
         "position": NaN,
         "position_from_end": NaN
+      },
+      "within_cosine": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_within_cosine": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "pairwise_within_median": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "pairwise_ratio": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "silhouette": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "shuffle_silhouette": {
+        "dfa": NaN,
+        "char": NaN,
+        "position": NaN,
+        "position_from_end": NaN
+      },
+      "centroid_gap": {
+        "dfa": 13.87374435720097,
+        "char": 13.87374435720097,
+        "position": 13.87374435720097,
+        "position_from_end": 13.87374435720097
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 13.873744357200968,
+        "char": 13.873744357200968,
+        "position": 13.873744357200968,
+        "position_from_end": 13.873744357200968
       }
     },
     {
@@ -63,6 +221,66 @@
         "char": -0.1807930716245586,
         "position": -0.10744448557396598,
         "position_from_end": -0.10902055544693631
+      },
+      "within_cosine": {
+        "dfa": 0.5822356315748076,
+        "char": -0.21615659314650346,
+        "position": 0.09592276836114634,
+        "position_from_end": 0.2410131487878846
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.12014721167432439,
+        "char": -0.1777561544542162,
+        "position": -0.10947425203258176,
+        "position_from_end": -0.11083838297250363
+      },
+      "pairwise_within_median": {
+        "dfa": 5.636026701634013,
+        "char": 9.518353878786616,
+        "position": 8.37440246233611,
+        "position_from_end": 7.6018643017910925
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.771581209575112,
+        "char": 8.91468815574377,
+        "position": 8.957970869711769,
+        "position_from_end": 8.808341693433931
+      },
+      "pairwise_ratio": {
+        "dfa": 0.6236007282745436,
+        "char": 1.0663813365941663,
+        "position": 0.9265895551670948,
+        "position_from_end": 0.833280877449887
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.976552661375264,
+        "char": 0.9925649940585005,
+        "position": 0.9976438810149715,
+        "position_from_end": 0.9788971627293013
+      },
+      "silhouette": {
+        "dfa": 0.3495207818558712,
+        "char": -0.3046123745762303,
+        "position": 0.051845998863259336,
+        "position_from_end": 0.11945454480712166
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.19252636388062158,
+        "char": -0.23751224731885143,
+        "position": -0.09885435438407542,
+        "position_from_end": -0.10015388899029223
+      },
+      "centroid_gap": {
+        "dfa": 8.248837066526178,
+        "char": 7.56764614285839,
+        "position": 4.742863404591011,
+        "position_from_end": 4.961817214350582
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.728101710820083,
+        "char": 7.72675398017042,
+        "position": 3.6646836599978787,
+        "position_from_end": 3.643684048196455
       }
     },
     {
@@ -82,6 +300,66 @@
         "char": -0.054257347463170846,
         "position": -0.037133585320462084,
         "position_from_end": -0.06083916095009801
+      },
+      "within_cosine": {
+        "dfa": 0.8266561142098888,
+        "char": 0.32998666606207533,
+        "position": 0.3210257571217226,
+        "position_from_end": 0.18976615321506898
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.06220492770844351,
+        "char": -0.056777051192079736,
+        "position": -0.03624446886690828,
+        "position_from_end": -0.06018621006980994
+      },
+      "pairwise_within_median": {
+        "dfa": 4.6317461772976625,
+        "char": 8.800371419700962,
+        "position": 9.270383283296724,
+        "position_from_end": 10.423634089374417
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 10.60327541731083,
+        "char": 10.745224679333228,
+        "position": 10.778581787665491,
+        "position_from_end": 11.016157092806536
+      },
+      "pairwise_ratio": {
+        "dfa": 0.42438370579114465,
+        "char": 0.8063339596925316,
+        "position": 0.8330928282949807,
+        "position_from_end": 0.9564667817259355
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9728118073838863,
+        "char": 0.9862759711819875,
+        "position": 0.9867899508251555,
+        "position_from_end": 1.0085438154362916
+      },
+      "silhouette": {
+        "dfa": 0.5625418080220251,
+        "char": 0.1454973809498913,
+        "position": 0.11932548919576307,
+        "position_from_end": 0.040836001635049385
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.2664893278371748,
+        "char": -0.2852893334872975,
+        "position": -0.11491626870634633,
+        "position_from_end": -0.13805422986764068
+      },
+      "centroid_gap": {
+        "dfa": 10.394236328047624,
+        "char": 9.833613038861447,
+        "position": 6.029587188366346,
+        "position_from_end": 5.076334137898055
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 9.7123659264654,
+        "char": 9.678750179328631,
+        "position": 4.145144237212277,
+        "position_from_end": 3.9747544154083383
       }
     },
     {
@@ -101,6 +379,66 @@
         "char": -0.02736712281737565,
         "position": 0.03620967234296247,
         "position_from_end": -0.004559489345712351
+      },
+      "within_cosine": {
+        "dfa": 0.8717508886268894,
+        "char": 0.6727010581323012,
+        "position": 0.7778405957204987,
+        "position_from_end": 0.7778405957204987
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.04162168803553032,
+        "char": -0.027229604429213575,
+        "position": 0.03631176227374301,
+        "position_from_end": -0.004388636442885129
+      },
+      "pairwise_within_median": {
+        "dfa": 4.826181826507207,
+        "char": 7.398207094508533,
+        "position": 5.811356397230334,
+        "position_from_end": 5.811356397230334
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 13.941482646790343,
+        "char": 13.795380927957984,
+        "position": 13.135218648340702,
+        "position_from_end": 13.75161957662477
+      },
+      "pairwise_ratio": {
+        "dfa": 0.33587655067643224,
+        "char": 0.5148758106139965,
+        "position": 0.39874665751884597,
+        "position_from_end": 0.39874665751884597
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9771389237136023,
+        "char": 0.9679754911277608,
+        "position": 0.9202204194671221,
+        "position_from_end": 0.9683438118700755
+      },
+      "silhouette": {
+        "dfa": 0.629570047431016,
+        "char": 0.438163113357344,
+        "position": 0.5749412958242843,
+        "position_from_end": 0.5749412958242843
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.520820835783838,
+        "char": -0.4837145243069028,
+        "position": -0.0562260003713381,
+        "position_from_end": -0.07966450540801459
+      },
+      "centroid_gap": {
+        "dfa": 11.62818606802213,
+        "char": 11.003482960993274,
+        "position": 10.069278602800301,
+        "position_from_end": 10.069278602800301
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 10.683646712652726,
+        "char": 10.6722192541426,
+        "position": 0.3813460558912926,
+        "position_from_end": -0.2521673194672222
       }
     },
     {
@@ -120,6 +458,66 @@
         "char": -0.014065590592732836,
         "position": -0.026060954833297827,
         "position_from_end": -0.005581437340977869
+      },
+      "within_cosine": {
+        "dfa": 0.8517856758322705,
+        "char": 0.29286008740090397,
+        "position": 0.4019426635704743,
+        "position_from_end": 0.521844605550904
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.0006172551712342384,
+        "char": -0.013057822737375263,
+        "position": -0.02493631794936187,
+        "position_from_end": -0.0043811535720318295
+      },
+      "pairwise_within_median": {
+        "dfa": 4.125267912124744,
+        "char": 9.315590003664642,
+        "position": 8.866373072381643,
+        "position_from_end": 8.27799781312299
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 11.070023756098088,
+        "char": 11.190720657921734,
+        "position": 11.340040026284777,
+        "position_from_end": 11.2311351325481
+      },
+      "pairwise_ratio": {
+        "dfa": 0.3583842276014152,
+        "char": 0.8087812430530253,
+        "position": 0.7671894888071059,
+        "position_from_end": 0.7162785570549253
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9653935615212079,
+        "char": 0.976854721386132,
+        "position": 0.9895275656694059,
+        "position_from_end": 0.9783925256472159
+      },
+      "silhouette": {
+        "dfa": 0.5745698961477143,
+        "char": -0.107460239386643,
+        "position": 0.12863603342046548,
+        "position_from_end": 0.23549224458696102
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.318705150734293,
+        "char": -0.26272474971677157,
+        "position": -0.13444707115314675,
+        "position_from_end": -0.11786612942423653
+      },
+      "centroid_gap": {
+        "dfa": 10.665492838860315,
+        "char": 7.797694183517147,
+        "position": 5.1100959755250885,
+        "position_from_end": 5.67486017099885
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 10.164320932603301,
+        "char": 7.4074545625955075,
+        "position": 1.1022392873801845,
+        "position_from_end": 1.3705668910293927
       }
     },
     {
@@ -139,6 +537,66 @@
         "char": 0.007762557580835758,
         "position": 0.030166012805302053,
         "position_from_end": 0.007556077510092385
+      },
+      "within_cosine": {
+        "dfa": 0.8387448729949912,
+        "char": 0.1618937450340575,
+        "position": 0.15037926366405652,
+        "position_from_end": 0.33358871142430313
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.014897719245104371,
+        "char": 0.007232949538609238,
+        "position": 0.029659376228616027,
+        "position_from_end": 0.0070223256536151085
+      },
+      "pairwise_within_median": {
+        "dfa": 4.0662583403776225,
+        "char": 9.479595791245421,
+        "position": 9.330282030401412,
+        "position_from_end": 9.055633542850357
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.92327572919713,
+        "char": 9.991426370746044,
+        "position": 9.801559883473246,
+        "position_from_end": 9.894192108033277
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4102862263626827,
+        "char": 0.9564929866882141,
+        "position": 0.9423593282580258,
+        "position_from_end": 0.8998680007611977
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.005347390298593,
+        "char": 1.01241393643506,
+        "position": 0.9920060645584181,
+        "position_from_end": 1.002855186458768
+      },
+      "silhouette": {
+        "dfa": 0.5516964733433452,
+        "char": -0.07374341749394824,
+        "position": -0.10425662248323352,
+        "position_from_end": 0.057867276141917987
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.33633388987564034,
+        "char": -0.28546369087662854,
+        "position": -0.12743506396663637,
+        "position_from_end": -0.15034169708309142
+      },
+      "centroid_gap": {
+        "dfa": 9.088140835439773,
+        "char": 6.9501746612609185,
+        "position": 2.011645959489938,
+        "position_from_end": 3.099950820362349
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.293729163490427,
+        "char": 6.562728736717935,
+        "position": 1.6728903428212192,
+        "position_from_end": 1.415240788061928
       }
     },
     {
@@ -158,6 +616,66 @@
         "char": -0.03270760895287492,
         "position": -0.0358990158081181,
         "position_from_end": -0.0371112367661191
+      },
+      "within_cosine": {
+        "dfa": 0.7005928012191281,
+        "char": 0.240063145089977,
+        "position": 0.3309856816508243,
+        "position_from_end": 0.3747066075218617
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.01382611523786086,
+        "char": -0.032492393040052574,
+        "position": -0.03529115809439126,
+        "position_from_end": -0.036863447670767296
+      },
+      "pairwise_within_median": {
+        "dfa": 5.891158303848137,
+        "char": 9.029826744425325,
+        "position": 8.480161426031684,
+        "position_from_end": 7.570004092722183
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 10.367808063078463,
+        "char": 10.301806209706575,
+        "position": 10.342350542567956,
+        "position_from_end": 10.33849654020281
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5722712296132814,
+        "char": 0.8757134682926413,
+        "position": 0.8165418702529827,
+        "position_from_end": 0.7281060680396944
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0113788313942533,
+        "char": 1.0049530782286606,
+        "position": 1.008830565590133,
+        "position_from_end": 1.0083814347947468
+      },
+      "silhouette": {
+        "dfa": 0.2939144340974133,
+        "char": -0.1618471826010146,
+        "position": 0.14271034502905172,
+        "position_from_end": 0.17543830903570126
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.32448214249137636,
+        "char": -0.2638194369606413,
+        "position": -0.10742036517000643,
+        "position_from_end": -0.10842056633753706
+      },
+      "centroid_gap": {
+        "dfa": 9.61567701214964,
+        "char": 6.623378983713104,
+        "position": 3.315956669124012,
+        "position_from_end": 3.3603597415937125
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 9.01165633641175,
+        "char": 5.87187628182792,
+        "position": -0.6562031223214079,
+        "position_from_end": -0.7413779116306367
       }
     },
     {
@@ -177,6 +695,66 @@
         "char": 0.11615579073585261,
         "position": 0.13868681166039207,
         "position_from_end": 0.13023126945463828
+      },
+      "within_cosine": {
+        "dfa": 0.813866394752668,
+        "char": 0.5233998852821538,
+        "position": 0.6045967082928344,
+        "position_from_end": 0.5284768649112742
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.13814344878640264,
+        "char": 0.11643881028023194,
+        "position": 0.13873079408250874,
+        "position_from_end": 0.1302994470431608
+      },
+      "pairwise_within_median": {
+        "dfa": 4.922045984211019,
+        "char": 8.500363537754021,
+        "position": 6.257064333006327,
+        "position_from_end": 6.600710401518624
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.93559407928239,
+        "char": 10.107225410892594,
+        "position": 10.011276035856275,
+        "position_from_end": 10.099863798769839
+      },
+      "pairwise_ratio": {
+        "dfa": 0.48178658131520447,
+        "char": 0.831941184799616,
+        "position": 0.6045278689222224,
+        "position_from_end": 0.6377293216171197
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9806956361622932,
+        "char": 0.997865075949629,
+        "position": 0.9877810979959177,
+        "position_from_end": 0.9974567403184627
+      },
+      "silhouette": {
+        "dfa": 0.46877399230190303,
+        "char": 0.08709026067619155,
+        "position": 0.2134508481520442,
+        "position_from_end": 0.20869302884734897
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3950401565012195,
+        "char": -0.3144737012370439,
+        "position": -0.20788248192833417,
+        "position_from_end": -0.14428145202198442
+      },
+      "centroid_gap": {
+        "dfa": 8.54287889867533,
+        "char": 5.687102348263357,
+        "position": 6.314523572180449,
+        "position_from_end": 5.017730101142607
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.702975932493606,
+        "char": 3.543062417832323,
+        "position": 2.551240398187711,
+        "position_from_end": 0.7978485537596498
       }
     },
     {
@@ -196,6 +774,66 @@
         "char": -0.04295164069645103,
         "position": -0.01829433168750475,
         "position_from_end": -0.010157651496309577
+      },
+      "within_cosine": {
+        "dfa": 0.765406959054988,
+        "char": 0.34822216690691704,
+        "position": 0.31279211105374993,
+        "position_from_end": 0.36346370260484306
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.012352916579840095,
+        "char": -0.042074201765908696,
+        "position": -0.017630362649615004,
+        "position_from_end": -0.009337404618569153
+      },
+      "pairwise_within_median": {
+        "dfa": 4.625682382127305,
+        "char": 8.058874885999534,
+        "position": 7.366229656685943,
+        "position_from_end": 7.3964643054497845
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.458562076071763,
+        "char": 9.519935350875535,
+        "position": 9.523976969256562,
+        "position_from_end": 9.496282086514135
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4807644762700188,
+        "char": 0.8408723314206475,
+        "position": 0.7615769917566161,
+        "position_from_end": 0.758239704758054
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9916150458062253,
+        "char": 0.9987356177796495,
+        "position": 1.0011142956197727,
+        "position_from_end": 0.996869421267896
+      },
+      "silhouette": {
+        "dfa": 0.4759780637613743,
+        "char": 0.0019771750097004543,
+        "position": 0.0616935452523876,
+        "position_from_end": 0.15778204575712573
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3835654837872444,
+        "char": -0.3839841360796776,
+        "position": -0.15369198521189462,
+        "position_from_end": -0.160647276313841
+      },
+      "centroid_gap": {
+        "dfa": 8.591527602257424,
+        "char": 7.824866232548953,
+        "position": 3.163173248403769,
+        "position_from_end": 5.241127658558434
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.611764294688221,
+        "char": 6.92779353609573,
+        "position": 1.3435119110809186,
+        "position_from_end": 2.8976477578513764
       }
     },
     {
@@ -215,6 +853,66 @@
         "char": -0.024715236273154896,
         "position": -0.008900092096721351,
         "position_from_end": -0.0011171578273884175
+      },
+      "within_cosine": {
+        "dfa": 0.8698922815888821,
+        "char": 0.4272834316909703,
+        "position": 0.2667823121871453,
+        "position_from_end": 0.35553457484497747
+      },
+      "shuffle_within_cosine": {
+        "dfa": -0.004501930588614411,
+        "char": -0.024852591225066865,
+        "position": -0.009100928505240614,
+        "position_from_end": -0.0017667662122970457
+      },
+      "pairwise_within_median": {
+        "dfa": 3.9106958018659372,
+        "char": 7.823074665816218,
+        "position": 8.578022972221154,
+        "position_from_end": 8.241343647893604
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 10.039995829621798,
+        "char": 10.12151842535016,
+        "position": 10.100985483546289,
+        "position_from_end": 10.09603890225104
+      },
+      "pairwise_ratio": {
+        "dfa": 0.384388046367712,
+        "char": 0.769776815349634,
+        "position": 0.8386030667527192,
+        "position_from_end": 0.8032953293090948
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9909579177165805,
+        "char": 0.9994594023384266,
+        "position": 0.9976234438824225,
+        "position_from_end": 0.9974367997752728
+      },
+      "silhouette": {
+        "dfa": 0.6547447655890275,
+        "char": 0.0780354299475082,
+        "position": 0.05828387339477597,
+        "position_from_end": 0.16915014737622217
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.41960133735935345,
+        "char": -0.4034805905093139,
+        "position": -0.135315825934076,
+        "position_from_end": -0.13086410655054048
+      },
+      "centroid_gap": {
+        "dfa": 9.05463403111197,
+        "char": 7.257562887784838,
+        "position": 2.3697200674839127,
+        "position_from_end": 2.878574483476961
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.047301285321495,
+        "char": 5.83175886955105,
+        "position": -0.6207210158976723,
+        "position_from_end": -0.5761028646082561
       }
     },
     {
@@ -234,6 +932,66 @@
         "char": 0.09000622871917047,
         "position": 0.09248593380784485,
         "position_from_end": 0.09468436969226712
+      },
+      "within_cosine": {
+        "dfa": 0.7916021612427668,
+        "char": 0.24937485626177178,
+        "position": 0.31715840423998914,
+        "position_from_end": 0.310744534247229
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.08281936187846842,
+        "char": 0.0900834564675073,
+        "position": 0.0921335689463461,
+        "position_from_end": 0.09413795840389058
+      },
+      "pairwise_within_median": {
+        "dfa": 4.572694282151371,
+        "char": 8.196047356898617,
+        "position": 7.846330981902933,
+        "position_from_end": 7.96153989088722
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.140300928539528,
+        "char": 9.172155280442873,
+        "position": 9.162049460498416,
+        "position_from_end": 9.159978245839808
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4974559888060871,
+        "char": 0.8883831661623188,
+        "position": 0.8485079362916615,
+        "position_from_end": 0.8620366175098262
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9987096592008511,
+        "char": 1.0024664440909996,
+        "position": 1.0012079391396922,
+        "position_from_end": 1.0004321500132722
+      },
+      "silhouette": {
+        "dfa": 0.40404849212254146,
+        "char": -0.18109512413620743,
+        "position": 0.04279901463814444,
+        "position_from_end": 0.06111077259093193
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.36316593106685224,
+        "char": -0.25594649331167413,
+        "position": -0.10108984449570009,
+        "position_from_end": -0.09923994053459957
+      },
+      "centroid_gap": {
+        "dfa": 8.675610693213606,
+        "char": 5.021305318825463,
+        "position": 1.4681903331839612,
+        "position_from_end": 1.442979591082021
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.16040953995564,
+        "char": 4.507323125682753,
+        "position": -0.9960515723968968,
+        "position_from_end": -0.9934200191638443
       }
     },
     {
@@ -253,6 +1011,66 @@
         "char": 0.029837976345682714,
         "position": 0.020123898963112837,
         "position_from_end": 0.03756696762539887
+      },
+      "within_cosine": {
+        "dfa": 0.7977036942429049,
+        "char": 0.5587694932472324,
+        "position": 0.08491331161665734,
+        "position_from_end": 0.3592037133348178
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.030855344783120055,
+        "char": 0.030427037768990056,
+        "position": 0.02079726218881436,
+        "position_from_end": 0.03795438202820898
+      },
+      "pairwise_within_median": {
+        "dfa": 4.003751221179391,
+        "char": 6.377850264966504,
+        "position": 8.473207918753904,
+        "position_from_end": 7.930991196634663
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.664568209407365,
+        "char": 8.714815742594983,
+        "position": 8.73284643818048,
+        "position_from_end": 8.649349542162916
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4543118602856239,
+        "char": 0.7240611063801909,
+        "position": 0.9684956017006272,
+        "position_from_end": 0.8900682972804442
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9942875141771343,
+        "char": 1.000020043425284,
+        "position": 1.0016125636179611,
+        "position_from_end": 0.9907964756785385
+      },
+      "silhouette": {
+        "dfa": 0.44950552972702545,
+        "char": 0.11090748445065865,
+        "position": -0.0900438658329404,
+        "position_from_end": 0.019566927040839118
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.37197118700371967,
+        "char": -0.30192804290147296,
+        "position": -0.11386082483982198,
+        "position_from_end": -0.11703282589276882
+      },
+      "centroid_gap": {
+        "dfa": 8.083244246113336,
+        "char": 6.274940427580015,
+        "position": 0.21604386370280704,
+        "position_from_end": 1.9524265850705036
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.781802073684196,
+        "char": 4.577926551684378,
+        "position": -0.9734138450197857,
+        "position_from_end": 0.4317387353912505
       }
     },
     {
@@ -272,6 +1090,66 @@
         "char": 0.07210855228749542,
         "position": 0.06256715367738748,
         "position_from_end": 0.07047349205425679
+      },
+      "within_cosine": {
+        "dfa": 0.8577989685541155,
+        "char": 0.43275985568576847,
+        "position": 0.4213930767909098,
+        "position_from_end": 0.40905564312655285
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07751974825766925,
+        "char": 0.07302694173156073,
+        "position": 0.06325136939295489,
+        "position_from_end": 0.0711218825350964
+      },
+      "pairwise_within_median": {
+        "dfa": 3.794530385973374,
+        "char": 8.178484867152246,
+        "position": 8.063691965743233,
+        "position_from_end": 8.063691965743233
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.803275559113848,
+        "char": 9.787495381194972,
+        "position": 9.802238602408316,
+        "position_from_end": 9.75494226668256
+      },
+      "pairwise_ratio": {
+        "dfa": 0.3851930961701434,
+        "char": 0.8308489762719637,
+        "position": 0.8006966118581171,
+        "position_from_end": 0.8056840684400132
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0009627797166816,
+        "char": 0.9992610118163348,
+        "position": 1.0014959898805553,
+        "position_from_end": 0.9958713710579314
+      },
+      "silhouette": {
+        "dfa": 0.4908602107032734,
+        "char": 0.025226340147954662,
+        "position": 0.09904350671671057,
+        "position_from_end": 0.12725786967235025
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.40404331239194274,
+        "char": -0.3001172523911252,
+        "position": -0.13318414425390085,
+        "position_from_end": -0.11939091078704447
+      },
+      "centroid_gap": {
+        "dfa": 9.164550095256157,
+        "char": 6.055095330264825,
+        "position": 3.631675107485524,
+        "position_from_end": 3.26371989540931
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.96043109009869,
+        "char": 4.573071723932794,
+        "position": -0.02168534094279382,
+        "position_from_end": 0.06945217889845186
       }
     },
     {
@@ -291,6 +1169,66 @@
         "char": 0.0621278732787819,
         "position": 0.047520680605185855,
         "position_from_end": 0.057921431700940385
+      },
+      "within_cosine": {
+        "dfa": 0.7679076325906156,
+        "char": 0.31132908691088035,
+        "position": 0.27033181478865664,
+        "position_from_end": 0.3468582148927814
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.038906893069085596,
+        "char": 0.060290323296227556,
+        "position": 0.0458401515958579,
+        "position_from_end": 0.056046159255711304
+      },
+      "pairwise_within_median": {
+        "dfa": 5.034557512459372,
+        "char": 8.361156004553909,
+        "position": 8.598382382485276,
+        "position_from_end": 8.058563938162722
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.68824033272803,
+        "char": 9.53194920473057,
+        "position": 9.628406850516319,
+        "position_from_end": 9.608186845142638
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5200498421099032,
+        "char": 0.8623636826614617,
+        "position": 0.8822323419820511,
+        "position_from_end": 0.8268445644682368
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0119647472270212,
+        "char": 0.9942613812183169,
+        "position": 1.0062484904603848,
+        "position_from_end": 1.0034528960401643
+      },
+      "silhouette": {
+        "dfa": 0.33905104320858237,
+        "char": -0.10254030192872174,
+        "position": -0.019348651569542345,
+        "position_from_end": 0.08121953730866328
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.39767452272309356,
+        "char": -0.31876046200222174,
+        "position": -0.10668420638780075,
+        "position_from_end": -0.09741834863962191
+      },
+      "centroid_gap": {
+        "dfa": 9.029331580853555,
+        "char": 6.887474078375626,
+        "position": 1.1187429788250887,
+        "position_from_end": 1.5155037486885323
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.313709707930261,
+        "char": 6.173015930440765,
+        "position": -1.296466149956169,
+        "position_from_end": -1.0858741636149052
       }
     },
     {
@@ -310,6 +1248,66 @@
         "char": -0.005963682284491637,
         "position": 0.01118924949004309,
         "position_from_end": 0.009282370416711743
+      },
+      "within_cosine": {
+        "dfa": 0.8900327132973848,
+        "char": 0.5606599800169383,
+        "position": 0.2683450362734649,
+        "position_from_end": 0.4030152529998443
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.004571854560162714,
+        "char": -0.006355564831513573,
+        "position": 0.010792319600774826,
+        "position_from_end": 0.008638869147423412
+      },
+      "pairwise_within_median": {
+        "dfa": 3.6763168837937736,
+        "char": 7.296387731156328,
+        "position": 8.162139020667787,
+        "position_from_end": 7.727641466361454
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.725822366422413,
+        "char": 9.844868238083064,
+        "position": 9.742875505952904,
+        "position_from_end": 9.768068467289044
+      },
+      "pairwise_ratio": {
+        "dfa": 0.37260643069309163,
+        "char": 0.739717998174857,
+        "position": 0.8258984792586401,
+        "position_from_end": 0.7790855435077388
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9954782736307951,
+        "char": 1.008034927367671,
+        "position": 0.9967517815064967,
+        "position_from_end": 1.000142853382917
+      },
+      "silhouette": {
+        "dfa": 0.6459131658426476,
+        "char": 0.18561084300478148,
+        "position": 0.08611073914790324,
+        "position_from_end": 0.1840760059692704
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4887324286663763,
+        "char": -0.43516592517798003,
+        "position": -0.12643335863930244,
+        "position_from_end": -0.1264027274912445
+      },
+      "centroid_gap": {
+        "dfa": 8.93498389332698,
+        "char": 7.20996822105719,
+        "position": 2.0142758412501554,
+        "position_from_end": 2.8737279047168034
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.965860826788739,
+        "char": 5.582664624832144,
+        "position": -1.2539902551093562,
+        "position_from_end": -1.3267624958017064
       }
     },
     {
@@ -329,6 +1327,66 @@
         "char": 0.03617201869895455,
         "position": 0.030979983139962475,
         "position_from_end": 0.03816213890962253
+      },
+      "within_cosine": {
+        "dfa": 0.7444767227642335,
+        "char": 0.4070067075722034,
+        "position": 0.2716575130835494,
+        "position_from_end": 0.3591962114396533
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.040953756444328325,
+        "char": 0.03659372549618237,
+        "position": 0.031486790056392544,
+        "position_from_end": 0.03862992129608544
+      },
+      "pairwise_within_median": {
+        "dfa": 5.163474369344794,
+        "char": 8.417647326544904,
+        "position": 8.578760237954977,
+        "position_from_end": 8.082875035600708
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.870486397622878,
+        "char": 9.846328254190128,
+        "position": 9.903505507542944,
+        "position_from_end": 9.901372271216266
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5183178040524492,
+        "char": 0.8460028685490864,
+        "position": 0.8580433269923047,
+        "position_from_end": 0.8086799500783575
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9997315802745098,
+        "char": 0.9966132121686936,
+        "position": 1.0031199855680255,
+        "position_from_end": 1.0030524319868157
+      },
+      "silhouette": {
+        "dfa": 0.34823426249771167,
+        "char": 0.023356788016450244,
+        "position": 0.05703114194291033,
+        "position_from_end": 0.17502197753882143
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4012880509900447,
+        "char": -0.27671695673724017,
+        "position": -0.14496317753475926,
+        "position_from_end": -0.08357831812808994
+      },
+      "centroid_gap": {
+        "dfa": 9.0301543530152,
+        "char": 5.875478170369863,
+        "position": 2.7550018936019613,
+        "position_from_end": 2.1544300408852575
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.0409576935309,
+        "char": 3.6453427388672477,
+        "position": 0.017763340194624326,
+        "position_from_end": -1.658161773243441
       }
     },
     {
@@ -348,6 +1406,66 @@
         "char": 0.05830142129162708,
         "position": 0.06962629680468403,
         "position_from_end": 0.0642853519674473
+      },
+      "within_cosine": {
+        "dfa": 0.7128152651254258,
+        "char": 0.3522917694516679,
+        "position": 0.2722913289897649,
+        "position_from_end": 0.32573693248726954
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.06746043336167852,
+        "char": 0.05795521201112026,
+        "position": 0.06921655776626111,
+        "position_from_end": 0.06386849626165701
+      },
+      "pairwise_within_median": {
+        "dfa": 4.935183044846402,
+        "char": 7.356735169023967,
+        "position": 7.587643454489916,
+        "position_from_end": 7.396426692071095
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.877282875430742,
+        "char": 8.912098805917166,
+        "position": 8.884063692652791,
+        "position_from_end": 8.903778443998528
+      },
+      "pairwise_ratio": {
+        "dfa": 0.548425869008199,
+        "char": 0.8175742700941048,
+        "position": 0.8418275152158353,
+        "position_from_end": 0.823143949980892
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9970146909212402,
+        "char": 1.001422302378989,
+        "position": 0.9974163671949289,
+        "position_from_end": 0.9998539220051597
+      },
+      "silhouette": {
+        "dfa": 0.30043594107909116,
+        "char": -0.10507018357681894,
+        "position": -0.03771189970716754,
+        "position_from_end": 0.04681476277954918
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3687912095408278,
+        "char": -0.2916688391055947,
+        "position": -0.10034107193672734,
+        "position_from_end": -0.10787490202243583
+      },
+      "centroid_gap": {
+        "dfa": 8.335886673555853,
+        "char": 6.283241648644243,
+        "position": 0.8167081327920238,
+        "position_from_end": 0.7729310359993979
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.371494205277747,
+        "char": 4.980307642122395,
+        "position": -0.8073306861624919,
+        "position_from_end": -0.8405231131242441
       }
     },
     {
@@ -367,6 +1485,66 @@
         "char": 0.03414552146385682,
         "position": 0.041112841357703274,
         "position_from_end": 0.046030036382437696
+      },
+      "within_cosine": {
+        "dfa": 0.7898501763103906,
+        "char": 0.3494789906099573,
+        "position": 0.21203287612175897,
+        "position_from_end": 0.4011040685695333
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.037463192785516866,
+        "char": 0.03386392070296593,
+        "position": 0.041091876658516074,
+        "position_from_end": 0.04558382105864954
+      },
+      "pairwise_within_median": {
+        "dfa": 4.1442930361509,
+        "char": 7.071602025838381,
+        "position": 7.676321087772692,
+        "position_from_end": 6.872020677195476
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.59353170511248,
+        "char": 8.5539552084075,
+        "position": 8.500640308493265,
+        "position_from_end": 8.496427816611641
+      },
+      "pairwise_ratio": {
+        "dfa": 0.476836029386347,
+        "char": 0.8147827827698502,
+        "position": 0.8844214481935675,
+        "position_from_end": 0.7841121706490483
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.014785839623157,
+        "char": 1.0101964111319857,
+        "position": 1.003157226629448,
+        "position_from_end": 1.0031314456289335
+      },
+      "silhouette": {
+        "dfa": 0.40209297701873653,
+        "char": -0.06561892949156237,
+        "position": -0.03436136672828446,
+        "position_from_end": 0.10278434802359152
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3936291030553986,
+        "char": -0.2792432890003376,
+        "position": -0.1110253119647447,
+        "position_from_end": -0.105340189315334
+      },
+      "centroid_gap": {
+        "dfa": 7.92127195896826,
+        "char": 4.741522856240644,
+        "position": 1.3040098536051161,
+        "position_from_end": 1.4988545669338826
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.113629748510989,
+        "char": 3.3827495480521232,
+        "position": -0.9228575384704911,
+        "position_from_end": -0.8961598530820319
       }
     },
     {
@@ -386,6 +1564,66 @@
         "char": 0.07782117042527112,
         "position": 0.07284936275243781,
         "position_from_end": 0.07276851633723459
+      },
+      "within_cosine": {
+        "dfa": 0.681228963629533,
+        "char": 0.3270327448820067,
+        "position": 0.2534837567925667,
+        "position_from_end": 0.2830368580030256
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07944905267335531,
+        "char": 0.08205202977111097,
+        "position": 0.07719690774437607,
+        "position_from_end": 0.07703498283473903
+      },
+      "pairwise_within_median": {
+        "dfa": 6.194157637814367,
+        "char": 8.50571141590606,
+        "position": 9.090844593112648,
+        "position_from_end": 9.391570176684407
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 10.13463577680148,
+        "char": 10.130388457395048,
+        "position": 10.123545630078715,
+        "position_from_end": 10.127571871607778
+      },
+      "pairwise_ratio": {
+        "dfa": 0.6075061430933205,
+        "char": 0.8339239597364845,
+        "position": 0.8874574980004973,
+        "position_from_end": 0.9170803213440871
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.000237581570666,
+        "char": 0.9997774181449529,
+        "position": 0.9993233685592443,
+        "position_from_end": 0.9997702994182981
+      },
+      "silhouette": {
+        "dfa": 0.13881400528465365,
+        "char": -0.04839955152537927,
+        "position": -0.014311077422360841,
+        "position_from_end": -0.05102793031888554
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3422349104069827,
+        "char": -0.2122109034011968,
+        "position": -0.1146057472388041,
+        "position_from_end": -0.11398026253634762
+      },
+      "centroid_gap": {
+        "dfa": 9.606624004906912,
+        "char": 4.204439440905665,
+        "position": 1.385547090493139,
+        "position_from_end": 1.2803076474264605
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 9.138704116408723,
+        "char": 2.873446625168911,
+        "position": -0.27531284673931583,
+        "position_from_end": -0.2671632383541608
       }
     },
     {
@@ -405,6 +1643,66 @@
         "char": 0.07436028462077628,
         "position": 0.06679777745016371,
         "position_from_end": 0.06321594383468217
+      },
+      "within_cosine": {
+        "dfa": 0.7022876890736468,
+        "char": 0.3604608550684393,
+        "position": 0.22127415834566627,
+        "position_from_end": 0.3497298993925639
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.055016903249669034,
+        "char": 0.07351953366476185,
+        "position": 0.06586135914910735,
+        "position_from_end": 0.06256890162039865
+      },
+      "pairwise_within_median": {
+        "dfa": 4.75068843954446,
+        "char": 7.449044973294605,
+        "position": 8.04349760896762,
+        "position_from_end": 6.939427535500461
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.647383060154821,
+        "char": 8.587627337960239,
+        "position": 8.597233828454385,
+        "position_from_end": 8.626476233036113
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5416875584079185,
+        "char": 0.8506220408503761,
+        "position": 0.9253158843349971,
+        "position_from_end": 0.7872611380351136
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0055917155701757,
+        "char": 0.998165364837851,
+        "position": 0.999078305361913,
+        "position_from_end": 1.002755974814368
+      },
+      "silhouette": {
+        "dfa": 0.29657950440124675,
+        "char": -0.08248485087037569,
+        "position": -0.07971316818551727,
+        "position_from_end": 0.04028753412532695
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4013630227467243,
+        "char": -0.28780177202792595,
+        "position": -0.1254777797206811,
+        "position_from_end": -0.1326178711565723
+      },
+      "centroid_gap": {
+        "dfa": 8.467307574347098,
+        "char": 5.541104140309038,
+        "position": 1.2422328633911075,
+        "position_from_end": 1.7709786522015718
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.998688902339226,
+        "char": 4.225632125307998,
+        "position": -0.0664279881860789,
+        "position_from_end": 0.09107678385697497
       }
     },
     {
@@ -424,6 +1722,66 @@
         "char": 0.07111116898430798,
         "position": 0.07212566656974734,
         "position_from_end": 0.07360257264185288
+      },
+      "within_cosine": {
+        "dfa": 0.8706834209074544,
+        "char": 0.45491206840749926,
+        "position": 0.3619398382398713,
+        "position_from_end": 0.34508820390924877
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.06677278323263287,
+        "char": 0.06999746728518262,
+        "position": 0.07108538659019638,
+        "position_from_end": 0.07232361267792442
+      },
+      "pairwise_within_median": {
+        "dfa": 3.549760331084927,
+        "char": 7.187390188417784,
+        "position": 8.023411875328893,
+        "position_from_end": 8.182680238357008
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.077289279814691,
+        "char": 9.115745937449558,
+        "position": 9.105364198152284,
+        "position_from_end": 9.085979064655557
+      },
+      "pairwise_ratio": {
+        "dfa": 0.3878937635750161,
+        "char": 0.7857072298883502,
+        "position": 0.8657051001437215,
+        "position_from_end": 0.885330584010933
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9971361601338075,
+        "char": 1.0013046227506628,
+        "position": 1.0002761715986408,
+        "position_from_end": 0.9978883144475669
+      },
+      "silhouette": {
+        "dfa": 0.6342293386157317,
+        "char": 0.06778013913804329,
+        "position": 0.047653580083202446,
+        "position_from_end": 0.12018897762530881
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4229841473369841,
+        "char": -0.35399133357843504,
+        "position": -0.13348777765737677,
+        "position_from_end": -0.13152694842609955
+      },
+      "centroid_gap": {
+        "dfa": 8.315272510777143,
+        "char": 5.944927158954682,
+        "position": 2.559527248751683,
+        "position_from_end": 2.2126612526836427
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 4.752472136356872,
+        "char": 3.9383440147009896,
+        "position": -0.5837086836565052,
+        "position_from_end": -0.4597935083421101
       }
     },
     {
@@ -443,6 +1801,66 @@
         "char": 0.07607561879469021,
         "position": 0.06931855821436471,
         "position_from_end": 0.07358032380457408
+      },
+      "within_cosine": {
+        "dfa": 0.7421108268146734,
+        "char": 0.2776739017498364,
+        "position": 0.23018278263322864,
+        "position_from_end": 0.3252833836512052
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.0679449482005538,
+        "char": 0.07425873264991101,
+        "position": 0.06796399289338438,
+        "position_from_end": 0.0718290176114787
+      },
+      "pairwise_within_median": {
+        "dfa": 4.47543400085646,
+        "char": 7.697727444937607,
+        "position": 8.00219451820735,
+        "position_from_end": 7.896748690313771
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.867385280301011,
+        "char": 8.873657703077592,
+        "position": 8.884636424066317,
+        "position_from_end": 8.863725144363096
+      },
+      "pairwise_ratio": {
+        "dfa": 0.500698013538847,
+        "char": 0.8617388380866049,
+        "position": 0.890703025498046,
+        "position_from_end": 0.8783497152513389
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9988834482342894,
+        "char": 0.9995340950767152,
+        "position": 1.0009771998103543,
+        "position_from_end": 0.9982830692887353
+      },
+      "silhouette": {
+        "dfa": 0.29357961459439286,
+        "char": -0.13810015967423522,
+        "position": -0.042318909916348436,
+        "position_from_end": 0.059391390767328134
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.34328033204902314,
+        "char": -0.2589447914720489,
+        "position": -0.11958009094229252,
+        "position_from_end": -0.11189581541182787
+      },
+      "centroid_gap": {
+        "dfa": 8.285012783905014,
+        "char": 4.770828959926391,
+        "position": 1.520267607357587,
+        "position_from_end": 1.7935012859031598
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.373913276922038,
+        "char": 3.6802110094938243,
+        "position": -0.28874741085625166,
+        "position_from_end": -0.12950435469985444
       }
     },
     {
@@ -462,6 +1880,66 @@
         "char": 0.07971233001075013,
         "position": 0.0765863933811084,
         "position_from_end": 0.06862317158778414
+      },
+      "within_cosine": {
+        "dfa": 0.6951706988782244,
+        "char": 0.5704460592720264,
+        "position": 0.3738884734868049,
+        "position_from_end": 0.36164764364491087
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.0817524857946495,
+        "char": 0.0776912031460994,
+        "position": 0.07498049511780817,
+        "position_from_end": 0.06731727451764313
+      },
+      "pairwise_within_median": {
+        "dfa": 5.880876580734335,
+        "char": 6.831109364641743,
+        "position": 7.749206794325421,
+        "position_from_end": 7.443006811247718
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.590173008263593,
+        "char": 9.638818179503472,
+        "position": 9.610500311060353,
+        "position_from_end": 9.653658815336977
+      },
+      "pairwise_ratio": {
+        "dfa": 0.6052359326832969,
+        "char": 0.7030300314607673,
+        "position": 0.7906446127988278,
+        "position_from_end": 0.7634725450293169
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9961006166378941,
+        "char": 1.001454199464856,
+        "position": 0.9983305991804258,
+        "position_from_end": 1.003273692733491
+      },
+      "silhouette": {
+        "dfa": 0.38104512936966733,
+        "char": 0.21487023740218278,
+        "position": 0.09270502935124142,
+        "position_from_end": 0.07214516292786327
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4508731312625543,
+        "char": -0.3032410310010433,
+        "position": -0.12712245828172414,
+        "position_from_end": -0.12635246597762675
+      },
+      "centroid_gap": {
+        "dfa": 9.027826921223282,
+        "char": 6.881926446007086,
+        "position": 2.918260691438556,
+        "position_from_end": 2.245421687001369
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.702925455516969,
+        "char": 4.051929930459752,
+        "position": -0.28247715402065193,
+        "position_from_end": -0.22409227844045335
       }
     },
     {
@@ -481,6 +1959,66 @@
         "char": 0.0731090618659134,
         "position": 0.0735326700147997,
         "position_from_end": 0.07075629557497444
+      },
+      "within_cosine": {
+        "dfa": 0.8365763320245078,
+        "char": 0.3055357879361732,
+        "position": 0.2871692253290316,
+        "position_from_end": 0.3266914507027809
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07125933861774912,
+        "char": 0.0715914139738148,
+        "position": 0.07209553036349971,
+        "position_from_end": 0.06923174584811015
+      },
+      "pairwise_within_median": {
+        "dfa": 4.00669649692741,
+        "char": 8.590285931824313,
+        "position": 8.517735505991501,
+        "position_from_end": 8.449317631130183
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.481754530159952,
+        "char": 9.496045196227103,
+        "position": 9.502214846165682,
+        "position_from_end": 9.512579681525413
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4174136169301634,
+        "char": 0.8959843880982491,
+        "position": 0.8818816932441316,
+        "position_from_end": 0.8757464190689181
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9993119099588169,
+        "char": 1.0009360237089298,
+        "position": 1.001794737754023,
+        "position_from_end": 1.0033904674818745
+      },
+      "silhouette": {
+        "dfa": 0.4592662126193289,
+        "char": -0.20060391731411256,
+        "position": -0.01884153949750849,
+        "position_from_end": 0.08995482611436457
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4245820914561046,
+        "char": -0.3581065231698304,
+        "position": -0.11858187024439665,
+        "position_from_end": -0.14530279722241088
+      },
+      "centroid_gap": {
+        "dfa": 8.657953835709966,
+        "char": 6.297068981140702,
+        "position": 1.8612096096397321,
+        "position_from_end": 2.197601269446314
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.809536941778427,
+        "char": 5.383127043704279,
+        "position": -0.39280099098695404,
+        "position_from_end": -0.1445993431933196
       }
     },
     {
@@ -500,6 +2038,66 @@
         "char": 0.07026890559452202,
         "position": 0.07087703123693198,
         "position_from_end": 0.07294217027894138
+      },
+      "within_cosine": {
+        "dfa": 0.82715528820834,
+        "char": 0.3615947516160892,
+        "position": 0.29695685245285636,
+        "position_from_end": 0.44186897301615363
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07974383131365052,
+        "char": 0.0706473121753731,
+        "position": 0.07127798192131225,
+        "position_from_end": 0.07351195250283407
+      },
+      "pairwise_within_median": {
+        "dfa": 3.71858292197645,
+        "char": 8.09674827381607,
+        "position": 8.061626743415642,
+        "position_from_end": 7.493367020487435
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.444297013233601,
+        "char": 9.42655143261477,
+        "position": 9.437261239125847,
+        "position_from_end": 9.410438317890845
+      },
+      "pairwise_ratio": {
+        "dfa": 0.3898044888814951,
+        "char": 0.8489630586858903,
+        "position": 0.84151847131522,
+        "position_from_end": 0.7776691663390549
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0003178110987208,
+        "char": 0.9983335329742132,
+        "position": 0.9998360070796517,
+        "position_from_end": 0.9959796061235271
+      },
+      "silhouette": {
+        "dfa": 0.4544125160065006,
+        "char": -0.09408268052808712,
+        "position": -0.003073465983308104,
+        "position_from_end": 0.17370186905707258
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.408371811947183,
+        "char": -0.3092037978489153,
+        "position": -0.12215052200518618,
+        "position_from_end": -0.11466815917754943
+      },
+      "centroid_gap": {
+        "dfa": 8.636299356513812,
+        "char": 5.245727419539883,
+        "position": 1.2229392421888985,
+        "position_from_end": 1.9670705854721797
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.2596343226054945,
+        "char": 3.957217425113113,
+        "position": -1.3655830150782815,
+        "position_from_end": -1.306807619824885
       }
     },
     {
@@ -519,6 +2117,66 @@
         "char": 0.09884612963069639,
         "position": 0.09975251235647449,
         "position_from_end": 0.09567923321677133
+      },
+      "within_cosine": {
+        "dfa": 0.743796213413893,
+        "char": 0.42863719759362495,
+        "position": 0.2790587014649763,
+        "position_from_end": 0.29806538483786044
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.1079904070080834,
+        "char": 0.09764771113844219,
+        "position": 0.09875035474307114,
+        "position_from_end": 0.09468567929811933
+      },
+      "pairwise_within_median": {
+        "dfa": 4.1526236464976405,
+        "char": 6.552692949531172,
+        "position": 7.571797034699859,
+        "position_from_end": 7.79329574898461
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.115213359682487,
+        "char": 8.168989566232959,
+        "position": 8.166167045149257,
+        "position_from_end": 8.190258407954286
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5024664463762402,
+        "char": 0.7904573057164983,
+        "position": 0.9138957431227356,
+        "position_from_end": 0.9489842138221872
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9947037670642269,
+        "char": 1.001814998319493,
+        "position": 1.0017023933601903,
+        "position_from_end": 1.005060156888649
+      },
+      "silhouette": {
+        "dfa": 0.5478745361497763,
+        "char": 0.046615364079366554,
+        "position": 0.06892469289057447,
+        "position_from_end": 0.0748671055236127
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4070204601481106,
+        "char": -0.25547126394864755,
+        "position": -0.0807989247368261,
+        "position_from_end": -0.08725657747596413
+      },
+      "centroid_gap": {
+        "dfa": 7.812324513393105,
+        "char": 4.15209581894593,
+        "position": 0.7881514411387531,
+        "position_from_end": 0.2626310755361523
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 5.510048629178555,
+        "char": 2.0563154846550233,
+        "position": -2.208263897341065,
+        "position_from_end": -2.1294518545817596
       }
     },
     {
@@ -538,6 +2196,66 @@
         "char": 0.06245595692236246,
         "position": 0.059516521311378315,
         "position_from_end": 0.06266414447554734
+      },
+      "within_cosine": {
+        "dfa": 0.7499026201986515,
+        "char": 0.43924027810132704,
+        "position": 0.2627236234914953,
+        "position_from_end": 0.32942296768416746
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.06920747080508154,
+        "char": 0.06226775316331098,
+        "position": 0.059237656848866276,
+        "position_from_end": 0.06225207890309537
+      },
+      "pairwise_within_median": {
+        "dfa": 4.863496336297155,
+        "char": 7.362158524578474,
+        "position": 8.04354926228914,
+        "position_from_end": 7.904272685427683
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.199631014043554,
+        "char": 9.26607963662296,
+        "position": 9.248970019023533,
+        "position_from_end": 9.22485901861347
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5204571003055606,
+        "char": 0.7900625020782283,
+        "position": 0.8598144506168452,
+        "position_from_end": 0.840801708345925
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9953363369396593,
+        "char": 1.002947929720361,
+        "position": 1.001121378433024,
+        "position_from_end": 0.9978721143350184
+      },
+      "silhouette": {
+        "dfa": 0.4185078678414323,
+        "char": 0.08887766339883692,
+        "position": 0.0113532283594368,
+        "position_from_end": 0.09149237164371359
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4287987882207996,
+        "char": -0.31739549102901854,
+        "position": -0.10318798598602681,
+        "position_from_end": -0.11211779829655227
+      },
+      "centroid_gap": {
+        "dfa": 8.42468635299203,
+        "char": 5.766253297331917,
+        "position": 1.2860322371916268,
+        "position_from_end": 1.8811836159839732
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.997854648898436,
+        "char": 3.636820080866815,
+        "position": -0.6033157528578627,
+        "position_from_end": -0.5600122724105145
       }
     },
     {
@@ -557,6 +2275,66 @@
         "char": 0.10199770365145261,
         "position": 0.09524589505882351,
         "position_from_end": 0.08918739450354762
+      },
+      "within_cosine": {
+        "dfa": 0.8143137791374437,
+        "char": 0.4497572797681846,
+        "position": 0.3196985973565482,
+        "position_from_end": 0.3917625108836009
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.08985007697986629,
+        "char": 0.10152020459215017,
+        "position": 0.0947062297567434,
+        "position_from_end": 0.08878219891773391
+      },
+      "pairwise_within_median": {
+        "dfa": 4.210198325297773,
+        "char": 7.510745366747609,
+        "position": 8.182450242664109,
+        "position_from_end": 7.802572900874825
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.185934103769071,
+        "char": 9.140446827941004,
+        "position": 9.16649401864002,
+        "position_from_end": 9.19630989860327
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4552968866449862,
+        "char": 0.8100513605900646,
+        "position": 0.8815833515083752,
+        "position_from_end": 0.8384084111707839
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0019244968758654,
+        "char": 0.9966167658640666,
+        "position": 0.9993636650353657,
+        "position_from_end": 1.0032986354371163
+      },
+      "silhouette": {
+        "dfa": 0.5638523031006567,
+        "char": 0.042799334137129996,
+        "position": 0.10177673209775269,
+        "position_from_end": 0.15191837857168694
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.44625345743091055,
+        "char": -0.26631610771150016,
+        "position": -0.07789986077590647,
+        "position_from_end": -0.0820031800309036
+      },
+      "centroid_gap": {
+        "dfa": 8.457789152115096,
+        "char": 4.4447377042852345,
+        "position": 1.1326902456418129,
+        "position_from_end": 1.3032376150786797
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.211965850292746,
+        "char": 2.217532146466968,
+        "position": -2.7239577343529597,
+        "position_from_end": -2.713196855054805
       }
     },
     {
@@ -576,6 +2354,66 @@
         "char": 0.0735399944050154,
         "position": 0.07043639238709211,
         "position_from_end": 0.07199490299374008
+      },
+      "within_cosine": {
+        "dfa": 0.6684703245239207,
+        "char": 0.38354986981175265,
+        "position": 0.2853812038073738,
+        "position_from_end": 0.29339854464989834
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07270032165800297,
+        "char": 0.07473633589141666,
+        "position": 0.0714231582104934,
+        "position_from_end": 0.07303615079274871
+      },
+      "pairwise_within_median": {
+        "dfa": 4.689412854620933,
+        "char": 6.898848442367308,
+        "position": 7.425011782010297,
+        "position_from_end": 7.538701775135818
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.514024237925806,
+        "char": 8.51617208675587,
+        "position": 8.50685192948263,
+        "position_from_end": 8.505922609299377
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5448952249669695,
+        "char": 0.8016247855661731,
+        "position": 0.8577794133613886,
+        "position_from_end": 0.8742330294419105
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9984224755744625,
+        "char": 0.9986655657211729,
+        "position": 0.9971886373238542,
+        "position_from_end": 0.9968844575089234
+      },
+      "silhouette": {
+        "dfa": 0.17102374960083053,
+        "char": -0.03094496682722729,
+        "position": -0.042647939621608816,
+        "position_from_end": 0.05488152933999776
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.37441040149485405,
+        "char": -0.2703174915130225,
+        "position": -0.10820568180254728,
+        "position_from_end": -0.11418428591610562
+      },
+      "centroid_gap": {
+        "dfa": 8.273344712807,
+        "char": 5.079469146817484,
+        "position": 1.285047797640107,
+        "position_from_end": 1.2594551488519539
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.644147752149864,
+        "char": 3.825927784608364,
+        "position": -0.3327257519797163,
+        "position_from_end": -0.21983524175136973
       }
     },
     {
@@ -595,6 +2433,66 @@
         "char": 0.06075472220293884,
         "position": 0.06697178690342806,
         "position_from_end": 0.06771161878490049
+      },
+      "within_cosine": {
+        "dfa": 0.755137429901609,
+        "char": 0.49509866310212364,
+        "position": 0.2696038568190188,
+        "position_from_end": 0.33329829577001396
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.06778746852105054,
+        "char": 0.060390927073608845,
+        "position": 0.06650552241100169,
+        "position_from_end": 0.06714279512816936
+      },
+      "pairwise_within_median": {
+        "dfa": 4.044523308198288,
+        "char": 5.6865192020266235,
+        "position": 7.38492271031656,
+        "position_from_end": 7.173648577920879
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.167165316785859,
+        "char": 8.282100300398858,
+        "position": 8.256088639514044,
+        "position_from_end": 8.24442416756551
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4860474939344567,
+        "char": 0.6842896150526716,
+        "position": 0.8864891932392103,
+        "position_from_end": 0.8593840482902136
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9917180252691792,
+        "char": 1.0065065743255044,
+        "position": 1.0032953211347968,
+        "position_from_end": 1.001706839417504
+      },
+      "silhouette": {
+        "dfa": 0.20793772235259245,
+        "char": 0.07679499271637172,
+        "position": 0.014165081429146995,
+        "position_from_end": 0.1135866736084296
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4326699005469309,
+        "char": -0.3453764283960664,
+        "position": -0.08458911017063801,
+        "position_from_end": -0.09207669716996279
+      },
+      "centroid_gap": {
+        "dfa": 7.881115556226711,
+        "char": 5.648774810390902,
+        "position": 0.5269523490849544,
+        "position_from_end": 0.7286274994729913
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.626203863688656,
+        "char": 4.2203730021175385,
+        "position": -2.1107829633979,
+        "position_from_end": -1.8662091944101917
       }
     },
     {
@@ -614,6 +2512,66 @@
         "char": 0.08211643275015335,
         "position": 0.08683429897577194,
         "position_from_end": 0.0848547547882953
+      },
+      "within_cosine": {
+        "dfa": 0.7921621507837608,
+        "char": 0.590844875435793,
+        "position": 0.3062880448435407,
+        "position_from_end": 0.4423510118754489
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.08776853952942455,
+        "char": 0.0817919541537431,
+        "position": 0.08648895574960568,
+        "position_from_end": 0.0844257861833185
+      },
+      "pairwise_within_median": {
+        "dfa": 3.9549884154593773,
+        "char": 4.8913201060875755,
+        "position": 7.656721423960587,
+        "position_from_end": 5.932665140090594
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.578823579460177,
+        "char": 8.571141365881171,
+        "position": 8.561974688652953,
+        "position_from_end": 8.572941959286052
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4547132286416669,
+        "char": 0.5643789651526473,
+        "position": 0.8824423022772658,
+        "position_from_end": 0.6808151487398688
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0006783143936582,
+        "char": 0.9996238427142453,
+        "position": 0.9985350441557191,
+        "position_from_end": 0.9998126689156568
+      },
+      "silhouette": {
+        "dfa": 0.5027992889703702,
+        "char": 0.23531398568565393,
+        "position": 0.10298710438048574,
+        "position_from_end": 0.18614015366819947
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.44288913336541563,
+        "char": -0.3875258617458984,
+        "position": -0.08980927533654855,
+        "position_from_end": -0.10750251398154281
+      },
+      "centroid_gap": {
+        "dfa": 7.332895996951947,
+        "char": 6.156400885808434,
+        "position": 1.6543720750655018,
+        "position_from_end": 1.7820837983787108
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 4.764013651483161,
+        "char": 3.185725341444722,
+        "position": -2.452355790696315,
+        "position_from_end": -1.9659466413415272
       }
     },
     {
@@ -633,6 +2591,66 @@
         "char": 0.08714297651876397,
         "position": 0.08473493623185366,
         "position_from_end": 0.08236957472825007
+      },
+      "within_cosine": {
+        "dfa": 0.7563474551535087,
+        "char": 0.32208458123069444,
+        "position": 0.27442203579983854,
+        "position_from_end": 0.35830555788583857
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.08105760778189942,
+        "char": 0.08699804033536605,
+        "position": 0.08457987269337164,
+        "position_from_end": 0.08231319484892007
+      },
+      "pairwise_within_median": {
+        "dfa": 4.257321563899606,
+        "char": 7.479621215552748,
+        "position": 7.702002309103182,
+        "position_from_end": 7.50531262483612
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.802909282072818,
+        "char": 8.756023006114331,
+        "position": 8.763845838614635,
+        "position_from_end": 8.790606557788706
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4806118131330525,
+        "char": 0.8434413682174223,
+        "position": 0.8668518335413286,
+        "position_from_end": 0.8411774064186213
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0012291744049513,
+        "char": 0.9953348373855524,
+        "position": 0.9963171357215193,
+        "position_from_end": 1.0001300797800923
+      },
+      "silhouette": {
+        "dfa": 0.3427208064061791,
+        "char": -0.06204271152194036,
+        "position": 0.01993461501284197,
+        "position_from_end": 0.08612251167268602
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3944482965583075,
+        "char": -0.27349282548476994,
+        "position": -0.06767133051056416,
+        "position_from_end": -0.07395128918036559
+      },
+      "centroid_gap": {
+        "dfa": 8.36497963047896,
+        "char": 4.724242533672586,
+        "position": 0.38979468259388117,
+        "position_from_end": 0.8368748641543924
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.233300020824902,
+        "char": 3.4646679695091303,
+        "position": -2.628299015022753,
+        "position_from_end": -2.5283124894301916
       }
     },
     {
@@ -652,6 +2670,66 @@
         "char": 0.03718974091070035,
         "position": 0.04521563394912568,
         "position_from_end": 0.04531827993673803
+      },
+      "within_cosine": {
+        "dfa": 0.7099622568538789,
+        "char": 0.49820012471730085,
+        "position": 0.21707317274525478,
+        "position_from_end": 0.3186610413025101
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.04390385008268272,
+        "char": 0.037086380490219804,
+        "position": 0.04500190971868983,
+        "position_from_end": 0.04517396314751354
+      },
+      "pairwise_within_median": {
+        "dfa": 4.308712841705392,
+        "char": 6.402865226561176,
+        "position": 7.730598553015704,
+        "position_from_end": 7.548313308926358
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.530164623347975,
+        "char": 8.522299623791115,
+        "position": 8.503844400641094,
+        "position_from_end": 8.488298329942845
+      },
+      "pairwise_ratio": {
+        "dfa": 0.49929788286314947,
+        "char": 0.746739331479635,
+        "position": 0.8960503854415974,
+        "position_from_end": 0.8728429799796035
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.002796748734531,
+        "char": 1.0019091854051143,
+        "position": 0.9997321195172933,
+        "position_from_end": 0.9972826449763403
+      },
+      "silhouette": {
+        "dfa": 0.33851580686689237,
+        "char": 0.060064819479704705,
+        "position": -0.058521532843411536,
+        "position_from_end": 0.09654615214967846
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4233168522967488,
+        "char": -0.3076772322316218,
+        "position": -0.09604790977830775,
+        "position_from_end": -0.12518531048599316
+      },
+      "centroid_gap": {
+        "dfa": 8.027127288364087,
+        "char": 5.457056214755584,
+        "position": 0.42597411765524473,
+        "position_from_end": 1.6252226434389492
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.817298582958559,
+        "char": 3.4471143885421656,
+        "position": -1.6225231199247323,
+        "position_from_end": -0.3313962758464932
       }
     },
     {
@@ -671,6 +2749,66 @@
         "char": 0.15014334298864282,
         "position": 0.15573354478500895,
         "position_from_end": 0.15441869762228402
+      },
+      "within_cosine": {
+        "dfa": 0.8495671435437392,
+        "char": 0.47892968813658715,
+        "position": 0.3945476575927826,
+        "position_from_end": 0.4661529505916167
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.14389760095430887,
+        "char": 0.1476398327707531,
+        "position": 0.15343549474623425,
+        "position_from_end": 0.15208181379508917
+      },
+      "pairwise_within_median": {
+        "dfa": 3.627682182215648,
+        "char": 6.973105617269404,
+        "position": 6.8488520333361915,
+        "position_from_end": 6.458680053455472
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.374059496680898,
+        "char": 8.351628645461288,
+        "position": 8.333845860833838,
+        "position_from_end": 8.342498668142047
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4297861338703635,
+        "char": 0.8268774124640459,
+        "position": 0.8085643319218467,
+        "position_from_end": 0.7625946638329771
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0049767090506525,
+        "char": 1.0019235028991222,
+        "position": 0.9993336608827543,
+        "position_from_end": 1.0007142880819286
+      },
+      "silhouette": {
+        "dfa": 0.4740202151405564,
+        "char": 0.022612243099047108,
+        "position": 0.04514661301143024,
+        "position_from_end": 0.13828998856363364
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4715060753461953,
+        "char": -0.39008716015425454,
+        "position": -0.09248785757406268,
+        "position_from_end": -0.09454175958143399
+      },
+      "centroid_gap": {
+        "dfa": 7.452407565683154,
+        "char": 5.782515782033433,
+        "position": 1.398938680401463,
+        "position_from_end": 1.0298592930075747
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 5.173164876365612,
+        "char": 3.8336055661459554,
+        "position": -2.297681270802555,
+        "position_from_end": -2.099788576493495
       }
     },
     {
@@ -690,6 +2828,66 @@
         "char": 0.1049386221603242,
         "position": 0.10086366569186744,
         "position_from_end": 0.10468013647139018
+      },
+      "within_cosine": {
+        "dfa": 0.670069493733167,
+        "char": 0.39518809316061204,
+        "position": 0.22406473359213358,
+        "position_from_end": 0.2811182907237937
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.10825417644208077,
+        "char": 0.10345278821128141,
+        "position": 0.09931906757859606,
+        "position_from_end": 0.1031575617724537
+      },
+      "pairwise_within_median": {
+        "dfa": 4.693878954206459,
+        "char": 7.013443237486573,
+        "position": 8.126805857656391,
+        "position_from_end": 7.965349950157521
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.65961921645746,
+        "char": 8.641682324223616,
+        "position": 8.663429160856884,
+        "position_from_end": 8.637421227608609
+      },
+      "pairwise_ratio": {
+        "dfa": 0.537258700595212,
+        "char": 0.8028190831791556,
+        "position": 0.9287882998216608,
+        "position_from_end": 0.909233744073811
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9998972711058627,
+        "char": 0.9975940964661808,
+        "position": 1.0002412663298834,
+        "position_from_end": 0.9968670497502282
+      },
+      "silhouette": {
+        "dfa": 0.04993802056384961,
+        "char": 0.002819563626870068,
+        "position": -0.016997186213939326,
+        "position_from_end": 0.02572063215611795
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.37081956375381014,
+        "char": -0.21918787387960742,
+        "position": -0.0660529974029714,
+        "position_from_end": -0.06402358374325696
+      },
+      "centroid_gap": {
+        "dfa": 8.733507827689337,
+        "char": 4.023752203185506,
+        "position": -0.04281197479815546,
+        "position_from_end": -0.5671979451219347
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 8.187845359377144,
+        "char": 2.274346983284843,
+        "position": -2.5180404483073966,
+        "position_from_end": -2.3812396786310144
       }
     },
     {
@@ -709,6 +2907,66 @@
         "char": 0.048902341178485464,
         "position": 0.04306976904634219,
         "position_from_end": 0.04217380667487244
+      },
+      "within_cosine": {
+        "dfa": 0.7567445991595376,
+        "char": 0.5387369450605065,
+        "position": 0.32341304497727014,
+        "position_from_end": 0.32642299996753854
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.04618018391558436,
+        "char": 0.04767608749093431,
+        "position": 0.0420216556463218,
+        "position_from_end": 0.04099360770235772
+      },
+      "pairwise_within_median": {
+        "dfa": 4.512090214609434,
+        "char": 6.579223947041235,
+        "position": 7.24865095595381,
+        "position_from_end": 7.499208843277676
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.991446704083282,
+        "char": 8.988583831807397,
+        "position": 9.008657344375504,
+        "position_from_end": 9.007913940455465
+      },
+      "pairwise_ratio": {
+        "dfa": 0.49624719222426134,
+        "char": 0.7234975295950974,
+        "position": 0.7917709939862928,
+        "position_from_end": 0.8218792356380848
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9998195198429538,
+        "char": 0.9995715198801626,
+        "position": 1.001951031638659,
+        "position_from_end": 1.0021380428682345
+      },
+      "silhouette": {
+        "dfa": 0.43370451194788723,
+        "char": 0.283965814523649,
+        "position": 0.12458669657701518,
+        "position_from_end": 0.12374010606202955
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.5158339681226731,
+        "char": -0.35583559048978214,
+        "position": -0.06373554857366837,
+        "position_from_end": -0.06705431204056031
+      },
+      "centroid_gap": {
+        "dfa": 8.237274037607188,
+        "char": 6.442863528514838,
+        "position": 1.235817824661595,
+        "position_from_end": 0.713170937423742
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.738840650763712,
+        "char": 3.5285116724598815,
+        "position": -3.079932065713151,
+        "position_from_end": -2.9883107435732374
       }
     },
     {
@@ -728,6 +2986,66 @@
         "char": 0.10929187598032436,
         "position": 0.10807878583666751,
         "position_from_end": 0.10616899830857142
+      },
+      "within_cosine": {
+        "dfa": 0.7379251326697094,
+        "char": 0.4460482688076818,
+        "position": 0.3524312351720352,
+        "position_from_end": 0.31894799339075625
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.1094951302968337,
+        "char": 0.10858548398818949,
+        "position": 0.10745380973819585,
+        "position_from_end": 0.1055411150263889
+      },
+      "pairwise_within_median": {
+        "dfa": 4.555330545341599,
+        "char": 6.682577442547627,
+        "position": 7.22196303450682,
+        "position_from_end": 7.639707026873207
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.424957005735266,
+        "char": 8.457521890736983,
+        "position": 8.438583393708074,
+        "position_from_end": 8.452239512164224
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5319500625867624,
+        "char": 0.7808692799401639,
+        "position": 0.8361781194082891,
+        "position_from_end": 0.8903545246102149
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9965277302190916,
+        "char": 1.000521607966621,
+        "position": 0.997789842446486,
+        "position_from_end": 0.9998525076468728
+      },
+      "silhouette": {
+        "dfa": 0.41090407798772166,
+        "char": 0.045544500925327705,
+        "position": 0.017251305328079333,
+        "position_from_end": 0.07513299162468107
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4200812480720969,
+        "char": -0.3070608826701744,
+        "position": -0.08724057461961911,
+        "position_from_end": -0.1294328620842805
+      },
+      "centroid_gap": {
+        "dfa": 7.7590581938986265,
+        "char": 5.6056606602110115,
+        "position": 0.8492735524195396,
+        "position_from_end": 1.715423085316635
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.138678949616425,
+        "char": 3.524098051412758,
+        "position": -1.8520948127144243,
+        "position_from_end": -0.18853862309784614
       }
     },
     {
@@ -747,6 +3065,66 @@
         "char": 0.047463919287332935,
         "position": 0.048371102738545974,
         "position_from_end": 0.04354409593959297
+      },
+      "within_cosine": {
+        "dfa": 0.6688397005766222,
+        "char": 0.40637786284241456,
+        "position": 0.22163033571838237,
+        "position_from_end": 0.32661384631207624
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.05369900948898134,
+        "char": 0.0468671918494136,
+        "position": 0.04751909738050093,
+        "position_from_end": 0.04267503060795331
+      },
+      "pairwise_within_median": {
+        "dfa": 4.972217878178887,
+        "char": 7.338808752624377,
+        "position": 8.064503370558555,
+        "position_from_end": 7.442839638536077
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.934448628213532,
+        "char": 8.981223491791164,
+        "position": 8.979172498797928,
+        "position_from_end": 9.027290666376892
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5449801608819794,
+        "char": 0.8054030244626659,
+        "position": 0.8850440679667718,
+        "position_from_end": 0.8135448784548571
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9925781353105141,
+        "char": 0.9982036647948793,
+        "position": 0.9980348837342418,
+        "position_from_end": 1.004542276383715
+      },
+      "silhouette": {
+        "dfa": 0.3203848350372362,
+        "char": 0.024789964231547234,
+        "position": -0.019232637850193943,
+        "position_from_end": 0.08222888369416131
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3979445747402714,
+        "char": -0.270664047662246,
+        "position": -0.08628175193950048,
+        "position_from_end": -0.08702713679144317
+      },
+      "centroid_gap": {
+        "dfa": 8.433433295843376,
+        "char": 5.53020633593216,
+        "position": 0.3704268802011068,
+        "position_from_end": 0.6295741248307678
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.233920096848748,
+        "char": 3.4192697297487906,
+        "position": -2.090958784980609,
+        "position_from_end": -2.0959906731405957
       }
     },
     {
@@ -766,6 +3144,66 @@
         "char": 0.06585729097086289,
         "position": 0.061391270697526826,
         "position_from_end": 0.06819003740979998
+      },
+      "within_cosine": {
+        "dfa": 0.7444953249574955,
+        "char": 0.45234411152972825,
+        "position": 0.269141900059288,
+        "position_from_end": 0.35162327972379626
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.05755564621954018,
+        "char": 0.06820205022224338,
+        "position": 0.06395782481180814,
+        "position_from_end": 0.07060439106115927
+      },
+      "pairwise_within_median": {
+        "dfa": 4.3176470196563,
+        "char": 6.610685974022817,
+        "position": 7.575496180482703,
+        "position_from_end": 7.1751336479393295
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.680846600109003,
+        "char": 8.625380065399586,
+        "position": 8.661922824893528,
+        "position_from_end": 8.636127768507668
+      },
+      "pairwise_ratio": {
+        "dfa": 0.49433476684728855,
+        "char": 0.7577078239179191,
+        "position": 0.8661670595201453,
+        "position_from_end": 0.8153063799156947
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0047542957913032,
+        "char": 0.9980097515877052,
+        "position": 1.0025332138889953,
+        "position_from_end": 0.9989877557917112
+      },
+      "silhouette": {
+        "dfa": 0.2927513417395678,
+        "char": 0.026606810672491592,
+        "position": 0.05043377937488755,
+        "position_from_end": 0.09494434498942074
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.448816949960015,
+        "char": -0.32316814120004145,
+        "position": -0.07621406846861957,
+        "position_from_end": -0.0816389088431515
+      },
+      "centroid_gap": {
+        "dfa": 8.085011467493288,
+        "char": 5.192690566207821,
+        "position": 1.0235401457879973,
+        "position_from_end": 0.5165968051014707
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.752049454895686,
+        "char": 3.45806827513524,
+        "position": -2.583334044794086,
+        "position_from_end": -2.3435139393606623
       }
     },
     {
@@ -785,6 +3223,66 @@
         "char": 0.06985266800833892,
         "position": 0.07242227455524532,
         "position_from_end": 0.07265614442638291
+      },
+      "within_cosine": {
+        "dfa": 0.6264041642071397,
+        "char": 0.43995410316852906,
+        "position": 0.2606476485829207,
+        "position_from_end": 0.2895925800236328
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07343552204359409,
+        "char": 0.06944220963064421,
+        "position": 0.07196197282456995,
+        "position_from_end": 0.07219936681137838
+      },
+      "pairwise_within_median": {
+        "dfa": 5.118719394231757,
+        "char": 6.8429211284791185,
+        "position": 7.806395027696193,
+        "position_from_end": 7.522222263804295
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.619775963360926,
+        "char": 8.640597125338916,
+        "position": 8.608448839306655,
+        "position_from_end": 8.643604287286413
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5862108507999244,
+        "char": 0.7837728317112556,
+        "position": 0.8926187366734983,
+        "position_from_end": 0.8616067117423619
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9979992174044425,
+        "char": 1.000661334538354,
+        "position": 0.9963195805890158,
+        "position_from_end": 1.0009723368291166
+      },
+      "silhouette": {
+        "dfa": 0.17288632420519318,
+        "char": 0.0860243690284209,
+        "position": 0.008492802976949869,
+        "position_from_end": 0.06637933386144033
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.40257194344139585,
+        "char": -0.2329498573703814,
+        "position": -0.059994216556456016,
+        "position_from_end": -0.0646487004766162
+      },
+      "centroid_gap": {
+        "dfa": 8.61307100406786,
+        "char": 4.762786982376005,
+        "position": 0.1260734811688602,
+        "position_from_end": -0.607332318021955
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.930424347956049,
+        "char": 2.5242827591598527,
+        "position": -2.712285488471017,
+        "position_from_end": -2.5517705821998753
       }
     },
     {
@@ -804,6 +3302,66 @@
         "char": 0.07252144464040917,
         "position": 0.07337254796746664,
         "position_from_end": 0.07481264992535115
+      },
+      "within_cosine": {
+        "dfa": 0.7034488241929853,
+        "char": 0.4129809055421624,
+        "position": 0.33914823505919667,
+        "position_from_end": 0.29871308204990143
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.0653940889257305,
+        "char": 0.07214568606938822,
+        "position": 0.07317381339112906,
+        "position_from_end": 0.074437125761664
+      },
+      "pairwise_within_median": {
+        "dfa": 4.96702731991941,
+        "char": 7.612304071930332,
+        "position": 8.040518418224163,
+        "position_from_end": 8.341869540703758
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.219368598879596,
+        "char": 9.186300725843743,
+        "position": 9.16340935681352,
+        "position_from_end": 9.17662936026546
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5366007213057955,
+        "char": 0.8217490054629186,
+        "position": 0.8611660419264352,
+        "position_from_end": 0.9011625657787264
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0040054486895698,
+        "char": 1.000213476919678,
+        "position": 0.9974192754302328,
+        "position_from_end": 0.9990162029849528
+      },
+      "silhouette": {
+        "dfa": 0.43084152615013704,
+        "char": 0.07329461116124036,
+        "position": 0.09960884798115167,
+        "position_from_end": 0.08087493450009019
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4826027476671034,
+        "char": -0.27449183102658226,
+        "position": -0.07073771548920528,
+        "position_from_end": -0.08527396289715916
+      },
+      "centroid_gap": {
+        "dfa": 8.504778617005671,
+        "char": 5.142094337972033,
+        "position": 1.3050295723373573,
+        "position_from_end": -0.13345486603750434
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.965568656655155,
+        "char": 2.3847110397988525,
+        "position": -3.002053647006816,
+        "position_from_end": -2.3059757505821104
       }
     },
     {
@@ -823,6 +3381,66 @@
         "char": 0.16792463203087668,
         "position": 0.16870857415718024,
         "position_from_end": 0.1696882783349865
+      },
+      "within_cosine": {
+        "dfa": 0.6958447191684416,
+        "char": 0.4674910658193794,
+        "position": 0.2966220418850992,
+        "position_from_end": 0.3989740421734506
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.1708317753346673,
+        "char": 0.16704771075614555,
+        "position": 0.16786612829093697,
+        "position_from_end": 0.1688588326630388
+      },
+      "pairwise_within_median": {
+        "dfa": 5.103305098634593,
+        "char": 7.463707930343613,
+        "position": 8.541650306885284,
+        "position_from_end": 7.641844768653387
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.08342147965327,
+        "char": 9.130205832224144,
+        "position": 9.101656911297127,
+        "position_from_end": 9.09610207364036
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5540772790852758,
+        "char": 0.8104295660675632,
+        "position": 0.9286361129612013,
+        "position_from_end": 0.824441940570085
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9959989480714964,
+        "char": 1.0013294081484794,
+        "position": 0.9980413788355594,
+        "position_from_end": 0.9971132703031438
+      },
+      "silhouette": {
+        "dfa": 0.2892246402883274,
+        "char": 0.05205288613383071,
+        "position": -0.027083464952303776,
+        "position_from_end": 0.07870601222406558
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.3986396462547048,
+        "char": -0.2305901711556003,
+        "position": -0.06760259282210905,
+        "position_from_end": -0.07367599725308473
+      },
+      "centroid_gap": {
+        "dfa": 8.641841331264835,
+        "char": 4.436303243104134,
+        "position": 0.05804008219237655,
+        "position_from_end": 0.18381148429519012
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.207481567567269,
+        "char": 1.917254267847079,
+        "position": -2.7171273047641122,
+        "position_from_end": -2.1819348067210633
       }
     },
     {
@@ -842,6 +3460,66 @@
         "char": 0.10130340229015485,
         "position": 0.09743045460413925,
         "position_from_end": 0.10199371718370026
+      },
+      "within_cosine": {
+        "dfa": 0.7414703453721222,
+        "char": 0.3748477993535098,
+        "position": 0.3359076194319227,
+        "position_from_end": 0.38191188065938875
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.10058472684294723,
+        "char": 0.10059821390104802,
+        "position": 0.09646240722662207,
+        "position_from_end": 0.1012405563905334
+      },
+      "pairwise_within_median": {
+        "dfa": 4.86781443823825,
+        "char": 8.1113116623624,
+        "position": 8.294775964764737,
+        "position_from_end": 7.557394936560042
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.480553093333224,
+        "char": 9.480865893880386,
+        "position": 9.484894213992213,
+        "position_from_end": 9.475234784927045
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5064194024347043,
+        "char": 0.8441004625500387,
+        "position": 0.8588347273243314,
+        "position_from_end": 0.782243611085018
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0005646939815451,
+        "char": 1.0006875768639483,
+        "position": 1.0013131446638521,
+        "position_from_end": 0.9998579613053149
+      },
+      "silhouette": {
+        "dfa": 0.3196518478198857,
+        "char": 0.007625261828988215,
+        "position": 0.04759429852244157,
+        "position_from_end": 0.10693555777133769
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.43184220415027597,
+        "char": -0.2909059604884616,
+        "position": -0.08370488236936888,
+        "position_from_end": -0.10777897151668483
+      },
+      "centroid_gap": {
+        "dfa": 8.89607944786836,
+        "char": 5.146475736771441,
+        "position": 1.2556789968164228,
+        "position_from_end": 1.61600670121092
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.8238540128258505,
+        "char": 3.1051958274151485,
+        "position": -2.6104170421406363,
+        "position_from_end": -0.9275514362433407
       }
     },
     {
@@ -861,6 +3539,66 @@
         "char": 0.10541648192142833,
         "position": 0.11016313207855204,
         "position_from_end": 0.11024346576642985
+      },
+      "within_cosine": {
+        "dfa": 0.7329171091230301,
+        "char": 0.39389480594540444,
+        "position": 0.30026696636081135,
+        "position_from_end": 0.3973833462343742
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.10675873005858294,
+        "char": 0.10508854983926358,
+        "position": 0.1098386549659943,
+        "position_from_end": 0.10991187251078893
+      },
+      "pairwise_within_median": {
+        "dfa": 4.982883462384156,
+        "char": 7.632220966379348,
+        "position": 8.040972251173374,
+        "position_from_end": 7.545993894606134
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.202849323503184,
+        "char": 9.214259157547309,
+        "position": 9.21572991637882,
+        "position_from_end": 9.214519272781473
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5333618351533047,
+        "char": 0.8166656126709497,
+        "position": 0.8575204092076303,
+        "position_from_end": 0.8014738683025525
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.000104423410803,
+        "char": 1.0014164732835475,
+        "position": 1.001842068378559,
+        "position_from_end": 1.0016095014003603
+      },
+      "silhouette": {
+        "dfa": 0.4074419482649393,
+        "char": -0.1167561559537208,
+        "position": 0.011328963829184652,
+        "position_from_end": 0.11247620257358143
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4644059104712372,
+        "char": -0.35339680322720113,
+        "position": -0.07769328594117868,
+        "position_from_end": -0.0885515363679855
+      },
+      "centroid_gap": {
+        "dfa": 8.418094837727534,
+        "char": 5.899737449456197,
+        "position": 0.5345172408998362,
+        "position_from_end": 0.5639402610405204
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.6396337300877075,
+        "char": 4.460576579748999,
+        "position": -2.708307059000217,
+        "position_from_end": -2.366501431406655
       }
     },
     {
@@ -880,6 +3618,66 @@
         "char": 0.11590311047685137,
         "position": 0.10922930344167882,
         "position_from_end": 0.11251169422780423
+      },
+      "within_cosine": {
+        "dfa": 0.6869349242854297,
+        "char": 0.47237509061508504,
+        "position": 0.3192744109201814,
+        "position_from_end": 0.27977013260686695
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.11278838921659098,
+        "char": 0.11621322466197719,
+        "position": 0.10918411376875684,
+        "position_from_end": 0.11250783411378419
+      },
+      "pairwise_within_median": {
+        "dfa": 4.902207766590007,
+        "char": 6.964658226934407,
+        "position": 7.841601030143583,
+        "position_from_end": 8.176776553087779
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.831141744301885,
+        "char": 8.828915570516006,
+        "position": 8.890577215302201,
+        "position_from_end": 8.844761283126173
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5451522139018907,
+        "char": 0.7706764938311664,
+        "position": 0.8664632508779755,
+        "position_from_end": 0.9141851679637669
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9947507190844403,
+        "char": 0.9944636036709383,
+        "position": 1.0022263711576187,
+        "position_from_end": 0.9958314443106329
+      },
+      "silhouette": {
+        "dfa": 0.23210086858286866,
+        "char": 0.015462270641565735,
+        "position": 0.02285282606774498,
+        "position_from_end": 0.035604145874372495
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.45155772662151794,
+        "char": -0.2860603924498278,
+        "position": -0.06693342444075058,
+        "position_from_end": -0.07277191455918103
+      },
+      "centroid_gap": {
+        "dfa": 8.272640540518834,
+        "char": 5.510452639513913,
+        "position": 0.44986770785309194,
+        "position_from_end": -0.8735210168361514
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.611598967273118,
+        "char": 3.074684415105185,
+        "position": -3.0746216296203563,
+        "position_from_end": -2.629077647345033
       }
     },
     {
@@ -899,6 +3697,66 @@
         "char": 0.08403403349024499,
         "position": 0.08717420767993089,
         "position_from_end": 0.08593606614265513
+      },
+      "within_cosine": {
+        "dfa": 0.7839759801707783,
+        "char": 0.43954773998090857,
+        "position": 0.3110690827127217,
+        "position_from_end": 0.3292812042327519
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07987565436089973,
+        "char": 0.08406690020952005,
+        "position": 0.08719326340724348,
+        "position_from_end": 0.08588879653367078
+      },
+      "pairwise_within_median": {
+        "dfa": 3.5278225067316002,
+        "char": 6.24648782943217,
+        "position": 6.977290277763218,
+        "position_from_end": 7.18490602677393
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.062245072710775,
+        "char": 8.0383129306802,
+        "position": 8.028134211757505,
+        "position_from_end": 8.021519545739364
+      },
+      "pairwise_ratio": {
+        "dfa": 0.4344712335987089,
+        "char": 0.7677969558760948,
+        "position": 0.853691654210529,
+        "position_from_end": 0.8831323599430143
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.003331092697611,
+        "char": 1.0002594708726646,
+        "position": 0.9988193184625067,
+        "position_from_end": 0.9978511294913267
+      },
+      "silhouette": {
+        "dfa": 0.38837182309087964,
+        "char": 0.09344230085560741,
+        "position": 0.05604538281902033,
+        "position_from_end": 0.10069587063604259
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.45011324822033677,
+        "char": -0.30623845269544825,
+        "position": -0.060880262855313866,
+        "position_from_end": -0.066116802898519
+      },
+      "centroid_gap": {
+        "dfa": 7.480251460201341,
+        "char": 5.191387680887529,
+        "position": 0.6546652432377034,
+        "position_from_end": 0.2065543058192958
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 5.821833904515247,
+        "char": 2.494409553517436,
+        "position": -2.901546764777274,
+        "position_from_end": -2.6965979843622883
       }
     },
     {
@@ -918,6 +3776,66 @@
         "char": 0.07769703339218957,
         "position": 0.07831356934971351,
         "position_from_end": 0.07827099261327032
+      },
+      "within_cosine": {
+        "dfa": 0.707953265726299,
+        "char": 0.4819231406922013,
+        "position": 0.2714984151639024,
+        "position_from_end": 0.282916613480078
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07605528886733674,
+        "char": 0.07723591732406716,
+        "position": 0.07786862999309323,
+        "position_from_end": 0.07781560857963785
+      },
+      "pairwise_within_median": {
+        "dfa": 4.901221581094169,
+        "char": 6.582356598781628,
+        "position": 7.884833483197289,
+        "position_from_end": 8.108898701985522
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.90887353002133,
+        "char": 8.910098133431548,
+        "position": 8.925872092410772,
+        "position_from_end": 8.914964387967599
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5439326572583504,
+        "char": 0.7303597797439897,
+        "position": 0.8712397607900644,
+        "position_from_end": 0.8999174482181056
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9996145036088194,
+        "char": 0.9997048721696995,
+        "position": 1.0018027237256237,
+        "position_from_end": 1.000212050713407
+      },
+      "silhouette": {
+        "dfa": 0.30640929979105436,
+        "char": 0.09030371058989047,
+        "position": 0.03383283140357602,
+        "position_from_end": 0.059498651583350166
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4384484182221305,
+        "char": -0.27750021148154047,
+        "position": -0.0653837985232234,
+        "position_from_end": -0.06596794674718297
+      },
+      "centroid_gap": {
+        "dfa": 8.226985461880798,
+        "char": 5.296163236055824,
+        "position": 0.4000867169924449,
+        "position_from_end": -0.6916586452631588
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.689484472054254,
+        "char": 2.185022232992764,
+        "position": -3.0002343110193825,
+        "position_from_end": -2.8375215158812583
       }
     },
     {
@@ -937,6 +3855,66 @@
         "char": 0.09109275461462318,
         "position": 0.09320104213643052,
         "position_from_end": 0.09498579012991884
+      },
+      "within_cosine": {
+        "dfa": 0.6797671681256053,
+        "char": 0.3706085486603766,
+        "position": 0.2591568082511273,
+        "position_from_end": 0.33186674369497954
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.09820223924618758,
+        "char": 0.08936849656564139,
+        "position": 0.09151456591624729,
+        "position_from_end": 0.09346448796556804
+      },
+      "pairwise_within_median": {
+        "dfa": 4.907785784012078,
+        "char": 7.275513057026971,
+        "position": 8.033137685651232,
+        "position_from_end": 7.615414769589253
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 8.701332605376344,
+        "char": 8.764050390813946,
+        "position": 8.749333746356022,
+        "position_from_end": 8.752648933599746
+      },
+      "pairwise_ratio": {
+        "dfa": 0.555463225404719,
+        "char": 0.8238582126632233,
+        "position": 0.9088982062595048,
+        "position_from_end": 0.8602112545139122
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 0.9942493733780372,
+        "char": 1.0018525966905947,
+        "position": 1.0001189090976532,
+        "position_from_end": 1.0004533263901567
+      },
+      "silhouette": {
+        "dfa": 0.2569854383364565,
+        "char": -0.05469350822038423,
+        "position": -0.013048423610888487,
+        "position_from_end": 0.06975637784068575
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4160141910904529,
+        "char": -0.2634028722013876,
+        "position": -0.06734109473975584,
+        "position_from_end": -0.07373862830960938
+      },
+      "centroid_gap": {
+        "dfa": 8.392606693291343,
+        "char": 4.744431024784343,
+        "position": 0.18361018064447965,
+        "position_from_end": 0.32752481478272166
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 7.269963203329141,
+        "char": 2.9125011657813373,
+        "position": -2.837338555529768,
+        "position_from_end": -2.3246404610343383
       }
     },
     {
@@ -956,6 +3934,66 @@
         "char": 0.07705314010789306,
         "position": 0.07419773263418715,
         "position_from_end": 0.07368994558385747
+      },
+      "within_cosine": {
+        "dfa": 0.7021959466361698,
+        "char": 0.4550907516455438,
+        "position": 0.2750329372632047,
+        "position_from_end": 0.3034268725219689
+      },
+      "shuffle_within_cosine": {
+        "dfa": 0.07306699652462896,
+        "char": 0.0765392882782336,
+        "position": 0.073558252178009,
+        "position_from_end": 0.07319905037460638
+      },
+      "pairwise_within_median": {
+        "dfa": 5.458940103946496,
+        "char": 7.522424801665134,
+        "position": 8.53627528822714,
+        "position_from_end": 8.499768998296684
+      },
+      "shuffle_pairwise_within_median": {
+        "dfa": 9.619297445745334,
+        "char": 9.578100269176064,
+        "position": 9.611776785484306,
+        "position_from_end": 9.614111983272998
+      },
+      "pairwise_ratio": {
+        "dfa": 0.5631253450603153,
+        "char": 0.7749327856627743,
+        "position": 0.8760265414910873,
+        "position_from_end": 0.8729478573391388
+      },
+      "shuffle_pairwise_ratio": {
+        "dfa": 1.0010747487680562,
+        "char": 0.9965898631193915,
+        "position": 1.0003949515889385,
+        "position_from_end": 1.0007325289295381
+      },
+      "silhouette": {
+        "dfa": 0.36652918909027055,
+        "char": 0.09656763953028434,
+        "position": 0.050140144662362676,
+        "position_from_end": 0.060804512217554105
+      },
+      "shuffle_silhouette": {
+        "dfa": -0.4517649025596645,
+        "char": -0.2566368391766814,
+        "position": -0.06487957238983148,
+        "position_from_end": -0.07707816919395617
+      },
+      "centroid_gap": {
+        "dfa": 8.69672336604577,
+        "char": 5.008468836186166,
+        "position": 0.8903259001090067,
+        "position_from_end": 0.3042994468301128
+      },
+      "shuffle_centroid_gap": {
+        "dfa": 6.897915684390255,
+        "char": 2.172330513428056,
+        "position": -3.3150735233051574,
+        "position_from_end": -2.5842413131623796
       }
     }
   ]

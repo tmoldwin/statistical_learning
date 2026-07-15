@@ -2295,10 +2295,12 @@ class FeatureSeparationStats:
     pairwise_within_median: dict[str, float]
     pairwise_between_median: dict[str, float]
     within_corr: dict[str, float]
+    within_cosine: dict[str, float]
     shuffle_z: dict[str, float]
     shuffle_p: dict[str, float]
     shuffle_silhouette: dict[str, float]
     shuffle_within_corr: dict[str, float]
+    shuffle_within_cosine: dict[str, float]
     shuffle_pairwise_within_median: dict[str, float]
     shuffle_pairwise_between_median: dict[str, float]
     shuffle_pairwise_ratio: dict[str, float]
@@ -2457,6 +2459,25 @@ def _mean_within_group_correlation(
     return float(np.mean(corrs)) if corrs else float("nan")
 
 
+def _mean_within_group_cosine(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> float:
+    """Mean cosine similarity of hidden-state pairs that share a feature label."""
+    sims: list[float] = []
+    for idxs in group_map.values():
+        if len(idxs) < 2:
+            continue
+        pts = states[idxs]
+        norms = np.linalg.norm(pts, axis=1, keepdims=True)
+        norms = np.maximum(norms, 1e-12)
+        unit = pts / norms
+        sim_mat = unit @ unit.T
+        iu = np.triu_indices(len(idxs), k=1)
+        sims.extend(float(v) for v in sim_mat[iu] if np.isfinite(v))
+    return float(np.mean(sims)) if sims else float("nan")
+
+
 def _label_shuffle_null_summary(
     states: np.ndarray,
     labels: list[Any],
@@ -2478,6 +2499,7 @@ def _label_shuffle_null_summary(
         "shuffle_p": float("nan"),
         "shuffle_silhouette": float("nan"),
         "shuffle_within_corr": float("nan"),
+        "shuffle_within_cosine": float("nan"),
         "shuffle_pairwise_within_median": float("nan"),
         "shuffle_pairwise_between_median": float("nan"),
         "shuffle_pairwise_ratio": float("nan"),
@@ -2490,6 +2512,7 @@ def _label_shuffle_null_summary(
     null_gaps: list[float] = []
     null_sil: list[float] = []
     null_corr: list[float] = []
+    null_cos: list[float] = []
     null_w: list[float] = []
     null_b: list[float] = []
     null_ratio: list[float] = []
@@ -2514,6 +2537,10 @@ def _label_shuffle_null_summary(
         if np.isfinite(corr):
             null_corr.append(corr)
 
+        cos = _mean_within_group_cosine(states, gm)
+        if np.isfinite(cos):
+            null_cos.append(cos)
+
         w_med, b_med = _pairwise_within_between_medians(states, gm)
         if np.isfinite(w_med):
             null_w.append(w_med)
@@ -2534,6 +2561,8 @@ def _label_shuffle_null_summary(
         out["shuffle_silhouette"] = float(np.mean(null_sil))
     if null_corr:
         out["shuffle_within_corr"] = float(np.mean(null_corr))
+    if null_cos:
+        out["shuffle_within_cosine"] = float(np.mean(null_cos))
     if null_w:
         out["shuffle_pairwise_within_median"] = float(np.mean(null_w))
     if null_b:
@@ -2566,10 +2595,12 @@ def compute_feature_separation_stats(
     pairwise_within_median: dict[str, float] = {}
     pairwise_between_median: dict[str, float] = {}
     within_corr: dict[str, float] = {}
+    within_cosine: dict[str, float] = {}
     shuffle_z: dict[str, float] = {}
     shuffle_p: dict[str, float] = {}
     shuffle_silhouette: dict[str, float] = {}
     shuffle_within_corr: dict[str, float] = {}
+    shuffle_within_cosine: dict[str, float] = {}
     shuffle_pairwise_within_median: dict[str, float] = {}
     shuffle_pairwise_between_median: dict[str, float] = {}
     shuffle_pairwise_ratio: dict[str, float] = {}
@@ -2593,6 +2624,7 @@ def compute_feature_separation_stats(
         pairwise_within_median[feat] = w_med
         pairwise_between_median[feat] = b_med
         within_corr[feat] = _mean_within_group_correlation(hidden_states, group_map)
+        within_cosine[feat] = _mean_within_group_cosine(hidden_states, group_map)
 
         ratio = (
             w_med / b_med
@@ -2610,6 +2642,7 @@ def compute_feature_separation_stats(
         shuffle_p[feat] = nulls["shuffle_p"]
         shuffle_silhouette[feat] = nulls["shuffle_silhouette"]
         shuffle_within_corr[feat] = nulls["shuffle_within_corr"]
+        shuffle_within_cosine[feat] = nulls["shuffle_within_cosine"]
         shuffle_pairwise_within_median[feat] = nulls["shuffle_pairwise_within_median"]
         shuffle_pairwise_between_median[feat] = nulls["shuffle_pairwise_between_median"]
         shuffle_pairwise_ratio[feat] = nulls["shuffle_pairwise_ratio"]
@@ -2625,10 +2658,12 @@ def compute_feature_separation_stats(
         pairwise_within_median=pairwise_within_median,
         pairwise_between_median=pairwise_between_median,
         within_corr=within_corr,
+        within_cosine=within_cosine,
         shuffle_z=shuffle_z,
         shuffle_p=shuffle_p,
         shuffle_silhouette=shuffle_silhouette,
         shuffle_within_corr=shuffle_within_corr,
+        shuffle_within_cosine=shuffle_within_cosine,
         shuffle_pairwise_within_median=shuffle_pairwise_within_median,
         shuffle_pairwise_between_median=shuffle_pairwise_between_median,
         shuffle_pairwise_ratio=shuffle_pairwise_ratio,
@@ -2696,10 +2731,14 @@ def plot_feature_separation_summary(
         "pairwise_within_median": {k: _json_float(v) for k, v in stats.pairwise_within_median.items()},
         "pairwise_between_median": {k: _json_float(v) for k, v in stats.pairwise_between_median.items()},
         "within_corr": {k: _json_float(v) for k, v in stats.within_corr.items()},
+        "within_cosine": {k: _json_float(v) for k, v in stats.within_cosine.items()},
         "shuffle_z": {k: _json_float(v) for k, v in stats.shuffle_z.items()},
         "shuffle_p": {k: _json_float(v) for k, v in stats.shuffle_p.items()},
         "shuffle_silhouette": {k: _json_float(v) for k, v in stats.shuffle_silhouette.items()},
         "shuffle_within_corr": {k: _json_float(v) for k, v in stats.shuffle_within_corr.items()},
+        "shuffle_within_cosine": {
+            k: _json_float(v) for k, v in stats.shuffle_within_cosine.items()
+        },
         "shuffle_pairwise_within_median": {
             k: _json_float(v) for k, v in stats.shuffle_pairwise_within_median.items()
         },
@@ -9271,13 +9310,6 @@ def plot_output_probs(
             edgecolor="white", linewidth=0.45, zorder=3,
         )
 
-    if last_im is not None:
-        cbar = fig.colorbar(
-            last_im, ax=axes.ravel().tolist(),
-            fraction=0.025, pad=0.02, label="probability",
-        )
-        cbar.ax.tick_params(labelsize=7)
-
     if n_rows > 1:
         finalize_grid_figure(
             fig,
@@ -9286,7 +9318,7 @@ def plot_output_probs(
             top=0.90,
             bottom=0.10,
             left=0.07,
-            right=0.90,
+            right=0.96,
             hspace=0.42,
         )
     else:
@@ -9297,6 +9329,23 @@ def plot_output_probs(
             left=0.08,
             right=0.90,
         )
+
+    if last_im is not None:
+        if n_rows > 1:
+            pos_top = axes[0, 0].get_position()
+            pos_bot = axes[-1, 0].get_position()
+            span = pos_top.y1 - pos_bot.y0
+            cbar_h = span * 0.30
+            cbar_y0 = pos_bot.y0 + (span - cbar_h) * 0.5
+            cax = fig.add_axes([pos_bot.x1 + 0.004, cbar_y0, 0.007, cbar_h])
+            cbar = fig.colorbar(last_im, cax=cax)
+        else:
+            cbar = fig.colorbar(
+                last_im, ax=axes[0, 0],
+                fraction=0.015, pad=0.02, shrink=0.72, aspect=24,
+            )
+        cbar.ax.tick_params(labelsize=6, length=2)
+        cbar.set_label("probability", fontsize=7)
     save_figure(fig, save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")

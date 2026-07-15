@@ -2099,10 +2099,17 @@ def collect_mixed_dfa_within_corr(
     n_shuffle: int = _WITHIN_CORR_N_SHUFFLE,
     model_type: str = "rnn",
 ) -> Path:
-    """Per-run within-feature state correlation (observed + label-shuffle mean)."""
+    """Per-run separation metrics vs DFA (observed + label-shuffle means)."""
     out = sweep_data_dir(COMPARISON_NAME) / "within_corr_vs_dfa.json"
     if out.is_file() and not recompute:
-        return out
+        # Recompute when older JSON lacked multi-metric fields.
+        try:
+            old = json.loads(out.read_text(encoding="utf-8"))
+            panels_old = old.get("panels") or []
+            if panels_old and "within_cosine" in panels_old[0]:
+                return out
+        except Exception:  # noqa: BLE001
+            pass
 
     panels: list[dict[str, Any]] = []
     for entry in iter_runs():
@@ -2162,16 +2169,18 @@ def collect_mixed_dfa_within_corr(
         except Exception as exc:  # noqa: BLE001
             print(f"  skip {task}: {exc}", flush=True)
             continue
+
+        def _feat_map(bucket: dict[str, float]) -> dict[str, float]:
+            return {f: float(bucket.get(f, float("nan"))) for f in _WITHIN_CORR_FEATURES}
+
         panels.append({
             "task": task,
             "seed": seed,
             "run_id": entry["run_id"],
             "n_words": entry["n_words"],
             "n_dfa_states": n_dfa,
-            "within_corr": {f: float(stats.within_corr[f]) for f in _WITHIN_CORR_FEATURES},
-            "shuffle_within_corr": {
-                f: float(stats.shuffle_within_corr[f]) for f in _WITHIN_CORR_FEATURES
-            },
+            "within_cosine": _feat_map(stats.within_cosine),
+            "shuffle_within_cosine": _feat_map(stats.shuffle_within_cosine),
         })
 
     payload = {
@@ -2190,9 +2199,10 @@ def plot_mixed_dfa_within_corr_vs_dfa(
     *,
     seed: int = 1,
     recompute: bool = False,
-    outfile: str = "within_corr_vs_dfa.png",
+    outfile: str = "cosine_within_vs_dfa.png",
 ) -> Path:
-    """One panel: within-feature state corr vs DFA size (observed + shuffle)."""
+    """Within-feature cosine similarity vs DFA size (obs + shuffle; all features)."""
+    from matplotlib.lines import Line2D
     from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
@@ -2201,71 +2211,77 @@ def plot_mixed_dfa_within_corr_vs_dfa(
     panels = payload["panels"]
     features = tuple(payload.get("features", _WITHIN_CORR_FEATURES))
 
-    fig, ax = plt.subplots(figsize=(7.6, 4.8))
+    fig, ax = plt.subplots(figsize=(7.4, 4.6))
+    xs = np.asarray([float(p["n_dfa_states"]) for p in panels], dtype=float)
     handles = []
     labels = []
     for feat in features:
         color = FEATURE_COLORS.get(feat, "#666666")
         display = FEATURE_DISPLAY.get(feat, feat)
-        xs = np.asarray([float(p["n_dfa_states"]) for p in panels], dtype=float)
         y_obs = np.asarray(
-            [float(p["within_corr"].get(feat, float("nan"))) for p in panels],
+            [float(p.get("within_cosine", {}).get(feat, float("nan"))) for p in panels],
             dtype=float,
         )
         y_sh = np.asarray(
-            [float(p["shuffle_within_corr"].get(feat, float("nan"))) for p in panels],
+            [float(p.get("shuffle_within_cosine", {}).get(feat, float("nan"))) for p in panels],
             dtype=float,
         )
         mask_o = np.isfinite(xs) & np.isfinite(y_obs)
         mask_s = np.isfinite(xs) & np.isfinite(y_sh)
-        h_obs = ax.scatter(
+        ax.scatter(
             xs[mask_o], y_obs[mask_o],
             s=28, color=color, marker="o", alpha=0.80, zorder=3,
             edgecolors="white", linewidths=0.35,
         )
-        h_sh = ax.scatter(
+        ax.scatter(
             xs[mask_s], y_sh[mask_s],
             s=26, facecolors="none", edgecolors=color, marker="o",
             alpha=0.55, linewidths=1.05, zorder=2,
         )
         x_fit_o, y_fit_o, r2_o, _ = _fit_trend(xs[mask_o], y_obs[mask_o])
-        x_fit_s, y_fit_s, r2_s, _ = _fit_trend(xs[mask_s], y_sh[mask_s])
+        x_fit_s, y_fit_s, _r2_s, _ = _fit_trend(xs[mask_s], y_sh[mask_s])
         if x_fit_o is not None and y_fit_o is not None:
             ax.plot(x_fit_o, y_fit_o, color=color, lw=1.6, zorder=4)
         if x_fit_s is not None and y_fit_s is not None:
             ax.plot(x_fit_s, y_fit_s, color=color, lw=1.2, ls="--", alpha=0.75, zorder=3)
-        obs_lab = f"{display} (obs)"
+        lab = display
         if np.isfinite(r2_o):
-            obs_lab = f"{display} (obs, $R^2$={r2_o:.2f})"
-        sh_lab = f"{display} (shuffle)"
-        if np.isfinite(r2_s):
-            sh_lab = f"{display} (shuffle, $R^2$={r2_s:.2f})"
-        handles.extend([h_obs, h_sh])
-        labels.extend([obs_lab, sh_lab])
+            lab = f"{display} ($R^2$={r2_o:.2f})"
+        handles.append(
+            Line2D([0], [0], marker="o", color=color, linestyle="-", markersize=6),
+        )
+        labels.append(lab)
+    handles.append(
+        Line2D(
+            [0], [0], marker="o", color="0.35", linestyle="--",
+            markerfacecolor="none", markersize=6,
+        ),
+    )
+    labels.append("label shuffle (open / dashed)")
 
     ax.set_xlabel("DFA states", fontsize=9)
-    ax.set_ylabel("mean within-feature state correlation", fontsize=9)
+    ax.set_ylabel("mean within-feature cosine similarity", fontsize=9)
     ax.set_ylim(-0.05, 1.05)
     ax.grid(True, alpha=0.28)
     ax.tick_params(labelsize=8)
     ax.legend(
         handles, labels,
-        loc="upper right", fontsize=6.2, frameon=True, framealpha=0.92,
-        ncol=2, columnspacing=0.7, handletextpad=0.35, borderpad=0.4,
+        loc="center left", bbox_to_anchor=(1.01, 0.5),
+        fontsize=7, frameon=False, handletextpad=0.4,
     )
     finalize_grid_figure(
         fig,
-        # Observed filled + solid fit; shuffle hollow + dashed fit.
+        # Geometry complement to linear decode: cosine within label vs shuffle.
         suptitle=(
-            f"Within-feature state correlation vs DFA size "
+            f"Within-feature cosine similarity vs DFA size "
             f"(seed {seed}; open/dashed = label shuffle)"
         ),
         top=0.88,
         bottom=0.14,
-        left=0.12,
-        right=0.98,
+        left=0.10,
+        right=0.78,
     )
-    out = comparison_dir(COMPARISON_NAME, "trajectories") / outfile
+    out = sweep_decoding_dir(COMPARISON_NAME) / outfile
     out.parent.mkdir(parents=True, exist_ok=True)
     save_figure(fig, out, dpi=150)
     plt.close(fig)

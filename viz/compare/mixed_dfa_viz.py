@@ -2088,6 +2088,190 @@ def plot_mixed_dfa_trajectory_vocab_grid(
 # Back-compat alias for older CLI/import names.
 plot_mixed_dfa_trajectory_seed_grid = plot_mixed_dfa_trajectory_vocab_grid
 
+_WITHIN_CORR_FEATURES: tuple[str, ...] = ("dfa", "char", "position", "position_from_end")
+_WITHIN_CORR_N_SHUFFLE = 49
+
+
+def collect_mixed_dfa_within_corr(
+    *,
+    seed: int = 1,
+    recompute: bool = False,
+    n_shuffle: int = _WITHIN_CORR_N_SHUFFLE,
+    model_type: str = "rnn",
+) -> Path:
+    """Per-run within-feature state correlation (observed + label-shuffle mean)."""
+    out = sweep_data_dir(COMPARISON_NAME) / "within_corr_vs_dfa.json"
+    if out.is_file() and not recompute:
+        return out
+
+    panels: list[dict[str, Any]] = []
+    for entry in iter_runs():
+        task = entry["task"]
+        if not checkpoint_path(task, model_type, seed=seed).is_file():
+            continue
+        n_dfa = _dfa_states(list(entry["words"]))
+        print(f"within-corr {task} seed {seed}  dfa={n_dfa}", flush=True)
+        try:
+            from experiment import TASKS
+            from task import corpus_for_experiment, label_extensions_for_experiment
+            from unit_selectivity import build_timestep_labels
+            from vocab_diagrams import (
+                build_minimized_vocabulary_automaton,
+                select_analysis_window,
+                vocabulary_for_experiment,
+            )
+            from visualize import (
+                compute_feature_separation_stats,
+                condense_hidden_states_by_prefix,
+                corpus_uses_word_spacing,
+                load_model_for_viz,
+                run_forward_pass,
+            )
+
+            cfg = TASKS[task]
+            model = load_model_for_viz(str(checkpoint_path(task, model_type, seed=seed)), model_type)
+            full_text = corpus_for_experiment(task, seed=seed)
+            spaced = corpus_uses_word_spacing(full_text, task)
+            words = vocabulary_for_experiment(task)
+            length = min(int(cfg.get("viz_length", 80)), 120, len(full_text))
+            if words and not spaced:
+                extensions = label_extensions_for_experiment(task)
+                _ws, text, label_words = select_analysis_window(
+                    full_text, words, length, spaced=spaced, extensions=extensions,
+                )
+            else:
+                text = full_text[:length]
+                label_words = None
+            automaton = build_minimized_vocabulary_automaton(words) if words else None
+            if automaton is None:
+                continue
+            hidden_states, output_probs = run_forward_pass(model, text, model_type)
+            condensed = condense_hidden_states_by_prefix(
+                text, hidden_states, output_probs, spaced=spaced, words=words,
+            )
+            ts_labels = build_timestep_labels(
+                text, automaton,
+                spaced=spaced, words=words, label_words=label_words, condensed=condensed,
+            )
+            stats = compute_feature_separation_stats(
+                condensed.hidden_states, ts_labels,
+                features=_WITHIN_CORR_FEATURES,
+                n_shuffle=int(n_shuffle),
+                rng=np.random.default_rng(seed * 10_000 + int(entry["run_id"])),
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"  skip {task}: {exc}", flush=True)
+            continue
+        panels.append({
+            "task": task,
+            "seed": seed,
+            "run_id": entry["run_id"],
+            "n_words": entry["n_words"],
+            "n_dfa_states": n_dfa,
+            "within_corr": {f: float(stats.within_corr[f]) for f in _WITHIN_CORR_FEATURES},
+            "shuffle_within_corr": {
+                f: float(stats.shuffle_within_corr[f]) for f in _WITHIN_CORR_FEATURES
+            },
+        })
+
+    payload = {
+        "seed": seed,
+        "n_shuffle": int(n_shuffle),
+        "features": list(_WITHIN_CORR_FEATURES),
+        "panels": panels,
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def plot_mixed_dfa_within_corr_vs_dfa(
+    *,
+    seed: int = 1,
+    recompute: bool = False,
+    outfile: str = "within_corr_vs_dfa.png",
+) -> Path:
+    """One panel: within-feature state corr vs DFA size (observed + shuffle)."""
+    from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
+    from viz.compare.pow2_sweep_metric_board import _fit_trend
+
+    path = collect_mixed_dfa_within_corr(seed=seed, recompute=recompute)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    panels = payload["panels"]
+    features = tuple(payload.get("features", _WITHIN_CORR_FEATURES))
+
+    fig, ax = plt.subplots(figsize=(7.6, 4.8))
+    handles = []
+    labels = []
+    for feat in features:
+        color = FEATURE_COLORS.get(feat, "#666666")
+        display = FEATURE_DISPLAY.get(feat, feat)
+        xs = np.asarray([float(p["n_dfa_states"]) for p in panels], dtype=float)
+        y_obs = np.asarray(
+            [float(p["within_corr"].get(feat, float("nan"))) for p in panels],
+            dtype=float,
+        )
+        y_sh = np.asarray(
+            [float(p["shuffle_within_corr"].get(feat, float("nan"))) for p in panels],
+            dtype=float,
+        )
+        mask_o = np.isfinite(xs) & np.isfinite(y_obs)
+        mask_s = np.isfinite(xs) & np.isfinite(y_sh)
+        h_obs = ax.scatter(
+            xs[mask_o], y_obs[mask_o],
+            s=28, color=color, marker="o", alpha=0.80, zorder=3,
+            edgecolors="white", linewidths=0.35,
+        )
+        h_sh = ax.scatter(
+            xs[mask_s], y_sh[mask_s],
+            s=26, facecolors="none", edgecolors=color, marker="o",
+            alpha=0.55, linewidths=1.05, zorder=2,
+        )
+        x_fit_o, y_fit_o, r2_o, _ = _fit_trend(xs[mask_o], y_obs[mask_o])
+        x_fit_s, y_fit_s, r2_s, _ = _fit_trend(xs[mask_s], y_sh[mask_s])
+        if x_fit_o is not None and y_fit_o is not None:
+            ax.plot(x_fit_o, y_fit_o, color=color, lw=1.6, zorder=4)
+        if x_fit_s is not None and y_fit_s is not None:
+            ax.plot(x_fit_s, y_fit_s, color=color, lw=1.2, ls="--", alpha=0.75, zorder=3)
+        obs_lab = f"{display} (obs)"
+        if np.isfinite(r2_o):
+            obs_lab = f"{display} (obs, $R^2$={r2_o:.2f})"
+        sh_lab = f"{display} (shuffle)"
+        if np.isfinite(r2_s):
+            sh_lab = f"{display} (shuffle, $R^2$={r2_s:.2f})"
+        handles.extend([h_obs, h_sh])
+        labels.extend([obs_lab, sh_lab])
+
+    ax.set_xlabel("DFA states", fontsize=9)
+    ax.set_ylabel("mean within-feature state correlation", fontsize=9)
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, alpha=0.28)
+    ax.tick_params(labelsize=8)
+    ax.legend(
+        handles, labels,
+        loc="upper right", fontsize=6.2, frameon=True, framealpha=0.92,
+        ncol=2, columnspacing=0.7, handletextpad=0.35, borderpad=0.4,
+    )
+    finalize_grid_figure(
+        fig,
+        # Observed filled + solid fit; shuffle hollow + dashed fit.
+        suptitle=(
+            f"Within-feature state correlation vs DFA size "
+            f"(seed {seed}; open/dashed = label shuffle)"
+        ),
+        top=0.88,
+        bottom=0.14,
+        left=0.12,
+        right=0.98,
+    )
+    out = comparison_dir(COMPARISON_NAME, "trajectories") / outfile
+    out.parent.mkdir(parents=True, exist_ok=True)
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
 
 def run_all_mixed_dfa_plots(
     *,
@@ -2106,6 +2290,7 @@ def run_all_mixed_dfa_plots(
         plot_mixed_dfa_scaling_overview(payload, recompute=False),
         plot_mixed_dfa_weight_matrices_by_dfa(),
         plot_mixed_dfa_trajectory_vocab_grid(),
+        plot_mixed_dfa_within_corr_vs_dfa(recompute=False),
     ]
     for p in outs:
         print(f"wrote {p}", flush=True)

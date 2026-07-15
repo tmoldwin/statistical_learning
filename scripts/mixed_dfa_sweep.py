@@ -26,6 +26,7 @@ from viz.compare.mixed_dfa_viz import (
     collect_learning_decode,
     plot_learning_decode,
     plot_mixed_dfa_trajectory_vocab_grid,
+    plot_mixed_dfa_within_corr_vs_dfa,
     run_all_mixed_dfa_plots,
 )
 from viz.compare.mixed_dfa_learning_decode import (
@@ -196,7 +197,7 @@ def main() -> None:
         "command",
         choices=(
             "plan", "train", "plot", "all",
-            "learning-decode", "learning-decode-bins", "trajectory-grid",
+            "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -226,6 +227,9 @@ def main() -> None:
         cmd_learning_decode_bins(args)
     elif args.command == "trajectory-grid":
         out = plot_mixed_dfa_trajectory_vocab_grid()
+        print(f"wrote {out}", flush=True)
+    elif args.command == "within-corr":
+        out = plot_mixed_dfa_within_corr_vs_dfa(recompute=True)
         print(f"wrote {out}", flush=True)
     elif args.command == "all":
         cmd_plan(args)

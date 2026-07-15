@@ -21,21 +21,36 @@ from vocab_mixed_dfa import (
     task_name,
     write_run_manifest,
 )
+from rnn.learning_snaps import list_learning_snaps
 from viz.compare.mixed_dfa_viz import (
     collect_learning_decode,
     plot_learning_decode,
     run_all_mixed_dfa_plots,
 )
+from viz.compare.mixed_dfa_learning_decode import (
+    collect_learning_decode_by_dfa,
+    plot_learning_decode_by_dfa_bins,
+)
 from viz.compare.sweep_output import sweep_data_dir
+
+LEARNING_DECODE_SEEDS: tuple[int, ...] = tuple(range(1, 16))
+HARD_RUN_ID = 41  # DFA=49, 21 words — hardest in the 50-run manifest
 
 
 def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str,
-               save_learning_snaps: bool = False) -> None:
-    need = [s for s in seeds if not checkpoint_path(task, "rnn", seed=s).is_file()]
-    if not need and not save_learning_snaps:
+               save_learning_snaps: bool = False, force_retrain: bool = False) -> None:
+    need: list[int] = []
+    for s in seeds:
+        ckpt = checkpoint_path(task, "rnn", seed=s)
+        if force_retrain:
+            need.append(s)
+        elif save_learning_snaps:
+            if not list_learning_snaps(ckpt):
+                need.append(s)
+        elif not ckpt.is_file():
+            need.append(s)
+    if not need:
         return
-    if save_learning_snaps:
-        need = list(seeds)
     cmd = [
         sys.executable, "scripts/run_task.py", task,
         "--models", "rnn",
@@ -97,12 +112,80 @@ def cmd_plot(args: argparse.Namespace) -> None:
 def cmd_learning_decode(args: argparse.Namespace) -> None:
     run_id = int(args.run_id)
     task = task_name(run_id)
-    seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
-    seed = int(seeds[0])
-    if args.retrain:
-        _train_one(task, (seed,), smoke=False, device=args.device, save_learning_snaps=True)
-    json_path = collect_learning_decode(task, seed=seed)
+    seeds = tuple(args.seeds) if args.seeds else LEARNING_DECODE_SEEDS
+    need: list[int] = []
+    for s in seeds:
+        ckpt = checkpoint_path(task, "rnn", seed=s)
+        if args.retrain or not list_learning_snaps(ckpt):
+            need.append(int(s))
+    if need:
+        jobs = max(1, int(args.jobs))
+        print(f"training {len(need)} seeds with learning snaps (jobs={jobs})", flush=True)
+        if jobs == 1:
+            _train_one(
+                task, tuple(need), smoke=False, device=args.device,
+                save_learning_snaps=True, force_retrain=args.retrain,
+            )
+        else:
+            with ProcessPoolExecutor(max_workers=jobs) as pool:
+                futs = [
+                    pool.submit(
+                        _train_one,
+                        task,
+                        (seed,),
+                        smoke=False,
+                        device=args.device,
+                        save_learning_snaps=True,
+                        force_retrain=args.retrain,
+                    )
+                    for seed in need
+                ]
+                for fut in as_completed(futs):
+                    fut.result()
+    json_path = collect_learning_decode(task, seeds=seeds)
     out = plot_learning_decode(task, json_path=json_path)
+    print(f"wrote {out}", flush=True)
+
+
+def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
+    """Train seed-1 learning snaps for all mixed runs, then binned learning curves."""
+    seed = int((tuple(args.seeds) if args.seeds else (1,))[0])
+    tasks = [e["task"] for e in iter_runs()]
+    if args.runs is not None:
+        want = set(args.runs)
+        tasks = [task_name(i) for i in sorted(want)]
+    need = []
+    for task in tasks:
+        ckpt = checkpoint_path(task, "rnn", seed=seed)
+        if args.retrain or not list_learning_snaps(ckpt):
+            need.append(task)
+    if need:
+        jobs = max(1, int(args.jobs))
+        print(f"training {len(need)} runs seed={seed} with learning snaps (jobs={jobs})", flush=True)
+        if jobs == 1:
+            for task in need:
+                _train_one(
+                    task, (seed,), smoke=False, device=args.device,
+                    save_learning_snaps=True, force_retrain=args.retrain,
+                )
+        else:
+            with ProcessPoolExecutor(max_workers=jobs) as pool:
+                futs = [
+                    pool.submit(
+                        _train_one,
+                        task,
+                        (seed,),
+                        smoke=False,
+                        device=args.device,
+                        save_learning_snaps=True,
+                        force_retrain=args.retrain,
+                    )
+                    for task in need
+                ]
+                for fut in as_completed(futs):
+                    fut.result()
+    json_path = collect_learning_decode_by_dfa(seed=seed, recompute=True, early_xlim=0.2)
+    out = plot_learning_decode_by_dfa_bins(json_path=json_path, early_xlim=0.2)
     print(f"wrote {out}", flush=True)
 
 
@@ -110,7 +193,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("plan", "train", "plot", "all", "learning-decode"),
+        choices=("plan", "train", "plot", "all", "learning-decode", "learning-decode-bins"),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=1)
@@ -118,7 +201,7 @@ def main() -> None:
     parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
     parser.add_argument("--replot-only", action="store_true")
-    parser.add_argument("--run-id", type=int, default=26, help="run id for learning-decode")
+    parser.add_argument("--run-id", type=int, default=HARD_RUN_ID, help="run id for learning-decode")
     parser.add_argument(
         "--retrain", action="store_true",
         help="with learning-decode: force retrain with --save-learning-snaps",
@@ -135,6 +218,8 @@ def main() -> None:
         cmd_plot(args)
     elif args.command == "learning-decode":
         cmd_learning_decode(args)
+    elif args.command == "learning-decode-bins":
+        cmd_learning_decode_bins(args)
     elif args.command == "all":
         cmd_plan(args)
         cmd_train(args)

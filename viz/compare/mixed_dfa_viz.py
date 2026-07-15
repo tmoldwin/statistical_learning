@@ -1193,21 +1193,41 @@ def plot_metrics_vs_dfa(
     return out
 
 
-def collect_learning_decode(
-    task: str = "mixeddfa_r26_ns",
+def _thin_learning_snaps(
+    snaps: list[Path],
     *,
-    seed: int = 1,
+    max_snaps: int = 30,
+    early_frac: float = 0.12,
+) -> list[Path]:
+    """Keep all early snaps (for zoom) plus evenly spaced later ones."""
+    if max_snaps < 2 or len(snaps) <= max_snaps:
+        return snaps
+    iters = np.asarray([int(s.stem.split("_")[1]) for s in snaps], dtype=float)
+    stop = float(max(iters.max(), 1.0))
+    early_mask = (iters / stop) <= float(early_frac)
+    early = [s for s, m in zip(snaps, early_mask) if m]
+    late = [s for s, m in zip(snaps, early_mask) if not m]
+    keep_late = max(2, int(max_snaps) - len(early))
+    if len(late) <= keep_late:
+        return early + late
+    idxs = np.unique(np.round(np.linspace(0, len(late) - 1, keep_late)).astype(int))
+    return early + [late[i] for i in idxs]
+
+
+def _collect_learning_decode_seed(
+    task: str,
+    *,
+    seed: int,
     model_type: str = "rnn",
     pc_ks: tuple[int | None, ...] = (1, 5, None),
-) -> Path:
-    """Decode each sparse learning snap; write JSON next to the learning directory."""
-    from experiment import checkpoint_path
+    max_snaps: int = 30,
+) -> tuple[list[dict[str, Any]], int]:
+    """Decode each sparse learning snap for one seed; return rows and stop_iter."""
     from rnn.learning_snaps import list_learning_snaps
     from viz.compare._data import load_task_viz_context
-    from viz.compare.decoding import chance_corrected, compute_panel_decoding
 
     ckpt = checkpoint_path(task, model_type, seed=seed)
-    snaps = list_learning_snaps(ckpt)
+    snaps = _thin_learning_snaps(list_learning_snaps(ckpt), max_snaps=max_snaps)
     if not snaps:
         raise FileNotFoundError(
             f"no learning snaps for {task} seed {seed} under {ckpt.stem}_learning/"
@@ -1215,11 +1235,13 @@ def collect_learning_decode(
 
     from experiment import TASKS
     cfg = TASKS[task]
-    text_chars = int(cfg.get("metric_rollout_len", cfg.get("viz_length", 50)))
+    # Learning curves need many snaps; cap rollout so 15×50 snaps stay tractable.
+    metric_len = int(cfg.get("metric_rollout_len", cfg.get("viz_length", 50)))
+    text_chars = min(metric_len, 500)
 
     rows: list[dict[str, Any]] = []
     for snap in snaps:
-        print(f"  decode {snap.name}", flush=True)
+        print(f"  seed {seed} decode {snap.name}", flush=True)
         meta = np.load(snap, allow_pickle=True)
         iteration = int(meta["learning_snap_iteration"]) if "learning_snap_iteration" in meta.files else int(
             snap.stem.split("_")[1]
@@ -1274,16 +1296,127 @@ def collect_learning_decode(
     stop_iter = max(int(r["iteration"]) for r in rows) if rows else 1
     for r in rows:
         r["progress"] = float(r["iteration"]) / float(max(stop_iter, 1))
+    return rows, stop_iter
 
-    out = sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}.json"
-    payload = {
-        "task": task,
-        "seed": seed,
-        "model_type": model_type,
-        "pc_ks": [k if k is not None else "full" for k in pc_ks],
-        "stop_iter": stop_iter,
-        "snaps": rows,
+
+def _interp_learning_curve(
+    progress: np.ndarray,
+    values: np.ndarray,
+    grid: np.ndarray,
+) -> np.ndarray:
+    order = np.argsort(progress)
+    xp = np.asarray(progress, dtype=float)[order]
+    yp = np.asarray(values, dtype=float)[order]
+    mask = np.isfinite(xp) & np.isfinite(yp)
+    if int(mask.sum()) < 2:
+        return np.full(grid.shape, np.nan, dtype=float)
+    return np.interp(grid, xp[mask], yp[mask], left=np.nan, right=np.nan)
+
+
+_LEARNING_PC_KS: tuple[int | None, ...] = (1, 2, 3, 4, 5, None)
+
+
+def _learning_basis_specs(pc_ks: tuple[int | None, ...] | None = None) -> tuple[tuple[str, str], ...]:
+    ks = pc_ks if pc_ks is not None else _LEARNING_PC_KS
+    out: list[tuple[str, str]] = []
+    for k in ks:
+        if k is None:
+            out.append(("full", "full H"))
+        elif int(k) == 1:
+            out.append((f"pc{int(k)}", "1 PC"))
+        else:
+            out.append((f"pc{int(k)}", f"{int(k)} PCs"))
+    return tuple(out)
+
+
+def _aggregate_learning_decode_rows(
+    seed_rows: list[list[dict[str, Any]]],
+    *,
+    n_grid: int = 101,
+    early_xlim: float = 0.12,
+    n_early: int = 25,
+    basis_keys: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    # Denser samples in the early window so the zoom row has real resolution.
+    late_n = max(int(n_grid) - int(n_early) + 1, 20)
+    grid = np.unique(
+        np.concatenate([
+            np.linspace(0.0, float(early_xlim), int(n_early)),
+            np.linspace(float(early_xlim), 1.0, late_n),
+        ])
+    )
+    if basis_keys is None:
+        basis_keys = tuple(b for b, _ in _learning_basis_specs())
+    feat_out: dict[str, Any] = {}
+    for feat in _FEATURE_ORDER:
+        feat_out[feat] = {}
+        for bkey in basis_keys:
+            mats = []
+            for rows in seed_rows:
+                prog = np.asarray([r["progress"] for r in rows], dtype=float)
+                vals = np.asarray(
+                    [float(r.get("features", {}).get(feat, {}).get(bkey, float("nan"))) for r in rows],
+                    dtype=float,
+                )
+                mats.append(_interp_learning_curve(prog, vals, grid))
+            mat = np.vstack(mats)
+            feat_out[feat][f"{bkey}_mean"] = np.nanmean(mat, axis=0).tolist()
+            feat_out[feat][f"{bkey}_std"] = np.nanstd(mat, axis=0).tolist()
+
+    we_mats = []
+    for rows in seed_rows:
+        prog = np.asarray([r["progress"] for r in rows], dtype=float)
+        vals = np.asarray([r["word_err"] for r in rows], dtype=float)
+        we_mats.append(_interp_learning_curve(prog, vals, grid))
+    we_mat = np.vstack(we_mats)
+    return {
+        "progress_grid": grid.tolist(),
+        "word_err_mean": np.nanmean(we_mat, axis=0).tolist(),
+        "word_err_std": np.nanstd(we_mat, axis=0).tolist(),
+        "features": feat_out,
+        "n_seeds": len(seed_rows),
+        "basis_keys": list(basis_keys),
     }
+
+
+def collect_learning_decode(
+    task: str = "mixeddfa_r26_ns",
+    *,
+    seeds: tuple[int, ...] = (1,),
+    model_type: str = "rnn",
+    pc_ks: tuple[int | None, ...] = _LEARNING_PC_KS,
+) -> Path:
+    """Decode each sparse learning snap; write JSON next to the learning directory."""
+    per_seed: list[dict[str, Any]] = []
+    all_rows: list[list[dict[str, Any]]] = []
+    for seed in seeds:
+        rows, stop_iter = _collect_learning_decode_seed(
+            task, seed=seed, model_type=model_type, pc_ks=pc_ks,
+        )
+        per_seed.append({"seed": int(seed), "stop_iter": int(stop_iter), "snaps": rows})
+        all_rows.append(rows)
+
+    basis_keys = tuple(b for b, _ in _learning_basis_specs(pc_ks))
+    if len(seeds) == 1:
+        out = sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}.json"
+        payload: dict[str, Any] = {
+            "task": task,
+            "seed": int(seeds[0]),
+            "model_type": model_type,
+            "pc_ks": [k if k is not None else "full" for k in pc_ks],
+            "stop_iter": int(per_seed[0]["stop_iter"]),
+            "snaps": per_seed[0]["snaps"],
+        }
+    else:
+        out = sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}_seed_mean.json"
+        payload = {
+            "task": task,
+            "seeds": [int(s) for s in seeds],
+            "model_type": model_type,
+            "pc_ks": [k if k is not None else "full" for k in pc_ks],
+            "aggregated": _aggregate_learning_decode_rows(all_rows, basis_keys=basis_keys),
+            "per_seed": per_seed,
+        }
     out.write_text(json.dumps(_sanitize(payload), indent=2), encoding="utf-8")
     print(f"wrote {out}", flush=True)
     return out
@@ -1294,79 +1427,450 @@ def plot_learning_decode(
     *,
     json_path: Path | None = None,
     outfile: str | None = None,
+    early_xlim: float = 0.15,
 ) -> Path:
-    """Rows = 1 PC / 5 PCs / full H; columns = features; x = normalized progress."""
+    """Two rows x PC bases (1..5 + full H): full progress, then early zoom."""
     path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}.json")
     if not path.is_file():
+        alt = sweep_decoding_dir(COMPARISON_NAME) / f"learning_decode_{task}_seed_mean.json"
+        path = alt if alt.is_file() else path
+    if not path.is_file():
         path = collect_learning_decode(task)
+
     payload = json.loads(path.read_text(encoding="utf-8"))
-    rows = payload["snaps"]
-    if not rows:
+    aggregated = payload.get("aggregated")
+    rows = payload.get("snaps") or []
+    n_seeds = len(payload.get("seeds") or [])
+    if aggregated is None and not rows:
         raise FileNotFoundError(f"no snaps in {path}")
 
-    basis_keys = (
-        ("pc1", "1 PC"),
-        ("pc5", "5 PCs"),
-        ("full", "full hidden"),
-    )
-    progress = np.asarray([r["progress"] for r in rows], dtype=float)
-    word_err = np.asarray([r["word_err"] for r in rows], dtype=float)
+    raw_ks = payload.get("pc_ks")
+    if raw_ks:
+        pc_ks_parsed: list[int | None] = []
+        for k in raw_ks:
+            if k is None or k == "full":
+                pc_ks_parsed.append(None)
+            else:
+                pc_ks_parsed.append(int(k))
+        basis_keys = _learning_basis_specs(tuple(pc_ks_parsed))
+    else:
+        basis_keys = _learning_basis_specs()
 
+    row_specs = (
+        (0.0, 1.02, "full training"),
+        (0.0, float(early_xlim), f"early (0-{early_xlim:g})"),
+    )
+    n_cols = len(basis_keys)
     fig, axes = plt.subplots(
-        len(basis_keys), len(_FEATURE_ORDER),
-        figsize=(2.8 * len(_FEATURE_ORDER), 2.4 * len(basis_keys) + 0.6),
-        sharex=True,
+        len(row_specs),
+        n_cols,
+        figsize=(2.15 * n_cols + 0.6, 2.55 * len(row_specs) + 0.55),
         sharey=True,
         squeeze=False,
     )
-    for ri, (bkey, blabel) in enumerate(basis_keys):
-        for ci, feat in enumerate(_FEATURE_ORDER):
+    word_err_line = None
+
+    if aggregated is not None:
+        progress_all = np.asarray(aggregated["progress_grid"], dtype=float)
+        word_err_mean_all = np.asarray(aggregated["word_err_mean"], dtype=float)
+        word_err_std_all = np.asarray(aggregated["word_err_std"], dtype=float)
+        n_s = int(aggregated.get("n_seeds", n_seeds))
+        early_counts = [
+            sum(1 for s in (ps.get("snaps") or []) if float(s.get("progress", 1.0)) <= early_xlim)
+            for ps in (payload.get("per_seed") or [])
+        ]
+        mean_early = int(round(float(np.mean(early_counts)))) if early_counts else 0
+        title = f"Readout over learning ({task}, mean ± std over {n_s} seeds; ~{mean_early} early snaps/seed)"
+    else:
+        progress_all = np.asarray([r["progress"] for r in rows], dtype=float)
+        word_err_mean_all = np.asarray([r["word_err"] for r in rows], dtype=float)
+        word_err_std_all = None
+        early_count = int(np.sum(progress_all <= early_xlim))
+        title = f"Readout over learning ({task}; {early_count} snaps in early window)"
+
+    for ri, (x0, x1, row_label) in enumerate(row_specs):
+        zoom_mask = (progress_all >= x0) & (progress_all <= x1 + 1e-9)
+        progress = progress_all[zoom_mask]
+        word_err_mean = word_err_mean_all[zoom_mask]
+        word_err_std = word_err_std_all[zoom_mask] if word_err_std_all is not None else None
+        for ci, (bkey, blabel) in enumerate(basis_keys):
             ax = axes[ri, ci]
-            ys = []
-            for r in rows:
-                blob = r.get("features", {}).get(feat, {})
-                ys.append(float(blob.get(bkey, float("nan"))))
-            y = np.asarray(ys, dtype=float)
-            color = DECODE_FEATURE_COLORS[feat]
-            ax.plot(progress, y, color=color, lw=1.8, marker="o", ms=3.5)
+            for feat in _FEATURE_ORDER:
+                color = DECODE_FEATURE_COLORS[feat]
+                if aggregated is not None:
+                    blob = aggregated.get("features", {}).get(feat, {})
+                    y_mean = np.asarray(blob.get(f"{bkey}_mean", []), dtype=float)
+                    y_std = np.asarray(blob.get(f"{bkey}_std", []), dtype=float)
+                    if y_mean.size == 0:
+                        continue
+                    y_mean = y_mean[zoom_mask]
+                    if y_std.size == zoom_mask.size:
+                        y_std = y_std[zoom_mask]
+                    ax.plot(
+                        progress,
+                        y_mean,
+                        color=color,
+                        lw=1.6,
+                        marker="o" if ri == 1 else None,
+                        ms=2.4 if ri == 1 else None,
+                        label=feature_display_name(feat) if (ri == 0 and ci == 0) else None,
+                    )
+                    if y_std.size == y_mean.size and np.any(np.isfinite(y_std)):
+                        ax.fill_between(
+                            progress,
+                            y_mean - y_std,
+                            y_mean + y_std,
+                            color=color,
+                            alpha=0.16,
+                            linewidth=0,
+                        )
+                else:
+                    ys = [
+                        float(r.get("features", {}).get(feat, {}).get(bkey, float("nan")))
+                        for r in rows
+                    ]
+                    y = np.asarray(ys, dtype=float)[zoom_mask]
+                    ax.plot(
+                        progress,
+                        y,
+                        color=color,
+                        lw=1.6,
+                        marker="o",
+                        ms=2.8,
+                        label=feature_display_name(feat) if (ri == 0 and ci == 0) else None,
+                    )
             if ri == 0:
-                ax.set_title(feature_display_name(feat), fontsize=9, color=color, pad=4)
-            if ci == 0:
-                ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=7, labelpad=6)
-            if ri == len(basis_keys) - 1:
-                ax.set_xlabel("progress (iter / stop)", fontsize=8)
+                ax.set_title(blabel, fontsize=8, pad=3)
+            if ri == len(row_specs) - 1:
+                ax.set_xlabel("progress", fontsize=7)
             else:
                 hide_x_tick_labels(ax)
             ax.set_ylim(-0.05, 1.05)
-            ax.set_xlim(0.0, 1.02)
+            ax.set_xlim(x0, x1)
             ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
             ax.grid(True, alpha=0.25)
-            ax.tick_params(labelsize=6)
-            # Twin word-error on rightmost column for context.
-            if ci == len(_FEATURE_ORDER) - 1 and np.any(np.isfinite(word_err)):
+            ax.tick_params(labelsize=5.5)
+            if ci == 0:
+                ax.set_ylabel(f"{row_label}\nchance-corr. acc.", fontsize=7, labelpad=5)
+            if np.any(np.isfinite(word_err_mean)):
                 ax2 = ax.twinx()
-                ax2.plot(progress, word_err, color="0.45", lw=1.0, ls="--", alpha=0.8)
+                (line,) = ax2.plot(
+                    progress, word_err_mean, color="0.45", lw=0.95, ls="--", alpha=0.8,
+                )
+                if word_err_line is None:
+                    word_err_line = line
+                if word_err_std is not None and np.any(np.isfinite(word_err_std)):
+                    ax2.fill_between(
+                        progress,
+                        word_err_mean - word_err_std,
+                        word_err_mean + word_err_std,
+                        color="0.45",
+                        alpha=0.10,
+                        linewidth=0,
+                    )
                 ax2.set_ylim(-0.02, 1.05)
                 ax2.tick_params(labelsize=5, colors="0.45")
-                if ri == 0:
+                if ci == n_cols - 1:
                     ax2.set_ylabel("word err", fontsize=6, color="0.45")
+                else:
+                    ax2.set_yticklabels([])
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    if word_err_line is not None:
+        handles = [*handles, word_err_line]
+        labels = [*labels, "word err"]
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        ncol=len(labels),
+        fontsize=6.5,
+        frameon=False,
+        columnspacing=1.0,
+        handletextpad=0.4,
+    )
 
     finalize_grid_figure(
         fig,
-        suptitle=f"Readout over learning ({task})",
-        bottom=0.09,
-        left=0.10,
-        right=0.92,
-        top=0.88,
+        suptitle=title,
+        bottom=0.11,
+        left=0.07,
+        right=0.94,
+        top=0.90,
         wspace=0.22,
-        hspace=0.35,
+        hspace=0.30,
     )
-    out_name = outfile or f"learning_decode_{task.replace('mixeddfa_', '').replace('_ns', '')}.png"
-    # Prefer plan name learning_decode_r26.png for primary pilot.
-    if task.startswith("mixeddfa_r") and task.endswith("_ns"):
+    if outfile:
+        out_name = outfile
+    elif aggregated is not None and task.startswith("mixeddfa_r") and task.endswith("_ns"):
         rid = task[len("mixeddfa_"):-len("_ns")]
-        out_name = outfile or f"learning_decode_{rid}.png"
+        out_name = f"learning_decode_{rid}_seed_mean.png"
+    elif task.startswith("mixeddfa_r") and task.endswith("_ns"):
+        rid = task[len("mixeddfa_"):-len("_ns")]
+        out_name = f"learning_decode_{rid}.png"
+    else:
+        out_name = f"learning_decode_{task.replace('mixeddfa_', '').replace('_ns', '')}.png"
     out = sweep_decoding_dir(COMPARISON_NAME) / out_name
+    save_figure(fig, out)
+    plt.close(fig)
+    return out
+
+
+
+def _dfa_quantile_edges(dfa_vals: np.ndarray, n_bins: int = 4) -> np.ndarray:
+    edges = np.unique(np.quantile(np.asarray(dfa_vals, dtype=float), np.linspace(0, 1, n_bins + 1)))
+    if len(edges) < 2:
+        lo = float(np.min(dfa_vals)) - 0.5
+        hi = float(np.max(dfa_vals)) + 0.5
+        edges = np.asarray([lo, hi], dtype=float)
+    return edges
+
+
+def _subset_for_dfa_bin(
+    panels: list[dict[str, Any]],
+    *,
+    edges: np.ndarray,
+    bin_index: int,
+) -> list[dict[str, Any]]:
+    lo = float(edges[bin_index])
+    hi = float(edges[bin_index + 1])
+    if bin_index == len(edges) - 2:
+        return [p for p in panels if lo <= float(p["n_dfa_states"]) <= hi]
+    return [p for p in panels if lo <= float(p["n_dfa_states"]) < hi]
+
+
+def _dfa_bin_title(edges: np.ndarray, bin_index: int) -> str:
+    lo = float(edges[bin_index])
+    hi = float(edges[bin_index + 1])
+    if bin_index == len(edges) - 2:
+        return f"DFA {int(round(lo))}-{int(round(hi))}"
+    return f"DFA {int(round(lo))}-{int(round(hi - 1e-9))}"
+
+
+def collect_learning_decode_by_dfa(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    pc_ks: tuple[int | None, ...] = _LEARNING_PC_KS,
+    recompute: bool = False,
+) -> Path:
+    """Learning-decode for every mixed run (default seed 1), aggregated in Fig-12 DFA bins."""
+    out = sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json"
+    if out.is_file() and not recompute:
+        return out
+
+    panels_payload = _load_panels()
+    panel_by_run = {
+        int(p["run_id"]): p
+        for p in panels_payload.get("panels", [])
+        if "error" not in p and "run_id" in p
+    }
+
+    run_payloads: list[dict[str, Any]] = []
+    for entry in iter_runs():
+        rid = int(entry["run_id"])
+        task = str(entry["task"])
+        panel = panel_by_run.get(rid)
+        n_dfa = int(panel["n_dfa_states"]) if panel else _dfa_states(list(entry["words"]))
+        n_words = int(entry["n_words"])
+        print(f"learning-decode collect {task} seed {seed}  dfa={n_dfa}", flush=True)
+        rows, stop_iter = _collect_learning_decode_seed(
+            task, seed=seed, model_type=model_type, pc_ks=pc_ks,
+        )
+        run_payloads.append({
+            "run_id": rid,
+            "task": task,
+            "seed": int(seed),
+            "n_dfa_states": n_dfa,
+            "n_words": n_words,
+            "stop_iter": int(stop_iter),
+            "snaps": rows,
+        })
+
+    dfa_vals = np.asarray([r["n_dfa_states"] for r in run_payloads], dtype=float)
+    edges = _dfa_quantile_edges(dfa_vals, n_bins=4)
+    basis_keys = tuple(b for b, _ in _learning_basis_specs(pc_ks))
+
+    bins: list[dict[str, Any]] = []
+    for bi in range(len(edges) - 1):
+        subset = _subset_for_dfa_bin(run_payloads, edges=edges, bin_index=bi)
+        seed_rows = [r["snaps"] for r in subset]
+        agg = (
+            _aggregate_learning_decode_rows(seed_rows, basis_keys=basis_keys)
+            if seed_rows else None
+        )
+        bins.append({
+            "bin_index": bi,
+            "title": _dfa_bin_title(edges, bi),
+            "lo": float(edges[bi]),
+            "hi": float(edges[bi + 1]),
+            "n_runs": len(subset),
+            "run_ids": [int(r["run_id"]) for r in subset],
+            "aggregated": agg,
+        })
+
+    payload = {
+        "seed": int(seed),
+        "model_type": model_type,
+        "pc_ks": [k if k is not None else "full" for k in pc_ks],
+        "edges": [float(x) for x in edges],
+        "runs": run_payloads,
+        "bins": bins,
+    }
+    out.write_text(json.dumps(_sanitize(payload), indent=2), encoding="utf-8")
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def plot_learning_decode_by_dfa_bins(
+    *,
+    json_path: Path | None = None,
+    outfile: str = "learning_decode_by_dfa.png",
+    early_xlim: float = 0.2,
+    pc_row_ks: tuple[int | None, ...] = (1, 5, None),
+) -> Path:
+    """Columns = Fig-12 DFA bins; rows = 1 PC / 5 PCs / full H over early progress."""
+    path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json")
+    if not path.is_file():
+        path = collect_learning_decode_by_dfa()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    bins = [b for b in payload.get("bins", []) if b.get("aggregated")]
+    if not bins:
+        raise FileNotFoundError(f"no binned learning curves in {path}")
+
+    raw_ks = payload.get("pc_ks") or [1, 2, 3, 4, 5, "full"]
+    parsed: list[int | None] = []
+    for k in raw_ks:
+        if k is None or k == "full":
+            parsed.append(None)
+        else:
+            parsed.append(int(k))
+    all_basis = _learning_basis_specs(tuple(parsed))
+    want = {"full" if k is None else f"pc{int(k)}" for k in pc_row_ks}
+    basis_keys = tuple((b, lab) for b, lab in all_basis if b in want)
+    if not basis_keys:
+        basis_keys = (("pc1", "1 PC"), ("pc5", "5 PCs"), ("full", "full H"))
+
+    row_blocks = (
+        ("early", 0.0, float(early_xlim)),
+    )
+    n_basis = len(basis_keys)
+    n_bins = len(bins)
+    n_rows = len(row_blocks) * n_basis
+    fig, axes = plt.subplots(
+        n_rows,
+        n_bins,
+        figsize=(2.6 * n_bins + 0.7, 2.15 * n_rows + 0.7),
+        sharey=True,
+        squeeze=False,
+    )
+    word_err_line = None
+    seed = int(payload.get("seed", 1))
+
+    for bi, blob in enumerate(bins):
+        agg = blob["aggregated"]
+        progress_all = np.asarray(agg["progress_grid"], dtype=float)
+        we_mean_all = np.asarray(agg["word_err_mean"], dtype=float)
+        we_std_all = np.asarray(agg["word_err_std"], dtype=float)
+        for block_i, (block_name, x0, x1) in enumerate(row_blocks):
+            zoom = (progress_all >= x0) & (progress_all <= x1 + 1e-9)
+            progress = progress_all[zoom]
+            we_mean = we_mean_all[zoom]
+            we_std = we_std_all[zoom]
+            for ki, (bkey, blabel) in enumerate(basis_keys):
+                ri = block_i * n_basis + ki
+                ax = axes[ri, bi]
+                for feat in _FEATURE_ORDER:
+                    color = DECODE_FEATURE_COLORS[feat]
+                    feat_blob = agg.get("features", {}).get(feat, {})
+                    y_mean = np.asarray(feat_blob.get(f"{bkey}_mean", []), dtype=float)
+                    y_std = np.asarray(feat_blob.get(f"{bkey}_std", []), dtype=float)
+                    if y_mean.size == 0:
+                        continue
+                    y_mean = y_mean[zoom]
+                    if y_std.size == zoom.size:
+                        y_std = y_std[zoom]
+                    ax.plot(
+                        progress,
+                        y_mean,
+                        color=color,
+                        lw=1.5,
+                        marker="o" if block_name == "early" else None,
+                        ms=2.2 if block_name == "early" else None,
+                        label=feature_display_name(feat) if (ri == 0 and bi == 0) else None,
+                    )
+                    if y_std.size == y_mean.size and np.any(np.isfinite(y_std)):
+                        ax.fill_between(
+                            progress,
+                            y_mean - y_std,
+                            y_mean + y_std,
+                            color=color,
+                            alpha=0.14,
+                            linewidth=0,
+                        )
+                if ri == 0:
+                    ax.set_title(f"{blob['title']}  (n={blob['n_runs']})", fontsize=8, pad=3)
+                if ri == n_rows - 1:
+                    ax.set_xlabel("progress", fontsize=7)
+                else:
+                    hide_x_tick_labels(ax)
+                ax.set_xlim(x0, x1)
+                ax.set_ylim(-0.05, 1.05)
+                ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
+                ax.grid(True, alpha=0.25)
+                ax.tick_params(labelsize=5.5)
+                if bi == 0:
+                    ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=7, labelpad=4)
+                if np.any(np.isfinite(we_mean)):
+                    ax2 = ax.twinx()
+                    (line,) = ax2.plot(progress, we_mean, color="0.45", lw=0.9, ls="--", alpha=0.8)
+                    if word_err_line is None:
+                        word_err_line = line
+                    if np.any(np.isfinite(we_std)):
+                        ax2.fill_between(
+                            progress,
+                            we_mean - we_std,
+                            we_mean + we_std,
+                            color="0.45",
+                            alpha=0.10,
+                            linewidth=0,
+                        )
+                    ax2.set_ylim(-0.02, 1.05)
+                    ax2.tick_params(labelsize=5, colors="0.45")
+                    if bi == n_bins - 1:
+                        ax2.set_ylabel("word err", fontsize=6, color="0.45")
+                    else:
+                        ax2.set_yticklabels([])
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    if word_err_line is not None:
+        handles = [*handles, word_err_line]
+        labels = [*labels, "word err"]
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        ncol=len(labels),
+        fontsize=6.5,
+        frameon=False,
+        columnspacing=1.0,
+        handletextpad=0.4,
+    )
+    n_runs = sum(int(b.get("n_runs", 0)) for b in bins)
+    title = "Readout over learning by DFA bin (seed {}, {} mixed runs)".format(seed, n_runs)
+    finalize_grid_figure(
+        fig,
+        suptitle=title,
+        top=0.90,
+        bottom=0.08,
+        left=0.08,
+        right=0.94,
+        wspace=0.22,
+        hspace=0.28,
+    )
+    out = sweep_decoding_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
     plt.close(fig)
     return out

@@ -25,6 +25,9 @@ from viz.compare.decoding import (
     _DEFAULT_NEURON_RANDOM_TRIALS,
     chance_corrected,
     compute_panel_decoding,
+    dfa_oracle_cc_from_feat,
+    dfa_oracles_for_words,
+    draw_dfa_oracle_baselines,
     feature_display_name,
 )
 from viz.compare.geometry import _GEOMETRY_TRIALS, _ROLLOUT_SEED, _mean_closed_loop_hidden
@@ -173,6 +176,10 @@ def collect_mixed_dfa_panels(
                     "by_k_neurons_std": blob.get("by_k_neurons_std"),
                     "neuron_sampling": blob.get("neuron_sampling", "random"),
                 }
+                if blob.get("dfa_oracle") is not None:
+                    feat_summary[feat]["dfa_oracle"] = float(blob["dfa_oracle"])
+                if blob.get("dfa_oracle_cc") is not None:
+                    feat_summary[feat]["dfa_oracle_cc"] = float(blob["dfa_oracle_cc"])
 
             panels.append({
                 "task": task,
@@ -207,6 +214,54 @@ def collect_mixed_dfa_panels(
 def _load_panels(path: Path | None = None) -> dict[str, Any]:
     p = path or (sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_panels.json")
     return json.loads(p.read_text(encoding="utf-8"))
+
+
+def backfill_dfa_oracles(
+    payload: dict[str, Any] | None = None,
+    *,
+    write: bool = True,
+) -> dict[str, Any]:
+    """Attach DFA-oracle floors to existing panels (vocab-only; no re-probe)."""
+    path = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_panels.json"
+    payload = payload or _load_panels(path)
+    features = tuple(payload.get("features") or _FEATURE_ORDER)
+    n_updated = 0
+    for panel in payload.get("panels", []):
+        if "error" in panel:
+            continue
+        words = list(panel.get("words") or [])
+        if not words:
+            continue
+        oracles = dfa_oracles_for_words(words, features=features, spaced=False)
+        feats = panel.get("features") or {}
+        for feat, oracle in oracles.items():
+            blob = feats.get(feat)
+            if not isinstance(blob, dict) or blob.get("error"):
+                continue
+            chance = float(blob.get("chance", float("nan")))
+            blob["dfa_oracle"] = float(oracle)
+            if np.isfinite(chance):
+                blob["dfa_oracle_cc"] = chance_corrected(float(oracle), chance)
+            n_updated += 1
+    if write:
+        path.write_text(json.dumps(_sanitize(payload), indent=2), encoding="utf-8")
+        print(f"backfilled dfa_oracle on {n_updated} feature blobs -> {path}", flush=True)
+    return payload
+
+
+def _mean_dfa_oracle_cc(
+    panels: list[dict[str, Any]],
+    *,
+    feat: str,
+) -> float | None:
+    vals = []
+    for p in panels:
+        y = dfa_oracle_cc_from_feat(p.get("features", {}).get(feat, {}))
+        if y is not None:
+            vals.append(y)
+    if not vals:
+        return None
+    return float(np.mean(vals))
 
 
 def plot_decoding_vs_dfa(
@@ -378,6 +433,7 @@ def plot_decoding_curves_by_dfa_bins(
 
         for ri, (field, xlabel, basis_label) in enumerate(row_specs):
             ax = axes[ri, bi]
+            oracles_cc: dict[str, float] = {}
             for feat in _FEATURE_ORDER:
                 y = _mean_chance_corrected_curve(
                     subset, feat=feat, field=field, max_k=max_k,
@@ -391,6 +447,15 @@ def plot_decoding_curves_by_dfa_bins(
                     lw=1.6,
                     label=feature_display_name(feat) if (ri == 0 and bi == 0) else None,
                 )
+                o = _mean_dfa_oracle_cc(subset, feat=feat)
+                if o is not None:
+                    oracles_cc[feat] = o
+            draw_dfa_oracle_baselines(
+                ax,
+                oracles_cc=oracles_cc,
+                features=_FEATURE_ORDER,
+                show_legend=False,
+            )
             if ri == 0:
                 ax.set_title(f"{title}  (n={len(subset)})", fontsize=8)
             ax.set_xlim(1, max_k)
@@ -436,6 +501,21 @@ def plot_decoding_curves_by_dfa_bins(
                     c=n_words, cmap=words_cmap, norm=words_norm,
                     s=14, alpha=0.8, linewidths=0.25, edgecolors="white", zorder=2,
                 )
+                # DFA-oracle floor for the same runs (open markers).
+                ox, oy = [], []
+                for p in panels:
+                    oo = dfa_oracle_cc_from_feat(p.get("features", {}).get(feat, {}))
+                    if oo is None:
+                        continue
+                    ox.append(float(p["n_dfa_states"]))
+                    oy.append(oo)
+                if ox:
+                    ax.scatter(
+                        ox, oy,
+                        facecolors="none", edgecolors=color,
+                        s=18, linewidths=0.7, alpha=0.55, zorder=1,
+                        marker="o",
+                    )
                 x_fit, y_fit, r2, _model = _fit_trend(x, y)
                 if x_fit is not None and y_fit is not None and np.isfinite(r2):
                     ax.plot(x_fit, y_fit, color=color, lw=1.3, zorder=3)
@@ -467,9 +547,21 @@ def plot_decoding_curves_by_dfa_bins(
             axes[ri, bi].set_axis_off()
 
     if axes[0, 0].get_legend_handles_labels()[0]:
+        from matplotlib.lines import Line2D
+
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        handles = list(handles) + [
+            Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
+            Line2D(
+                [0], [0], marker="o", color="0.35", ls="none",
+                markerfacecolor="none", markeredgewidth=0.8, markersize=5,
+            ),
+        ]
+        labels = list(labels) + ["DFA-state oracle (curves)", "DFA-state oracle (scatters)"]
         axes[0, 0].legend(
-            fontsize=6, frameon=False, loc="lower right",
-            ncol=min(len(_FEATURE_ORDER), 3),
+            handles, labels,
+            fontsize=5.5, frameon=False, loc="lower right",
+            ncol=1,
         )
 
     cax = fig.add_axes([0.92, 0.08, 0.014, 0.42])
@@ -482,7 +574,7 @@ def plot_decoding_curves_by_dfa_bins(
 
     finalize_grid_figure(
         fig,
-        suptitle="Readouts by DFA bin; PC-count probes vs DFA size",
+        suptitle="Readouts by DFA bin; dashed/open = DFA-state oracle baseline",
         bottom=0.06,
         left=0.11,
         right=0.90,
@@ -1353,6 +1445,10 @@ def _collect_learning_decode_seed(
                     else:
                         basis_vals[f"pc{k}"] = float(chance_corrected(float(raw), chance))
             feat_out[feat] = {"chance": chance, **basis_vals}
+            if blob.get("dfa_oracle") is not None:
+                feat_out[feat]["dfa_oracle"] = float(blob["dfa_oracle"])
+            if blob.get("dfa_oracle_cc") is not None:
+                feat_out[feat]["dfa_oracle_cc"] = float(blob["dfa_oracle_cc"])
         rows.append({
             "iteration": iteration,
             "word_err": word_err,
@@ -1381,7 +1477,7 @@ def _interp_learning_curve(
     return np.interp(grid, xp[mask], yp[mask], left=np.nan, right=np.nan)
 
 
-_LEARNING_PC_KS: tuple[int | None, ...] = (1, 2, 3, 4, 5, None)
+_LEARNING_PC_KS: tuple[int | None, ...] = (1, 3, 5, 15, None)
 
 
 def _learning_basis_specs(pc_ks: tuple[int | None, ...] | None = None) -> tuple[tuple[str, str], ...]:
@@ -1718,12 +1814,19 @@ def _dfa_bin_title(edges: np.ndarray, bin_index: int) -> str:
 
 def collect_learning_decode_by_dfa(
     *,
-    seed: int = 1,
+    seeds: tuple[int, ...] | None = None,
     model_type: str = "rnn",
     pc_ks: tuple[int | None, ...] = _LEARNING_PC_KS,
     recompute: bool = False,
+    n_bins: int = 4,
 ) -> Path:
-    """Learning-decode for every mixed run (default seed 1), aggregated in Fig-12 DFA bins."""
+    """Learning-decode across mixed runs (± seeds with snaps), aggregated in DFA bins.
+
+    Default: every mixed run seed 1, plus any other seeds that already have learning
+    snaps (currently the hard run). Each (run, seed) curve is one sample in its DFA bin.
+    """
+    from rnn.learning_snaps import list_learning_snaps
+
     out = sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json"
     if out.is_file() and not recompute:
         return out
@@ -1742,22 +1845,44 @@ def collect_learning_decode_by_dfa(
         panel = panel_by_run.get(rid)
         n_dfa = int(panel["n_dfa_states"]) if panel else _dfa_states(list(entry["words"]))
         n_words = int(entry["n_words"])
-        print(f"learning-decode collect {task} seed {seed}  dfa={n_dfa}", flush=True)
-        rows, stop_iter = _collect_learning_decode_seed(
-            task, seed=seed, model_type=model_type, pc_ks=pc_ks,
-        )
-        run_payloads.append({
-            "run_id": rid,
-            "task": task,
-            "seed": int(seed),
-            "n_dfa_states": n_dfa,
-            "n_words": n_words,
-            "stop_iter": int(stop_iter),
-            "snaps": rows,
-        })
+        if seeds is None:
+            seed_list: list[int] = []
+            for s in range(1, 32):
+                ckpt = checkpoint_path(task, model_type, seed=s)
+                if list_learning_snaps(ckpt):
+                    seed_list.append(s)
+            if not seed_list:
+                seed_list = [1]
+        else:
+            seed_list = list(seeds)
+        for seed in seed_list:
+            ckpt = checkpoint_path(task, model_type, seed=seed)
+            if not list_learning_snaps(ckpt):
+                print(f"  skip {task} seed {seed}: no learning snaps", flush=True)
+                continue
+            print(f"learning-decode collect {task} seed {seed}  dfa={n_dfa}", flush=True)
+            rows, stop_iter = _collect_learning_decode_seed(
+                task, seed=seed, model_type=model_type, pc_ks=pc_ks,
+            )
+            run_payloads.append({
+                "run_id": rid,
+                "task": task,
+                "seed": int(seed),
+                "n_dfa_states": n_dfa,
+                "n_words": n_words,
+                "stop_iter": int(stop_iter),
+                "snaps": rows,
+            })
 
-    dfa_vals = np.asarray([r["n_dfa_states"] for r in run_payloads], dtype=float)
-    edges = _dfa_quantile_edges(dfa_vals, n_bins=4)
+    if not run_payloads:
+        raise FileNotFoundError("no learning-decode curves collected (missing snaps?)")
+
+    # Quantile edges from unique vocabs so multi-seed hard runs do not skew bins.
+    dfa_by_rid: dict[int, float] = {}
+    for r in run_payloads:
+        dfa_by_rid.setdefault(int(r["run_id"]), float(r["n_dfa_states"]))
+    dfa_vals = np.asarray(list(dfa_by_rid.values()), dtype=float)
+    edges = _dfa_quantile_edges(dfa_vals, n_bins=n_bins)
     basis_keys = tuple(b for b, _ in _learning_basis_specs(pc_ks))
 
     bins: list[dict[str, Any]] = []
@@ -1774,15 +1899,21 @@ def collect_learning_decode_by_dfa(
             "lo": float(edges[bi]),
             "hi": float(edges[bi + 1]),
             "n_runs": len(subset),
-            "run_ids": [int(r["run_id"]) for r in subset],
+            "n_vocabs": len({int(r["run_id"]) for r in subset}),
+            "seeds": sorted({int(r["seed"]) for r in subset}),
+            "run_ids": sorted({int(r["run_id"]) for r in subset}),
             "aggregated": agg,
         })
 
+    used_seeds = sorted({int(r["seed"]) for r in run_payloads})
     payload = {
-        "seed": int(seed),
+        "seeds": used_seeds,
+        "seed": used_seeds[0] if len(used_seeds) == 1 else used_seeds,
         "model_type": model_type,
         "pc_ks": [k if k is not None else "full" for k in pc_ks],
         "edges": [float(x) for x in edges],
+        "n_curves": len(run_payloads),
+        "n_vocabs": len({int(r["run_id"]) for r in run_payloads}),
         "runs": run_payloads,
         "bins": bins,
     }
@@ -1791,23 +1922,79 @@ def collect_learning_decode_by_dfa(
     return out
 
 
+def _bin_dfa_oracle_cc(
+    blob: dict[str, Any],
+    payload: dict[str, Any],
+    *,
+    panels_payload: dict[str, Any] | None = None,
+) -> dict[str, float]:
+    """Mean chance-corrected DFA-oracle per feature for runs in a learning-decode bin."""
+    del payload
+    run_ids = {int(r) for r in (blob.get("run_ids") or [])}
+    words_by_run = {
+        int(entry["run_id"]): list(entry["words"])
+        for entry in iter_runs()
+        if int(entry["run_id"]) in run_ids
+    }
+    panels_payload = panels_payload or _load_panels()
+    panel_by_run = {
+        int(p["run_id"]): p
+        for p in (panels_payload.get("panels") or [])
+        if "error" not in p and "run_id" in p
+    }
+    from viz.compare.decoding import theoretical_chance
+
+    acc: dict[str, list[float]] = {f: [] for f in _FEATURE_ORDER if f != "dfa"}
+    for rid in run_ids:
+        panel = panel_by_run.get(rid)
+        used_panel = False
+        if panel is not None:
+            for feat in acc:
+                y = dfa_oracle_cc_from_feat(panel.get("features", {}).get(feat, {}))
+                if y is not None:
+                    acc[feat].append(y)
+                    used_panel = True
+        if used_panel:
+            continue
+        words = words_by_run.get(rid)
+        if not words:
+            continue
+        raw = dfa_oracles_for_words(words, features=_FEATURE_ORDER, spaced=False)
+        length = max(len(w) for w in words)
+        automaton = build_minimized_vocabulary_automaton(words)
+        for feat, oracle in raw.items():
+            if feat not in acc:
+                continue
+            ch = theoretical_chance(
+                feat, words=words, length=length, automaton=automaton,
+            )
+            if ch is not None and np.isfinite(ch):
+                acc[feat].append(chance_corrected(float(oracle), float(ch)))
+    return {feat: float(np.mean(vals)) for feat, vals in acc.items() if vals}
+
+
 def plot_learning_decode_by_dfa_bins(
     *,
     json_path: Path | None = None,
     outfile: str = "learning_decode_by_dfa.png",
-    early_xlim: float = 0.2,
-    pc_row_ks: tuple[int | None, ...] = (1, 5, None),
+    early_xlim: float | None = None,
+    progress_xlim: float | None = 0.22,
+    pc_row_ks: tuple[int | None, ...] | None = None,
 ) -> Path:
-    """Columns = Fig-12 DFA bins; rows = 1 PC / 5 PCs / full H over early progress."""
+    """Columns = DFA bins; rows = PC probes (default 1/3/5/15/full); mean ± std bands.
+
+    ``progress_xlim`` crops the x-axis (default: auto to max progress with finite
+    readout data). Pass ``early_xlim`` to add a second zoomed row-block.
+    """
     path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json")
     if not path.is_file():
-        path = collect_learning_decode_by_dfa()
+        path = collect_learning_decode_by_dfa(recompute=True)
     payload = json.loads(path.read_text(encoding="utf-8"))
     bins = [b for b in payload.get("bins", []) if b.get("aggregated")]
     if not bins:
         raise FileNotFoundError(f"no binned learning curves in {path}")
 
-    raw_ks = payload.get("pc_ks") or [1, 2, 3, 4, 5, "full"]
+    raw_ks = payload.get("pc_ks") or [1, 3, 5, 15, "full"]
     parsed: list[int | None] = []
     for k in raw_ks:
         if k is None or k == "full":
@@ -1815,32 +2002,64 @@ def plot_learning_decode_by_dfa_bins(
         else:
             parsed.append(int(k))
     all_basis = _learning_basis_specs(tuple(parsed))
-    want = {"full" if k is None else f"pc{int(k)}" for k in pc_row_ks}
+    row_ks = pc_row_ks if pc_row_ks is not None else _LEARNING_PC_KS
+    want = {"full" if k is None else f"pc{int(k)}" for k in row_ks}
     basis_keys = tuple((b, lab) for b, lab in all_basis if b in want)
     if not basis_keys:
-        basis_keys = (("pc1", "1 PC"), ("pc5", "5 PCs"), ("full", "full H"))
+        basis_keys = all_basis
 
-    row_blocks = (
-        ("early", 0.0, float(early_xlim)),
-    )
+    # Crop x to where curves actually have data (avoids empty 0.2–1.0 whitespace).
+    if progress_xlim is None:
+        data_max = 0.0
+        for blob in bins:
+            agg = blob.get("aggregated") or {}
+            pg = np.asarray(agg.get("progress_grid") or [], dtype=float)
+            for feat in _FEATURE_ORDER:
+                feat_blob = (agg.get("features") or {}).get(feat, {})
+                for bkey, _ in basis_keys:
+                    y = np.asarray(feat_blob.get(f"{bkey}_mean", []), dtype=float)
+                    if y.size == 0 or pg.size == 0:
+                        continue
+                    n = min(len(pg), len(y))
+                    finite = np.isfinite(y[:n])
+                    if np.any(finite):
+                        data_max = max(data_max, float(np.max(pg[:n][finite])))
+            we = np.asarray(agg.get("word_err_mean") or [], dtype=float)
+            if we.size and pg.size:
+                n = min(len(pg), len(we))
+                finite = np.isfinite(we[:n])
+                if np.any(finite):
+                    data_max = max(data_max, float(np.max(pg[:n][finite])))
+        progress_xlim = float(min(1.02, data_max + 0.02)) if data_max > 0 else 1.02
+
+    if early_xlim is None:
+        row_blocks = (("full training", 0.0, float(progress_xlim)),)
+    else:
+        row_blocks = (
+            ("full training", 0.0, float(progress_xlim)),
+            (f"early (0-{early_xlim:g})", 0.0, float(early_xlim)),
+        )
     n_basis = len(basis_keys)
     n_bins = len(bins)
     n_rows = len(row_blocks) * n_basis
     fig, axes = plt.subplots(
         n_rows,
         n_bins,
-        figsize=(2.6 * n_bins + 0.7, 2.15 * n_rows + 0.7),
+        figsize=(2.55 * n_bins + 0.8, 2.05 * n_rows + 0.75),
         sharey=True,
         squeeze=False,
     )
     word_err_line = None
-    seed = int(payload.get("seed", 1))
 
     for bi, blob in enumerate(bins):
         agg = blob["aggregated"]
         progress_all = np.asarray(agg["progress_grid"], dtype=float)
         we_mean_all = np.asarray(agg["word_err_mean"], dtype=float)
         we_std_all = np.asarray(agg["word_err_std"], dtype=float)
+        oracles_cc = blob.get("dfa_oracle_cc") or agg.get("dfa_oracle_cc") or {}
+        if not oracles_cc:
+            oracles_cc = _bin_dfa_oracle_cc(blob, payload)
+        oracles_cc = {k: float(v) for k, v in oracles_cc.items()}
         for block_i, (block_name, x0, x1) in enumerate(row_blocks):
             zoom = (progress_all >= x0) & (progress_all <= x1 + 1e-9)
             progress = progress_all[zoom]
@@ -1864,8 +2083,6 @@ def plot_learning_decode_by_dfa_bins(
                         y_mean,
                         color=color,
                         lw=1.5,
-                        marker="o" if block_name == "early" else None,
-                        ms=2.2 if block_name == "early" else None,
                         label=feature_display_name(feat) if (ri == 0 and bi == 0) else None,
                     )
                     if y_std.size == y_mean.size and np.any(np.isfinite(y_std)):
@@ -1877,8 +2094,19 @@ def plot_learning_decode_by_dfa_bins(
                             alpha=0.14,
                             linewidth=0,
                         )
+                draw_dfa_oracle_baselines(
+                    ax,
+                    oracles_cc=oracles_cc,
+                    features=_FEATURE_ORDER,
+                    show_legend=False,
+                )
                 if ri == 0:
-                    ax.set_title(f"{blob['title']}  (n={blob['n_runs']})", fontsize=8, pad=3)
+                    n_v = int(blob.get("n_vocabs", blob.get("n_runs", 0)))
+                    n_c = int(blob.get("n_runs", 0))
+                    ax.set_title(
+                        f"{blob['title']}  (n={n_v} vocabs, {n_c} curves)",
+                        fontsize=7.5, pad=3,
+                    )
                 if ri == n_rows - 1:
                     ax.set_xlabel("progress", fontsize=7)
                 else:
@@ -1889,7 +2117,10 @@ def plot_learning_decode_by_dfa_bins(
                 ax.grid(True, alpha=0.25)
                 ax.tick_params(labelsize=5.5)
                 if bi == 0:
-                    ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=7, labelpad=4)
+                    ylab = f"{blabel}\nchance-corr. acc."
+                    if len(row_blocks) > 1:
+                        ylab = f"{block_name}\n{blabel}\nchance-corr. acc."
+                    ax.set_ylabel(ylab, fontsize=6.5, labelpad=4)
                 if np.any(np.isfinite(we_mean)):
                     ax2 = ax.twinx()
                     (line,) = ax2.plot(progress, we_mean, color="0.45", lw=0.9, ls="--", alpha=0.8)
@@ -1912,6 +2143,12 @@ def plot_learning_decode_by_dfa_bins(
                         ax2.set_yticklabels([])
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
+    from matplotlib.lines import Line2D
+
+    handles = list(handles) + [
+        Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
+    ]
+    labels = list(labels) + ["DFA-state oracle"]
     if word_err_line is not None:
         handles = [*handles, word_err_line]
         labels = [*labels, "word err"]
@@ -1919,20 +2156,30 @@ def plot_learning_decode_by_dfa_bins(
         handles,
         labels,
         loc="lower center",
-        bbox_to_anchor=(0.5, 0.005),
-        ncol=len(labels),
+        bbox_to_anchor=(0.5, 0.004),
+        ncol=min(len(labels), 8),
         fontsize=6.5,
         frameon=False,
         columnspacing=1.0,
         handletextpad=0.4,
     )
-    n_runs = sum(int(b.get("n_runs", 0)) for b in bins)
-    title = "Readout over learning by DFA bin (seed {}, {} mixed runs)".format(seed, n_runs)
+    n_curves = int(payload.get("n_curves", sum(int(b.get("n_runs", 0)) for b in bins)))
+    n_vocabs = int(payload.get("n_vocabs", n_curves))
+    seeds_meta = payload.get("seeds") or payload.get("seed")
+    if isinstance(seeds_meta, list):
+        seed_bit = f"seeds {seeds_meta[0]}–{seeds_meta[-1]}" if len(seeds_meta) > 1 else f"seed {seeds_meta[0]}"
+    else:
+        seed_bit = f"seed {seeds_meta}"
+    title = (
+        f"Readout over learning by DFA bin "
+        f"({n_vocabs} mixed vocabs, {n_curves} curves, {seed_bit}; "
+        f"dashed = DFA-state oracle)"
+    )
     finalize_grid_figure(
         fig,
         suptitle=title,
-        top=0.90,
-        bottom=0.08,
+        top=0.91,
+        bottom=0.085,
         left=0.08,
         right=0.94,
         wspace=0.22,

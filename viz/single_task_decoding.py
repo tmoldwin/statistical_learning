@@ -21,6 +21,8 @@ from viz.compare.decoding import (
     chance_corrected,
     compute_panel_decoding,
     decode_feature_curve,
+    dfa_oracle_cc_from_feat,
+    draw_dfa_oracle_baselines,
     feature_display_name,
 )
 from viz.compare.trajectories import _plot_task_closed_loop_panel
@@ -232,9 +234,17 @@ def _plot_decode_pca_on_ax(
                 )
 
     ax.axhline(0.0, color="0.35", linestyle=":", linewidth=0.7, alpha=0.8)
+    oracles = {
+        feat: y
+        for feat in features
+        if (y := dfa_oracle_cc_from_feat(panel.get("features", {}).get(feat, {}))) is not None
+    }
+    draw_dfa_oracle_baselines(
+        ax, oracles_cc=oracles, features=features, show_legend=show_legend,
+    )
     ax.set_ylim(ylim if ylim is not None else (-0.05, 1.05))
     ax.grid(axis="y", alpha=0.3, linewidth=0.5)
-    if show_legend:
+    if show_legend and not oracles:
         ax.legend(fontsize=6 if compact else 7, loc="lower left", framealpha=0.9)
 
 
@@ -299,9 +309,17 @@ def _plot_decode_neurons_on_ax(
                 )
 
     ax.axhline(0.0, color="0.35", linestyle=":", linewidth=0.7, alpha=0.8)
+    oracles = {
+        feat: y
+        for feat in features
+        if (y := dfa_oracle_cc_from_feat(panel.get("features", {}).get(feat, {}))) is not None
+    }
+    draw_dfa_oracle_baselines(
+        ax, oracles_cc=oracles, features=features, show_legend=show_legend,
+    )
     ax.set_ylim(ylim if ylim is not None else (-0.05, 1.05))
     ax.grid(axis="y", alpha=0.3, linewidth=0.5)
-    if show_legend:
+    if show_legend and not oracles:
         ax.legend(fontsize=6 if compact else 7, loc="lower left", framealpha=0.9)
 
 
@@ -529,6 +547,21 @@ def plot_aggregated_seed_decode_curves(
             color=color, label=label,
         )
 
+    # DFA-state oracle floors (mean across seeds; same on both probe panels).
+    oracles: dict[str, float] = {}
+    for feat in features:
+        vals = []
+        for seed in seeds:
+            y = dfa_oracle_cc_from_feat(panels[seed]["features"].get(feat, {}))
+            if y is not None:
+                vals.append(y)
+        if vals:
+            oracles[feat] = float(np.mean(vals))
+    for ax in axes[:2]:
+        draw_dfa_oracle_baselines(
+            ax, oracles_cc=oracles, features=features, show_legend=False,
+        )
+
     axes[0].set_title("top-k PCA", fontsize=10)
     axes[0].set_xlabel("# PCs  |  ★ = full hidden", fontsize=9)
     axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
@@ -561,11 +594,18 @@ def plot_aggregated_seed_decode_curves(
             ax_si.set_ylim(0.0, y_top * 1.12)
 
     legend_handles, legend_labels = axes[0].get_legend_handles_labels()
+    if oracles:
+        from matplotlib.lines import Line2D
+
+        legend_handles = list(legend_handles) + [
+            Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
+        ]
+        legend_labels = list(legend_labels) + ["DFA-state oracle"]
     if legend_handles:
         fig.legend(
             legend_handles, legend_labels,
             loc="upper center", bbox_to_anchor=(0.5, 0.98),
-            ncol=min(len(legend_handles), 5), fontsize=8, frameon=False, columnspacing=1.2,
+            ncol=min(len(legend_handles), 6), fontsize=8, frameon=False, columnspacing=1.2,
         )
     finalize_grid_figure(
         fig,

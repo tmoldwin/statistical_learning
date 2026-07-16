@@ -24,14 +24,12 @@ from vocab_mixed_dfa import (
 from rnn.learning_snaps import list_learning_snaps
 from viz.compare.mixed_dfa_viz import (
     collect_learning_decode,
+    collect_learning_decode_by_dfa,
     plot_learning_decode,
+    plot_learning_decode_by_dfa_bins,
     plot_mixed_dfa_trajectory_vocab_grid,
     plot_mixed_dfa_within_corr_vs_dfa,
     run_all_mixed_dfa_plots,
-)
-from viz.compare.mixed_dfa_learning_decode import (
-    collect_learning_decode_by_dfa,
-    plot_learning_decode_by_dfa_bins,
 )
 from viz.compare.sweep_output import sweep_data_dir
 
@@ -151,7 +149,8 @@ def cmd_learning_decode(args: argparse.Namespace) -> None:
 
 def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
     """Train seed-1 learning snaps for all mixed runs, then binned learning curves."""
-    seed = int((tuple(args.seeds) if args.seeds else (1,))[0])
+    seeds = tuple(args.seeds) if args.seeds else (1,)
+    seed = int(seeds[0])
     tasks = [e["task"] for e in iter_runs()]
     if args.runs is not None:
         want = set(args.runs)
@@ -186,8 +185,9 @@ def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
                 ]
                 for fut in as_completed(futs):
                     fut.result()
-    json_path = collect_learning_decode_by_dfa(seed=seed, recompute=True, early_xlim=0.2)
-    out = plot_learning_decode_by_dfa_bins(json_path=json_path, early_xlim=0.2)
+    # seeds=None → all snaps on disk (seed 1 × 50 vocabs + any multi-seed runs).
+    json_path = collect_learning_decode_by_dfa(seeds=None, recompute=True)
+    out = plot_learning_decode_by_dfa_bins(json_path=json_path)
     print(f"wrote {out}", flush=True)
 
 

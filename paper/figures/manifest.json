@@ -251,7 +251,7 @@
     {
       "section": "compare",
       "paper_name": "fig_mixed_learning_decode.jpg",
-      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/learning_decode_r26.png",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/learning_decode_by_dfa.png",
       "dest": "paper/figures/compare/fig_mixed_learning_decode.jpg",
       "exists": true,
       "skipped_self": false

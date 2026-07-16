@@ -101,7 +101,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "dfa": {
           "chance": 0.3333333333333333,
@@ -249,7 +251,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "position_from_end": {
           "chance": 0.3333333333333333,
@@ -323,7 +327,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "error": "insufficient samples or classes"
@@ -464,7 +470,9 @@
             0.004228468861707719,
             0.003042903097250932
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "dfa": {
           "chance": 0.3333333333333333,
@@ -612,7 +620,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "position_from_end": {
           "chance": 0.3333333333333333,
@@ -686,7 +696,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "error": "insufficient samples or classes"
@@ -828,7 +840,9 @@
             0.018876489055978073,
             0.018301086233979413
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8571428571428571,
+          "dfa_oracle_cc": 0.8285714285714285
         },
         "dfa": {
           "chance": 0.16666666666666666,
@@ -976,7 +990,9 @@
             0.023359317770264825,
             0.038240350329970516
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8571428571428571,
+          "dfa_oracle_cc": 0.8095238095238094
         },
         "position_from_end": {
           "chance": 0.25,
@@ -1050,7 +1066,9 @@
             0.017769993506496985,
             0.007236208090921751
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.5,
@@ -1124,7 +1142,9 @@
             0.0781102636165553,
             0.09146878676765013
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8571428571428571,
+          "dfa_oracle_cc": 0.7142857142857142
         }
       },
       "spectrum_pct": [
@@ -1264,7 +1284,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8888888888888888,
+          "dfa_oracle_cc": 0.8730158730158729
         },
         "dfa": {
           "chance": 0.125,
@@ -1412,7 +1434,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8888888888888888,
+          "dfa_oracle_cc": 0.861111111111111
         },
         "position_from_end": {
           "chance": 0.2,
@@ -1486,7 +1510,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.5,
@@ -1560,7 +1586,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8888888888888888,
+          "dfa_oracle_cc": 0.7777777777777777
         }
       },
       "spectrum_pct": [
@@ -1701,7 +1729,9 @@
             0.03285577446521101,
             0.03564762982489612
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.7407407407407407
         },
         "dfa": {
           "chance": 0.14285714285714285,
@@ -1849,7 +1879,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "position_from_end": {
           "chance": 0.3333333333333333,
@@ -1923,7 +1955,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.3333333333333333,
@@ -1997,7 +2031,9 @@
             0.07273396651535972,
             0.057190501939857294
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.6666666666666666
         }
       },
       "spectrum_pct": [
@@ -2139,7 +2175,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8666666666666667,
+          "dfa_oracle_cc": 0.8518518518518519
         },
         "dfa": {
           "chance": 0.07692307692307693,
@@ -2287,7 +2325,9 @@
             0.008168875297559374,
             0.009387364132917452
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9333333333333333,
+          "dfa_oracle_cc": 0.92
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -2361,7 +2401,9 @@
             0.0030429030972509317,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.3333333333333333,
@@ -2435,7 +2477,9 @@
             0.008844477175087207,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8666666666666667,
+          "dfa_oracle_cc": 0.8
         }
       },
       "spectrum_pct": [
@@ -2578,7 +2622,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8333333333333334,
+          "dfa_oracle_cc": 0.8166666666666667
         },
         "dfa": {
           "chance": 0.07142857142857142,
@@ -2726,7 +2772,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.7333333333333334
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -2800,7 +2848,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.25,
@@ -2874,7 +2924,9 @@
             0.01379469977991112,
             0.00952244106205611
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.7037037037037037
         }
       },
       "spectrum_pct": [
@@ -3018,7 +3070,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8636363636363636,
+          "dfa_oracle_cc": 0.85
         },
         "dfa": {
           "chance": 0.058823529411764705,
@@ -3166,7 +3220,9 @@
             0.0030429030972509317,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9090909090909091,
+          "dfa_oracle_cc": 0.8909090909090909
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -3240,7 +3296,9 @@
             0.008456937723415442,
             0.00845693772341544
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9545454545454546,
+          "dfa_oracle_cc": 0.9454545454545455
         },
         "word": {
           "chance": 0.2,
@@ -3314,7 +3372,9 @@
             0.0651675314246256,
             0.05330998051949094
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7727272727272727,
+          "dfa_oracle_cc": 0.7159090909090909
         }
       },
       "spectrum_pct": [
@@ -3459,7 +3519,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8095238095238095,
+          "dfa_oracle_cc": 0.7857142857142857
         },
         "dfa": {
           "chance": 0.08333333333333333,
@@ -3607,7 +3669,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8571428571428571,
+          "dfa_oracle_cc": 0.8285714285714285
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -3681,7 +3745,9 @@
             0.014305997277709592,
             0.018569533817705194
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9523809523809523,
+          "dfa_oracle_cc": 0.9428571428571428
         },
         "word": {
           "chance": 0.16666666666666666,
@@ -3755,7 +3821,9 @@
             0.044438457451160124,
             0.04732971763212467
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5714285714285714,
+          "dfa_oracle_cc": 0.4857142857142857
         }
       },
       "spectrum_pct": [
@@ -3901,7 +3969,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8333333333333334,
+          "dfa_oracle_cc": 0.8181818181818182
         },
         "dfa": {
           "chance": 0.08333333333333333,
@@ -4049,7 +4119,9 @@
             0.0,
             0.0030429030972509317
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8888888888888888,
+          "dfa_oracle_cc": 0.861111111111111
         },
         "position_from_end": {
           "chance": 0.2,
@@ -4123,7 +4195,9 @@
             0.004228468861707693,
             0.006780635036208079
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9444444444444444,
+          "dfa_oracle_cc": 0.9305555555555556
         },
         "word": {
           "chance": 0.16666666666666666,
@@ -4197,7 +4271,9 @@
             0.031844128678453584,
             0.0401505786448619
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6666666666666666,
+          "dfa_oracle_cc": 0.6
         }
       },
       "spectrum_pct": [
@@ -4344,7 +4420,9 @@
             0.018876489055978083,
             0.019245008972987535
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7692307692307693,
+          "dfa_oracle_cc": 0.7538461538461539
         },
         "dfa": {
           "chance": 0.058823529411764705,
@@ -4492,7 +4570,9 @@
             0.012171612389003678,
             0.011357423124350985
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8076923076923077,
+          "dfa_oracle_cc": 0.7692307692307693
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -4566,7 +4646,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.14285714285714285,
@@ -4640,7 +4722,9 @@
             0.04242038595200109,
             0.030825177548251453
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6538461538461539,
+          "dfa_oracle_cc": 0.596153846153846
         }
       },
       "spectrum_pct": [
@@ -4788,7 +4872,9 @@
             0.0030429030972509317,
             0.0030429030972509317
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8214285714285714,
+          "dfa_oracle_cc": 0.8051948051948051
         },
         "dfa": {
           "chance": 0.045454545454545456,
@@ -4936,7 +5022,9 @@
             0.008168875297559375,
             0.00840011554989554
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8571428571428571,
+          "dfa_oracle_cc": 0.8285714285714285
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -5010,7 +5098,9 @@
             0.008456937723415416,
             0.0030429030972509317
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.14285714285714285,
@@ -5084,7 +5174,9 @@
             0.05244957439680641,
             0.034905455226908313
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7857142857142857,
+          "dfa_oracle_cc": 0.7499999999999999
         }
       },
       "spectrum_pct": [
@@ -5233,7 +5325,9 @@
             0.0030429030972509317,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8484848484848485,
+          "dfa_oracle_cc": 0.8383838383838385
         },
         "dfa": {
           "chance": 0.047619047619047616,
@@ -5381,7 +5475,9 @@
             0.0030429030972509317,
             0.006709631665607483
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7575757575757576,
+          "dfa_oracle_cc": 0.7090909090909091
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -5455,7 +5551,9 @@
             0.017904243666002663,
             0.015628591541249598
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9090909090909091,
+          "dfa_oracle_cc": 0.8909090909090909
         },
         "word": {
           "chance": 0.14285714285714285,
@@ -5529,7 +5627,9 @@
             0.069609382670808,
             0.052913216015649384
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6363636363636364,
+          "dfa_oracle_cc": 0.5757575757575757
         }
       },
       "spectrum_pct": [
@@ -5679,7 +5779,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8333333333333334,
+          "dfa_oracle_cc": 0.8222222222222223
         },
         "dfa": {
           "chance": 0.045454545454545456,
@@ -5827,7 +5929,9 @@
             0.0,
             0.0050854762771560934
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9166666666666666,
+          "dfa_oracle_cc": 0.8999999999999999
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -5901,7 +6005,9 @@
             0.009721538016427915,
             0.017832769354064137
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9722222222222222,
+          "dfa_oracle_cc": 0.9666666666666667
         },
         "word": {
           "chance": 0.125,
@@ -5975,7 +6081,9 @@
             0.07894579998890132,
             0.0633791929146175
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6111111111111112,
+          "dfa_oracle_cc": 0.5555555555555556
         }
       },
       "spectrum_pct": [
@@ -6126,7 +6234,9 @@
             0.0030429030972509317,
             0.0050854762771560934
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8235294117647058,
+          "dfa_oracle_cc": 0.8109243697478992
         },
         "dfa": {
           "chance": 0.043478260869565216,
@@ -6274,7 +6384,9 @@
             0.003042903097250932,
             0.004228468861707719
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8235294117647058,
+          "dfa_oracle_cc": 0.788235294117647
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -6348,7 +6460,9 @@
             0.016771699693240837,
             0.018817195472921978
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9411764705882353,
+          "dfa_oracle_cc": 0.9294117647058824
         },
         "word": {
           "chance": 0.125,
@@ -6422,7 +6536,9 @@
             0.05077936649174231,
             0.0472790957940822
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6764705882352942,
+          "dfa_oracle_cc": 0.6302521008403362
         }
       },
       "spectrum_pct": [
@@ -6574,7 +6690,9 @@
             0.004228468861707691,
             0.006085806194501835
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.763888888888889
         },
         "dfa": {
           "chance": 0.047619047619047616,
@@ -6722,7 +6840,9 @@
             0.011014909204187767,
             0.013794699779911114
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8611111111111112,
+          "dfa_oracle_cc": 0.8333333333333334
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -6796,7 +6916,9 @@
             0.008475793795260157,
             0.00840011554989554
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 1.0,
+          "dfa_oracle_cc": 1.0
         },
         "word": {
           "chance": 0.125,
@@ -6870,7 +6992,9 @@
             0.047373546136670185,
             0.04070342538169633
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5833333333333334,
+          "dfa_oracle_cc": 0.5238095238095238
         }
       },
       "spectrum_pct": [
@@ -7023,7 +7147,9 @@
             0.008168875297559374,
             0.005085476277156094
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8095238095238095,
+          "dfa_oracle_cc": 0.7959183673469388
         },
         "dfa": {
           "chance": 0.043478260869565216,
@@ -7171,7 +7297,9 @@
             0.00912870929175276,
             2.2584051416334807e-16
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8809523809523809,
+          "dfa_oracle_cc": 0.8571428571428571
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -7245,7 +7373,9 @@
             0.011357423124350993,
             0.017589399454787435
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9047619047619048,
+          "dfa_oracle_cc": 0.8857142857142857
         },
         "word": {
           "chance": 0.1111111111111111,
@@ -7319,7 +7449,9 @@
             0.043435629329786216,
             0.04892196721430463
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5476190476190477,
+          "dfa_oracle_cc": 0.49107142857142866
         }
       },
       "spectrum_pct": [
@@ -7473,7 +7605,9 @@
             0.0030429030972509317,
             0.007236208090921752
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7435897435897436,
+          "dfa_oracle_cc": 0.7252747252747253
         },
         "dfa": {
           "chance": 0.041666666666666664,
@@ -7621,7 +7755,9 @@
             0.006709631665607485,
             0.0030429030972509317
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7948717948717948,
+          "dfa_oracle_cc": 0.7538461538461538
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -7695,7 +7831,9 @@
             0.027917274254267627,
             0.022637405047392093
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8974358974358975,
+          "dfa_oracle_cc": 0.8769230769230769
         },
         "word": {
           "chance": 0.1,
@@ -7769,7 +7907,9 @@
             0.048095929046069984,
             0.05004786980512409
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6153846153846154,
+          "dfa_oracle_cc": 0.5726495726495727
         }
       },
       "spectrum_pct": [
@@ -7924,7 +8064,9 @@
             0.01496056971617189,
             0.01283553496564932
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7906976744186046,
+          "dfa_oracle_cc": 0.7767441860465116
         },
         "dfa": {
           "chance": 0.038461538461538464,
@@ -8072,7 +8214,9 @@
             0.009267556946125608,
             0.008400115549895526
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8372093023255814,
+          "dfa_oracle_cc": 0.8046511627906977
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -8146,7 +8290,9 @@
             0.013191293231281957,
             0.012379689211803454
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9534883720930233,
+          "dfa_oracle_cc": 0.944186046511628
         },
         "word": {
           "chance": 0.1,
@@ -8220,7 +8366,9 @@
             0.052144312961259626,
             0.04707606409825909
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.6046511627906976,
+          "dfa_oracle_cc": 0.5607235142118863
         }
       },
       "spectrum_pct": [
@@ -8376,7 +8524,9 @@
             0.013655120812111447,
             0.00840011554989554
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.761904761904762
         },
         "dfa": {
           "chance": 0.03125,
@@ -8524,7 +8674,9 @@
             0.019865447775614584,
             0.014339435571735884
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8444444444444444,
+          "dfa_oracle_cc": 0.8133333333333334
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -8598,7 +8750,9 @@
             0.032366239131299594,
             0.02659953235168288
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9555555555555556,
+          "dfa_oracle_cc": 0.9466666666666668
         },
         "word": {
           "chance": 0.09090909090909091,
@@ -8672,7 +8826,9 @@
             0.06540960439707509,
             0.047440895539651085
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7111111111111111,
+          "dfa_oracle_cc": 0.6822222222222223
         }
       },
       "spectrum_pct": [
@@ -8829,7 +8985,9 @@
             0.014734777412283089,
             0.005762431727362691
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7954545454545454,
+          "dfa_oracle_cc": 0.7826704545454545
         },
         "dfa": {
           "chance": 0.038461538461538464,
@@ -8977,7 +9135,9 @@
             0.00807056996852505,
             0.006317483696490881
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8636363636363636,
+          "dfa_oracle_cc": 0.8363636363636364
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -9051,7 +9211,9 @@
             0.028812158636813356,
             0.024369442582889877
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8863636363636364,
+          "dfa_oracle_cc": 0.8636363636363636
         },
         "word": {
           "chance": 0.09090909090909091,
@@ -9125,7 +9287,9 @@
             0.051602667072954155,
             0.045006030531068546
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5909090909090909,
+          "dfa_oracle_cc": 0.55
         }
       },
       "spectrum_pct": [
@@ -9283,7 +9447,9 @@
             0.006780635036208125,
             0.00768555062295691
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.72,
+          "dfa_oracle_cc": 0.7025
         },
         "dfa": {
           "chance": 0.043478260869565216,
@@ -9431,7 +9597,9 @@
             0.016190516436409626,
             0.019541356740102097
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.84,
+          "dfa_oracle_cc": 0.8079999999999999
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -9505,7 +9673,9 @@
             0.02257384646136547,
             0.01768895435017442
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.94,
+          "dfa_oracle_cc": 0.9279999999999999
         },
         "word": {
           "chance": 0.08333333333333333,
@@ -9579,7 +9749,9 @@
             0.06103879385312833,
             0.05964989383034895
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.46,
+          "dfa_oracle_cc": 0.41090909090909095
         }
       },
       "spectrum_pct": [
@@ -9738,7 +9910,9 @@
             0.017361015325406258,
             0.026406779577654582
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7735849056603774,
+          "dfa_oracle_cc": 0.7584905660377359
         },
         "dfa": {
           "chance": 0.038461538461538464,
@@ -9886,7 +10060,9 @@
             0.02246040932905294,
             0.012748174937617625
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8301886792452831,
+          "dfa_oracle_cc": 0.7962264150943397
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -9960,7 +10136,9 @@
             0.026145530424433308,
             0.03123674687038808
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9245283018867925,
+          "dfa_oracle_cc": 0.909433962264151
         },
         "word": {
           "chance": 0.08333333333333333,
@@ -10034,7 +10212,9 @@
             0.04728922449683576,
             0.05247391859602709
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.49056603773584906,
+          "dfa_oracle_cc": 0.444253859348199
         }
       },
       "spectrum_pct": [
@@ -10194,7 +10374,9 @@
             0.022289171181979053,
             0.024945662532445005
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8076923076923077,
+          "dfa_oracle_cc": 0.7928994082840237
         },
         "dfa": {
           "chance": 0.041666666666666664,
@@ -10342,7 +10524,9 @@
             0.009522441062056117,
             0.007496274085146751
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8653846153846154,
+          "dfa_oracle_cc": 0.8384615384615385
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -10416,7 +10600,9 @@
             0.02629166401017649,
             0.028928281424167084
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8269230769230769,
+          "dfa_oracle_cc": 0.7923076923076923
         },
         "word": {
           "chance": 0.08333333333333333,
@@ -10490,7 +10676,9 @@
             0.0567196056526271,
             0.040289501530656364
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.46153846153846156,
+          "dfa_oracle_cc": 0.41258741258741266
         }
       },
       "spectrum_pct": [
@@ -10651,7 +10839,9 @@
             0.015371101245913805,
             0.014171455129425234
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7288135593220338,
+          "dfa_oracle_cc": 0.711864406779661
         },
         "dfa": {
           "chance": 0.041666666666666664,
@@ -10799,7 +10989,9 @@
             0.026479226296992817,
             0.02228917118197905
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7966101694915254,
+          "dfa_oracle_cc": 0.7559322033898305
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -10873,7 +11065,9 @@
             0.025702144957723695,
             0.027222417702011396
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9491525423728814,
+          "dfa_oracle_cc": 0.9389830508474577
         },
         "word": {
           "chance": 0.07692307692307693,
@@ -10947,7 +11141,9 @@
             0.07223180013118578,
             0.0598022496875191
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4067796610169492,
+          "dfa_oracle_cc": 0.3573446327683616
         }
       },
       "spectrum_pct": [
@@ -11109,7 +11305,9 @@
             0.01541258877412574,
             0.006780635036208126
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7543859649122807,
+          "dfa_oracle_cc": 0.7390350877192983
         },
         "dfa": {
           "chance": 0.037037037037037035,
@@ -11257,7 +11455,9 @@
             0.014831966444403728,
             0.017769993506496985
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7894736842105263,
+          "dfa_oracle_cc": 0.7473684210526316
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -11331,7 +11531,9 @@
             0.018440127824292465,
             0.017553057681552308
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9473684210526315,
+          "dfa_oracle_cc": 0.9368421052631578
         },
         "word": {
           "chance": 0.07142857142857142,
@@ -11405,7 +11607,9 @@
             0.0560770542675493,
             0.04769260875394994
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.47368421052631576,
+          "dfa_oracle_cc": 0.43319838056680154
         }
       },
       "spectrum_pct": [
@@ -11568,7 +11772,9 @@
             0.024428329763190055,
             0.024428329763190055
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7777777777777778,
+          "dfa_oracle_cc": 0.762962962962963
         },
         "dfa": {
           "chance": 0.034482758620689655,
@@ -11716,7 +11922,9 @@
             0.01931952208489541,
             0.012748174937617634
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8253968253968254,
+          "dfa_oracle_cc": 0.7904761904761904
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -11790,7 +11998,9 @@
             0.034165848976291414,
             0.02688607059103856
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8888888888888888,
+          "dfa_oracle_cc": 0.8666666666666666
         },
         "word": {
           "chance": 0.06666666666666667,
@@ -11864,7 +12074,9 @@
             0.052631881426838015,
             0.049441323247304415
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4603174603174603,
+          "dfa_oracle_cc": 0.42176870748299317
         }
       },
       "spectrum_pct": [
@@ -12028,7 +12240,9 @@
             0.011852650036979313,
             0.011524863454725347
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7619047619047619,
+          "dfa_oracle_cc": 0.7486772486772486
         },
         "dfa": {
           "chance": 0.030303030303030304,
@@ -12176,7 +12390,9 @@
             0.02059925974193511,
             0.018405465899239592
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7936507936507936,
+          "dfa_oracle_cc": 0.7523809523809524
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -12250,7 +12466,9 @@
             0.02440217522703628,
             0.021479444568068922
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9047619047619048,
+          "dfa_oracle_cc": 0.8857142857142857
         },
         "word": {
           "chance": 0.06666666666666667,
@@ -12324,7 +12542,9 @@
             0.0573911318748807,
             0.044135661060721885
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5238095238095238,
+          "dfa_oracle_cc": 0.489795918367347
         }
       },
       "spectrum_pct": [
@@ -12489,7 +12709,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7948717948717948,
+          "dfa_oracle_cc": 0.7834757834757833
         },
         "dfa": {
           "chance": 0.02564102564102564,
@@ -12637,7 +12859,9 @@
             0.0005851736725482523,
             0.0017555210176447567
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8589743589743589,
+          "dfa_oracle_cc": 0.8307692307692307
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -12711,7 +12935,9 @@
             0.010091138191543664,
             0.010691678468934417
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9102564102564102,
+          "dfa_oracle_cc": 0.8923076923076922
         },
         "word": {
           "chance": 0.0625,
@@ -12785,7 +13011,9 @@
             0.052661594694206934,
             0.041343911937701566
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5,
+          "dfa_oracle_cc": 0.4666666666666667
         }
       },
       "spectrum_pct": [
@@ -12951,7 +13179,9 @@
             0.0010230166600905736,
             0.0014723724664117358
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8064516129032258,
+          "dfa_oracle_cc": 0.7962648556876061
         },
         "dfa": {
           "chance": 0.02702702702702703,
@@ -13099,7 +13329,9 @@
             0.010233819579633444,
             0.005710661374172233
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8225806451612904,
+          "dfa_oracle_cc": 0.7870967741935484
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -13173,7 +13405,9 @@
             0.0097244254506406,
             0.011632899245308857
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9032258064516129,
+          "dfa_oracle_cc": 0.8838709677419354
         },
         "word": {
           "chance": 0.0625,
@@ -13247,7 +13481,9 @@
             0.02222056510221539,
             0.020416442554478255
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5967741935483871,
+          "dfa_oracle_cc": 0.5698924731182796
         }
       },
       "spectrum_pct": [
@@ -13414,7 +13650,9 @@
             0.0006339381452606066,
             0.0006339381452606067
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8055555555555556,
+          "dfa_oracle_cc": 0.7953216374269007
         },
         "dfa": {
           "chance": 0.030303030303030304,
@@ -13562,7 +13800,9 @@
             0.0008809310128557693,
             0.0008809310128557693
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8333333333333334,
+          "dfa_oracle_cc": 0.8
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -13636,7 +13876,9 @@
             0.013077449815004846,
             0.00860962399098069
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8611111111111112,
+          "dfa_oracle_cc": 0.8333333333333334
         },
         "word": {
           "chance": 0.058823529411764705,
@@ -13710,7 +13952,9 @@
             0.044772991419016785,
             0.026069987792793264
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4583333333333333,
+          "dfa_oracle_cc": 0.42447916666666663
         }
       },
       "spectrum_pct": [
@@ -13878,7 +14122,9 @@
             0.0008237277003326775,
             0.0011855466612665836
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7922077922077922,
+          "dfa_oracle_cc": 0.7806637806637806
         },
         "dfa": {
           "chance": 0.03225806451612903,
@@ -14026,7 +14272,9 @@
             0.0005927733306333018,
             0.0013436395889523671
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8311688311688312,
+          "dfa_oracle_cc": 0.7974025974025974
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -14100,7 +14348,9 @@
             0.007986336361797111,
             0.007565621351089249
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.935064935064935,
+          "dfa_oracle_cc": 0.922077922077922
         },
         "word": {
           "chance": 0.0625,
@@ -14174,7 +14424,9 @@
             0.04615606063495452,
             0.029707267086034703
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4025974025974026,
+          "dfa_oracle_cc": 0.3627705627705628
         }
       },
       "spectrum_pct": [
@@ -14343,7 +14595,9 @@
             0.0013739635615674273,
             0.0020609453423511407
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7341772151898734,
+          "dfa_oracle_cc": 0.7201865423051299
         },
         "dfa": {
           "chance": 0.025,
@@ -14491,7 +14745,9 @@
             0.0031627377282089555,
             0.002437126892211908
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.810126582278481,
+          "dfa_oracle_cc": 0.7721518987341772
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -14565,7 +14821,9 @@
             0.010568873139528654,
             0.008863487140185772
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9367088607594937,
+          "dfa_oracle_cc": 0.9240506329113924
         },
         "word": {
           "chance": 0.058823529411764705,
@@ -14639,7 +14897,9 @@
             0.04723632607205495,
             0.04130594434977436
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5063291139240507,
+          "dfa_oracle_cc": 0.47547468354430383
         }
       },
       "spectrum_pct": [
@@ -14809,7 +15069,9 @@
             0.0,
             0.0006252540610789593
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7397260273972602,
+          "dfa_oracle_cc": 0.7260273972602739
         },
         "dfa": {
           "chance": 0.02702702702702703,
@@ -14957,7 +15219,9 @@
             0.014885231335885707,
             0.012122458110244478
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7534246575342466,
+          "dfa_oracle_cc": 0.7041095890410959
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -15031,7 +15295,9 @@
             0.01726988108416728,
             0.017158678589467326
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8904109589041096,
+          "dfa_oracle_cc": 0.8684931506849315
         },
         "word": {
           "chance": 0.058823529411764705,
@@ -15105,7 +15371,9 @@
             0.02924968833421134,
             0.021590863746417242
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5068493150684932,
+          "dfa_oracle_cc": 0.476027397260274
         }
       },
       "spectrum_pct": [
@@ -15276,7 +15544,9 @@
             0.0012273716461477105,
             0.0012273716461477105
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7317073170731707,
+          "dfa_oracle_cc": 0.7175866495507061
         },
         "dfa": {
           "chance": 0.02857142857142857,
@@ -15424,7 +15694,9 @@
             0.0035746384280674593,
             0.002491463884624626
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7926829268292683,
+          "dfa_oracle_cc": 0.751219512195122
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -15498,7 +15770,9 @@
             0.009849392720786387,
             0.008387092659667307
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9390243902439024,
+          "dfa_oracle_cc": 0.9268292682926829
         },
         "word": {
           "chance": 0.05263157894736842,
@@ -15572,7 +15846,9 @@
             0.0410950849822205,
             0.03904904975893746
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4268292682926829,
+          "dfa_oracle_cc": 0.3949864498644986
         }
       },
       "spectrum_pct": [
@@ -15744,7 +16020,9 @@
             0.0009535268019667781,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7875,
+          "dfa_oracle_cc": 0.7763157894736842
         },
         "dfa": {
           "chance": 0.02127659574468085,
@@ -15892,7 +16170,9 @@
             0.007254884650571875,
             0.0037547862176467283
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.825,
+          "dfa_oracle_cc": 0.7899999999999999
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -15966,7 +16246,9 @@
             0.021270115985854997,
             0.012726486234142416
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9,
+          "dfa_oracle_cc": 0.88
         },
         "word": {
           "chance": 0.05555555555555555,
@@ -16040,7 +16322,9 @@
             0.03883171769121957,
             0.03309564140313733
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5875,
+          "dfa_oracle_cc": 0.5632352941176471
         }
       },
       "spectrum_pct": [
@@ -16213,7 +16497,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.775,
+          "dfa_oracle_cc": 0.7625
         },
         "dfa": {
           "chance": 0.03225806451612903,
@@ -16361,7 +16647,9 @@
             0.0019990119685921745,
             0.0015750216656054176
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8375,
+          "dfa_oracle_cc": 0.805
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -16435,7 +16723,9 @@
             0.013521896487787382,
             0.013484905354276436
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8375,
+          "dfa_oracle_cc": 0.805
         },
         "word": {
           "chance": 0.05263157894736842,
@@ -16509,7 +16799,9 @@
             0.029890695271155933,
             0.024694841953517243
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.3875,
+          "dfa_oracle_cc": 0.3534722222222222
         }
       },
       "spectrum_pct": [
@@ -16683,7 +16975,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7529411764705882,
+          "dfa_oracle_cc": 0.739938080495356
         },
         "dfa": {
           "chance": 0.022727272727272728,
@@ -16831,7 +17125,9 @@
             0.012816412537776083,
             0.013619799779318181
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.788235294117647,
+          "dfa_oracle_cc": 0.7458823529411764
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -16905,7 +17201,9 @@
             0.027504957556993014,
             0.019743613781900073
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8705882352941177,
+          "dfa_oracle_cc": 0.8447058823529412
         },
         "word": {
           "chance": 0.05,
@@ -16979,7 +17277,9 @@
             0.04289655632802851,
             0.043078937468771596
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.5176470588235295,
+          "dfa_oracle_cc": 0.4922600619195047
         }
       },
       "spectrum_pct": [
@@ -17154,7 +17454,9 @@
             0.0,
             0.0010939616846099157
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8369565217391305,
+          "dfa_oracle_cc": 0.8273657289002558
         },
         "dfa": {
           "chance": 0.029411764705882353,
@@ -17302,7 +17604,9 @@
             0.015859969509979643,
             0.014892031612411172
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8260869565217391,
+          "dfa_oracle_cc": 0.7913043478260869
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -17376,7 +17680,9 @@
             0.01737392153522631,
             0.014001060764814714
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8152173913043478,
+          "dfa_oracle_cc": 0.7782608695652173
         },
         "word": {
           "chance": 0.047619047619047616,
@@ -17450,7 +17756,9 @@
             0.03279155480007052,
             0.027736707020592315
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.3695652173913043,
+          "dfa_oracle_cc": 0.33804347826086956
         }
       },
       "spectrum_pct": [
@@ -17626,7 +17934,9 @@
             0.0034740523500902338,
             0.0032818129173535246
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7727272727272727,
+          "dfa_oracle_cc": 0.7607655502392344
         },
         "dfa": {
           "chance": 0.02702702702702703,
@@ -17774,7 +18084,9 @@
             0.002528176098477915,
             0.0021101742974665117
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8409090909090909,
+          "dfa_oracle_cc": 0.8090909090909091
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -17848,7 +18160,9 @@
             0.016699066659583872,
             0.01687150003812998
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8295454545454546,
+          "dfa_oracle_cc": 0.7954545454545455
         },
         "word": {
           "chance": 0.05,
@@ -17922,7 +18236,9 @@
             0.03576989226762454,
             0.04234393055032164
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.42045454545454547,
+          "dfa_oracle_cc": 0.3899521531100479
         }
       },
       "spectrum_pct": [
@@ -18099,7 +18415,9 @@
             0.0011425591722508054,
             0.000480458383776463
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7789473684210526,
+          "dfa_oracle_cc": 0.7666666666666666
         },
         "dfa": {
           "chance": 0.022727272727272728,
@@ -18247,7 +18565,9 @@
             0.014292018358972366,
             0.008477671879439
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7789473684210526,
+          "dfa_oracle_cc": 0.7347368421052631
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -18321,7 +18641,9 @@
             0.020446507482375285,
             0.03022453412618891
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8421052631578947,
+          "dfa_oracle_cc": 0.8105263157894737
         },
         "word": {
           "chance": 0.047619047619047616,
@@ -18395,7 +18717,9 @@
             0.04395549116931159,
             0.02774463375387151
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4631578947368421,
+          "dfa_oracle_cc": 0.4363157894736842
         }
       },
       "spectrum_pct": [
@@ -18573,7 +18897,9 @@
             0.0006098753165924556,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7980769230769231,
+          "dfa_oracle_cc": 0.7874493927125507
         },
         "dfa": {
           "chance": 0.020833333333333332,
@@ -18721,7 +19047,9 @@
             0.006175054806247829,
             0.0049980282873554275
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8557692307692307,
+          "dfa_oracle_cc": 0.8269230769230769
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -18795,7 +19123,9 @@
             0.020246312145140742,
             0.01846896839695046
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.875,
+          "dfa_oracle_cc": 0.85
         },
         "word": {
           "chance": 0.045454545454545456,
@@ -18869,7 +19199,9 @@
             0.03700368988385813,
             0.04945989713175879
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.46153846153846156,
+          "dfa_oracle_cc": 0.4358974358974359
         }
       },
       "spectrum_pct": [
@@ -19048,7 +19380,9 @@
             0.0013263340341940326,
             0.0008029699384983306
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7789473684210526,
+          "dfa_oracle_cc": 0.7659442724458204
         },
         "dfa": {
           "chance": 0.024390243902439025,
@@ -19196,7 +19530,9 @@
             0.013558922003820572,
             0.014000259266461135
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8,
+          "dfa_oracle_cc": 0.76
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -19270,7 +19606,9 @@
             0.018263521390546773,
             0.015345907068547222
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8210526315789474,
+          "dfa_oracle_cc": 0.7852631578947369
         },
         "word": {
           "chance": 0.045454545454545456,
@@ -19344,7 +19682,9 @@
             0.03321351886678639,
             0.032275169506742404
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.43157894736842106,
+          "dfa_oracle_cc": 0.4045112781954887
         }
       },
       "spectrum_pct": [
@@ -19524,7 +19864,9 @@
             0.000740603341333409,
             0.00044314122775498857
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7864077669902912,
+          "dfa_oracle_cc": 0.774541531823085
         },
         "dfa": {
           "chance": 0.022222222222222223,
@@ -19672,7 +20014,9 @@
             0.006720065658681465,
             0.002418800384089513
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8446601941747572,
+          "dfa_oracle_cc": 0.8135922330097087
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -19746,7 +20090,9 @@
             0.0187375735244806,
             0.014206282120742441
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.883495145631068,
+          "dfa_oracle_cc": 0.8601941747572817
         },
         "word": {
           "chance": 0.045454545454545456,
@@ -19820,7 +20166,9 @@
             0.035403131192798,
             0.03900380724323796
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4368932038834951,
+          "dfa_oracle_cc": 0.4100785945446139
         }
       },
       "spectrum_pct": [
@@ -20001,7 +20349,9 @@
             0.0013734289993350094,
             0.0030493765829622778
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.75,
+          "dfa_oracle_cc": 0.7368421052631579
         },
         "dfa": {
           "chance": 0.02702702702702703,
@@ -20149,7 +20499,9 @@
             0.01518927154073255,
             0.009572461667532853
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8076923076923077,
+          "dfa_oracle_cc": 0.7692307692307693
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -20223,7 +20575,9 @@
             0.013614072419621466,
             0.012356830322178094
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.9038461538461539,
+          "dfa_oracle_cc": 0.8846153846153846
         },
         "word": {
           "chance": 0.041666666666666664,
@@ -20297,7 +20651,9 @@
             0.03409900805926359,
             0.03362235248003795
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.3557692307692308,
+          "dfa_oracle_cc": 0.3277591973244147
         }
       },
       "spectrum_pct": [
@@ -20479,7 +20835,9 @@
             0.0012519577145903341,
             0.0005766093902328798
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7636363636363637,
+          "dfa_oracle_cc": 0.7497326203208556
         },
         "dfa": {
           "chance": 0.025,
@@ -20627,7 +20985,9 @@
             0.011044096695308874,
             0.01035032784970464
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8,
+          "dfa_oracle_cc": 0.76
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -20701,7 +21061,9 @@
             0.021893808325076893,
             0.0182842270046558
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8727272727272727,
+          "dfa_oracle_cc": 0.8472727272727272
         },
         "word": {
           "chance": 0.041666666666666664,
@@ -20775,7 +21137,9 @@
             0.03965937721645315,
             0.03365570344066047
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.36363636363636365,
+          "dfa_oracle_cc": 0.3359683794466403
         }
       },
       "spectrum_pct": [
@@ -20958,7 +21322,9 @@
             0.001735249568691582,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7672413793103449,
+          "dfa_oracle_cc": 0.7556034482758622
         },
         "dfa": {
           "chance": 0.022727272727272728,
@@ -21106,7 +21472,9 @@
             0.011539296279740086,
             0.01158984723306725
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8103448275862069,
+          "dfa_oracle_cc": 0.7724137931034483
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -21180,7 +21548,9 @@
             0.012300487276310728,
             0.01371640636111769
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.853448275862069,
+          "dfa_oracle_cc": 0.8241379310344827
         },
         "word": {
           "chance": 0.04,
@@ -21254,7 +21624,9 @@
             0.03305198100690596,
             0.03096919810652406
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.3793103448275862,
+          "dfa_oracle_cc": 0.353448275862069
         }
       },
       "spectrum_pct": [
@@ -21438,7 +21810,9 @@
             0.0012985146902803819,
             0.0010480296304032181
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7909090909090909,
+          "dfa_oracle_cc": 0.7804545454545455
         },
         "dfa": {
           "chance": 0.021739130434782608,
@@ -21586,7 +21960,9 @@
             0.010102131163842934,
             0.006630112571025786
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8181818181818182,
+          "dfa_oracle_cc": 0.7818181818181819
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -21660,7 +22036,9 @@
             0.02224995103543219,
             0.01918657921273559
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8454545454545455,
+          "dfa_oracle_cc": 0.8145454545454546
         },
         "word": {
           "chance": 0.041666666666666664,
@@ -21734,7 +22112,9 @@
             0.03441426238212007,
             0.036046817345673526
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.41818181818181815,
+          "dfa_oracle_cc": 0.3928853754940711
         }
       },
       "spectrum_pct": [
@@ -21919,7 +22299,9 @@
             0.0,
             0.0
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7589285714285714,
+          "dfa_oracle_cc": 0.7462406015037594
         },
         "dfa": {
           "chance": 0.022222222222222223,
@@ -22067,7 +22449,9 @@
             0.015372065784312987,
             0.01019700064392962
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7767857142857143,
+          "dfa_oracle_cc": 0.7321428571428572
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -22141,7 +22525,9 @@
             0.017707222940583734,
             0.012931866775252088
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8928571428571429,
+          "dfa_oracle_cc": 0.8714285714285714
         },
         "word": {
           "chance": 0.038461538461538464,
@@ -22215,7 +22601,9 @@
             0.041188238017523325,
             0.043104458501092596
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.4017857142857143,
+          "dfa_oracle_cc": 0.3778571428571429
         }
       },
       "spectrum_pct": [
@@ -22401,7 +22789,9 @@
             0.0014157798438759852,
             0.0013509901440562214
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.7913043478260869,
+          "dfa_oracle_cc": 0.7797101449275361
         },
         "dfa": {
           "chance": 0.023255813953488372,
@@ -22549,7 +22939,9 @@
             0.008180983576294562,
             0.008485721803335738
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8,
+          "dfa_oracle_cc": 0.76
         },
         "position_from_end": {
           "chance": 0.16666666666666666,
@@ -22623,7 +23015,9 @@
             0.012617782660144034,
             0.010897266051858744
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.8869565217391304,
+          "dfa_oracle_cc": 0.8643478260869565
         },
         "word": {
           "chance": 0.04,
@@ -22697,7 +23091,9 @@
             0.034929801623195686,
             0.02637727838963966
           ],
-          "neuron_sampling": "random"
+          "neuron_sampling": "random",
+          "dfa_oracle": 0.3739130434782609,
+          "dfa_oracle_cc": 0.3478260869565218
         }
       },
       "spectrum_pct": [

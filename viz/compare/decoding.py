@@ -138,6 +138,77 @@ def chance_corrected(acc: float, chance: float) -> float:
     return float((acc - chance) / (1.0 - chance))
 
 
+def dfa_oracle_accuracy(
+    dfa_labels: np.ndarray | list,
+    y_labels: np.ndarray | list,
+) -> float | None:
+    """Bayes accuracy of predicting ``y`` from DFA state alone (majority within state).
+
+    This is the expected readout if the representation carried *only* the automaton
+    state: features partially entailed by shared states (word identity, position,
+    character) get a high floor that uniform ``1/n_classes`` chance ignores.
+    """
+    dfa = np.asarray(dfa_labels)
+    y = np.asarray(y_labels)
+    if dfa.shape[0] != y.shape[0] or dfa.shape[0] == 0:
+        return None
+    correct = 0
+    total = 0
+    for s in np.unique(dfa):
+        ys = y[dfa == s]
+        if ys.size == 0:
+            continue
+        _vals, counts = np.unique(ys, return_counts=True)
+        correct += int(np.max(counts))
+        total += int(ys.size)
+    if total == 0:
+        return None
+    return float(correct / total)
+
+
+def dfa_oracles_from_timestep_labels(
+    labels: Any,
+    features: tuple[str, ...],
+) -> dict[str, float]:
+    """Per-feature DFA-oracle accuracies from aligned timestep labels."""
+    dfa_vals = list(labels.dfa)
+    out: dict[str, float] = {}
+    for feat in features:
+        if feat == "dfa":
+            continue
+        vals, mask = labels.feature_values(feat)
+        if mask is not None:
+            y = [vals[i] for i, ok in enumerate(mask) if ok]
+            dfa_sub = [dfa_vals[i] for i, ok in enumerate(mask) if ok]
+        else:
+            y = list(vals)
+            dfa_sub = dfa_vals
+        acc = dfa_oracle_accuracy(dfa_sub, y)
+        if acc is not None and np.isfinite(acc):
+            out[feat] = float(acc)
+    return out
+
+
+def dfa_oracles_for_words(
+    words: list[str],
+    *,
+    features: tuple[str, ...] | None = None,
+    spaced: bool = False,
+    repeats: int = 40,
+) -> dict[str, float]:
+    """DFA-oracle accuracies from vocabulary structure (no network needed)."""
+    from unit_selectivity import build_timestep_labels
+
+    if not words:
+        return {}
+    feats = features if features is not None else DECODING_FEATURES
+    automaton = build_minimized_vocabulary_automaton(words)
+    sep = " " if spaced else ""
+    text = (sep.join(words) if spaced else "".join(words)) * int(repeats)
+    labels = build_timestep_labels(text, automaton, spaced=spaced, words=words)
+    return dfa_oracles_from_timestep_labels(labels, feats)
+
+
 def theoretical_chance(
     feat: str,
     *,
@@ -352,6 +423,21 @@ def compute_panel_decoding(
     features_out: dict[str, Any] = {}
     n_samples = 0
     vocab_null = null_chances_for_vocab(ctx.words, _infer_length(ctx), features=feats)
+
+    # DFA-oracle baselines use the same timestep labels as the probes.
+    from unit_selectivity import build_timestep_labels
+
+    automaton = build_minimized_vocabulary_automaton(ctx.words)
+    ts_labels = build_timestep_labels(
+        ctx.text,
+        automaton,
+        spaced=ctx.spaced,
+        words=ctx.words,
+        model=ctx.model,
+        activations=np.asarray(ctx.hidden_states, dtype=float),
+    )
+    dfa_oracles = dfa_oracles_from_timestep_labels(ts_labels, feats)
+
     for feat in feats:
         x_feat, y_feat = feature_data[feat]
         n_samples = max(n_samples, len(y_feat))
@@ -378,6 +464,12 @@ def compute_panel_decoding(
             "n_label_values": curve.get("n_label_values"),
             "n_samples": curve["n_samples"],
         }
+        oracle = dfa_oracles.get(feat)
+        if oracle is not None:
+            entry["dfa_oracle"] = float(oracle)
+            chance_for_cc = float(curve["chance"])
+            if np.isfinite(chance_for_cc):
+                entry["dfa_oracle_cc"] = chance_corrected(float(oracle), chance_for_cc)
         if curve_pca is not None:
             entry["full_hidden"] = curve_pca["full_hidden"]
             entry["by_k"] = _curve_to_list(curve_pca, max_k=max_k)
@@ -425,3 +517,55 @@ def _infer_length(ctx: TaskVizContext) -> int:
 
 def feature_display_name(feature: str) -> str:
     return FEATURE_DISPLAY.get(feature, feature)
+
+
+def dfa_oracle_cc_from_feat(feat_data: dict[str, Any]) -> float | None:
+    """Chance-corrected DFA-oracle level for one feature blob, if available."""
+    stored = feat_data.get("dfa_oracle_cc")
+    if stored is not None and np.isfinite(stored):
+        return float(stored)
+    oracle = feat_data.get("dfa_oracle")
+    chance = feat_data.get("chance")
+    if oracle is None or chance is None:
+        return None
+    if not np.isfinite(oracle) or not np.isfinite(chance):
+        return None
+    return chance_corrected(float(oracle), float(chance))
+
+
+def draw_dfa_oracle_baselines(
+    ax,
+    *,
+    oracles_cc: dict[str, float],
+    features: tuple[str, ...] | list[str],
+    colors: dict[str, str] | None = None,
+    show_legend: bool = False,
+) -> None:
+    """Horizontal dashed lines: expected chance-corr. accuracy from DFA state alone."""
+    from matplotlib.lines import Line2D
+
+    palette = colors if colors is not None else DECODE_FEATURE_COLORS
+    drew = False
+    for feat in features:
+        if feat == "dfa":
+            continue
+        y = oracles_cc.get(feat)
+        if y is None or not np.isfinite(y):
+            continue
+        color = palette.get(feat, "#888888")
+        ax.axhline(
+            float(y),
+            color=color,
+            linestyle="--",
+            linewidth=1.0,
+            alpha=0.65,
+            zorder=1,
+        )
+        drew = True
+    if show_legend and drew:
+        handles, labels = ax.get_legend_handles_labels()
+        proxy = Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8)
+        if "DFA-state oracle" not in labels:
+            handles.append(proxy)
+            labels.append("DFA-state oracle")
+            ax.legend(handles, labels, fontsize=6, loc="lower left", framealpha=0.9)

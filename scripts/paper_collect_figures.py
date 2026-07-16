@@ -130,7 +130,7 @@ def paper_manifest() -> list[FigureRef]:
                   max_w=1200),
         FigureRef("compare", "fig_mixed_learning_decode.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "learning_decode_r26.png",
+                  / "decoding" / "learning_decode_by_dfa.png",
                   max_w=1400),
         FigureRef("compare", "fig_mixed_decoding_by_position_word_length.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"

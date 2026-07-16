@@ -13,11 +13,13 @@ from vocab_diagrams import build_minimized_vocabulary_automaton
 from viz.compare._data import TaskVizContext
 
 DECODING_FEATURES: tuple[str, ...] = (
-    "char", "dfa", "position", "position_from_end",
+    "char", "dfa", "position", "position_from_end", "word",
 )
+# Alias kept for callers that explicitly opt into word-inclusive readouts.
+WORD_DECODING_FEATURES: tuple[str, ...] = DECODING_FEATURES
 # Alias of the shared feature-type palette (keep in sync via FEATURE_COLORS).
 DECODE_FEATURE_COLORS: dict[str, str] = {
-    f: FEATURE_COLORS[f] for f in DECODING_FEATURES
+    f: FEATURE_COLORS[f] for f in WORD_DECODING_FEATURES
 }
 _DEFAULT_MAX_PCS = 20
 _DEFAULT_MAX_K = _DEFAULT_MAX_PCS
@@ -154,16 +156,21 @@ def theoretical_chance(
         return 1.0 / n_states if n_states > 0 else None
     if feat in ("position", "position_from_end"):
         return 1.0 / length if length > 0 else None
+    if feat == "word":
+        return 1.0 / len(words) if words else None
     return None
 
 
 def null_chances_for_vocab(
     words: list[str],
     length: int,
+    *,
+    features: tuple[str, ...] | None = None,
 ) -> dict[str, float]:
     automaton = build_minimized_vocabulary_automaton(words)
+    feats = features if features is not None else DECODING_FEATURES
     out: dict[str, float] = {}
-    for feat in DECODING_FEATURES:
+    for feat in feats:
         ch = theoretical_chance(feat, words=words, length=length, automaton=automaton)
         if ch is not None and np.isfinite(ch):
             out[feat] = float(ch)
@@ -172,8 +179,11 @@ def null_chances_for_vocab(
 
 def prepare_decoding_data(
     ctx: TaskVizContext,
+    *,
+    features: tuple[str, ...] | None = None,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """Per-feature (X, y) on all timesteps."""
+    feats = features if features is not None else DECODING_FEATURES
     automaton = build_minimized_vocabulary_automaton(ctx.words)
     x = np.asarray(ctx.hidden_states, dtype=float)
     labels = build_timestep_labels(
@@ -186,7 +196,7 @@ def prepare_decoding_data(
     )
 
     out: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-    for feat in DECODING_FEATURES:
+    for feat in feats:
         vals, mask = labels.feature_values(feat)
         if mask is not None:
             idxs = [i for i, ok in enumerate(mask) if ok]
@@ -329,9 +339,11 @@ def compute_panel_decoding(
     neuron_sampling: str = "variance",
     n_random_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
     neuron_rng_seed: int = 0,
+    features: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     """Decode all features for one (task, seed) checkpoint."""
-    feature_data = prepare_decoding_data(ctx)
+    feats = features if features is not None else DECODING_FEATURES
+    feature_data = prepare_decoding_data(ctx, features=feats)
     hidden_size = int(ctx.hidden_states.shape[1])
     cfg = TASKS.get(ctx.task, {})
     if "hidden_size" in cfg:
@@ -339,8 +351,8 @@ def compute_panel_decoding(
 
     features_out: dict[str, Any] = {}
     n_samples = 0
-    vocab_null = null_chances_for_vocab(ctx.words, _infer_length(ctx))
-    for feat in DECODING_FEATURES:
+    vocab_null = null_chances_for_vocab(ctx.words, _infer_length(ctx), features=feats)
+    for feat in feats:
         x_feat, y_feat = feature_data[feat]
         n_samples = max(n_samples, len(y_feat))
         label_null = empirical_null_chance(feat, y_feat)
@@ -382,10 +394,10 @@ def compute_panel_decoding(
 
     null_chance = {
         feat: features_out[feat].get("null_chance")
-        for feat in DECODING_FEATURES
+        for feat in feats
         if feat in features_out and features_out[feat].get("null_chance") is not None
     }
-    for feat in DECODING_FEATURES:
+    for feat in feats:
         if feat not in null_chance and feat in vocab_null:
             null_chance[feat] = vocab_null[feat]
 
@@ -394,6 +406,7 @@ def compute_panel_decoding(
         "seed": ctx.seed,
         "hidden_size": hidden_size,
         "n_samples": n_samples,
+        "feature_order": list(feats),
         "null_chance": null_chance,
         "features": features_out,
     }

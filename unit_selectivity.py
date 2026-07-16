@@ -18,6 +18,10 @@ if TYPE_CHECKING:
     from visualize import CondensedView
 
 ANALYSIS_FEATURES = ("dfa", "char", "position", "position_from_end")
+# Word identity is opt-in for dedicated readout figures (not default ANALYSIS).
+WORD_ANALYSIS_FEATURES = (
+    "dfa", "char", "position", "position_from_end", "word",
+)
 SELECTIVITY_FEATURES = ("dfa", "prefix", "char", "position", "position_from_end")
 ALL_CATEGORICAL_FEATURES = SELECTIVITY_FEATURES
 LEXICAL_FEATURES = SELECTIVITY_FEATURES
@@ -32,6 +36,7 @@ FEATURE_DISPLAY = {
     "position": "position from beginning",
     "position_from_end": "position from end",
     "dfa": "DFA state",
+    "word": "word identity",
     "prefix": "prefix",
     "string": "string",
     "word_start": "word start",
@@ -49,6 +54,7 @@ FEATURE_COLORS = {
     "dfa": "#0072B2",
     "position": "#009E73",
     "position_from_end": "#CC79A7",
+    "word": "#D55E00",
     "prefix": "#56B4E9",
     "string": "#8c564b",
     "word_start": "#17becf",
@@ -65,6 +71,7 @@ FEATURE_CMAPS = {
     "char": "Dark2",
     "position": "YlGnBu",
     "position_from_end": "OrRd",
+    "word": "tab10",
     "prefix": "Set3",
     "string": "Accent",
     "word_start": "Set2",
@@ -87,6 +94,7 @@ class TimestepLabels:
     dfa: list[int]
     position: list[int | None]
     position_from_end: list[int | None]
+    word: list[str | None]
     word_start: list[str]
     word_end: list[str]
     next_char: list[str]
@@ -105,6 +113,8 @@ class TimestepLabels:
             return self.position, [p is not None for p in self.position]
         if feature == "position_from_end":
             return self.position_from_end, [p is not None for p in self.position_from_end]
+        if feature == "word":
+            return self.word, [w is not None for w in self.word]
         if feature == "char":
             return self.chars, None
         if feature == "word_start":
@@ -194,6 +204,7 @@ def build_timestep_labels(
         prefix_before_from_string_label,
         word_boundary_flags_at_index,
         word_boundary_flags_for_prefix_label,
+        word_identity_at_index,
     )
 
     nc2: list[str | None] = []
@@ -201,6 +212,7 @@ def build_timestep_labels(
     word_starts: list[str] = []
     word_ends: list[str] = []
     position_from_end_ids: list[int | None] = []
+    word_ids: list[str | None] = []
 
     boundary_words = label_words if label_words is not None else words
     vocab = _corpus_vocab(text, boundary_words)
@@ -213,6 +225,10 @@ def build_timestep_labels(
         position_ids = [position_in_word_for_prefix_label(l) for l in condensed.labels]
         position_from_end_ids = [
             position_from_end_at_index(text, idx, spaced=spaced, vocab=vocab)
+            for idx in condensed.timestep_indices
+        ]
+        word_ids = [
+            word_identity_at_index(text, idx, spaced=spaced, vocab=vocab)
             for idx in condensed.timestep_indices
         ]
         string_labels = list(condensed.labels)
@@ -238,6 +254,9 @@ def build_timestep_labels(
         ]
         position_from_end_ids = [
             position_from_end_at_index(text, t, spaced=spaced, vocab=vocab) for t in range(n)
+        ]
+        word_ids = [
+            word_identity_at_index(text, t, spaced=spaced, vocab=vocab) for t in range(n)
         ]
         string_labels = [
             in_word_prefix_at_position(text, t, spaced=spaced, vocab=vocab) for t in range(n)
@@ -269,6 +288,7 @@ def build_timestep_labels(
         dfa=state_ids,
         position=position_ids,
         position_from_end=position_from_end_ids,
+        word=word_ids,
         word_start=word_starts,
         word_end=word_ends,
         next_char=next_char if condensed is None else list(condensed.next_chars),

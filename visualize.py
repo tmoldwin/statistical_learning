@@ -9903,6 +9903,15 @@ def main() -> None:
                                 seeds=anchor_seeds,
                                 model_type=model_type,
                             )
+                            if args.exp == "six_word_mixed_demo_ns":
+                                from viz.single_task_decoding import run_demo_word_analyses
+
+                                run_demo_word_analyses(
+                                    args.exp,
+                                    decode_dir,
+                                    seeds=anchor_seeds,
+                                    model_type=model_type,
+                                )
         elif automaton is not None and want("decoding") and args.exp:
             from experiment import DEFAULT_SEED
             from viz.single_task_decoding import (
@@ -9932,6 +9941,15 @@ def main() -> None:
                             seeds=anchor_seeds,
                             model_type=model_type,
                         )
+                        if args.exp == "six_word_mixed_demo_ns":
+                            from viz.single_task_decoding import run_demo_word_analyses
+
+                            run_demo_word_analyses(
+                                args.exp,
+                                decode_dir,
+                                seeds=anchor_seeds,
+                                model_type=model_type,
+                            )
 
         if model["hidden_size"] == 2:
             with timer.section("state_trajectories_2d"):

@@ -153,12 +153,19 @@ def collect_mixed_dfa_panels(
                     continue
                 chance = float(blob.get("chance", float("nan")))
                 full = float(blob.get("full_hidden", float("nan")))
+                full_neu = float(blob.get("full_hidden_neurons", float("nan")))
                 feat_summary[feat] = {
                     "chance": chance,
                     "full_hidden": full,
                     "full_hidden_cc": (
                         chance_corrected(full, chance)
                         if np.isfinite(full) and np.isfinite(chance)
+                        else float("nan")
+                    ),
+                    "full_hidden_neurons": full_neu,
+                    "full_hidden_neurons_cc": (
+                        chance_corrected(full_neu, chance)
+                        if np.isfinite(full_neu) and np.isfinite(chance)
                         else float("nan")
                     ),
                     "by_k": blob.get("by_k"),
@@ -211,7 +218,7 @@ def plot_decoding_vs_dfa(
     payload = payload or _load_panels()
     panels = [p for p in payload["panels"] if "error" not in p]
 
-    fig, axes = plt.subplots(2, 2, figsize=(8.2, 6.4), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(9.6, 6.2), sharex=True, sharey=True)
     axes = axes.ravel()
 
     for ax, feat in zip(axes, _FEATURE_ORDER):
@@ -243,10 +250,15 @@ def plot_decoding_vs_dfa(
         ax.grid(True, alpha=0.25)
         ax.tick_params(labelsize=8)
 
-    for ax in axes[2:]:
-        ax.set_xlabel("minimized DFA states", fontsize=9)
-    for ax in (axes[0], axes[2]):
-        ax.set_ylabel("chance-corrected\nfull-hidden accuracy", fontsize=8)
+    for ax in axes[len(_FEATURE_ORDER):]:
+        ax.set_axis_off()
+
+    for ax in axes[3:6]:
+        if ax.get_visible():
+            ax.set_xlabel("minimized DFA states", fontsize=9)
+    for ax in (axes[0], axes[3]):
+        if ax.get_visible():
+            ax.set_ylabel("chance-corrected\nfull-hidden accuracy", fontsize=8)
 
     finalize_grid_figure(
         fig,
@@ -455,7 +467,10 @@ def plot_decoding_curves_by_dfa_bins(
             axes[ri, bi].set_axis_off()
 
     if axes[0, 0].get_legend_handles_labels()[0]:
-        axes[0, 0].legend(fontsize=6, frameon=False, loc="lower right")
+        axes[0, 0].legend(
+            fontsize=6, frameon=False, loc="lower right",
+            ncol=min(len(_FEATURE_ORDER), 3),
+        )
 
     cax = fig.add_axes([0.92, 0.08, 0.014, 0.42])
     cbar = fig.colorbar(
@@ -2289,6 +2304,75 @@ def plot_mixed_dfa_within_corr_vs_dfa(
     return out
 
 
+def collect_mixed_position_word_length_decode(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    recompute: bool = True,
+) -> Path:
+    """Per-run position×length readouts, aggregated across the 50 mixed vocabs."""
+    from viz.single_task_decoding import (
+        _aggregate_position_payloads,
+        compute_decode_by_position_word_length,
+    )
+
+    out_path = sweep_decoding_dir(COMPARISON_NAME) / "decoding_by_position_word_length.json"
+    if out_path.is_file() and not recompute:
+        return out_path
+
+    run_payloads: list[dict[str, Any]] = []
+    for entry in iter_runs():
+        task = entry["task"]
+        if not checkpoint_path(task, model_type, seed=seed).is_file():
+            print(f"  skip position×length {task} (no checkpoint)", flush=True)
+            continue
+        print(f"  position×length {task}  dfa={entry.get('n_dfa_states', '?')}", flush=True)
+        try:
+            ctx = load_task_decoding_context(task, model_type=model_type, seed=seed)
+            run_payloads.append({
+                **compute_decode_by_position_word_length(ctx),
+                "run_id": entry["run_id"],
+                "n_dfa_states": _dfa_states(list(entry["words"])),
+                "n_words": entry["n_words"],
+            })
+        except Exception as exc:  # noqa: BLE001
+            print(f"  skip {task}: {exc}", flush=True)
+
+    if not run_payloads:
+        raise FileNotFoundError("no mixed runs for position×length decode")
+
+    payload = _aggregate_position_payloads(run_payloads)
+    payload["comparison"] = COMPARISON_NAME
+    payload["seed"] = seed
+    payload["n_runs"] = len(run_payloads)
+    payload["run_ids"] = [p.get("run_id") for p in run_payloads]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(_sanitize(payload), indent=2), encoding="utf-8")
+    print(f"wrote {out_path}", flush=True)
+    return out_path
+
+
+def plot_mixed_position_word_length_decode(
+    payload: dict[str, Any] | None = None,
+    *,
+    outfile: str = "decoding_by_position_word_length.png",
+) -> Path:
+    from viz.single_task_decoding import plot_decode_by_position_word_length
+
+    if payload is None:
+        path = sweep_decoding_dir(COMPARISON_NAME) / "decoding_by_position_word_length.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    out = sweep_decoding_dir(COMPARISON_NAME) / outfile
+    seeds = payload.get("run_ids") or payload.get("seeds")
+    if isinstance(seeds, list) and len(seeds) > 1:
+        payload = {
+            **payload,
+            "seeds": seeds,
+            "task": payload.get("comparison", COMPARISON_NAME),
+        }
+    return plot_decode_by_position_word_length(payload, out)
+
+
 def run_all_mixed_dfa_plots(
     *,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
@@ -2296,6 +2380,11 @@ def run_all_mixed_dfa_plots(
 ) -> list[Path]:
     path = collect_mixed_dfa_panels(seeds=seeds, recompute=recompute)
     payload = json.loads(path.read_text(encoding="utf-8"))
+    pos_path = collect_mixed_position_word_length_decode(
+        seed=seeds[0] if seeds else 1,
+        recompute=recompute,
+    )
+    pos_payload = json.loads(pos_path.read_text(encoding="utf-8"))
     outs = [
         plot_nwords_vs_dfa_sanity(payload),
         plot_decoding_vs_dfa(payload),
@@ -2307,6 +2396,7 @@ def run_all_mixed_dfa_plots(
         plot_mixed_dfa_weight_matrices_by_dfa(),
         plot_mixed_dfa_trajectory_vocab_grid(),
         plot_mixed_dfa_within_corr_vs_dfa(recompute=False),
+        plot_mixed_position_word_length_decode(pos_payload),
     ]
     for p in outs:
         print(f"wrote {p}", flush=True)

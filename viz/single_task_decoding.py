@@ -15,10 +15,12 @@ from viz.compare._data import load_task_decoding_context, load_task_viz_context
 from viz.compare.decoding import (
     DECODING_FEATURES,
     DECODE_FEATURE_COLORS,
+    WORD_DECODING_FEATURES,
     _DEFAULT_MAX_PCS,
     _DEFAULT_NEURON_RANDOM_TRIALS,
     chance_corrected,
     compute_panel_decoding,
+    decode_feature_curve,
     feature_display_name,
 )
 from viz.compare.trajectories import _plot_task_closed_loop_panel
@@ -563,7 +565,7 @@ def plot_aggregated_seed_decode_curves(
         fig.legend(
             legend_handles, legend_labels,
             loc="upper center", bbox_to_anchor=(0.5, 0.98),
-            ncol=4, fontsize=8, frameon=False, columnspacing=1.2,
+            ncol=min(len(legend_handles), 5), fontsize=8, frameon=False, columnspacing=1.2,
         )
     finalize_grid_figure(
         fig,
@@ -763,3 +765,419 @@ def run_multi_seed_decoding_analysis(
         model_type=model_type,
     )
     return bundle
+
+
+# Features that remain multi-class at a fixed (word length, in-word position).
+_POSITION_SLICE_FEATURES: tuple[str, ...] = ("word", "dfa", "char")
+
+
+def run_word_decoding_analysis(
+    task: str,
+    out_dir: str | Path,
+    *,
+    seeds: tuple[int, ...] | None = None,
+    model_type: str = "rnn",
+    max_k: int = _DEFAULT_MAX_PCS,
+    n_neuron_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
+    neuron_rng_seed: int = 0,
+) -> dict[str, Any]:
+    """Decode with word identity + standard features; write a separate figure."""
+    features = WORD_DECODING_FEATURES
+    run_seeds = seeds if seeds is not None else common_seeds((task,), model_type)
+    if not run_seeds:
+        raise RuntimeError(f"no checkpoints found for {task!r}")
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    panels: dict[int, dict[str, Any]] = {}
+    for seed in run_seeds:
+        print(f"word decoding seed {seed}...", flush=True)
+        ctx = load_task_decoding_context(task, model_type=model_type, seed=seed)
+        panels[seed] = compute_panel_decoding(
+            ctx,
+            max_k=max_k,
+            neuron_sampling="random",
+            n_random_trials=n_neuron_trials,
+            neuron_rng_seed=neuron_rng_seed,
+            features=features,
+        )
+
+    bundle = {
+        "task": task,
+        "seeds": list(run_seeds),
+        "features": list(features),
+        "panels": {str(s): panels[s] for s in run_seeds},
+    }
+    png_path = numbered_plot_path(out_dir, "decoding_with_word_seed_mean.png")
+    json_path = png_path.with_name("decoding_with_word_seed_mean.json")
+    json_path.write_text(json.dumps(bundle, indent=2), encoding="utf-8")
+    print(f"wrote {json_path}")
+
+    plot_aggregated_seed_decode_curves(
+        panels,
+        png_path,
+        task=task,
+        max_k=max_k,
+        features=features,
+        n_neuron_trials=n_neuron_trials,
+        model_type=model_type,
+    )
+    return bundle
+
+
+def _probe_full_and_k(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    k: int = 5,
+) -> dict[str, float] | None:
+    """Chance-corrected full-H and top-k PCA probe accuracies."""
+    curve = decode_feature_curve(x, y, max_k=max(k, 1), basis="pca")
+    if curve is None:
+        return None
+    chance = float(curve["chance"])
+    full = chance_corrected(float(curve["full_hidden"]), chance)
+    by_k = curve.get("by_k") or {}
+    k_acc = by_k.get(k)
+    topk = (
+        chance_corrected(float(k_acc), chance)
+        if k_acc is not None and np.isfinite(k_acc)
+        else float("nan")
+    )
+    return {
+        "chance": chance,
+        "n_classes": float(curve["n_classes"]),
+        "n_samples": float(curve["n_samples"]),
+        "full_hidden_cc": full,
+        f"pc{k}_cc": topk,
+    }
+
+
+def compute_decode_by_position_word_length(
+    ctx,
+    *,
+    features: tuple[str, ...] = _POSITION_SLICE_FEATURES,
+    k_pc: int = 5,
+) -> dict[str, Any]:
+    """Linear readout vs in-word position, one panel per vocabulary word length."""
+    from unit_selectivity import build_timestep_labels
+    from vocab_diagrams import (
+        build_minimized_vocabulary_automaton,
+        position_in_word_at_index,
+        word_length_at_index,
+    )
+    from visualize import _corpus_vocab
+
+    x = np.asarray(ctx.hidden_states, dtype=float)
+    automaton = build_minimized_vocabulary_automaton(ctx.words)
+    vocab = _corpus_vocab(ctx.text, ctx.words)
+    labels = build_timestep_labels(
+        ctx.text, automaton,
+        spaced=ctx.spaced, words=ctx.words,
+        model=ctx.model, activations=x,
+    )
+    n = len(ctx.text)
+    word_lens = np.asarray([
+        word_length_at_index(ctx.text, t, spaced=ctx.spaced, vocab=vocab)
+        for t in range(n)
+    ], dtype=object)
+    positions = np.asarray([
+        position_in_word_at_index(ctx.text, t, spaced=ctx.spaced, vocab=vocab)
+        for t in range(n)
+    ], dtype=object)
+
+    # Only lengths that appear in the vocabulary (ignore truncated leftover chars).
+    lengths = sorted({len(w) for w in ctx.words})
+    by_length: dict[str, Any] = {}
+    for L in lengths:
+        words_L = [w for w in ctx.words if len(w) == L]
+        slots: dict[str, Any] = {}
+        if len(words_L) < 2:
+            # Fixed length with one vocab item → labels constant at each position.
+            by_length[str(L)] = {
+                "word_length": L,
+                "n_words_of_length": len(words_L),
+                "words": words_L,
+                "skipped": "single word of this length — labels constant at each position",
+                "positions": {},
+            }
+            continue
+        for pos in range(L):
+            keep = [
+                i for i in range(n)
+                if word_lens[i] == L and positions[i] == pos
+            ]
+            if len(keep) < 4:
+                slots[str(pos)] = {"n": len(keep), "error": "too few samples"}
+                continue
+            slot_feats: dict[str, Any] = {"n": len(keep)}
+            for feat in features:
+                vals, mask = labels.feature_values(feat)
+                if mask is not None:
+                    idxs = [i for i in keep if mask[i]]
+                else:
+                    idxs = list(keep)
+                if len(idxs) < 4:
+                    slot_feats[feat] = {"error": "too few samples"}
+                    continue
+                x_sub = x[idxs]
+                y_sub = np.asarray([vals[i] for i in idxs])
+                probe = _probe_full_and_k(x_sub, y_sub, k=k_pc)
+                if probe is None:
+                    slot_feats[feat] = {"error": "insufficient classes"}
+                else:
+                    slot_feats[feat] = probe
+            slots[str(pos)] = slot_feats
+        by_length[str(L)] = {
+            "word_length": L,
+            "n_words_of_length": len(words_L),
+            "words": words_L,
+            "positions": slots,
+        }
+
+    return {
+        "task": ctx.task,
+        "seed": ctx.seed,
+        "features": list(features),
+        "k_pc": k_pc,
+        "by_length": by_length,
+    }
+
+
+def _aggregate_position_payloads(
+    payloads: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Mean ± std of chance-corr. accuracies across seeds."""
+    if not payloads:
+        raise ValueError("no payloads")
+    features = tuple(payloads[0].get("features") or _POSITION_SLICE_FEATURES)
+    k_pc = int(payloads[0].get("k_pc", 5))
+    lengths = sorted({
+        int(L)
+        for p in payloads
+        for L, e in (p.get("by_length") or {}).items()
+        if not e.get("skipped")
+    })
+    by_length: dict[str, Any] = {}
+    for L in lengths:
+        words_L = None
+        for p in payloads:
+            e = (p.get("by_length") or {}).get(str(L))
+            if e and not e.get("skipped"):
+                words_L = e.get("words")
+                break
+        slots: dict[str, Any] = {}
+        for pos in range(L):
+            slot: dict[str, Any] = {}
+            ns = []
+            for feat in features:
+                full_vals, pc_vals = [], []
+                for p in payloads:
+                    e = (p.get("by_length") or {}).get(str(L)) or {}
+                    feat_data = ((e.get("positions") or {}).get(str(pos)) or {}).get(feat)
+                    if not isinstance(feat_data, dict):
+                        continue
+                    if "full_hidden_cc" in feat_data:
+                        full_vals.append(float(feat_data["full_hidden_cc"]))
+                    if f"pc{k_pc}_cc" in feat_data:
+                        pc_vals.append(float(feat_data[f"pc{k_pc}_cc"]))
+                    if "n" in ((e.get("positions") or {}).get(str(pos)) or {}):
+                        ns.append(int((e["positions"][str(pos)])["n"]))
+                if not full_vals and not pc_vals:
+                    slot[feat] = {"error": "insufficient classes"}
+                    continue
+                entry: dict[str, Any] = {
+                    "n_seeds": len(full_vals) or len(pc_vals),
+                }
+                if full_vals:
+                    entry["full_hidden_cc"] = float(np.nanmean(full_vals))
+                    entry["full_hidden_cc_std"] = (
+                        float(np.nanstd(full_vals, ddof=1)) if len(full_vals) > 1 else 0.0
+                    )
+                if pc_vals:
+                    entry[f"pc{k_pc}_cc"] = float(np.nanmean(pc_vals))
+                    entry[f"pc{k_pc}_cc_std"] = (
+                        float(np.nanstd(pc_vals, ddof=1)) if len(pc_vals) > 1 else 0.0
+                    )
+                slot[feat] = entry
+            if ns:
+                slot["n_mean"] = float(np.mean(ns))
+            slots[str(pos)] = slot
+        by_length[str(L)] = {
+            "word_length": L,
+            "n_words_of_length": len(words_L or []),
+            "words": list(words_L or []),
+            "positions": slots,
+        }
+    return {
+        "task": payloads[0].get("task"),
+        "seeds": [p.get("seed") for p in payloads],
+        "features": list(features),
+        "k_pc": k_pc,
+        "by_length": by_length,
+    }
+
+
+def plot_decode_by_position_word_length(
+    payload: dict[str, Any],
+    save_path: str | Path,
+    *,
+    k_pc: int | None = None,
+) -> Path:
+    """One panel per word length: chance-corr. acc vs position (full H + top-k PC)."""
+    save_path = Path(save_path)
+    by_length = payload.get("by_length") or {}
+    lengths = sorted(
+        int(L) for L, e in by_length.items()
+        if e.get("positions") and not e.get("skipped")
+    )
+    if not lengths:
+        raise ValueError("no word-length panels to plot")
+    features = tuple(payload.get("features") or _POSITION_SLICE_FEATURES)
+    k_pc = int(k_pc if k_pc is not None else payload.get("k_pc", 5))
+    seeds = payload.get("run_ids") or payload.get("seeds")
+    if isinstance(seeds, list) and len(seeds) > 1:
+        seed_note = f"mean ± std over {len(seeds)} mixed vocabs (seed {payload.get('seed', 1)})"
+    elif payload.get("comparison"):
+        seed_note = (
+            f"mean ± std over {payload.get('n_runs', len(seeds or []))} mixed vocabs "
+            f"(seed {payload.get('seed', '')})"
+        )
+    else:
+        seed_note = (
+            f"mean ± std over seeds {seeds}"
+            if isinstance(seeds, list) and len(seeds) > 1
+            else f"seed {payload.get('seed', '')}"
+        )
+
+    n_cols = len(lengths)
+    fig, axes = plt.subplots(
+        2, n_cols,
+        figsize=(max(3.4 * n_cols, 7.0), 5.8),
+        sharey="row",
+        squeeze=False,
+    )
+    task_label = payload.get("comparison") or payload.get("task", "")
+    finalize_grid_figure(
+        fig,
+        suptitle=f"Readout vs position in word  ·  {task_label}  ·  {seed_note}",
+        top=0.78,
+        bottom=0.12,
+        left=0.10,
+        right=0.98,
+        hspace=0.42,
+        wspace=0.24,
+    )
+
+    for ci, L in enumerate(lengths):
+        entry = by_length[str(L)]
+        positions = entry.get("positions") or {}
+        xs = np.arange(L, dtype=float)
+        words_note = ", ".join(entry.get("words") or [])
+        for ri, basis_key, std_key, row_label in (
+            (0, "full_hidden_cc", "full_hidden_cc_std", "full hidden"),
+            (1, f"pc{k_pc}_cc", f"pc{k_pc}_cc_std", f"top-{k_pc} PCs"),
+        ):
+            ax = axes[ri, ci]
+            for feat in features:
+                ys, yerr = [], []
+                for pos in range(L):
+                    slot = positions.get(str(pos)) or {}
+                    feat_data = slot.get(feat) or {}
+                    val = feat_data.get(basis_key) if isinstance(feat_data, dict) else None
+                    std = feat_data.get(std_key) if isinstance(feat_data, dict) else None
+                    ys.append(float(val) if val is not None and np.isfinite(val) else np.nan)
+                    yerr.append(float(std) if std is not None and np.isfinite(std) else 0.0)
+                color = DECODE_FEATURE_COLORS.get(feat, "#888888")
+                y_arr = np.asarray(ys, dtype=float)
+                e_arr = np.asarray(yerr, dtype=float)
+                # Skip all-NaN series (e.g. constant labels → insufficient classes).
+                if not np.any(np.isfinite(y_arr)):
+                    continue
+                ax.plot(
+                    xs, y_arr, color=color, lw=1.8, marker="o", ms=5,
+                    label=feature_display_name(feat) if ci == 0 and ri == 0 else None,
+                )
+                if np.any(e_arr > 0):
+                    ax.fill_between(
+                        xs, y_arr - e_arr, y_arr + e_arr,
+                        color=color, alpha=0.18, linewidth=0,
+                    )
+            ax.axhline(0.0, color="0.35", ls=":", lw=0.7, alpha=0.8)
+            ax.set_ylim(-0.05, 1.05)
+            ax.set_xticks(list(range(L)))
+            ax.set_xticklabels([str(p) for p in range(L)], fontsize=8)
+            ax.grid(axis="y", alpha=0.3, lw=0.5)
+            if ri == 0:
+                ax.set_title(f"length {L}  ({words_note})", fontsize=8)
+            if ri == 1:
+                ax.set_xlabel("position from beginning", fontsize=8)
+            if ci == 0:
+                ax.set_ylabel(
+                    f"{row_label}\n(acc − chance) / (1 − chance)",
+                    fontsize=8,
+                )
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    if handles:
+        fig.legend(
+            handles, labels,
+            loc="upper center", bbox_to_anchor=(0.55, 0.90),
+            ncol=len(handles), fontsize=7, frameon=False, columnspacing=1.0,
+        )
+    save_figure(fig, save_path, dpi=150)
+    print(f"wrote {save_path}")
+    return save_path
+
+
+def run_position_word_length_decode(
+    task: str,
+    out_dir: str | Path,
+    *,
+    seed: int | None = None,
+    seeds: tuple[int, ...] | None = None,
+    model_type: str = "rnn",
+    k_pc: int = 5,
+) -> dict[str, Any]:
+    """Readout ability by in-word position, split by word length."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    run_seeds = seeds
+    if run_seeds is None:
+        run_seeds = (seed,) if seed is not None else common_seeds((task,), model_type)[:1]
+    payloads = []
+    for s in run_seeds:
+        print(f"position×length decode seed {s}...", flush=True)
+        ctx = load_task_decoding_context(task, model_type=model_type, seed=s)
+        payloads.append(compute_decode_by_position_word_length(ctx, k_pc=k_pc))
+    payload = (
+        _aggregate_position_payloads(payloads)
+        if len(payloads) > 1
+        else payloads[0]
+    )
+    png_path = numbered_plot_path(out_dir, "decoding_by_position_word_length.png")
+    json_path = png_path.with_name("decoding_by_position_word_length.json")
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {json_path}")
+    plot_decode_by_position_word_length(payload, png_path, k_pc=k_pc)
+    return payload
+
+
+def run_demo_word_analyses(
+    task: str,
+    out_dir: str | Path,
+    *,
+    seeds: tuple[int, ...] | None = None,
+    model_type: str = "rnn",
+    max_k: int = _DEFAULT_MAX_PCS,
+) -> dict[str, Any]:
+    """Word-identity curves + position×length readout for the demo lexicon."""
+    out_dir = Path(out_dir)
+    word_bundle = run_word_decoding_analysis(
+        task, out_dir, seeds=seeds, model_type=model_type, max_k=max_k,
+    )
+    pos_payload = run_position_word_length_decode(
+        task, out_dir, seeds=seeds, model_type=model_type,
+    )
+    return {"word_decoding": word_bundle, "by_position": pos_payload}

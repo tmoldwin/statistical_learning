@@ -63,11 +63,15 @@ Does **word identity** emerge with DFA (structure) or only once the network can 
 
 ---
 
-## Tomorrow checklist
+## Done (demo)
 
-- [ ] Implement `word` labels in `build_timestep_labels` + display/colors
-- [ ] Wire into `DECODING_FEATURES` / shared analysis feature tuples
-- [ ] Smoke-test on demo: decode + one selectivity/separation panel
+- [x] Implement `word` labels in `build_timestep_labels` + display/colors
+- [x] Opt-in `WORD_DECODING_FEATURES` (kept default `DECODING_FEATURES` unchanged)
+- [x] Demo figure: [decoding_with_word_seed_mean.png](../experiments/six_word_mixed_demo_ns/rnn/plots/decoding_with_word_seed_mean.png)
+- [x] Position×length figure: [decoding_by_position_word_length.png](../experiments/six_word_mixed_demo_ns/rnn/plots/decoding_by_position_word_length.png)
+
+## Remaining checklist
+
 - [ ] Recompute learning-decode for r26 (or r41 seed-mean) including `word`
 - [ ] Collect JPG into `paper/figures/compare/`
 - [ ] Insert figure + caption into draft; renumber 14–16

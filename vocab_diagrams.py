@@ -602,14 +602,14 @@ def position_in_word_at_index(
     return position_in_word_for_prefix_label(prefix)
 
 
-def word_length_at_index(
+def word_identity_at_index(
     text: str,
     index: int,
     *,
     spaced: bool,
     vocab: set[str] | None = None,
-) -> int | None:
-    """Length of the word containing `index` (None on spaces / outside vocab)."""
+) -> str | None:
+    """Vocabulary word spanning `index` (None on spaces / outside vocab)."""
     if index < 0 or index >= len(text):
         return None
     if spaced:
@@ -621,12 +621,24 @@ def word_length_at_index(
         end = index
         while end < len(text) - 1 and text[end + 1] != " ":
             end += 1
-        return end - start + 1
+        return text[start : end + 1]
     if vocab:
         for start, end, word in segment_corpus_by_words(text, vocab):
             if start <= index <= end:
-                return len(word)
+                return word
     return None
+
+
+def word_length_at_index(
+    text: str,
+    index: int,
+    *,
+    spaced: bool,
+    vocab: set[str] | None = None,
+) -> int | None:
+    """Length of the word containing `index` (None on spaces / outside vocab)."""
+    word = word_identity_at_index(text, index, spaced=spaced, vocab=vocab)
+    return len(word) if word is not None else None
 
 
 def position_from_end_at_index(

@@ -72,10 +72,10 @@ Does **word identity** emerge with DFA (structure) or only once the network can 
 
 ## Remaining checklist
 
-- [ ] Recompute learning-decode for r26 (or r41 seed-mean) including `word`
-- [ ] Collect JPG into `paper/figures/compare/`
-- [ ] Insert figure + caption into draft; renumber 14–16
-- [ ] Visual check: no overlapping text; colorbar/legend readable with 5 feature curves
+- [x] Recompute learning-decode for r26 (or r41 seed-mean) including `word`
+- [x] Collect JPG into `paper/figures/compare/`
+- [x] Insert figure + caption into draft; renumber 14–16
+- [x] Visual check: no overlapping text; colorbar/legend readable with 5 feature curves
 
 ## Out of scope tomorrow
 

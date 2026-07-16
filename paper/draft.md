@@ -8,7 +8,7 @@
 
 Eight-month-old infants can segment continuous speech by tracking transitional probabilities between syllables (Saffran, Aslin, & Newport, 1996). We ask whether a vanilla Elman RNN trained only on next-character prediction develops internal representations aligned with word structure. After learning, the network generates legal vocabulary items, and its hidden states become a continuous embedding of the vocabulary’s minimal DFA.
 
-A six-word mixed-length demo (*cat*, *ate*, *tea*, *cake*, *late*, *plant*) carries the main narrative through learning, next-character probabilities, activations, state correlations, DFA/PCA geometry, selectivity, decoding, and trajectories. On that demo, DFA state explains \(\eta^2 \approx 0.83\) of condensed hidden variance and is linearly decodable from a few principal components (mean ± std across six seeds). Word trajectories form labeled geometric motifs. Fifty mixed-length English vocab runs (\(H{=}100\); random draws of 1–25 words from length-3/4/5/6 banks) then show that closed-loop dimensionality, training cost, and linear readouts track minimized DFA size—without holding word length or count fixed. Weight matrices from that sweep become letter-columnar in \(W_{xh}\) and locally clumped in \(W_{hh}\), most clearly for small automata.
+A six-word mixed-length demo (*cat*, *ate*, *tea*, *cake*, *late*, *plant*) carries the main narrative through learning, next-character probabilities, activations, state correlations, DFA/PCA geometry, selectivity, decoding, and trajectories. On that demo, DFA state explains \(\eta^2 \approx 0.83\) of condensed hidden variance and is linearly decodable from a few principal components (mean ± std across six seeds); word identity is much weaker (\(\eta^2 \approx 0.14\)). Word trajectories form labeled geometric motifs. Fifty mixed-length English vocab runs (\(H{=}100\); random draws of 1–25 words from length-3/4/5/6 banks) then show that closed-loop dimensionality, training cost, and linear readouts track minimized DFA size—without holding word length or count fixed. Weight matrices from that sweep become letter-columnar in \(W_{xh}\) and locally clumped in \(W_{hh}\), most clearly for small automata.
 
 ---
 
@@ -30,7 +30,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Model.** Elman RNN, \(H = 50\) (demo), \(H{=}100\) (mixed-vocab runs); next-character cross-entropy; early stop on word-error \(\leq 3\%\).
 
-**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds); closed-loop word trajectories; weight-matrix structure vs DFA size.
+**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected; mean ± std across seeds), including readout over learning; closed-loop word trajectories; weight-matrix structure vs DFA size.
 
 ---
 
@@ -70,9 +70,9 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 ![DFA PCA geometry and feature separation](figures/demo/fig_dfa_pca_geometry.jpg)
 
-**Figure 7.** Top: minimal DFA for the six-word mixed-length demo (left; larger nodes) with PCA of \(\mathbf{h}\) colored by DFA state, current character, position from beginning, and position from end. Bottom: feature separation on the same demo vocabulary (mean ± std across seeds 1, 2, 3, 5, 7, 8; bars colored by feature). Solid = observed, hatched = label shuffle: mean silhouette, mean within-feature hidden-state correlation, pairwise within/between/shuffle distances, and within/between ratio (with shuffle \(p\) on observed bars).
+**Figure 7.** Top: minimal DFA for the six-word mixed-length demo (left; larger nodes) with PCA of \(\mathbf{h}\) colored by DFA state, current character, word identity, position from beginning, and position from end. Bottom: feature separation on the same demo vocabulary (mean ± std across seeds 1, 2, 3, 5, 7, 8; bars colored by feature). Solid = observed, hatched = label shuffle: mean silhouette, mean within-feature hidden-state correlation, pairwise within/between/shuffle distances, and within/between ratio (with shuffle \(p\) on observed bars).
 
-State colors match between the automaton and the DFA-colored PCA. Mixed word lengths make position-from-end distinct from position-from-beginning. Population \(\eta^2\) ranks DFA highest (\(\approx 0.83\)), then character, position-from-end, and position-from-beginning.
+State colors match between the automaton and the DFA-colored PCA. Mixed word lengths make position-from-end distinct from position-from-beginning. Population \(\eta^2\) ranks DFA highest (\(\approx 0.83\)), then character, position-from-end, and position-from-beginning; word identity is much weaker (\(\eta^2 \approx 0.14\)), consistent with shared DFA states across words.
 
 ### 3.5 Single-unit selectivity
 
@@ -84,9 +84,9 @@ Per-unit selectivity uses a peak-vs-rest index on category-mean activations (fla
 
 ### 3.6 Decoding
 
-![Linear decoding across seeds](figures/demo/fig_decoding_seed_mean.jpg)
+![Linear decoding with word identity](figures/demo/fig_decoding_with_word.jpg)
 
-**Figure 9.** Linear decoding, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle), with per-unit selectivity-index density curves pooled over the same seeds on the right (same feature colors). DFA state and current character saturate within a few PCs; position features need more dimensions.
+**Figure 9.** Linear decoding including word identity, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle), with per-unit selectivity-index density curves pooled over the same seeds on the right (same feature colors). DFA state and current character saturate within a few PCs; word identity rises more slowly and needs more dimensions (near ceiling only with full \(H\)).
 
 ### 3.7 Word trajectories
 
@@ -108,17 +108,21 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Readout curves PCA vs neurons](figures/compare/fig_mixed_decoding_curves.jpg)
 
-**Figure 13.** Chance-corrected readouts. Top two rows: curves binned by DFA size from top-\(k\) PCA and from random subsets of \(k\) neurons. Bottom three rows: accuracy vs DFA size for each feature using the top 1 PC, top 5 PCs, or the full hidden state (color = \# words).
+**Figure 13.** Chance-corrected readouts (features: character, DFA state, position from beginning/end, word identity). Top two rows: curves binned by DFA size from top-\(k\) PCA and from random subsets of \(k\) neurons. Bottom three rows: accuracy vs DFA size for each feature using the top 1 PC, top 5 PCs, or the full hidden state (color = \# words). Word identity is the weakest low-dimensional readout and falls off most clearly with DFA size.
+
+![Readout over learning](figures/compare/fig_mixed_learning_decode.jpg)
+
+**Figure 14.** Readout over learning for a mid-sized mixed run (`mixeddfa_r26_ns`, DFA \(\approx 30\), seed 1). Columns = probe basis (1–5 PCs, full \(H\)); top row = full training progress, bottom = early window; dashed grey = word error. Character and DFA state become linearly available early and on few PCs; word identity stays near chance through the run even as word error collapses—lexical identity needs fuller hidden capacity than automaton state.
 
 ![Within-feature cosine similarity vs DFA](figures/compare/fig_mixed_cosine_within.jpg)
 
-**Figure 14.** Mean within-feature cosine similarity of condensed hidden states vs minimized DFA size (seed 1; filled/solid = observed, open/dashed = label shuffle). DFA-state grouping stays high above shuffle across the sweep; position features sit lower.
+**Figure 15.** Mean within-feature cosine similarity of condensed hidden states vs minimized DFA size (seed 1; filled/solid = observed, open/dashed = label shuffle). DFA-state grouping stays high above shuffle across the sweep; position features sit lower.
 
 ### 3.9 Weight structure
 
 ![Weight matrices by DFA size](figures/main/fig_weight_matrices_by_dfa.jpg)
 
-**Figure 15.** Weight structure from the mixed-vocab runs (\(H{=}100\), seed 1). Top: clustered \(W_{xh}\) / \(W_{hh}\) (left = random init; remaining columns = after learning at successive small minimized DFA sizes; titles also note \#words). Each matrix is color-scaled independently (± inset); bottom matrix row = signed-weight density histograms on one shared \(x\)/\(y\) scale. Bottom: four weight metrics vs DFA over all 50 runs (color = \# words; black = best trend by adjusted \(R^2\)): input/recurrent Frobenius ratio, \(W_{hh}\) adjacent absolute correlation, \(W_{xh}\) top-1 mass, and mean input-drive fraction.
+**Figure 16.** Weight structure from the mixed-vocab runs (\(H{=}100\), seed 1). Top: clustered \(W_{xh}\) / \(W_{hh}\) (left = random init; remaining columns = after learning at successive small minimized DFA sizes; titles also note \#words). Each matrix is color-scaled independently (± inset); bottom matrix row = signed-weight density histograms on one shared \(x\)/\(y\) scale. Bottom: four weight metrics vs DFA over all 50 runs (color = \# words; black = best trend by adjusted \(R^2\)): input/recurrent Frobenius ratio, \(W_{hh}\) adjacent absolute correlation, \(W_{xh}\) top-1 mass, and mean input-drive fraction.
 
 Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer \(W_{xh}\) letter stripes; larger DFAs yield denser, more feedforward-looking weight maps. The scatters quantify that shift across the full sweep.
 
@@ -126,11 +130,11 @@ Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer
 
 ## 4. Discussion
 
-Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The six-word mixed-length demo makes the task transparent: activations and state correlations cluster by prefix and automaton state; population separation and multi-seed decoding show that automaton state is low-dimensional and stable; trajectories form labeled geometric motifs that recur across training seeds. Fifty mixed-length English vocab runs (\(H{=}100\)) make the scaling claim concrete without fixing length or word count: hidden dimensionality, training iterations, and readout of position-from-end track minimized DFA size—so the network’s geometry expands when the word automaton expands. Weight analyses on that same sweep (Figure 15) show letter-columnar input weights and locally clumped recurrent connectivity, clearest for small DFAs.
+Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The six-word mixed-length demo makes the task transparent: activations and state correlations cluster by prefix and automaton state; population separation and multi-seed decoding show that automaton state is low-dimensional and stable; trajectories form labeled geometric motifs that recur across training seeds. Fifty mixed-length English vocab runs (\(H{=}100\)) make the scaling claim concrete without fixing length or word count: hidden dimensionality, training iterations, and readout of position-from-end track minimized DFA size—so the network’s geometry expands when the word automaton expands. Weight analyses on that same sweep (Figure 16) show letter-columnar input weights and locally clumped recurrent connectivity, clearest for small DFAs. Word-identity readout (Figures 9, 13–14) lags DFA/character: it needs more dimensions and does not rise with word-error collapse on mid-sized automata.
 
 **Limits.** Toy character languages; \(H = 50\) for the demo analyses (\(H{=}100\) in the mixed-vocab runs); small seed counts for grids; no acoustic noise. The model is a hypothesis generator, not a claim that infants are Elman networks.
 
-**Supplementary (omitted from main text).** Prefix-labeled PCA overview; within-/between-DFA distance panels; next-character decision-region / per-character readout heatmaps; activations grouped by input character; DFA-grouped correlation heatmaps; per-seed decoding panels with trajectory insets; older length × word-count metric heatmaps; 16-word equal-length condition used in earlier drafts.
+**Supplementary (omitted from main text).** Prefix-labeled PCA overview; within-/between-DFA distance panels; next-character decision-region / per-character readout heatmaps; activations grouped by input character; DFA-grouped correlation heatmaps; per-seed decoding panels with trajectory insets; readout vs in-word position split by word length (demo and mixed); older length × word-count metric heatmaps; 16-word equal-length condition used in earlier drafts.
 
 ---
 

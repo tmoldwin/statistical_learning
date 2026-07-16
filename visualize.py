@@ -2275,12 +2275,12 @@ PAIR_DISTANCE_PALETTE = {
 }
 
 SEPARATION_FEATURES = (
-    "dfa", "char", "position", "position_from_end",
+    "dfa", "char", "position", "position_from_end", "word",
 )
 
 # Paper summary features include both position axes (meaningful when word lengths vary).
 SEPARATION_SUMMARY_FEATURES: tuple[str, ...] = (
-    "dfa", "char", "position", "position_from_end",
+    "dfa", "char", "position", "position_from_end", "word",
 )
 
 
@@ -2867,6 +2867,7 @@ def _draw_feature_separation_panels_on_axes(
             "char": "char",
             "position": "pos begin",
             "position_from_end": "pos end",
+            "word": "word",
         }.get(f, FEATURE_DISPLAY.get(f, f))
         for f in features
     ]
@@ -8452,19 +8453,19 @@ def plot_dfa_pca_and_separation_combined(
         n_pts = int(next(iter(separation_per_seed.values())).n_points.get(features[0], 0))
 
     state_colors = _dfa_automaton_state_colors(automaton)
-    fig = plt.figure(figsize=(10.5, 14.8))
+    fig = plt.figure(figsize=(12.2, 14.8))
     outer = fig.add_gridspec(
         3, 1,
         height_ratios=[1.45, 0.12, 1.35],
         hspace=0.18,
-        left=0.07, right=0.98, top=0.92, bottom=0.07,
+        left=0.06, right=0.98, top=0.92, bottom=0.07,
     )
     gs_geo = outer[0].subgridspec(
-        2, 3,
-        width_ratios=[1.45, 1.0, 1.0],
+        2, 4,
+        width_ratios=[1.35, 1.0, 1.0, 1.0],
         height_ratios=[1.2, 1.0],
         hspace=0.48,
-        wspace=0.34,
+        wspace=0.32,
     )
     ax_band = fig.add_subplot(outer[1])
     ax_band.axis("off")
@@ -8473,8 +8474,11 @@ def plot_dfa_pca_and_separation_combined(
     ax_dfa = fig.add_subplot(gs_geo[:, 0])
     ax_dfa_pca = fig.add_subplot(gs_geo[0, 1])
     ax_char = fig.add_subplot(gs_geo[0, 2])
+    ax_word = fig.add_subplot(gs_geo[0, 3])
     ax_pos = fig.add_subplot(gs_geo[1, 1])
     ax_pos_end = fig.add_subplot(gs_geo[1, 2])
+    ax_geo_spacer = fig.add_subplot(gs_geo[1, 3])
+    ax_geo_spacer.axis("off")
     sep_axes = np.array([
         [fig.add_subplot(gs_sep[0, 0]), fig.add_subplot(gs_sep[0, 1])],
         [fig.add_subplot(gs_sep[1, 0]), fig.add_subplot(gs_sep[1, 1])],
@@ -8489,6 +8493,7 @@ def plot_dfa_pca_and_separation_combined(
     for ax, feat, title in [
         (ax_dfa_pca, "dfa", "PCA · DFA state"),
         (ax_char, "char", FEATURE_DISPLAY.get("char", "current char")),
+        (ax_word, "word", FEATURE_DISPLAY.get("word", "word identity")),
         (ax_pos, "position", FEATURE_DISPLAY.get("position", "position from beginning")),
         (ax_pos_end, "position_from_end", FEATURE_DISPLAY.get("position_from_end", "position from end")),
     ]:

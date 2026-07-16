@@ -94,6 +94,12 @@ def paper_manifest() -> list[FigureRef]:
                   _demo("unit_selectivity/example_units_combined.png")),
         FigureRef("demo", "fig_decoding_seed_mean.jpg",
                   _demo("decoding/decoding_curves_seed_mean.png")),
+        FigureRef("demo", "fig_decoding_with_word.jpg",
+                  _demo("decoding/decoding_with_word_seed_mean.png"),
+                  max_w=1200),
+        FigureRef("demo", "fig_decoding_by_position_word_length.jpg",
+                  _demo("decoding/decoding_by_position_word_length.png"),
+                  max_w=1100),
         FigureRef("demo", "fig_word_trajectories.jpg",
                   _demo("trajectories/dfa_and_trajectory_by_seed.png"),
                   max_w=1600),
@@ -122,6 +128,14 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_curves_by_dfa.png",
                   max_w=1200),
+        FigureRef("compare", "fig_mixed_learning_decode.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "learning_decode_r26.png",
+                  max_w=1400),
+        FigureRef("compare", "fig_mixed_decoding_by_position_word_length.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "decoding_by_position_word_length.png",
+                  max_w=1100),
         FigureRef("compare", "fig_mixed_cosine_within.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "cosine_within_vs_dfa.png",

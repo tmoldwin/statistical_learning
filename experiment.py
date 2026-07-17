@@ -467,6 +467,16 @@ def experiment_subpath(name: str) -> Path:
                 / f"w{n_s}"
                 / f"l{l_s}_ns"
             )
+    if name.startswith("mixeddfa_h") and "_r" in name and name.endswith("_ns"):
+        # mixeddfa_h50_r00_ns → comparisons/mixed_vocab_dfa_h50_ns/checkpoints/r00
+        core = name.removeprefix("mixeddfa_h").removesuffix("_ns")
+        h_s, _, run_s = core.partition("_r")
+        return (
+            Path("comparisons")
+            / f"mixed_vocab_dfa_h{h_s}_ns"
+            / "checkpoints"
+            / f"r{run_s}"
+        )
     if name.startswith("mixeddfa_r") and name.endswith("_ns"):
         run_s = name.removeprefix("mixeddfa_r").removesuffix("_ns")
         return (

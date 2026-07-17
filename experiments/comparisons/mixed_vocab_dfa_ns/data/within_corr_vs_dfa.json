@@ -1,49 +1,13 @@
 {
   "seed": 1,
+  "hidden_size": 100,
+  "comparison": "mixed_vocab_dfa_ns",
   "n_shuffle": 49,
   "features": [
     "dfa",
     "char",
     "position",
     "position_from_end"
-  ],
-  "metric_panels": [
-    {
-      "obs": "within_corr",
-      "shuffle": "shuffle_within_corr",
-      "title": "Pearson within",
-      "ylabel": "mean within-pair correlation"
-    },
-    {
-      "obs": "within_cosine",
-      "shuffle": "shuffle_within_cosine",
-      "title": "cosine within",
-      "ylabel": "mean within-pair cosine similarity"
-    },
-    {
-      "obs": "pairwise_within_median",
-      "shuffle": "shuffle_pairwise_within_median",
-      "title": "Euclidean within",
-      "ylabel": "median within-pair distance"
-    },
-    {
-      "obs": "pairwise_ratio",
-      "shuffle": "shuffle_pairwise_ratio",
-      "title": "Euclidean within / between",
-      "ylabel": "median within / median between"
-    },
-    {
-      "obs": "silhouette",
-      "shuffle": "shuffle_silhouette",
-      "title": "silhouette (Euclidean)",
-      "ylabel": "mean silhouette"
-    },
-    {
-      "obs": "centroid_gap",
-      "shuffle": "shuffle_centroid_gap",
-      "title": "centroid gap (Euclidean)",
-      "ylabel": "between \u2212 within spread"
-    }
   ],
   "panels": [
     {
@@ -52,18 +16,7 @@
       "run_id": 0,
       "n_words": 1,
       "n_dfa_states": 4,
-      "within_corr": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "shuffle_within_corr": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": NaN,
         "char": NaN,
@@ -75,6 +28,18 @@
         "char": NaN,
         "position": NaN,
         "position_from_end": NaN
+      },
+      "between_cosine": {
+        "dfa": -0.3875833980304977,
+        "char": -0.3875833980304977,
+        "position": -0.3875833980304977,
+        "position_from_end": -0.3875833980304977
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.3875833980304977,
+        "char": -0.3875833980304977,
+        "position": -0.3875833980304977,
+        "position_from_end": -0.3875833980304977
       },
       "pairwise_within_median": {
         "dfa": NaN,
@@ -88,41 +53,17 @@
         "position": NaN,
         "position_from_end": NaN
       },
-      "pairwise_ratio": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
+      "pairwise_between_median": {
+        "dfa": 8.513864139174697,
+        "char": 8.513864139174697,
+        "position": 8.513864139174697,
+        "position_from_end": 8.513864139174697
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "silhouette": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "shuffle_silhouette": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "centroid_gap": {
-        "dfa": 8.613050568630088,
-        "char": 8.613050568630088,
-        "position": 8.613050568630088,
-        "position_from_end": 8.613050568630088
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.613050568630088,
-        "char": 8.613050568630088,
-        "position": 8.613050568630088,
-        "position_from_end": 8.613050568630088
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.513864139174698,
+        "char": 8.513864139174698,
+        "position": 8.513864139174698,
+        "position_from_end": 8.513864139174698
       }
     },
     {
@@ -131,18 +72,7 @@
       "run_id": 1,
       "n_words": 1,
       "n_dfa_states": 4,
-      "within_corr": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "shuffle_within_corr": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": NaN,
         "char": NaN,
@@ -154,6 +84,18 @@
         "char": NaN,
         "position": NaN,
         "position_from_end": NaN
+      },
+      "between_cosine": {
+        "dfa": -0.388018053322928,
+        "char": -0.388018053322928,
+        "position": -0.388018053322928,
+        "position_from_end": -0.388018053322928
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.38801805332292794,
+        "char": -0.38801805332292794,
+        "position": -0.38801805332292794,
+        "position_from_end": -0.38801805332292794
       },
       "pairwise_within_median": {
         "dfa": NaN,
@@ -167,41 +109,17 @@
         "position": NaN,
         "position_from_end": NaN
       },
-      "pairwise_ratio": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
+      "pairwise_between_median": {
+        "dfa": 13.731969442372515,
+        "char": 13.731969442372515,
+        "position": 13.731969442372515,
+        "position_from_end": 13.731969442372515
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "silhouette": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "shuffle_silhouette": {
-        "dfa": NaN,
-        "char": NaN,
-        "position": NaN,
-        "position_from_end": NaN
-      },
-      "centroid_gap": {
-        "dfa": 13.87374435720097,
-        "char": 13.87374435720097,
-        "position": 13.87374435720097,
-        "position_from_end": 13.87374435720097
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 13.873744357200968,
-        "char": 13.873744357200968,
-        "position": 13.873744357200968,
-        "position_from_end": 13.873744357200968
+      "shuffle_pairwise_between_median": {
+        "dfa": 13.731969442372513,
+        "char": 13.731969442372513,
+        "position": 13.731969442372513,
+        "position_from_end": 13.731969442372513
       }
     },
     {
@@ -210,18 +128,7 @@
       "run_id": 2,
       "n_words": 2,
       "n_dfa_states": 7,
-      "within_corr": {
-        "dfa": 0.5812911896915783,
-        "char": -0.22276023387905913,
-        "position": 0.0994102460705573,
-        "position_from_end": 0.21574647904740854
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.12704197598569508,
-        "char": -0.1807930716245586,
-        "position": -0.10744448557396598,
-        "position_from_end": -0.10902055544693631
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.5822356315748076,
         "char": -0.21615659314650346,
@@ -233,6 +140,18 @@
         "char": -0.1777561544542162,
         "position": -0.10947425203258176,
         "position_from_end": -0.11083838297250363
+      },
+      "between_cosine": {
+        "dfa": -0.14970591253263948,
+        "char": -0.10978630129657393,
+        "position": -0.14998060689785675,
+        "position_from_end": -0.1741623369689798
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.11458677037018289,
+        "char": -0.1117063232311883,
+        "position": -0.11574777016556873,
+        "position_from_end": -0.11552041500891508
       },
       "pairwise_within_median": {
         "dfa": 5.636026701634013,
@@ -246,41 +165,17 @@
         "position": 8.957970869711769,
         "position_from_end": 8.808341693433931
       },
-      "pairwise_ratio": {
-        "dfa": 0.6236007282745436,
-        "char": 1.0663813365941663,
-        "position": 0.9265895551670948,
-        "position_from_end": 0.833280877449887
+      "pairwise_between_median": {
+        "dfa": 9.037877035885568,
+        "char": 8.925844397452188,
+        "position": 9.037877035885568,
+        "position_from_end": 9.122811416308139
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.976552661375264,
-        "char": 0.9925649940585005,
-        "position": 0.9976438810149715,
-        "position_from_end": 0.9788971627293013
-      },
-      "silhouette": {
-        "dfa": 0.3495207818558712,
-        "char": -0.3046123745762303,
-        "position": 0.051845998863259336,
-        "position_from_end": 0.11945454480712166
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.19252636388062158,
-        "char": -0.23751224731885143,
-        "position": -0.09885435438407542,
-        "position_from_end": -0.10015388899029223
-      },
-      "centroid_gap": {
-        "dfa": 8.248837066526178,
-        "char": 7.56764614285839,
-        "position": 4.742863404591011,
-        "position_from_end": 4.961817214350582
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.728101710820083,
-        "char": 7.72675398017042,
-        "position": 3.6646836599978787,
-        "position_from_end": 3.643684048196455
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.987576667609357,
+        "char": 8.985479971515055,
+        "position": 8.98205845914752,
+        "position_from_end": 9.003042518872906
       }
     },
     {
@@ -289,18 +184,7 @@
       "run_id": 3,
       "n_words": 2,
       "n_dfa_states": 9,
-      "within_corr": {
-        "dfa": 0.8259559319719983,
-        "char": 0.3312296047073305,
-        "position": 0.3194469893782228,
-        "position_from_end": 0.1906177404468169
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.0652603912252205,
-        "char": -0.054257347463170846,
-        "position": -0.037133585320462084,
-        "position_from_end": -0.06083916095009801
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8266561142098888,
         "char": 0.32998666606207533,
@@ -312,6 +196,18 @@
         "char": -0.056777051192079736,
         "position": -0.03624446886690828,
         "position_from_end": -0.06018621006980994
+      },
+      "between_cosine": {
+        "dfa": -0.08495855353900347,
+        "char": -0.07076799787763739,
+        "position": -0.10721863400444137,
+        "position_from_end": -0.09081118351610967
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.05956252376990828,
+        "char": -0.0597176059560901,
+        "position": -0.06255985575586252,
+        "position_from_end": -0.0595671381054998
       },
       "pairwise_within_median": {
         "dfa": 4.6317461772976625,
@@ -325,41 +221,17 @@
         "position": 10.778581787665491,
         "position_from_end": 11.016157092806536
       },
-      "pairwise_ratio": {
-        "dfa": 0.42438370579114465,
-        "char": 0.8063339596925316,
-        "position": 0.8330928282949807,
-        "position_from_end": 0.9564667817259355
+      "pairwise_between_median": {
+        "dfa": 10.914052811389325,
+        "char": 10.914052811389325,
+        "position": 11.127671453215626,
+        "position_from_end": 10.898061792135703
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9728118073838863,
-        "char": 0.9862759711819875,
-        "position": 0.9867899508251555,
-        "position_from_end": 1.0085438154362916
-      },
-      "silhouette": {
-        "dfa": 0.5625418080220251,
-        "char": 0.1454973809498913,
-        "position": 0.11932548919576307,
-        "position_from_end": 0.040836001635049385
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.2664893278371748,
-        "char": -0.2852893334872975,
-        "position": -0.11491626870634633,
-        "position_from_end": -0.13805422986764068
-      },
-      "centroid_gap": {
-        "dfa": 10.394236328047624,
-        "char": 9.833613038861447,
-        "position": 6.029587188366346,
-        "position_from_end": 5.076334137898055
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 9.7123659264654,
-        "char": 9.678750179328631,
-        "position": 4.145144237212277,
-        "position_from_end": 3.9747544154083383
+      "shuffle_pairwise_between_median": {
+        "dfa": 10.900998918121061,
+        "char": 10.89643005547717,
+        "position": 10.92712010511464,
+        "position_from_end": 10.926158307926183
       }
     },
     {
@@ -368,18 +240,7 @@
       "run_id": 4,
       "n_words": 3,
       "n_dfa_states": 8,
-      "within_corr": {
-        "dfa": 0.8717375952907745,
-        "char": 0.6729242717537849,
-        "position": 0.7782379790428708,
-        "position_from_end": 0.7782379790428708
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.04189256041081598,
-        "char": -0.02736712281737565,
-        "position": 0.03620967234296247,
-        "position_from_end": -0.004559489345712351
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8717508886268894,
         "char": 0.6727010581323012,
@@ -391,6 +252,18 @@
         "char": -0.027229604429213575,
         "position": 0.03631176227374301,
         "position_from_end": -0.004388636442885129
+      },
+      "between_cosine": {
+        "dfa": -0.07837439697593922,
+        "char": -0.060278957840067565,
+        "position": -0.25820991836332646,
+        "position_from_end": -0.25820991836332646
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.004659473629735312,
+        "char": 0.003351102392797424,
+        "position": -0.011033640547741209,
+        "position_from_end": 0.002533159024468171
       },
       "pairwise_within_median": {
         "dfa": 4.826181826507207,
@@ -404,41 +277,17 @@
         "position": 13.135218648340702,
         "position_from_end": 13.75161957662477
       },
-      "pairwise_ratio": {
-        "dfa": 0.33587655067643224,
-        "char": 0.5148758106139965,
-        "position": 0.39874665751884597,
-        "position_from_end": 0.39874665751884597
+      "pairwise_between_median": {
+        "dfa": 14.368915653050529,
+        "char": 14.368915653050529,
+        "position": 14.57405670405067,
+        "position_from_end": 14.57405670405067
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9771389237136023,
-        "char": 0.9679754911277608,
-        "position": 0.9202204194671221,
-        "position_from_end": 0.9683438118700755
-      },
-      "silhouette": {
-        "dfa": 0.629570047431016,
-        "char": 0.438163113357344,
-        "position": 0.5749412958242843,
-        "position_from_end": 0.5749412958242843
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.520820835783838,
-        "char": -0.4837145243069028,
-        "position": -0.0562260003713381,
-        "position_from_end": -0.07966450540801459
-      },
-      "centroid_gap": {
-        "dfa": 11.62818606802213,
-        "char": 11.003482960993274,
-        "position": 10.069278602800301,
-        "position_from_end": 10.069278602800301
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 10.683646712652726,
-        "char": 10.6722192541426,
-        "position": 0.3813460558912926,
-        "position_from_end": -0.2521673194672222
+      "shuffle_pairwise_between_median": {
+        "dfa": 14.271682348056666,
+        "char": 14.258355154668394,
+        "position": 14.290936660296476,
+        "position_from_end": 14.215261326883677
       }
     },
     {
@@ -447,18 +296,7 @@
       "run_id": 5,
       "n_words": 3,
       "n_dfa_states": 14,
-      "within_corr": {
-        "dfa": 0.8544851058532675,
-        "char": 0.30170286686797204,
-        "position": 0.4038902932016204,
-        "position_from_end": 0.5248564878514631
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.0008641013973985039,
-        "char": -0.014065590592732836,
-        "position": -0.026060954833297827,
-        "position_from_end": -0.005581437340977869
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8517856758322705,
         "char": 0.29286008740090397,
@@ -470,6 +308,18 @@
         "char": -0.013057822737375263,
         "position": -0.02493631794936187,
         "position_from_end": -0.0043811535720318295
+      },
+      "between_cosine": {
+        "dfa": -0.049536811789847764,
+        "char": -0.042975336358313986,
+        "position": -0.07871730900982099,
+        "position_from_end": -0.09418852732987644
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.02446613734856823,
+        "char": -0.02443485695599404,
+        "position": -0.023636150104035695,
+        "position_from_end": -0.02628842937852989
       },
       "pairwise_within_median": {
         "dfa": 4.125267912124744,
@@ -483,41 +333,17 @@
         "position": 11.340040026284777,
         "position_from_end": 11.2311351325481
       },
-      "pairwise_ratio": {
-        "dfa": 0.3583842276014152,
-        "char": 0.8087812430530253,
-        "position": 0.7671894888071059,
-        "position_from_end": 0.7162785570549253
+      "pairwise_between_median": {
+        "dfa": 11.510740692285014,
+        "char": 11.518058911084184,
+        "position": 11.55695327130702,
+        "position_from_end": 11.55695327130702
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9653935615212079,
-        "char": 0.976854721386132,
-        "position": 0.9895275656694059,
-        "position_from_end": 0.9783925256472159
-      },
-      "silhouette": {
-        "dfa": 0.5745698961477143,
-        "char": -0.107460239386643,
-        "position": 0.12863603342046548,
-        "position_from_end": 0.23549224458696102
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.318705150734293,
-        "char": -0.26272474971677157,
-        "position": -0.13444707115314675,
-        "position_from_end": -0.11786612942423653
-      },
-      "centroid_gap": {
-        "dfa": 10.665492838860315,
-        "char": 7.797694183517147,
-        "position": 5.1100959755250885,
-        "position_from_end": 5.67486017099885
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 10.164320932603301,
-        "char": 7.4074545625955075,
-        "position": 1.1022392873801845,
-        "position_from_end": 1.3705668910293927
+      "shuffle_pairwise_between_median": {
+        "dfa": 11.470172954893108,
+        "char": 11.459177328081688,
+        "position": 11.461555827457756,
+        "position_from_end": 11.480821403088719
       }
     },
     {
@@ -526,18 +352,7 @@
       "run_id": 6,
       "n_words": 4,
       "n_dfa_states": 15,
-      "within_corr": {
-        "dfa": 0.8383250185220009,
-        "char": 0.16102387791974396,
-        "position": 0.15018344497017777,
-        "position_from_end": 0.3324691789995429
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.01495609843725613,
-        "char": 0.007762557580835758,
-        "position": 0.030166012805302053,
-        "position_from_end": 0.007556077510092385
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8387448729949912,
         "char": 0.1618937450340575,
@@ -549,6 +364,18 @@
         "char": 0.007232949538609238,
         "position": 0.029659376228616027,
         "position_from_end": 0.0070223256536151085
+      },
+      "between_cosine": {
+        "dfa": -0.028841604460752263,
+        "char": -0.003173420183911706,
+        "position": -0.01258018275506973,
+        "position_from_end": -0.04334818161556916
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.010657916609447798,
+        "char": 0.011187939397808494,
+        "position": 0.007693386127217986,
+        "position_from_end": 0.011495028208515851
       },
       "pairwise_within_median": {
         "dfa": 4.0662583403776225,
@@ -562,41 +389,17 @@
         "position": 9.801559883473246,
         "position_from_end": 9.894192108033277
       },
-      "pairwise_ratio": {
-        "dfa": 0.4102862263626827,
-        "char": 0.9564929866882141,
-        "position": 0.9423593282580258,
-        "position_from_end": 0.8998680007611977
+      "pairwise_between_median": {
+        "dfa": 9.910784420979203,
+        "char": 9.910784420979203,
+        "position": 9.900981239978455,
+        "position_from_end": 10.063290988445198
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.005347390298593,
-        "char": 1.01241393643506,
-        "position": 0.9920060645584181,
-        "position_from_end": 1.002855186458768
-      },
-      "silhouette": {
-        "dfa": 0.5516964733433452,
-        "char": -0.07374341749394824,
-        "position": -0.10425662248323352,
-        "position_from_end": 0.057867276141917987
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.33633388987564034,
-        "char": -0.28546369087662854,
-        "position": -0.12743506396663637,
-        "position_from_end": -0.15034169708309142
-      },
-      "centroid_gap": {
-        "dfa": 9.088140835439773,
-        "char": 6.9501746612609185,
-        "position": 2.011645959489938,
-        "position_from_end": 3.099950820362349
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.293729163490427,
-        "char": 6.562728736717935,
-        "position": 1.6728903428212192,
-        "position_from_end": 1.415240788061928
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.87149482738751,
+        "char": 9.86981073187007,
+        "position": 9.881499898703629,
+        "position_from_end": 9.866752009287907
       }
     },
     {
@@ -605,18 +408,7 @@
       "run_id": 7,
       "n_words": 4,
       "n_dfa_states": 18,
-      "within_corr": {
-        "dfa": 0.7025541428249714,
-        "char": 0.24301102630095459,
-        "position": 0.32846981115278034,
-        "position_from_end": 0.36915245112693185
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.013229192201621512,
-        "char": -0.03270760895287492,
-        "position": -0.0358990158081181,
-        "position_from_end": -0.0371112367661191
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7005928012191281,
         "char": 0.240063145089977,
@@ -628,6 +420,18 @@
         "char": -0.032492393040052574,
         "position": -0.03529115809439126,
         "position_from_end": -0.036863447670767296
+      },
+      "between_cosine": {
+        "dfa": -0.0510579804630589,
+        "char": -0.0509466512348263,
+        "position": -0.07867340890731868,
+        "position_from_end": -0.08512403731452091
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.02642284541281791,
+        "char": -0.02539456953513601,
+        "position": -0.024632563699008174,
+        "position_from_end": -0.024400586548395328
       },
       "pairwise_within_median": {
         "dfa": 5.891158303848137,
@@ -641,41 +445,17 @@
         "position": 10.342350542567956,
         "position_from_end": 10.33849654020281
       },
-      "pairwise_ratio": {
-        "dfa": 0.5722712296132814,
-        "char": 0.8757134682926413,
-        "position": 0.8165418702529827,
-        "position_from_end": 0.7281060680396944
+      "pairwise_between_median": {
+        "dfa": 10.294346454965336,
+        "char": 10.311394161871888,
+        "position": 10.385458155874288,
+        "position_from_end": 10.39684247255784
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0113788313942533,
-        "char": 1.0049530782286606,
-        "position": 1.008830565590133,
-        "position_from_end": 1.0083814347947468
-      },
-      "silhouette": {
-        "dfa": 0.2939144340974133,
-        "char": -0.1618471826010146,
-        "position": 0.14271034502905172,
-        "position_from_end": 0.17543830903570126
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.32448214249137636,
-        "char": -0.2638194369606413,
-        "position": -0.10742036517000643,
-        "position_from_end": -0.10842056633753706
-      },
-      "centroid_gap": {
-        "dfa": 9.61567701214964,
-        "char": 6.623378983713104,
-        "position": 3.315956669124012,
-        "position_from_end": 3.3603597415937125
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 9.01165633641175,
-        "char": 5.87187628182792,
-        "position": -0.6562031223214079,
-        "position_from_end": -0.7413779116306367
+      "shuffle_pairwise_between_median": {
+        "dfa": 10.251795107763899,
+        "char": 10.251647816956405,
+        "position": 10.252549094571386,
+        "position_from_end": 10.253134032958927
       }
     },
     {
@@ -684,18 +464,7 @@
       "run_id": 8,
       "n_words": 5,
       "n_dfa_states": 13,
-      "within_corr": {
-        "dfa": 0.8114761558564324,
-        "char": 0.5208393615577913,
-        "position": 0.6031530193159174,
-        "position_from_end": 0.5291749508079489
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.13829697366646745,
-        "char": 0.11615579073585261,
-        "position": 0.13868681166039207,
-        "position_from_end": 0.13023126945463828
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.813866394752668,
         "char": 0.5233998852821538,
@@ -707,6 +476,18 @@
         "char": 0.11643881028023194,
         "position": 0.13873079408250874,
         "position_from_end": 0.1302994470431608
+      },
+      "between_cosine": {
+        "dfa": 0.07171582461144568,
+        "char": 0.0916790010317711,
+        "position": 0.03424791495520452,
+        "position_from_end": 0.03722790968498143
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.12963493426569697,
+        "char": 0.1316693956851391,
+        "position": 0.12860050517501728,
+        "position_from_end": 0.13030834503077418
       },
       "pairwise_within_median": {
         "dfa": 4.922045984211019,
@@ -720,41 +501,17 @@
         "position": 10.011276035856275,
         "position_from_end": 10.099863798769839
       },
-      "pairwise_ratio": {
-        "dfa": 0.48178658131520447,
-        "char": 0.831941184799616,
-        "position": 0.6045278689222224,
-        "position_from_end": 0.6377293216171197
+      "pairwise_between_median": {
+        "dfa": 10.21623717865819,
+        "char": 10.217505387476935,
+        "position": 10.350332308354425,
+        "position_from_end": 10.350332308354425
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9806956361622932,
-        "char": 0.997865075949629,
-        "position": 0.9877810979959177,
-        "position_from_end": 0.9974567403184627
-      },
-      "silhouette": {
-        "dfa": 0.46877399230190303,
-        "char": 0.08709026067619155,
-        "position": 0.2134508481520442,
-        "position_from_end": 0.20869302884734897
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3950401565012195,
-        "char": -0.3144737012370439,
-        "position": -0.20788248192833417,
-        "position_from_end": -0.14428145202198442
-      },
-      "centroid_gap": {
-        "dfa": 8.54287889867533,
-        "char": 5.687102348263357,
-        "position": 6.314523572180449,
-        "position_from_end": 5.017730101142607
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.702975932493606,
-        "char": 3.543062417832323,
-        "position": 2.551240398187711,
-        "position_from_end": 0.7978485537596498
+      "shuffle_pairwise_between_median": {
+        "dfa": 10.131676474414483,
+        "char": 10.1291404326268,
+        "position": 10.136264827973793,
+        "position_from_end": 10.126076312288006
       }
     },
     {
@@ -763,18 +520,7 @@
       "run_id": 9,
       "n_words": 5,
       "n_dfa_states": 13,
-      "within_corr": {
-        "dfa": 0.7627982982258981,
-        "char": 0.3451190206305636,
-        "position": 0.3124190453492228,
-        "position_from_end": 0.3628324917620008
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.013424592898007591,
-        "char": -0.04295164069645103,
-        "position": -0.01829433168750475,
-        "position_from_end": -0.010157651496309577
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.765406959054988,
         "char": 0.34822216690691704,
@@ -786,6 +532,18 @@
         "char": -0.042074201765908696,
         "position": -0.017630362649615004,
         "position_from_end": -0.009337404618569153
+      },
+      "between_cosine": {
+        "dfa": -0.0773720537617426,
+        "char": -0.028601436736134685,
+        "position": -0.0889671299914147,
+        "position_from_end": -0.11467869102602121
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.008929184705877715,
+        "char": -0.007422564017454222,
+        "position": -0.007119361275902299,
+        "position_from_end": -0.009168943698640387
       },
       "pairwise_within_median": {
         "dfa": 4.625682382127305,
@@ -799,41 +557,17 @@
         "position": 9.523976969256562,
         "position_from_end": 9.496282086514135
       },
-      "pairwise_ratio": {
-        "dfa": 0.4807644762700188,
-        "char": 0.8408723314206475,
-        "position": 0.7615769917566161,
-        "position_from_end": 0.758239704758054
+      "pairwise_between_median": {
+        "dfa": 9.621514505429714,
+        "char": 9.583945843935815,
+        "position": 9.672337447715377,
+        "position_from_end": 9.754783690482043
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9916150458062253,
-        "char": 0.9987356177796495,
-        "position": 1.0011142956197727,
-        "position_from_end": 0.996869421267896
-      },
-      "silhouette": {
-        "dfa": 0.4759780637613743,
-        "char": 0.0019771750097004543,
-        "position": 0.0616935452523876,
-        "position_from_end": 0.15778204575712573
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3835654837872444,
-        "char": -0.3839841360796776,
-        "position": -0.15369198521189462,
-        "position_from_end": -0.160647276313841
-      },
-      "centroid_gap": {
-        "dfa": 8.591527602257424,
-        "char": 7.824866232548953,
-        "position": 3.163173248403769,
-        "position_from_end": 5.241127658558434
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.611764294688221,
-        "char": 6.92779353609573,
-        "position": 1.3435119110809186,
-        "position_from_end": 2.8976477578513764
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.540501592486063,
+        "char": 9.533364247428617,
+        "position": 9.514680320273085,
+        "position_from_end": 9.527637029432208
       }
     },
     {
@@ -842,18 +576,7 @@
       "run_id": 10,
       "n_words": 6,
       "n_dfa_states": 18,
-      "within_corr": {
-        "dfa": 0.8676017283957779,
-        "char": 0.43101390202497697,
-        "position": 0.2708005395881042,
-        "position_from_end": 0.3598823478344489
-      },
-      "shuffle_within_corr": {
-        "dfa": -0.004016415353974214,
-        "char": -0.024715236273154896,
-        "position": -0.008900092096721351,
-        "position_from_end": -0.0011171578273884175
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8698922815888821,
         "char": 0.4272834316909703,
@@ -865,6 +588,18 @@
         "char": -0.024852591225066865,
         "position": -0.009100928505240614,
         "position_from_end": -0.0017667662122970457
+      },
+      "between_cosine": {
+        "dfa": -0.056007658761637165,
+        "char": -0.019759855265560337,
+        "position": -0.054227399914672486,
+        "position_from_end": -0.0715210393296177
+      },
+      "shuffle_between_cosine": {
+        "dfa": -0.0017152076787207067,
+        "char": -0.0009208543107254512,
+        "position": -0.0004707390444649175,
+        "position_from_end": -0.0018998221383105384
       },
       "pairwise_within_median": {
         "dfa": 3.9106958018659372,
@@ -878,41 +613,17 @@
         "position": 10.100985483546289,
         "position_from_end": 10.09603890225104
       },
-      "pairwise_ratio": {
-        "dfa": 0.384388046367712,
-        "char": 0.769776815349634,
-        "position": 0.8386030667527192,
-        "position_from_end": 0.8032953293090948
+      "pairwise_between_median": {
+        "dfa": 10.173822622269842,
+        "char": 10.16278291294466,
+        "position": 10.228943003317891,
+        "position_from_end": 10.259419353255659
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9909579177165805,
-        "char": 0.9994594023384266,
-        "position": 0.9976234438824225,
-        "position_from_end": 0.9974367997752728
-      },
-      "silhouette": {
-        "dfa": 0.6547447655890275,
-        "char": 0.0780354299475082,
-        "position": 0.05828387339477597,
-        "position_from_end": 0.16915014737622217
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.41960133735935345,
-        "char": -0.4034805905093139,
-        "position": -0.135315825934076,
-        "position_from_end": -0.13086410655054048
-      },
-      "centroid_gap": {
-        "dfa": 9.05463403111197,
-        "char": 7.257562887784838,
-        "position": 2.3697200674839127,
-        "position_from_end": 2.878574483476961
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.047301285321495,
-        "char": 5.83175886955105,
-        "position": -0.6207210158976723,
-        "position_from_end": -0.5761028646082561
+      "shuffle_pairwise_between_median": {
+        "dfa": 10.132113134942157,
+        "char": 10.127468610473,
+        "position": 10.125600341375426,
+        "position_from_end": 10.122401346826209
       }
     },
     {
@@ -921,18 +632,7 @@
       "run_id": 11,
       "n_words": 6,
       "n_dfa_states": 23,
-      "within_corr": {
-        "dfa": 0.7928256213328824,
-        "char": 0.24935331342605668,
-        "position": 0.31883816103352836,
-        "position_from_end": 0.3067404048369059
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.08363252999255744,
-        "char": 0.09000622871917047,
-        "position": 0.09248593380784485,
-        "position_from_end": 0.09468436969226712
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7916021612427668,
         "char": 0.24937485626177178,
@@ -944,6 +644,18 @@
         "char": 0.0900834564675073,
         "position": 0.0921335689463461,
         "position_from_end": 0.09413795840389058
+      },
+      "between_cosine": {
+        "dfa": 0.060352160277633515,
+        "char": 0.07517491729220288,
+        "position": 0.04953219670917945,
+        "position_from_end": 0.05071846106520719
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09167957682412185,
+        "char": 0.0914291417610054,
+        "position": 0.09115121013339557,
+        "position_from_end": 0.09078049233403782
       },
       "pairwise_within_median": {
         "dfa": 4.572694282151371,
@@ -957,41 +669,17 @@
         "position": 9.162049460498416,
         "position_from_end": 9.159978245839808
       },
-      "pairwise_ratio": {
-        "dfa": 0.4974559888060871,
-        "char": 0.8883831661623188,
-        "position": 0.8485079362916615,
-        "position_from_end": 0.8620366175098262
+      "pairwise_between_median": {
+        "dfa": 9.19215847240277,
+        "char": 9.225802186577111,
+        "position": 9.247209891983706,
+        "position_from_end": 9.235732832191978
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9987096592008511,
-        "char": 1.0024664440909996,
-        "position": 1.0012079391396922,
-        "position_from_end": 1.0004321500132722
-      },
-      "silhouette": {
-        "dfa": 0.40404849212254146,
-        "char": -0.18109512413620743,
-        "position": 0.04279901463814444,
-        "position_from_end": 0.06111077259093193
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.36316593106685224,
-        "char": -0.25594649331167413,
-        "position": -0.10108984449570009,
-        "position_from_end": -0.09923994053459957
-      },
-      "centroid_gap": {
-        "dfa": 8.675610693213606,
-        "char": 5.021305318825463,
-        "position": 1.4681903331839612,
-        "position_from_end": 1.442979591082021
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.16040953995564,
-        "char": 4.507323125682753,
-        "position": -0.9960515723968968,
-        "position_from_end": -0.9934200191638443
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.152374186704682,
+        "char": 9.14998698975037,
+        "position": 9.151368113424528,
+        "position_from_end": 9.156450669303284
       }
     },
     {
@@ -1000,18 +688,7 @@
       "run_id": 12,
       "n_words": 7,
       "n_dfa_states": 22,
-      "within_corr": {
-        "dfa": 0.7998924171763417,
-        "char": 0.5587393935963708,
-        "position": 0.08489584114576383,
-        "position_from_end": 0.3612527131973874
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.030892378688489288,
-        "char": 0.029837976345682714,
-        "position": 0.020123898963112837,
-        "position_from_end": 0.03756696762539887
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7977036942429049,
         "char": 0.5587694932472324,
@@ -1023,6 +700,18 @@
         "char": 0.030427037768990056,
         "position": 0.02079726218881436,
         "position_from_end": 0.03795438202820898
+      },
+      "between_cosine": {
+        "dfa": -0.01700404157379017,
+        "char": 0.0024415591435813584,
+        "position": 0.018276486554581785,
+        "position_from_end": -0.03494566798605061
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.027957750902679296,
+        "char": 0.02800651666672211,
+        "position": 0.02938684891030909,
+        "position_from_end": 0.02624468083425582
       },
       "pairwise_within_median": {
         "dfa": 4.003751221179391,
@@ -1036,41 +725,17 @@
         "position": 8.73284643818048,
         "position_from_end": 8.649349542162916
       },
-      "pairwise_ratio": {
-        "dfa": 0.4543118602856239,
-        "char": 0.7240611063801909,
-        "position": 0.9684956017006272,
-        "position_from_end": 0.8900682972804442
+      "pairwise_between_median": {
+        "dfa": 8.81278164004402,
+        "char": 8.808442006851303,
+        "position": 8.748834691531275,
+        "position_from_end": 8.910542281830933
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9942875141771343,
-        "char": 1.000020043425284,
-        "position": 1.0016125636179611,
-        "position_from_end": 0.9907964756785385
-      },
-      "silhouette": {
-        "dfa": 0.44950552972702545,
-        "char": 0.11090748445065865,
-        "position": -0.0900438658329404,
-        "position_from_end": 0.019566927040839118
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.37197118700371967,
-        "char": -0.30192804290147296,
-        "position": -0.11386082483982198,
-        "position_from_end": -0.11703282589276882
-      },
-      "centroid_gap": {
-        "dfa": 8.083244246113336,
-        "char": 6.274940427580015,
-        "position": 0.21604386370280704,
-        "position_from_end": 1.9524265850705036
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.781802073684196,
-        "char": 4.577926551684378,
-        "position": -0.9734138450197857,
-        "position_from_end": 0.4317387353912505
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.716348741549739,
+        "char": 8.715573550146264,
+        "position": 8.71983359737475,
+        "position_from_end": 8.73075528591966
       }
     },
     {
@@ -1079,18 +744,7 @@
       "run_id": 13,
       "n_words": 7,
       "n_dfa_states": 23,
-      "within_corr": {
-        "dfa": 0.8586008286154081,
-        "char": 0.42951173686879035,
-        "position": 0.4216955137003781,
-        "position_from_end": 0.40840748197655036
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07712053970121852,
-        "char": 0.07210855228749542,
-        "position": 0.06256715367738748,
-        "position_from_end": 0.07047349205425679
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8577989685541155,
         "char": 0.43275985568576847,
@@ -1102,6 +756,18 @@
         "char": 0.07302694173156073,
         "position": 0.06325136939295489,
         "position_from_end": 0.0711218825350964
+      },
+      "between_cosine": {
+        "dfa": 0.029870458858245515,
+        "char": 0.04760342579600509,
+        "position": -0.00105698099834545,
+        "position_from_end": 0.0012947292309307967
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06606897938746209,
+        "char": 0.06624243688171536,
+        "position": 0.06721049988396267,
+        "position_from_end": 0.06571025544337851
       },
       "pairwise_within_median": {
         "dfa": 3.794530385973374,
@@ -1115,41 +781,17 @@
         "position": 9.802238602408316,
         "position_from_end": 9.75494226668256
       },
-      "pairwise_ratio": {
-        "dfa": 0.3851930961701434,
-        "char": 0.8308489762719637,
-        "position": 0.8006966118581171,
-        "position_from_end": 0.8056840684400132
+      "pairwise_between_median": {
+        "dfa": 9.850982335096926,
+        "char": 9.8435276454805,
+        "position": 10.070845619079645,
+        "position_from_end": 10.008503682288726
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0009627797166816,
-        "char": 0.9992610118163348,
-        "position": 1.0014959898805553,
-        "position_from_end": 0.9958713710579314
-      },
-      "silhouette": {
-        "dfa": 0.4908602107032734,
-        "char": 0.025226340147954662,
-        "position": 0.09904350671671057,
-        "position_from_end": 0.12725786967235025
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.40404331239194274,
-        "char": -0.3001172523911252,
-        "position": -0.13318414425390085,
-        "position_from_end": -0.11939091078704447
-      },
-      "centroid_gap": {
-        "dfa": 9.164550095256157,
-        "char": 6.055095330264825,
-        "position": 3.631675107485524,
-        "position_from_end": 3.26371989540931
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.96043109009869,
-        "char": 4.573071723932794,
-        "position": -0.02168534094279382,
-        "position_from_end": 0.06945217889845186
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.794530235129915,
+        "char": 9.795372685840807,
+        "position": 9.788269557187823,
+        "position_from_end": 9.796116615900887
       }
     },
     {
@@ -1158,18 +800,7 @@
       "run_id": 14,
       "n_words": 8,
       "n_dfa_states": 24,
-      "within_corr": {
-        "dfa": 0.764072990042541,
-        "char": 0.31373185279754057,
-        "position": 0.2705709567285094,
-        "position_from_end": 0.3462122761116058
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.04066579316818397,
-        "char": 0.0621278732787819,
-        "position": 0.047520680605185855,
-        "position_from_end": 0.057921431700940385
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7679076325906156,
         "char": 0.31132908691088035,
@@ -1181,6 +812,18 @@
         "char": 0.060290323296227556,
         "position": 0.0458401515958579,
         "position_from_end": 0.056046159255711304
+      },
+      "between_cosine": {
+        "dfa": 0.013858419925173409,
+        "char": 0.03376659555224717,
+        "position": 0.013549546487435218,
+        "position_from_end": -0.0013773062801275707
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.05642780617460581,
+        "char": 0.055051677753988296,
+        "position": 0.057337755516799815,
+        "position_from_end": 0.05534702325347677
       },
       "pairwise_within_median": {
         "dfa": 5.034557512459372,
@@ -1194,41 +837,17 @@
         "position": 9.628406850516319,
         "position_from_end": 9.608186845142638
       },
-      "pairwise_ratio": {
-        "dfa": 0.5200498421099032,
-        "char": 0.8623636826614617,
-        "position": 0.8822323419820511,
-        "position_from_end": 0.8268445644682368
+      "pairwise_between_median": {
+        "dfa": 9.68091345251367,
+        "char": 9.69562630321974,
+        "position": 9.746165463814076,
+        "position_from_end": 9.746165463814076
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0119647472270212,
-        "char": 0.9942613812183169,
-        "position": 1.0062484904603848,
-        "position_from_end": 1.0034528960401643
-      },
-      "silhouette": {
-        "dfa": 0.33905104320858237,
-        "char": -0.10254030192872174,
-        "position": -0.019348651569542345,
-        "position_from_end": 0.08121953730866328
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.39767452272309356,
-        "char": -0.31876046200222174,
-        "position": -0.10668420638780075,
-        "position_from_end": -0.09741834863962191
-      },
-      "centroid_gap": {
-        "dfa": 9.029331580853555,
-        "char": 6.887474078375626,
-        "position": 1.1187429788250887,
-        "position_from_end": 1.5155037486885323
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.313709707930261,
-        "char": 6.173015930440765,
-        "position": -1.296466149956169,
-        "position_from_end": -1.0858741636149052
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.574817530300807,
+        "char": 9.588069820983785,
+        "position": 9.569576601936665,
+        "position_from_end": 9.57602138038772
       }
     },
     {
@@ -1237,18 +856,7 @@
       "run_id": 15,
       "n_words": 8,
       "n_dfa_states": 22,
-      "within_corr": {
-        "dfa": 0.8923532789787957,
-        "char": 0.5634780383086704,
-        "position": 0.26822549159569964,
-        "position_from_end": 0.4027961739665033
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.005113615105565494,
-        "char": -0.005963682284491637,
-        "position": 0.01118924949004309,
-        "position_from_end": 0.009282370416711743
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8900327132973848,
         "char": 0.5606599800169383,
@@ -1260,6 +868,18 @@
         "char": -0.006355564831513573,
         "position": 0.010792319600774826,
         "position_from_end": 0.008638869147423412
+      },
+      "between_cosine": {
+        "dfa": -0.05043208723136167,
+        "char": -0.022206523257031156,
+        "position": -0.043150240156493665,
+        "position_from_end": -0.06982405119891663
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.00859863668445313,
+        "char": 0.009160294117564045,
+        "position": 0.007862616769015009,
+        "position_from_end": 0.008289145602770602
       },
       "pairwise_within_median": {
         "dfa": 3.6763168837937736,
@@ -1273,41 +893,17 @@
         "position": 9.742875505952904,
         "position_from_end": 9.768068467289044
       },
-      "pairwise_ratio": {
-        "dfa": 0.37260643069309163,
-        "char": 0.739717998174857,
-        "position": 0.8258984792586401,
-        "position_from_end": 0.7790855435077388
+      "pairwise_between_median": {
+        "dfa": 9.866488017813845,
+        "char": 9.863742330400326,
+        "position": 9.882738890613352,
+        "position_from_end": 9.918861324994786
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9954782736307951,
-        "char": 1.008034927367671,
-        "position": 0.9967517815064967,
-        "position_from_end": 1.000142853382917
-      },
-      "silhouette": {
-        "dfa": 0.6459131658426476,
-        "char": 0.18561084300478148,
-        "position": 0.08611073914790324,
-        "position_from_end": 0.1840760059692704
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4887324286663763,
-        "char": -0.43516592517798003,
-        "position": -0.12643335863930244,
-        "position_from_end": -0.1264027274912445
-      },
-      "centroid_gap": {
-        "dfa": 8.93498389332698,
-        "char": 7.20996822105719,
-        "position": 2.0142758412501554,
-        "position_from_end": 2.8737279047168034
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.965860826788739,
-        "char": 5.582664624832144,
-        "position": -1.2539902551093562,
-        "position_from_end": -1.3267624958017064
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.770505041444585,
+        "char": 9.76673123283124,
+        "position": 9.775028850678545,
+        "position_from_end": 9.767128099723404
       }
     },
     {
@@ -1316,18 +912,7 @@
       "run_id": 16,
       "n_words": 9,
       "n_dfa_states": 24,
-      "within_corr": {
-        "dfa": 0.7271002014387461,
-        "char": 0.4106539286465973,
-        "position": 0.2749226312791363,
-        "position_from_end": 0.35431233085064784
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.04040595104762903,
-        "char": 0.03617201869895455,
-        "position": 0.030979983139962475,
-        "position_from_end": 0.03816213890962253
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7444767227642335,
         "char": 0.4070067075722034,
@@ -1339,6 +924,18 @@
         "char": 0.03659372549618237,
         "position": 0.031486790056392544,
         "position_from_end": 0.03862992129608544
+      },
+      "between_cosine": {
+        "dfa": -0.008809684863108675,
+        "char": 0.017231051907458945,
+        "position": -0.0033201109972916653,
+        "position_from_end": -0.033240568303647
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.04052271826298224,
+        "char": 0.040802787130478475,
+        "position": 0.04227161947566015,
+        "position_from_end": 0.040995835729600305
       },
       "pairwise_within_median": {
         "dfa": 5.163474369344794,
@@ -1352,41 +949,17 @@
         "position": 9.903505507542944,
         "position_from_end": 9.901372271216266
       },
-      "pairwise_ratio": {
-        "dfa": 0.5183178040524492,
-        "char": 0.8460028685490864,
-        "position": 0.8580433269923047,
-        "position_from_end": 0.8086799500783575
+      "pairwise_between_median": {
+        "dfa": 9.961985347550005,
+        "char": 9.949904000894648,
+        "position": 9.998050177752756,
+        "position_from_end": 9.995147072482153
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9997315802745098,
-        "char": 0.9966132121686936,
-        "position": 1.0031199855680255,
-        "position_from_end": 1.0030524319868157
-      },
-      "silhouette": {
-        "dfa": 0.34823426249771167,
-        "char": 0.023356788016450244,
-        "position": 0.05703114194291033,
-        "position_from_end": 0.17502197753882143
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4012880509900447,
-        "char": -0.27671695673724017,
-        "position": -0.14496317753475926,
-        "position_from_end": -0.08357831812808994
-      },
-      "centroid_gap": {
-        "dfa": 9.0301543530152,
-        "char": 5.875478170369863,
-        "position": 2.7550018936019613,
-        "position_from_end": 2.1544300408852575
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.0409576935309,
-        "char": 3.6453427388672477,
-        "position": 0.017763340194624326,
-        "position_from_end": -1.658161773243441
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.873786757569453,
+        "char": 9.880233059889742,
+        "position": 9.873135981157326,
+        "position_from_end": 9.871715253978191
       }
     },
     {
@@ -1395,18 +968,7 @@
       "run_id": 17,
       "n_words": 9,
       "n_dfa_states": 25,
-      "within_corr": {
-        "dfa": 0.7151486511371034,
-        "char": 0.35121052133208036,
-        "position": 0.2736898166647111,
-        "position_from_end": 0.32787353756772314
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06802679112824479,
-        "char": 0.05830142129162708,
-        "position": 0.06962629680468403,
-        "position_from_end": 0.0642853519674473
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7128152651254258,
         "char": 0.3522917694516679,
@@ -1418,6 +980,18 @@
         "char": 0.05795521201112026,
         "position": 0.06921655776626111,
         "position_from_end": 0.06386849626165701
+      },
+      "between_cosine": {
+        "dfa": 0.019256888329961867,
+        "char": 0.04547292262059452,
+        "position": 0.02529727473452696,
+        "position_from_end": 0.015151668646865067
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06451042836217587,
+        "char": 0.06515500244944573,
+        "position": 0.06384706181424295,
+        "position_from_end": 0.06486228704901525
       },
       "pairwise_within_median": {
         "dfa": 4.935183044846402,
@@ -1431,41 +1005,17 @@
         "position": 8.884063692652791,
         "position_from_end": 8.903778443998528
       },
-      "pairwise_ratio": {
-        "dfa": 0.548425869008199,
-        "char": 0.8175742700941048,
-        "position": 0.8418275152158353,
-        "position_from_end": 0.823143949980892
+      "pairwise_between_median": {
+        "dfa": 8.998815197706548,
+        "char": 8.998246933795004,
+        "position": 9.013299419827739,
+        "position_from_end": 8.985581066644286
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9970146909212402,
-        "char": 1.001422302378989,
-        "position": 0.9974163671949289,
-        "position_from_end": 0.9998539220051597
-      },
-      "silhouette": {
-        "dfa": 0.30043594107909116,
-        "char": -0.10507018357681894,
-        "position": -0.03771189970716754,
-        "position_from_end": 0.04681476277954918
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3687912095408278,
-        "char": -0.2916688391055947,
-        "position": -0.10034107193672734,
-        "position_from_end": -0.10787490202243583
-      },
-      "centroid_gap": {
-        "dfa": 8.335886673555853,
-        "char": 6.283241648644243,
-        "position": 0.8167081327920238,
-        "position_from_end": 0.7729310359993979
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.371494205277747,
-        "char": 4.980307642122395,
-        "position": -0.8073306861624919,
-        "position_from_end": -0.8405231131242441
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.90458103461261,
+        "char": 8.899858444230077,
+        "position": 8.907494523669481,
+        "position_from_end": 8.9055368296874
       }
     },
     {
@@ -1474,18 +1024,7 @@
       "run_id": 18,
       "n_words": 10,
       "n_dfa_states": 27,
-      "within_corr": {
-        "dfa": 0.7906952704704185,
-        "char": 0.347812813823213,
-        "position": 0.20912016665941735,
-        "position_from_end": 0.40338740256856764
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.0379438970234721,
-        "char": 0.03414552146385682,
-        "position": 0.041112841357703274,
-        "position_from_end": 0.046030036382437696
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7898501763103906,
         "char": 0.3494789906099573,
@@ -1497,6 +1036,18 @@
         "char": 0.03386392070296593,
         "position": 0.041091876658516074,
         "position_from_end": 0.04558382105864954
+      },
+      "between_cosine": {
+        "dfa": -0.014349653734990033,
+        "char": 0.02070579112787233,
+        "position": 0.007210822164942459,
+        "position_from_end": -0.030290901956930145
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.04138271541500061,
+        "char": 0.04159208251877616,
+        "position": 0.04111647495104022,
+        "position_from_end": 0.040225510772501354
       },
       "pairwise_within_median": {
         "dfa": 4.1442930361509,
@@ -1510,41 +1061,17 @@
         "position": 8.500640308493265,
         "position_from_end": 8.496427816611641
       },
-      "pairwise_ratio": {
-        "dfa": 0.476836029386347,
-        "char": 0.8147827827698502,
-        "position": 0.8844214481935675,
-        "position_from_end": 0.7841121706490483
+      "pairwise_between_median": {
+        "dfa": 8.691233004108984,
+        "char": 8.679125498698566,
+        "position": 8.679483184687111,
+        "position_from_end": 8.764078577567755
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.014785839623157,
-        "char": 1.0101964111319857,
-        "position": 1.003157226629448,
-        "position_from_end": 1.0031314456289335
-      },
-      "silhouette": {
-        "dfa": 0.40209297701873653,
-        "char": -0.06561892949156237,
-        "position": -0.03436136672828446,
-        "position_from_end": 0.10278434802359152
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3936291030553986,
-        "char": -0.2792432890003376,
-        "position": -0.1110253119647447,
-        "position_from_end": -0.105340189315334
-      },
-      "centroid_gap": {
-        "dfa": 7.92127195896826,
-        "char": 4.741522856240644,
-        "position": 1.3040098536051161,
-        "position_from_end": 1.4988545669338826
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.113629748510989,
-        "char": 3.3827495480521232,
-        "position": -0.9228575384704911,
-        "position_from_end": -0.8961598530820319
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.469614752254989,
+        "char": 8.468344045854161,
+        "position": 8.475102962342692,
+        "position_from_end": 8.471009752627264
       }
     },
     {
@@ -1553,18 +1080,7 @@
       "run_id": 19,
       "n_words": 10,
       "n_dfa_states": 33,
-      "within_corr": {
-        "dfa": 0.675107078146617,
-        "char": 0.3249059447513116,
-        "position": 0.25304794402565384,
-        "position_from_end": 0.280091469062341
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07539504646207588,
-        "char": 0.07782117042527112,
-        "position": 0.07284936275243781,
-        "position_from_end": 0.07276851633723459
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.681228963629533,
         "char": 0.3270327448820067,
@@ -1576,6 +1092,18 @@
         "char": 0.08205202977111097,
         "position": 0.07719690774437607,
         "position_from_end": 0.07703498283473903
+      },
+      "between_cosine": {
+        "dfa": 0.044907126838733165,
+        "char": 0.057822998091349824,
+        "position": 0.037871998515836565,
+        "position_from_end": 0.031539191113595384
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.0757403731598094,
+        "char": 0.07547926584709005,
+        "position": 0.07564775188330598,
+        "position_from_end": 0.07568245007822821
       },
       "pairwise_within_median": {
         "dfa": 6.194157637814367,
@@ -1589,41 +1117,17 @@
         "position": 10.123545630078715,
         "position_from_end": 10.127571871607778
       },
-      "pairwise_ratio": {
-        "dfa": 0.6075061430933205,
-        "char": 0.8339239597364845,
-        "position": 0.8874574980004973,
-        "position_from_end": 0.9170803213440871
+      "pairwise_between_median": {
+        "dfa": 10.196041156513651,
+        "char": 10.19962469790869,
+        "position": 10.243695741593196,
+        "position_from_end": 10.240728056316787
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.000237581570666,
-        "char": 0.9997774181449529,
-        "position": 0.9993233685592443,
-        "position_from_end": 0.9997702994182981
-      },
-      "silhouette": {
-        "dfa": 0.13881400528465365,
-        "char": -0.04839955152537927,
-        "position": -0.014311077422360841,
-        "position_from_end": -0.05102793031888554
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3422349104069827,
-        "char": -0.2122109034011968,
-        "position": -0.1146057472388041,
-        "position_from_end": -0.11398026253634762
-      },
-      "centroid_gap": {
-        "dfa": 9.606624004906912,
-        "char": 4.204439440905665,
-        "position": 1.385547090493139,
-        "position_from_end": 1.2803076474264605
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 9.138704116408723,
-        "char": 2.873446625168911,
-        "position": -0.27531284673931583,
-        "position_from_end": -0.2671632383541608
+      "shuffle_pairwise_between_median": {
+        "dfa": 10.132820718673605,
+        "char": 10.13312811966576,
+        "position": 10.130844221296,
+        "position_from_end": 10.13033239187816
       }
     },
     {
@@ -1632,18 +1136,7 @@
       "run_id": 20,
       "n_words": 11,
       "n_dfa_states": 27,
-      "within_corr": {
-        "dfa": 0.7025256560670764,
-        "char": 0.364450027919017,
-        "position": 0.2240984903785953,
-        "position_from_end": 0.34977772141781716
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.055991958922425776,
-        "char": 0.07436028462077628,
-        "position": 0.06679777745016371,
-        "position_from_end": 0.06321594383468217
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7022876890736468,
         "char": 0.3604608550684393,
@@ -1655,6 +1148,18 @@
         "char": 0.07351953366476185,
         "position": 0.06586135914910735,
         "position_from_end": 0.06256890162039865
+      },
+      "between_cosine": {
+        "dfa": 0.012994498075247288,
+        "char": 0.04251094517042022,
+        "position": 0.02889142153638826,
+        "position_from_end": -0.004016877168248657
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06365047261799339,
+        "char": 0.0623000018189497,
+        "position": 0.06241182920623431,
+        "position_from_end": 0.06313022181330241
       },
       "pairwise_within_median": {
         "dfa": 4.75068843954446,
@@ -1668,41 +1173,17 @@
         "position": 8.597233828454385,
         "position_from_end": 8.626476233036113
       },
-      "pairwise_ratio": {
-        "dfa": 0.5416875584079185,
-        "char": 0.8506220408503761,
-        "position": 0.9253158843349971,
-        "position_from_end": 0.7872611380351136
+      "pairwise_between_median": {
+        "dfa": 8.770163474877059,
+        "char": 8.757173710015454,
+        "position": 8.692704561911086,
+        "position_from_end": 8.814645103428118
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0055917155701757,
-        "char": 0.998165364837851,
-        "position": 0.999078305361913,
-        "position_from_end": 1.002755974814368
-      },
-      "silhouette": {
-        "dfa": 0.29657950440124675,
-        "char": -0.08248485087037569,
-        "position": -0.07971316818551727,
-        "position_from_end": 0.04028753412532695
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4013630227467243,
-        "char": -0.28780177202792595,
-        "position": -0.1254777797206811,
-        "position_from_end": -0.1326178711565723
-      },
-      "centroid_gap": {
-        "dfa": 8.467307574347098,
-        "char": 5.541104140309038,
-        "position": 1.2422328633911075,
-        "position_from_end": 1.7709786522015718
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.998688902339226,
-        "char": 4.225632125307998,
-        "position": -0.0664279881860789,
-        "position_from_end": 0.09107678385697497
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.600725219601033,
+        "char": 8.604140174995672,
+        "position": 8.605875235771565,
+        "position_from_end": 8.60393027579226
       }
     },
     {
@@ -1711,18 +1192,7 @@
       "run_id": 21,
       "n_words": 11,
       "n_dfa_states": 24,
-      "within_corr": {
-        "dfa": 0.8694315740986467,
-        "char": 0.4543580378488485,
-        "position": 0.3623909987945779,
-        "position_from_end": 0.34362760222824046
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06799383601151568,
-        "char": 0.07111116898430798,
-        "position": 0.07212566656974734,
-        "position_from_end": 0.07360257264185288
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8706834209074544,
         "char": 0.45491206840749926,
@@ -1734,6 +1204,18 @@
         "char": 0.06999746728518262,
         "position": 0.07108538659019638,
         "position_from_end": 0.07232361267792442
+      },
+      "between_cosine": {
+        "dfa": 0.01876701818609157,
+        "char": 0.03983549258999445,
+        "position": 0.008676683938049962,
+        "position_from_end": 0.009285887257128244
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07096900764549557,
+        "char": 0.07077065816108973,
+        "position": 0.07063384523620556,
+        "position_from_end": 0.07035258678652921
       },
       "pairwise_within_median": {
         "dfa": 3.549760331084927,
@@ -1747,41 +1229,17 @@
         "position": 9.105364198152284,
         "position_from_end": 9.085979064655557
       },
-      "pairwise_ratio": {
-        "dfa": 0.3878937635750161,
-        "char": 0.7857072298883502,
-        "position": 0.8657051001437215,
-        "position_from_end": 0.885330584010933
+      "pairwise_between_median": {
+        "dfa": 9.151372526252093,
+        "char": 9.147669659905153,
+        "position": 9.26806585059609,
+        "position_from_end": 9.242513910776587
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9971361601338075,
-        "char": 1.0013046227506628,
-        "position": 1.0002761715986408,
-        "position_from_end": 0.9978883144475669
-      },
-      "silhouette": {
-        "dfa": 0.6342293386157317,
-        "char": 0.06778013913804329,
-        "position": 0.047653580083202446,
-        "position_from_end": 0.12018897762530881
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4229841473369841,
-        "char": -0.35399133357843504,
-        "position": -0.13348777765737677,
-        "position_from_end": -0.13152694842609955
-      },
-      "centroid_gap": {
-        "dfa": 8.315272510777143,
-        "char": 5.944927158954682,
-        "position": 2.559527248751683,
-        "position_from_end": 2.2126612526836427
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 4.752472136356872,
-        "char": 3.9383440147009896,
-        "position": -0.5837086836565052,
-        "position_from_end": -0.4597935083421101
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.103569397394446,
+        "char": 9.103991396919122,
+        "position": 9.102959760990933,
+        "position_from_end": 9.105334055221187
       }
     },
     {
@@ -1790,18 +1248,7 @@
       "run_id": 22,
       "n_words": 12,
       "n_dfa_states": 27,
-      "within_corr": {
-        "dfa": 0.7410451492666954,
-        "char": 0.27599975826096995,
-        "position": 0.23058641187917692,
-        "position_from_end": 0.32495489588662224
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06959321251818078,
-        "char": 0.07607561879469021,
-        "position": 0.06931855821436471,
-        "position_from_end": 0.07358032380457408
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7421108268146734,
         "char": 0.2776739017498364,
@@ -1813,6 +1260,18 @@
         "char": 0.07425873264991101,
         "position": 0.06796399289338438,
         "position_from_end": 0.0718290176114787
+      },
+      "between_cosine": {
+        "dfa": 0.0272017840838454,
+        "char": 0.055974274679747596,
+        "position": 0.03639096786654424,
+        "position_from_end": 0.01295925267281773
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07168988774873654,
+        "char": 0.07124776860533927,
+        "position": 0.07223000280906798,
+        "position_from_end": 0.07137256359603596
       },
       "pairwise_within_median": {
         "dfa": 4.47543400085646,
@@ -1826,41 +1285,17 @@
         "position": 8.884636424066317,
         "position_from_end": 8.863725144363096
       },
-      "pairwise_ratio": {
-        "dfa": 0.500698013538847,
-        "char": 0.8617388380866049,
-        "position": 0.890703025498046,
-        "position_from_end": 0.8783497152513389
+      "pairwise_between_median": {
+        "dfa": 8.938389767566413,
+        "char": 8.932784626522757,
+        "position": 8.984133082665615,
+        "position_from_end": 8.990438037603422
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9988834482342894,
-        "char": 0.9995340950767152,
-        "position": 1.0009771998103543,
-        "position_from_end": 0.9982830692887353
-      },
-      "silhouette": {
-        "dfa": 0.29357961459439286,
-        "char": -0.13810015967423522,
-        "position": -0.042318909916348436,
-        "position_from_end": 0.059391390767328134
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.34328033204902314,
-        "char": -0.2589447914720489,
-        "position": -0.11958009094229252,
-        "position_from_end": -0.11189581541182787
-      },
-      "centroid_gap": {
-        "dfa": 8.285012783905014,
-        "char": 4.770828959926391,
-        "position": 1.520267607357587,
-        "position_from_end": 1.7935012859031598
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.373913276922038,
-        "char": 3.6802110094938243,
-        "position": -0.28874741085625166,
-        "position_from_end": -0.12950435469985444
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.87758122799475,
+        "char": 8.877962227509578,
+        "position": 8.876138144048989,
+        "position_from_end": 8.879228429774308
       }
     },
     {
@@ -1869,18 +1304,7 @@
       "run_id": 23,
       "n_words": 12,
       "n_dfa_states": 25,
-      "within_corr": {
-        "dfa": 0.6951296020621013,
-        "char": 0.5695578710401819,
-        "position": 0.3738131920825774,
-        "position_from_end": 0.3661206851153518
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.08309093721855222,
-        "char": 0.07971233001075013,
-        "position": 0.0765863933811084,
-        "position_from_end": 0.06862317158778414
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6951706988782244,
         "char": 0.5704460592720264,
@@ -1892,6 +1316,18 @@
         "char": 0.0776912031460994,
         "position": 0.07498049511780817,
         "position_from_end": 0.06731727451764313
+      },
+      "between_cosine": {
+        "dfa": 0.026759665624661044,
+        "char": 0.03659372374745744,
+        "position": 0.014029529729242311,
+        "position_from_end": 0.013562387015921601
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07512533242548138,
+        "char": 0.07544554894200167,
+        "position": 0.07573956397316421,
+        "position_from_end": 0.07740845407172806
       },
       "pairwise_within_median": {
         "dfa": 5.880876580734335,
@@ -1905,41 +1341,17 @@
         "position": 9.610500311060353,
         "position_from_end": 9.653658815336977
       },
-      "pairwise_ratio": {
-        "dfa": 0.6052359326832969,
-        "char": 0.7030300314607673,
-        "position": 0.7906446127988278,
-        "position_from_end": 0.7634725450293169
+      "pairwise_between_median": {
+        "dfa": 9.716667935860368,
+        "char": 9.716667935860368,
+        "position": 9.801125143816208,
+        "position_from_end": 9.748886007370325
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9961006166378941,
-        "char": 1.001454199464856,
-        "position": 0.9983305991804258,
-        "position_from_end": 1.003273692733491
-      },
-      "silhouette": {
-        "dfa": 0.38104512936966733,
-        "char": 0.21487023740218278,
-        "position": 0.09270502935124142,
-        "position_from_end": 0.07214516292786327
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4508731312625543,
-        "char": -0.3032410310010433,
-        "position": -0.12712245828172414,
-        "position_from_end": -0.12635246597762675
-      },
-      "centroid_gap": {
-        "dfa": 9.027826921223282,
-        "char": 6.881926446007086,
-        "position": 2.918260691438556,
-        "position_from_end": 2.245421687001369
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.702925455516969,
-        "char": 4.051929930459752,
-        "position": -0.28247715402065193,
-        "position_from_end": -0.22409227844045335
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.6286093589299,
+        "char": 9.625062068506018,
+        "position": 9.626835023586601,
+        "position_from_end": 9.622304995214714
       }
     },
     {
@@ -1948,18 +1360,7 @@
       "run_id": 24,
       "n_words": 13,
       "n_dfa_states": 25,
-      "within_corr": {
-        "dfa": 0.8338216007163423,
-        "char": 0.3050531379488696,
-        "position": 0.2893862061377644,
-        "position_from_end": 0.3251441551600151
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07207005125634565,
-        "char": 0.0731090618659134,
-        "position": 0.0735326700147997,
-        "position_from_end": 0.07075629557497444
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8365763320245078,
         "char": 0.3055357879361732,
@@ -1971,6 +1372,18 @@
         "char": 0.0715914139738148,
         "position": 0.07209553036349971,
         "position_from_end": 0.06923174584811015
+      },
+      "between_cosine": {
+        "dfa": 0.024834895177421018,
+        "char": 0.051966575004877794,
+        "position": 0.025013430074790368,
+        "position_from_end": 0.011017425458032694
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.0739070625582091,
+        "char": 0.07395012767735748,
+        "position": 0.07412474624802207,
+        "position_from_end": 0.07486743226199102
       },
       "pairwise_within_median": {
         "dfa": 4.00669649692741,
@@ -1984,41 +1397,17 @@
         "position": 9.502214846165682,
         "position_from_end": 9.512579681525413
       },
-      "pairwise_ratio": {
-        "dfa": 0.4174136169301634,
-        "char": 0.8959843880982491,
-        "position": 0.8818816932441316,
-        "position_from_end": 0.8757464190689181
+      "pairwise_between_median": {
+        "dfa": 9.598863895227842,
+        "char": 9.587539745036658,
+        "position": 9.658592043857672,
+        "position_from_end": 9.648132663920435
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9993119099588169,
-        "char": 1.0009360237089298,
-        "position": 1.001794737754023,
-        "position_from_end": 1.0033904674818745
-      },
-      "silhouette": {
-        "dfa": 0.4592662126193289,
-        "char": -0.20060391731411256,
-        "position": -0.01884153949750849,
-        "position_from_end": 0.08995482611436457
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4245820914561046,
-        "char": -0.3581065231698304,
-        "position": -0.11858187024439665,
-        "position_from_end": -0.14530279722241088
-      },
-      "centroid_gap": {
-        "dfa": 8.657953835709966,
-        "char": 6.297068981140702,
-        "position": 1.8612096096397321,
-        "position_from_end": 2.197601269446314
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.809536941778427,
-        "char": 5.383127043704279,
-        "position": -0.39280099098695404,
-        "position_from_end": -0.1445993431933196
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.488910140758165,
+        "char": 9.487647000664245,
+        "position": 9.48565379669106,
+        "position_from_end": 9.480907100664572
       }
     },
     {
@@ -2027,18 +1416,7 @@
       "run_id": 25,
       "n_words": 13,
       "n_dfa_states": 28,
-      "within_corr": {
-        "dfa": 0.8238683376951492,
-        "char": 0.36094531448038053,
-        "position": 0.29888435106539435,
-        "position_from_end": 0.44024907462312945
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07909844483044103,
-        "char": 0.07026890559452202,
-        "position": 0.07087703123693198,
-        "position_from_end": 0.07294217027894138
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.82715528820834,
         "char": 0.3615947516160892,
@@ -2050,6 +1428,18 @@
         "char": 0.0706473121753731,
         "position": 0.07127798192131225,
         "position_from_end": 0.07351195250283407
+      },
+      "between_cosine": {
+        "dfa": 0.021319958695818084,
+        "char": 0.05501580989238848,
+        "position": 0.030237860760414022,
+        "position_from_end": -0.0015359033794892967
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07808538580174386,
+        "char": 0.07882060039208343,
+        "position": 0.07972072786466652,
+        "position_from_end": 0.07923090234781645
       },
       "pairwise_within_median": {
         "dfa": 3.71858292197645,
@@ -2063,41 +1453,17 @@
         "position": 9.437261239125847,
         "position_from_end": 9.410438317890845
       },
-      "pairwise_ratio": {
-        "dfa": 0.3898044888814951,
-        "char": 0.8489630586858903,
-        "position": 0.84151847131522,
-        "position_from_end": 0.7776691663390549
+      "pairwise_between_median": {
+        "dfa": 9.539610312458306,
+        "char": 9.537220955584363,
+        "position": 9.579857148965516,
+        "position_from_end": 9.635674583529022
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0003178110987208,
-        "char": 0.9983335329742132,
-        "position": 0.9998360070796517,
-        "position_from_end": 0.9959796061235271
-      },
-      "silhouette": {
-        "dfa": 0.4544125160065006,
-        "char": -0.09408268052808712,
-        "position": -0.003073465983308104,
-        "position_from_end": 0.17370186905707258
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.408371811947183,
-        "char": -0.3092037978489153,
-        "position": -0.12215052200518618,
-        "position_from_end": -0.11466815917754943
-      },
-      "centroid_gap": {
-        "dfa": 8.636299356513812,
-        "char": 5.245727419539883,
-        "position": 1.2229392421888985,
-        "position_from_end": 1.9670705854721797
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.2596343226054945,
-        "char": 3.957217425113113,
-        "position": -1.3655830150782815,
-        "position_from_end": -1.306807619824885
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.441651356504403,
+        "char": 9.442710567625241,
+        "position": 9.43929484374738,
+        "position_from_end": 9.448827982227346
       }
     },
     {
@@ -2106,18 +1472,7 @@
       "run_id": 26,
       "n_words": 14,
       "n_dfa_states": 30,
-      "within_corr": {
-        "dfa": 0.7430422359111523,
-        "char": 0.4280832713477306,
-        "position": 0.27800490900011615,
-        "position_from_end": 0.29878891969656846
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.10912240637638546,
-        "char": 0.09884612963069639,
-        "position": 0.09975251235647449,
-        "position_from_end": 0.09567923321677133
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.743796213413893,
         "char": 0.42863719759362495,
@@ -2129,6 +1484,18 @@
         "char": 0.09764771113844219,
         "position": 0.09875035474307114,
         "position_from_end": 0.09468567929811933
+      },
+      "between_cosine": {
+        "dfa": 0.05968346840996039,
+        "char": 0.07155694636074816,
+        "position": 0.06502246277007956,
+        "position_from_end": 0.059372720647251444
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09817395444798026,
+        "char": 0.09882381481014536,
+        "position": 0.09873130048847839,
+        "position_from_end": 0.09953377642471932
       },
       "pairwise_within_median": {
         "dfa": 4.1526236464976405,
@@ -2142,41 +1509,17 @@
         "position": 8.166167045149257,
         "position_from_end": 8.190258407954286
       },
-      "pairwise_ratio": {
-        "dfa": 0.5024664463762402,
-        "char": 0.7904573057164983,
-        "position": 0.9138957431227356,
-        "position_from_end": 0.9489842138221872
+      "pairwise_between_median": {
+        "dfa": 8.264479501957055,
+        "char": 8.289749366781525,
+        "position": 8.285186895419177,
+        "position_from_end": 8.212250146497013
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9947037670642269,
-        "char": 1.001814998319493,
-        "position": 1.0017023933601903,
-        "position_from_end": 1.005060156888649
-      },
-      "silhouette": {
-        "dfa": 0.5478745361497763,
-        "char": 0.046615364079366554,
-        "position": 0.06892469289057447,
-        "position_from_end": 0.0748671055236127
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4070204601481106,
-        "char": -0.25547126394864755,
-        "position": -0.0807989247368261,
-        "position_from_end": -0.08725657747596413
-      },
-      "centroid_gap": {
-        "dfa": 7.812324513393105,
-        "char": 4.15209581894593,
-        "position": 0.7881514411387531,
-        "position_from_end": 0.2626310755361523
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 5.510048629178555,
-        "char": 2.0563154846550233,
-        "position": -2.208263897341065,
-        "position_from_end": -2.1294518545817596
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.159255570230965,
+        "char": 8.154586802536897,
+        "position": 8.152575201937431,
+        "position_from_end": 8.149532305029753
       }
     },
     {
@@ -2185,18 +1528,7 @@
       "run_id": 27,
       "n_words": 14,
       "n_dfa_states": 34,
-      "within_corr": {
-        "dfa": 0.7506893472493674,
-        "char": 0.4381211807996213,
-        "position": 0.26235533391043225,
-        "position_from_end": 0.33055136607571
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06956554720610929,
-        "char": 0.06245595692236246,
-        "position": 0.059516521311378315,
-        "position_from_end": 0.06266414447554734
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7499026201986515,
         "char": 0.43924027810132704,
@@ -2208,6 +1540,18 @@
         "char": 0.06226775316331098,
         "position": 0.059237656848866276,
         "position_from_end": 0.06225207890309537
+      },
+      "between_cosine": {
+        "dfa": 0.014932984857721664,
+        "char": 0.04077425114536675,
+        "position": 0.01611935432054445,
+        "position_from_end": 0.0009942242248084019
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06119382025340117,
+        "char": 0.06167251478798598,
+        "position": 0.06226301218374287,
+        "position_from_end": 0.06157944435731917
       },
       "pairwise_within_median": {
         "dfa": 4.863496336297155,
@@ -2221,41 +1565,17 @@
         "position": 9.248970019023533,
         "position_from_end": 9.22485901861347
       },
-      "pairwise_ratio": {
-        "dfa": 0.5204571003055606,
-        "char": 0.7900625020782283,
-        "position": 0.8598144506168452,
-        "position_from_end": 0.840801708345925
+      "pairwise_between_median": {
+        "dfa": 9.344663245907865,
+        "char": 9.31845076207592,
+        "position": 9.354982643660575,
+        "position_from_end": 9.400876100712779
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9953363369396593,
-        "char": 1.002947929720361,
-        "position": 1.001121378433024,
-        "position_from_end": 0.9978721143350184
-      },
-      "silhouette": {
-        "dfa": 0.4185078678414323,
-        "char": 0.08887766339883692,
-        "position": 0.0113532283594368,
-        "position_from_end": 0.09149237164371359
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4287987882207996,
-        "char": -0.31739549102901854,
-        "position": -0.10318798598602681,
-        "position_from_end": -0.11211779829655227
-      },
-      "centroid_gap": {
-        "dfa": 8.42468635299203,
-        "char": 5.766253297331917,
-        "position": 1.2860322371916268,
-        "position_from_end": 1.8811836159839732
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.997854648898436,
-        "char": 3.636820080866815,
-        "position": -0.6033157528578627,
-        "position_from_end": -0.5600122724105145
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.243488979860834,
+        "char": 9.239121917660139,
+        "position": 9.238983572078826,
+        "position_from_end": 9.24496756187034
       }
     },
     {
@@ -2264,18 +1584,7 @@
       "run_id": 28,
       "n_words": 15,
       "n_dfa_states": 40,
-      "within_corr": {
-        "dfa": 0.8153223148762445,
-        "char": 0.44958734117024496,
-        "position": 0.3209801225226022,
-        "position_from_end": 0.3913852886169714
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.09027064762967806,
-        "char": 0.10199770365145261,
-        "position": 0.09524589505882351,
-        "position_from_end": 0.08918739450354762
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8143137791374437,
         "char": 0.4497572797681846,
@@ -2287,6 +1596,18 @@
         "char": 0.10152020459215017,
         "position": 0.0947062297567434,
         "position_from_end": 0.08878219891773391
+      },
+      "between_cosine": {
+        "dfa": 0.055115699602868023,
+        "char": 0.06611410674449024,
+        "position": 0.052993255053709575,
+        "position_from_end": 0.037930965119903785
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09475003667157857,
+        "char": 0.09393469952714864,
+        "position": 0.09445710527603009,
+        "position_from_end": 0.09558308925915786
       },
       "pairwise_within_median": {
         "dfa": 4.210198325297773,
@@ -2300,41 +1621,17 @@
         "position": 9.16649401864002,
         "position_from_end": 9.19630989860327
       },
-      "pairwise_ratio": {
-        "dfa": 0.4552968866449862,
-        "char": 0.8100513605900646,
-        "position": 0.8815833515083752,
-        "position_from_end": 0.8384084111707839
+      "pairwise_between_median": {
+        "dfa": 9.247149384925706,
+        "char": 9.271937227877215,
+        "position": 9.281538981724264,
+        "position_from_end": 9.306410571405205
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0019244968758654,
-        "char": 0.9966167658640666,
-        "position": 0.9993636650353657,
-        "position_from_end": 1.0032986354371163
-      },
-      "silhouette": {
-        "dfa": 0.5638523031006567,
-        "char": 0.042799334137129996,
-        "position": 0.10177673209775269,
-        "position_from_end": 0.15191837857168694
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.44625345743091055,
-        "char": -0.26631610771150016,
-        "position": -0.07789986077590647,
-        "position_from_end": -0.0820031800309036
-      },
-      "centroid_gap": {
-        "dfa": 8.457789152115096,
-        "char": 4.4447377042852345,
-        "position": 1.1326902456418129,
-        "position_from_end": 1.3032376150786797
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.211965850292746,
-        "char": 2.217532146466968,
-        "position": -2.7239577343529597,
-        "position_from_end": -2.713196855054805
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.168453895555142,
+        "char": 9.171686775689407,
+        "position": 9.172521681028535,
+        "position_from_end": 9.166282842980172
       }
     },
     {
@@ -2343,18 +1640,7 @@
       "run_id": 29,
       "n_words": 15,
       "n_dfa_states": 38,
-      "within_corr": {
-        "dfa": 0.6654910076971249,
-        "char": 0.3850984483713186,
-        "position": 0.28527081595030446,
-        "position_from_end": 0.28988373398592404
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07107013600602526,
-        "char": 0.0735399944050154,
-        "position": 0.07043639238709211,
-        "position_from_end": 0.07199490299374008
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6684703245239207,
         "char": 0.38354986981175265,
@@ -2366,6 +1652,18 @@
         "char": 0.07473633589141666,
         "position": 0.0714231582104934,
         "position_from_end": 0.07303615079274871
+      },
+      "between_cosine": {
+        "dfa": 0.030331539389787377,
+        "char": 0.04430841181685318,
+        "position": 0.02020276989165719,
+        "position_from_end": 0.016048014027499523
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06976379857227978,
+        "char": 0.06955448174318722,
+        "position": 0.06960504287831229,
+        "position_from_end": 0.06920075224429943
       },
       "pairwise_within_median": {
         "dfa": 4.689412854620933,
@@ -2379,41 +1677,17 @@
         "position": 8.50685192948263,
         "position_from_end": 8.505922609299377
       },
-      "pairwise_ratio": {
-        "dfa": 0.5448952249669695,
-        "char": 0.8016247855661731,
-        "position": 0.8577794133613886,
-        "position_from_end": 0.8742330294419105
+      "pairwise_between_median": {
+        "dfa": 8.60608175618569,
+        "char": 8.60608175618569,
+        "position": 8.656085313255339,
+        "position_from_end": 8.623217747730655
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9984224755744625,
-        "char": 0.9986655657211729,
-        "position": 0.9971886373238542,
-        "position_from_end": 0.9968844575089234
-      },
-      "silhouette": {
-        "dfa": 0.17102374960083053,
-        "char": -0.03094496682722729,
-        "position": -0.042647939621608816,
-        "position_from_end": 0.05488152933999776
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.37441040149485405,
-        "char": -0.2703174915130225,
-        "position": -0.10820568180254728,
-        "position_from_end": -0.11418428591610562
-      },
-      "centroid_gap": {
-        "dfa": 8.273344712807,
-        "char": 5.079469146817484,
-        "position": 1.285047797640107,
-        "position_from_end": 1.2594551488519539
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.644147752149864,
-        "char": 3.825927784608364,
-        "position": -0.3327257519797163,
-        "position_from_end": -0.21983524175136973
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.527991972481395,
+        "char": 8.527962704934563,
+        "position": 8.531188368078224,
+        "position_from_end": 8.5328677514317
       }
     },
     {
@@ -2422,18 +1696,7 @@
       "run_id": 30,
       "n_words": 16,
       "n_dfa_states": 34,
-      "within_corr": {
-        "dfa": 0.7552929768752412,
-        "char": 0.49473927108080445,
-        "position": 0.27200516761538923,
-        "position_from_end": 0.3338614269649094
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06843477826950999,
-        "char": 0.06075472220293884,
-        "position": 0.06697178690342806,
-        "position_from_end": 0.06771161878490049
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.755137429901609,
         "char": 0.49509866310212364,
@@ -2445,6 +1708,18 @@
         "char": 0.060390927073608845,
         "position": 0.06650552241100169,
         "position_from_end": 0.06714279512816936
+      },
+      "between_cosine": {
+        "dfa": 0.021698646205835004,
+        "char": 0.03652824138281704,
+        "position": 0.027812765508586322,
+        "position_from_end": 0.013232705724976679
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.06928964254276784,
+        "char": 0.06986738050054177,
+        "position": 0.0697471314298845,
+        "position_from_end": 0.06962664027801325
       },
       "pairwise_within_median": {
         "dfa": 4.044523308198288,
@@ -2458,41 +1733,17 @@
         "position": 8.256088639514044,
         "position_from_end": 8.24442416756551
       },
-      "pairwise_ratio": {
-        "dfa": 0.4860474939344567,
-        "char": 0.6842896150526716,
-        "position": 0.8864891932392103,
-        "position_from_end": 0.8593840482902136
+      "pairwise_between_median": {
+        "dfa": 8.32125123299924,
+        "char": 8.310105950663765,
+        "position": 8.330527621360199,
+        "position_from_end": 8.347430455793544
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9917180252691792,
-        "char": 1.0065065743255044,
-        "position": 1.0032953211347968,
-        "position_from_end": 1.001706839417504
-      },
-      "silhouette": {
-        "dfa": 0.20793772235259245,
-        "char": 0.07679499271637172,
-        "position": 0.014165081429146995,
-        "position_from_end": 0.1135866736084296
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4326699005469309,
-        "char": -0.3453764283960664,
-        "position": -0.08458911017063801,
-        "position_from_end": -0.09207669716996279
-      },
-      "centroid_gap": {
-        "dfa": 7.881115556226711,
-        "char": 5.648774810390902,
-        "position": 0.5269523490849544,
-        "position_from_end": 0.7286274994729913
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.626203863688656,
-        "char": 4.2203730021175385,
-        "position": -2.1107829633979,
-        "position_from_end": -1.8662091944101917
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.235839711605514,
+        "char": 8.228772634266008,
+        "position": 8.229204428279196,
+        "position_from_end": 8.230558574662902
       }
     },
     {
@@ -2501,18 +1752,7 @@
       "run_id": 31,
       "n_words": 16,
       "n_dfa_states": 32,
-      "within_corr": {
-        "dfa": 0.7923316413465229,
-        "char": 0.5916939119405624,
-        "position": 0.30809542873164314,
-        "position_from_end": 0.44307308450015714
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.08827506917118241,
-        "char": 0.08211643275015335,
-        "position": 0.08683429897577194,
-        "position_from_end": 0.0848547547882953
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7921621507837608,
         "char": 0.590844875435793,
@@ -2524,6 +1764,18 @@
         "char": 0.0817919541537431,
         "position": 0.08648895574960568,
         "position_from_end": 0.0844257861833185
+      },
+      "between_cosine": {
+        "dfa": 0.020850192031440437,
+        "char": 0.04850713886486759,
+        "position": 0.04301404782432629,
+        "position_from_end": 0.01018652970470736
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.0866983083493844,
+        "char": 0.08716938605084608,
+        "position": 0.08684980218736883,
+        "position_from_end": 0.0872991140768918
       },
       "pairwise_within_median": {
         "dfa": 3.9549884154593773,
@@ -2537,41 +1789,17 @@
         "position": 8.561974688652953,
         "position_from_end": 8.572941959286052
       },
-      "pairwise_ratio": {
-        "dfa": 0.4547132286416669,
-        "char": 0.5643789651526473,
-        "position": 0.8824423022772658,
-        "position_from_end": 0.6808151487398688
+      "pairwise_between_median": {
+        "dfa": 8.697764143070652,
+        "char": 8.666729995446628,
+        "position": 8.676738869160449,
+        "position_from_end": 8.71406159376955
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0006783143936582,
-        "char": 0.9996238427142453,
-        "position": 0.9985350441557191,
-        "position_from_end": 0.9998126689156568
-      },
-      "silhouette": {
-        "dfa": 0.5027992889703702,
-        "char": 0.23531398568565393,
-        "position": 0.10298710438048574,
-        "position_from_end": 0.18614015366819947
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.44288913336541563,
-        "char": -0.3875258617458984,
-        "position": -0.08980927533654855,
-        "position_from_end": -0.10750251398154281
-      },
-      "centroid_gap": {
-        "dfa": 7.332895996951947,
-        "char": 6.156400885808434,
-        "position": 1.6543720750655018,
-        "position_from_end": 1.7820837983787108
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 4.764013651483161,
-        "char": 3.185725341444722,
-        "position": -2.452355790696315,
-        "position_from_end": -1.9659466413415272
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.57340739379308,
+        "char": 8.574782532107127,
+        "position": 8.574762317605138,
+        "position_from_end": 8.574875821336772
       }
     },
     {
@@ -2580,18 +1808,7 @@
       "run_id": 32,
       "n_words": 17,
       "n_dfa_states": 41,
-      "within_corr": {
-        "dfa": 0.7540862962386813,
-        "char": 0.3235962024755787,
-        "position": 0.27495244147979186,
-        "position_from_end": 0.357486359958342
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.08111721604637215,
-        "char": 0.08714297651876397,
-        "position": 0.08473493623185366,
-        "position_from_end": 0.08236957472825007
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7563474551535087,
         "char": 0.32208458123069444,
@@ -2603,6 +1820,18 @@
         "char": 0.08699804033536605,
         "position": 0.08457987269337164,
         "position_from_end": 0.08231319484892007
+      },
+      "between_cosine": {
+        "dfa": 0.04420957891196405,
+        "char": 0.06499588252313655,
+        "position": 0.046860802315841395,
+        "position_from_end": 0.025424093818509935
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.08355208398628763,
+        "char": 0.083138223209616,
+        "position": 0.08319178231734854,
+        "position_from_end": 0.0836471402673941
       },
       "pairwise_within_median": {
         "dfa": 4.257321563899606,
@@ -2616,41 +1845,17 @@
         "position": 8.763845838614635,
         "position_from_end": 8.790606557788706
       },
-      "pairwise_ratio": {
-        "dfa": 0.4806118131330525,
-        "char": 0.8434413682174223,
-        "position": 0.8668518335413286,
-        "position_from_end": 0.8411774064186213
+      "pairwise_between_median": {
+        "dfa": 8.85812925851036,
+        "char": 8.867980036787396,
+        "position": 8.885027418859323,
+        "position_from_end": 8.9223896975438
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0012291744049513,
-        "char": 0.9953348373855524,
-        "position": 0.9963171357215193,
-        "position_from_end": 1.0001300797800923
-      },
-      "silhouette": {
-        "dfa": 0.3427208064061791,
-        "char": -0.06204271152194036,
-        "position": 0.01993461501284197,
-        "position_from_end": 0.08612251167268602
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3944482965583075,
-        "char": -0.27349282548476994,
-        "position": -0.06767133051056416,
-        "position_from_end": -0.07395128918036559
-      },
-      "centroid_gap": {
-        "dfa": 8.36497963047896,
-        "char": 4.724242533672586,
-        "position": 0.38979468259388117,
-        "position_from_end": 0.8368748641543924
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.233300020824902,
-        "char": 3.4646679695091303,
-        "position": -2.628299015022753,
-        "position_from_end": -2.5283124894301916
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.792552456186963,
+        "char": 8.797358744785951,
+        "position": 8.796461127663006,
+        "position_from_end": 8.789783533261428
       }
     },
     {
@@ -2659,18 +1864,7 @@
       "run_id": 33,
       "n_words": 17,
       "n_dfa_states": 38,
-      "within_corr": {
-        "dfa": 0.7097515273194207,
-        "char": 0.49853017568389973,
-        "position": 0.2180812585801005,
-        "position_from_end": 0.31889920911809777
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.04426699744363842,
-        "char": 0.03718974091070035,
-        "position": 0.04521563394912568,
-        "position_from_end": 0.04531827993673803
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7099622568538789,
         "char": 0.49820012471730085,
@@ -2682,6 +1876,18 @@
         "char": 0.037086380490219804,
         "position": 0.04500190971868983,
         "position_from_end": 0.04517396314751354
+      },
+      "between_cosine": {
+        "dfa": -0.01583492458783062,
+        "char": 0.015062368009908567,
+        "position": 0.002421304451286009,
+        "position_from_end": -0.027499591531712057
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.04299673279259049,
+        "char": 0.04343859842388278,
+        "position": 0.04261912036690786,
+        "position_from_end": 0.04253168697642422
       },
       "pairwise_within_median": {
         "dfa": 4.308712841705392,
@@ -2695,41 +1901,17 @@
         "position": 8.503844400641094,
         "position_from_end": 8.488298329942845
       },
-      "pairwise_ratio": {
-        "dfa": 0.49929788286314947,
-        "char": 0.746739331479635,
-        "position": 0.8960503854415974,
-        "position_from_end": 0.8728429799796035
+      "pairwise_between_median": {
+        "dfa": 8.629543584278226,
+        "char": 8.574431473797084,
+        "position": 8.627415018861758,
+        "position_from_end": 8.647962442343005
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.002796748734531,
-        "char": 1.0019091854051143,
-        "position": 0.9997321195172933,
-        "position_from_end": 0.9972826449763403
-      },
-      "silhouette": {
-        "dfa": 0.33851580686689237,
-        "char": 0.060064819479704705,
-        "position": -0.058521532843411536,
-        "position_from_end": 0.09654615214967846
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4233168522967488,
-        "char": -0.3076772322316218,
-        "position": -0.09604790977830775,
-        "position_from_end": -0.12518531048599316
-      },
-      "centroid_gap": {
-        "dfa": 8.027127288364087,
-        "char": 5.457056214755584,
-        "position": 0.42597411765524473,
-        "position_from_end": 1.6252226434389492
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.817298582958559,
-        "char": 3.4471143885421656,
-        "position": -1.6225231199247323,
-        "position_from_end": -0.3313962758464932
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.506643874763384,
+        "char": 8.506254781379583,
+        "position": 8.506386558490211,
+        "position_from_end": 8.511572857438003
       }
     },
     {
@@ -2738,18 +1920,7 @@
       "run_id": 34,
       "n_words": 18,
       "n_dfa_states": 36,
-      "within_corr": {
-        "dfa": 0.8486451197565594,
-        "char": 0.4789952705428727,
-        "position": 0.39505252743763014,
-        "position_from_end": 0.46548081485263243
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.14607117517909987,
-        "char": 0.15014334298864282,
-        "position": 0.15573354478500895,
-        "position_from_end": 0.15441869762228402
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.8495671435437392,
         "char": 0.47892968813658715,
@@ -2761,6 +1932,18 @@
         "char": 0.1476398327707531,
         "position": 0.15343549474623425,
         "position_from_end": 0.15208181379508917
+      },
+      "between_cosine": {
+        "dfa": 0.09352163491984111,
+        "char": 0.11995254564353998,
+        "position": 0.10049563260431624,
+        "position_from_end": 0.08024317573520404
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.15353132830539895,
+        "char": 0.15329321798866385,
+        "position": 0.1526337437229432,
+        "position_from_end": 0.15293703134762637
       },
       "pairwise_within_median": {
         "dfa": 3.627682182215648,
@@ -2774,41 +1957,17 @@
         "position": 8.333845860833838,
         "position_from_end": 8.342498668142047
       },
-      "pairwise_ratio": {
-        "dfa": 0.4297861338703635,
-        "char": 0.8268774124640459,
-        "position": 0.8085643319218467,
-        "position_from_end": 0.7625946638329771
+      "pairwise_between_median": {
+        "dfa": 8.440668268069036,
+        "char": 8.433058530997915,
+        "position": 8.470386044679225,
+        "position_from_end": 8.469348606496474
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0049767090506525,
-        "char": 1.0019235028991222,
-        "position": 0.9993336608827543,
-        "position_from_end": 1.0007142880819286
-      },
-      "silhouette": {
-        "dfa": 0.4740202151405564,
-        "char": 0.022612243099047108,
-        "position": 0.04514661301143024,
-        "position_from_end": 0.13828998856363364
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4715060753461953,
-        "char": -0.39008716015425454,
-        "position": -0.09248785757406268,
-        "position_from_end": -0.09454175958143399
-      },
-      "centroid_gap": {
-        "dfa": 7.452407565683154,
-        "char": 5.782515782033433,
-        "position": 1.398938680401463,
-        "position_from_end": 1.0298592930075747
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 5.173164876365612,
-        "char": 3.8336055661459554,
-        "position": -2.297681270802555,
-        "position_from_end": -2.099788576493495
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.333086710970147,
+        "char": 8.335915180402015,
+        "position": 8.339604338092512,
+        "position_from_end": 8.336805955298695
       }
     },
     {
@@ -2817,18 +1976,7 @@
       "run_id": 35,
       "n_words": 18,
       "n_dfa_states": 48,
-      "within_corr": {
-        "dfa": 0.6748076373594132,
-        "char": 0.39290708714403766,
-        "position": 0.22451416495631815,
-        "position_from_end": 0.28327654288154314
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.11008113982787306,
-        "char": 0.1049386221603242,
-        "position": 0.10086366569186744,
-        "position_from_end": 0.10468013647139018
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.670069493733167,
         "char": 0.39518809316061204,
@@ -2840,6 +1988,18 @@
         "char": 0.10345278821128141,
         "position": 0.09931906757859606,
         "position_from_end": 0.1031575617724537
+      },
+      "between_cosine": {
+        "dfa": 0.06752656763932038,
+        "char": 0.08253250017677995,
+        "position": 0.07385953766389773,
+        "position_from_end": 0.061720541845954435
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09819638644925557,
+        "char": 0.09845849697302131,
+        "position": 0.09859763496545451,
+        "position_from_end": 0.09781635007665077
       },
       "pairwise_within_median": {
         "dfa": 4.693878954206459,
@@ -2853,41 +2013,17 @@
         "position": 8.663429160856884,
         "position_from_end": 8.637421227608609
       },
-      "pairwise_ratio": {
-        "dfa": 0.537258700595212,
-        "char": 0.8028190831791556,
-        "position": 0.9287882998216608,
-        "position_from_end": 0.909233744073811
+      "pairwise_between_median": {
+        "dfa": 8.736720222504092,
+        "char": 8.73601958951126,
+        "position": 8.749901198385942,
+        "position_from_end": 8.760508507382124
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9998972711058627,
-        "char": 0.9975940964661808,
-        "position": 1.0002412663298834,
-        "position_from_end": 0.9968670497502282
-      },
-      "silhouette": {
-        "dfa": 0.04993802056384961,
-        "char": 0.002819563626870068,
-        "position": -0.016997186213939326,
-        "position_from_end": 0.02572063215611795
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.37081956375381014,
-        "char": -0.21918787387960742,
-        "position": -0.0660529974029714,
-        "position_from_end": -0.06402358374325696
-      },
-      "centroid_gap": {
-        "dfa": 8.733507827689337,
-        "char": 4.023752203185506,
-        "position": -0.04281197479815546,
-        "position_from_end": -0.5671979451219347
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 8.187845359377144,
-        "char": 2.274346983284843,
-        "position": -2.5180404483073966,
-        "position_from_end": -2.3812396786310144
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.661425946352121,
+        "char": 8.662756690317691,
+        "position": 8.661577972355143,
+        "position_from_end": 8.664897039736024
       }
     },
     {
@@ -2896,18 +2032,7 @@
       "run_id": 36,
       "n_words": 19,
       "n_dfa_states": 32,
-      "within_corr": {
-        "dfa": 0.7519592738816779,
-        "char": 0.53561065010809,
-        "position": 0.3170689345884662,
-        "position_from_end": 0.32437856345038524
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.047348930421583064,
-        "char": 0.048902341178485464,
-        "position": 0.04306976904634219,
-        "position_from_end": 0.04217380667487244
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7567445991595376,
         "char": 0.5387369450605065,
@@ -2919,6 +2044,18 @@
         "char": 0.04767608749093431,
         "position": 0.0420216556463218,
         "position_from_end": 0.04099360770235772
+      },
+      "between_cosine": {
+        "dfa": -0.004450431114676348,
+        "char": 0.007842534121412021,
+        "position": -0.02565452446809299,
+        "position_from_end": -0.03070608055522122
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.0411716822236192,
+        "char": 0.0410543795609,
+        "position": 0.04134342537260899,
+        "position_from_end": 0.04159550463104387
       },
       "pairwise_within_median": {
         "dfa": 4.512090214609434,
@@ -2932,41 +2069,17 @@
         "position": 9.008657344375504,
         "position_from_end": 9.007913940455465
       },
-      "pairwise_ratio": {
-        "dfa": 0.49624719222426134,
-        "char": 0.7234975295950974,
-        "position": 0.7917709939862928,
-        "position_from_end": 0.8218792356380848
+      "pairwise_between_median": {
+        "dfa": 9.092424673247027,
+        "char": 9.093637058751634,
+        "position": 9.154984220196502,
+        "position_from_end": 9.124465636919872
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9998195198429538,
-        "char": 0.9995715198801626,
-        "position": 1.001951031638659,
-        "position_from_end": 1.0021380428682345
-      },
-      "silhouette": {
-        "dfa": 0.43370451194788723,
-        "char": 0.283965814523649,
-        "position": 0.12458669657701518,
-        "position_from_end": 0.12374010606202955
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.5158339681226731,
-        "char": -0.35583559048978214,
-        "position": -0.06373554857366837,
-        "position_from_end": -0.06705431204056031
-      },
-      "centroid_gap": {
-        "dfa": 8.237274037607188,
-        "char": 6.442863528514838,
-        "position": 1.235817824661595,
-        "position_from_end": 0.713170937423742
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.738840650763712,
-        "char": 3.5285116724598815,
-        "position": -3.079932065713151,
-        "position_from_end": -2.9883107435732374
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.993520485081923,
+        "char": 8.992643289671001,
+        "position": 8.991307708430996,
+        "position_from_end": 8.988906565092906
       }
     },
     {
@@ -2975,18 +2088,7 @@
       "run_id": 37,
       "n_words": 19,
       "n_dfa_states": 45,
-      "within_corr": {
-        "dfa": 0.7396374594244864,
-        "char": 0.44889395961313433,
-        "position": 0.3531879075155034,
-        "position_from_end": 0.3201545520843581
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.10983294774325017,
-        "char": 0.10929187598032436,
-        "position": 0.10807878583666751,
-        "position_from_end": 0.10616899830857142
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7379251326697094,
         "char": 0.4460482688076818,
@@ -2998,6 +2100,18 @@
         "char": 0.10858548398818949,
         "position": 0.10745380973819585,
         "position_from_end": 0.1055411150263889
+      },
+      "between_cosine": {
+        "dfa": 0.057553138452091326,
+        "char": 0.08138327565559195,
+        "position": 0.052059046364279715,
+        "position_from_end": 0.04903573786633158
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.10678753124362822,
+        "char": 0.10686334544881085,
+        "position": 0.10687916953828573,
+        "position_from_end": 0.10737878257509313
       },
       "pairwise_within_median": {
         "dfa": 4.555330545341599,
@@ -3011,41 +2125,17 @@
         "position": 8.438583393708074,
         "position_from_end": 8.452239512164224
       },
-      "pairwise_ratio": {
-        "dfa": 0.5319500625867624,
-        "char": 0.7808692799401639,
-        "position": 0.8361781194082891,
-        "position_from_end": 0.8903545246102149
+      "pairwise_between_median": {
+        "dfa": 8.56345522959425,
+        "char": 8.557869561803862,
+        "position": 8.636871579009208,
+        "position_from_end": 8.580522494921635
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9965277302190916,
-        "char": 1.000521607966621,
-        "position": 0.997789842446486,
-        "position_from_end": 0.9998525076468728
-      },
-      "silhouette": {
-        "dfa": 0.41090407798772166,
-        "char": 0.045544500925327705,
-        "position": 0.017251305328079333,
-        "position_from_end": 0.07513299162468107
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4200812480720969,
-        "char": -0.3070608826701744,
-        "position": -0.08724057461961911,
-        "position_from_end": -0.1294328620842805
-      },
-      "centroid_gap": {
-        "dfa": 7.7590581938986265,
-        "char": 5.6056606602110115,
-        "position": 0.8492735524195396,
-        "position_from_end": 1.715423085316635
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.138678949616425,
-        "char": 3.524098051412758,
-        "position": -1.8520948127144243,
-        "position_from_end": -0.18853862309784614
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.454889054963036,
+        "char": 8.45337368372876,
+        "position": 8.45746060794255,
+        "position_from_end": 8.453705213525167
       }
     },
     {
@@ -3054,18 +2144,7 @@
       "run_id": 38,
       "n_words": 20,
       "n_dfa_states": 36,
-      "within_corr": {
-        "dfa": 0.6715189848712321,
-        "char": 0.40686243417169654,
-        "position": 0.2210718909913116,
-        "position_from_end": 0.3271680980166313
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.0544789689664666,
-        "char": 0.047463919287332935,
-        "position": 0.048371102738545974,
-        "position_from_end": 0.04354409593959297
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6688397005766222,
         "char": 0.40637786284241456,
@@ -3077,6 +2156,18 @@
         "char": 0.0468671918494136,
         "position": 0.04751909738050093,
         "position_from_end": 0.04267503060795331
+      },
+      "between_cosine": {
+        "dfa": -0.001480957886345538,
+        "char": 0.022486203253250514,
+        "position": 0.009876082821673345,
+        "position_from_end": -0.014176033240246815
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.046444760484368915,
+        "char": 0.04697603097756939,
+        "position": 0.046852283953223425,
+        "position_from_end": 0.04790799796552514
       },
       "pairwise_within_median": {
         "dfa": 4.972217878178887,
@@ -3090,41 +2181,17 @@
         "position": 8.979172498797928,
         "position_from_end": 9.027290666376892
       },
-      "pairwise_ratio": {
-        "dfa": 0.5449801608819794,
-        "char": 0.8054030244626659,
-        "position": 0.8850440679667718,
-        "position_from_end": 0.8135448784548571
+      "pairwise_between_median": {
+        "dfa": 9.12366767651138,
+        "char": 9.111970690103318,
+        "position": 9.111979462316818,
+        "position_from_end": 9.148652810244535
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9925781353105141,
-        "char": 0.9982036647948793,
-        "position": 0.9980348837342418,
-        "position_from_end": 1.004542276383715
-      },
-      "silhouette": {
-        "dfa": 0.3203848350372362,
-        "char": 0.024789964231547234,
-        "position": -0.019232637850193943,
-        "position_from_end": 0.08222888369416131
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3979445747402714,
-        "char": -0.270664047662246,
-        "position": -0.08628175193950048,
-        "position_from_end": -0.08702713679144317
-      },
-      "centroid_gap": {
-        "dfa": 8.433433295843376,
-        "char": 5.53020633593216,
-        "position": 0.3704268802011068,
-        "position_from_end": 0.6295741248307678
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.233920096848748,
-        "char": 3.4192697297487906,
-        "position": -2.090958784980609,
-        "position_from_end": -2.0959906731405957
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.002021888705517,
+        "char": 8.997699297365562,
+        "position": 8.997172181369159,
+        "position_from_end": 8.986814423396707
       }
     },
     {
@@ -3133,18 +2200,7 @@
       "run_id": 39,
       "n_words": 20,
       "n_dfa_states": 38,
-      "within_corr": {
-        "dfa": 0.7430457389885841,
-        "char": 0.45278368437014876,
-        "position": 0.26967247916797804,
-        "position_from_end": 0.35091391404703104
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.05517247109772988,
-        "char": 0.06585729097086289,
-        "position": 0.061391270697526826,
-        "position_from_end": 0.06819003740979998
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7444953249574955,
         "char": 0.45234411152972825,
@@ -3156,6 +2212,18 @@
         "char": 0.06820205022224338,
         "position": 0.06395782481180814,
         "position_from_end": 0.07060439106115927
+      },
+      "between_cosine": {
+        "dfa": 0.019101192775047425,
+        "char": 0.03861991608595428,
+        "position": 0.02271140855553325,
+        "position_from_end": 0.004446044523532138
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.0649958695872815,
+        "char": 0.0642845796646871,
+        "position": 0.0646468399929744,
+        "position_from_end": 0.06325862952866054
       },
       "pairwise_within_median": {
         "dfa": 4.3176470196563,
@@ -3169,41 +2237,17 @@
         "position": 8.661922824893528,
         "position_from_end": 8.636127768507668
       },
-      "pairwise_ratio": {
-        "dfa": 0.49433476684728855,
-        "char": 0.7577078239179191,
-        "position": 0.8661670595201453,
-        "position_from_end": 0.8153063799156947
+      "pairwise_between_median": {
+        "dfa": 8.734257246749793,
+        "char": 8.724584550071821,
+        "position": 8.745998935447293,
+        "position_from_end": 8.800536613832534
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0047542957913032,
-        "char": 0.9980097515877052,
-        "position": 1.0025332138889953,
-        "position_from_end": 0.9989877557917112
-      },
-      "silhouette": {
-        "dfa": 0.2927513417395678,
-        "char": 0.026606810672491592,
-        "position": 0.05043377937488755,
-        "position_from_end": 0.09494434498942074
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.448816949960015,
-        "char": -0.32316814120004145,
-        "position": -0.07621406846861957,
-        "position_from_end": -0.0816389088431515
-      },
-      "centroid_gap": {
-        "dfa": 8.085011467493288,
-        "char": 5.192690566207821,
-        "position": 1.0235401457879973,
-        "position_from_end": 0.5165968051014707
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.752049454895686,
-        "char": 3.45806827513524,
-        "position": -2.583334044794086,
-        "position_from_end": -2.3435139393606623
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.64003519977055,
+        "char": 8.642728923039163,
+        "position": 8.640169030483323,
+        "position_from_end": 8.645012205425587
       }
     },
     {
@@ -3212,18 +2256,7 @@
       "run_id": 40,
       "n_words": 21,
       "n_dfa_states": 45,
-      "within_corr": {
-        "dfa": 0.6266604515916445,
-        "char": 0.439934305144539,
-        "position": 0.2615921659507666,
-        "position_from_end": 0.2898426035070796
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07405323873940944,
-        "char": 0.06985266800833892,
-        "position": 0.07242227455524532,
-        "position_from_end": 0.07265614442638291
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6264041642071397,
         "char": 0.43995410316852906,
@@ -3235,6 +2268,18 @@
         "char": 0.06944220963064421,
         "position": 0.07196197282456995,
         "position_from_end": 0.07219936681137838
+      },
+      "between_cosine": {
+        "dfa": 0.030960241589610735,
+        "char": 0.043958705396537415,
+        "position": 0.03299270052300726,
+        "position_from_end": 0.02165376290237523
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07029895036097708,
+        "char": 0.07058380452921281,
+        "position": 0.07022025695545006,
+        "position_from_end": 0.07012995067614232
       },
       "pairwise_within_median": {
         "dfa": 5.118719394231757,
@@ -3248,41 +2293,17 @@
         "position": 8.608448839306655,
         "position_from_end": 8.643604287286413
       },
-      "pairwise_ratio": {
-        "dfa": 0.5862108507999244,
-        "char": 0.7837728317112556,
-        "position": 0.8926187366734983,
-        "position_from_end": 0.8616067117423619
+      "pairwise_between_median": {
+        "dfa": 8.731874183575616,
+        "char": 8.73074550637151,
+        "position": 8.745497609413965,
+        "position_from_end": 8.730459223782827
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9979992174044425,
-        "char": 1.000661334538354,
-        "position": 0.9963195805890158,
-        "position_from_end": 1.0009723368291166
-      },
-      "silhouette": {
-        "dfa": 0.17288632420519318,
-        "char": 0.0860243690284209,
-        "position": 0.008492802976949869,
-        "position_from_end": 0.06637933386144033
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.40257194344139585,
-        "char": -0.2329498573703814,
-        "position": -0.059994216556456016,
-        "position_from_end": -0.0646487004766162
-      },
-      "centroid_gap": {
-        "dfa": 8.61307100406786,
-        "char": 4.762786982376005,
-        "position": 0.1260734811688602,
-        "position_from_end": -0.607332318021955
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.930424347956049,
-        "char": 2.5242827591598527,
-        "position": -2.712285488471017,
-        "position_from_end": -2.5517705821998753
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.637389154755953,
+        "char": 8.635017893187605,
+        "position": 8.640397324868292,
+        "position_from_end": 8.635376401627797
       }
     },
     {
@@ -3291,18 +2312,7 @@
       "run_id": 41,
       "n_words": 21,
       "n_dfa_states": 49,
-      "within_corr": {
-        "dfa": 0.7039761038950556,
-        "char": 0.41356406922143946,
-        "position": 0.340737453942,
-        "position_from_end": 0.29929271320699585
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.06593091862999806,
-        "char": 0.07252144464040917,
-        "position": 0.07337254796746664,
-        "position_from_end": 0.07481264992535115
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7034488241929853,
         "char": 0.4129809055421624,
@@ -3314,6 +2324,18 @@
         "char": 0.07214568606938822,
         "position": 0.07317381339112906,
         "position_from_end": 0.074437125761664
+      },
+      "between_cosine": {
+        "dfa": 0.026874885971132707,
+        "char": 0.04215653235614008,
+        "position": 0.01881198825264035,
+        "position_from_end": 0.020379933495414077
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07327886671784214,
+        "char": 0.07279812228411114,
+        "position": 0.07265735350881163,
+        "position_from_end": 0.0723520235747342
       },
       "pairwise_within_median": {
         "dfa": 4.96702731991941,
@@ -3327,41 +2349,17 @@
         "position": 9.16340935681352,
         "position_from_end": 9.17662936026546
       },
-      "pairwise_ratio": {
-        "dfa": 0.5366007213057955,
-        "char": 0.8217490054629186,
-        "position": 0.8611660419264352,
-        "position_from_end": 0.9011625657787264
+      "pairwise_between_median": {
+        "dfa": 9.25646784043144,
+        "char": 9.263539135824164,
+        "position": 9.336780628550402,
+        "position_from_end": 9.256786574900893
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0040054486895698,
-        "char": 1.000213476919678,
-        "position": 0.9974192754302328,
-        "position_from_end": 0.9990162029849528
-      },
-      "silhouette": {
-        "dfa": 0.43084152615013704,
-        "char": 0.07329461116124036,
-        "position": 0.09960884798115167,
-        "position_from_end": 0.08087493450009019
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4826027476671034,
-        "char": -0.27449183102658226,
-        "position": -0.07073771548920528,
-        "position_from_end": -0.08527396289715916
-      },
-      "centroid_gap": {
-        "dfa": 8.504778617005671,
-        "char": 5.142094337972033,
-        "position": 1.3050295723373573,
-        "position_from_end": -0.13345486603750434
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.965568656655155,
-        "char": 2.3847110397988525,
-        "position": -3.002053647006816,
-        "position_from_end": -2.3059757505821104
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.182819566892524,
+        "char": 9.184510847103507,
+        "position": 9.187266268702617,
+        "position_from_end": 9.185842432749869
       }
     },
     {
@@ -3370,18 +2368,7 @@
       "run_id": 42,
       "n_words": 22,
       "n_dfa_states": 43,
-      "within_corr": {
-        "dfa": 0.6961116399331045,
-        "char": 0.4676402973680074,
-        "position": 0.29713570946073103,
-        "position_from_end": 0.39987171103090363
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.17161288226029087,
-        "char": 0.16792463203087668,
-        "position": 0.16870857415718024,
-        "position_from_end": 0.1696882783349865
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6958447191684416,
         "char": 0.4674910658193794,
@@ -3393,6 +2380,18 @@
         "char": 0.16704771075614555,
         "position": 0.16786612829093697,
         "position_from_end": 0.1688588326630388
+      },
+      "between_cosine": {
+        "dfa": 0.12824799391414632,
+        "char": 0.14309171293720144,
+        "position": 0.14007268575435067,
+        "position_from_end": 0.11379989233941917
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.1670564820915383,
+        "char": 0.1673380187844098,
+        "position": 0.16720050402733452,
+        "position_from_end": 0.1669600006915447
       },
       "pairwise_within_median": {
         "dfa": 5.103305098634593,
@@ -3406,41 +2405,17 @@
         "position": 9.101656911297127,
         "position_from_end": 9.09610207364036
       },
-      "pairwise_ratio": {
-        "dfa": 0.5540772790852758,
-        "char": 0.8104295660675632,
-        "position": 0.9286361129612013,
-        "position_from_end": 0.824441940570085
+      "pairwise_between_median": {
+        "dfa": 9.210457261592861,
+        "char": 9.20957013767361,
+        "position": 9.19805959262986,
+        "position_from_end": 9.269112101901566
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9959989480714964,
-        "char": 1.0013294081484794,
-        "position": 0.9980413788355594,
-        "position_from_end": 0.9971132703031438
-      },
-      "silhouette": {
-        "dfa": 0.2892246402883274,
-        "char": 0.05205288613383071,
-        "position": -0.027083464952303776,
-        "position_from_end": 0.07870601222406558
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.3986396462547048,
-        "char": -0.2305901711556003,
-        "position": -0.06760259282210905,
-        "position_from_end": -0.07367599725308473
-      },
-      "centroid_gap": {
-        "dfa": 8.641841331264835,
-        "char": 4.436303243104134,
-        "position": 0.05804008219237655,
-        "position_from_end": 0.18381148429519012
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.207481567567269,
-        "char": 1.917254267847079,
-        "position": -2.7171273047641122,
-        "position_from_end": -2.1819348067210633
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.120227544437324,
+        "char": 9.11829687110068,
+        "position": 9.119756250526324,
+        "position_from_end": 9.122721516107687
       }
     },
     {
@@ -3449,18 +2424,7 @@
       "run_id": 43,
       "n_words": 22,
       "n_dfa_states": 46,
-      "within_corr": {
-        "dfa": 0.7414287348116361,
-        "char": 0.3730704087351958,
-        "position": 0.33278758572315764,
-        "position_from_end": 0.3819635553240045
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.10162191860661286,
-        "char": 0.10130340229015485,
-        "position": 0.09743045460413925,
-        "position_from_end": 0.10199371718370026
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7414703453721222,
         "char": 0.3748477993535098,
@@ -3472,6 +2436,18 @@
         "char": 0.10059821390104802,
         "position": 0.09646240722662207,
         "position_from_end": 0.1012405563905334
+      },
+      "between_cosine": {
+        "dfa": 0.04403529296111944,
+        "char": 0.07229371815925094,
+        "position": 0.044533197778793554,
+        "position_from_end": 0.028389360973358414
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09981758631467533,
+        "char": 0.09980685985094487,
+        "position": 0.10068016312274934,
+        "position_from_end": 0.09953388712502431
       },
       "pairwise_within_median": {
         "dfa": 4.86781443823825,
@@ -3485,41 +2461,17 @@
         "position": 9.484894213992213,
         "position_from_end": 9.475234784927045
       },
-      "pairwise_ratio": {
-        "dfa": 0.5064194024347043,
-        "char": 0.8441004625500387,
-        "position": 0.8588347273243314,
-        "position_from_end": 0.782243611085018
+      "pairwise_between_median": {
+        "dfa": 9.612219466385644,
+        "char": 9.60941501898722,
+        "position": 9.658174851180986,
+        "position_from_end": 9.661178217969066
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0005646939815451,
-        "char": 1.0006875768639483,
-        "position": 1.0013131446638521,
-        "position_from_end": 0.9998579613053149
-      },
-      "silhouette": {
-        "dfa": 0.3196518478198857,
-        "char": 0.007625261828988215,
-        "position": 0.04759429852244157,
-        "position_from_end": 0.10693555777133769
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.43184220415027597,
-        "char": -0.2909059604884616,
-        "position": -0.08370488236936888,
-        "position_from_end": -0.10777897151668483
-      },
-      "centroid_gap": {
-        "dfa": 8.89607944786836,
-        "char": 5.146475736771441,
-        "position": 1.2556789968164228,
-        "position_from_end": 1.61600670121092
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.8238540128258505,
-        "char": 3.1051958274151485,
-        "position": -2.6104170421406363,
-        "position_from_end": -0.9275514362433407
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.475632507472382,
+        "char": 9.474565753761057,
+        "position": 9.472626044155353,
+        "position_from_end": 9.476790505099483
       }
     },
     {
@@ -3528,18 +2480,7 @@
       "run_id": 44,
       "n_words": 23,
       "n_dfa_states": 38,
-      "within_corr": {
-        "dfa": 0.7333993280591032,
-        "char": 0.3953488816748805,
-        "position": 0.30092423387494466,
-        "position_from_end": 0.3968828673598296
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.10703438594183763,
-        "char": 0.10541648192142833,
-        "position": 0.11016313207855204,
-        "position_from_end": 0.11024346576642985
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7329171091230301,
         "char": 0.39389480594540444,
@@ -3551,6 +2492,18 @@
         "char": 0.10508854983926358,
         "position": 0.1098386549659943,
         "position_from_end": 0.10991187251078893
+      },
+      "between_cosine": {
+        "dfa": 0.05676792924297626,
+        "char": 0.08270058452172399,
+        "position": 0.06549573092771452,
+        "position_from_end": 0.038469471254326794
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.11036394916289761,
+        "char": 0.1105611774934814,
+        "position": 0.11013619561670722,
+        "position_from_end": 0.11012152026050571
       },
       "pairwise_within_median": {
         "dfa": 4.982883462384156,
@@ -3564,41 +2517,17 @@
         "position": 9.21572991637882,
         "position_from_end": 9.214519272781473
       },
-      "pairwise_ratio": {
-        "dfa": 0.5333618351533047,
-        "char": 0.8166656126709497,
-        "position": 0.8575204092076303,
-        "position_from_end": 0.8014738683025525
+      "pairwise_between_median": {
+        "dfa": 9.342407225203733,
+        "char": 9.345588755008002,
+        "position": 9.377003934639209,
+        "position_from_end": 9.415146510750064
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.000104423410803,
-        "char": 1.0014164732835475,
-        "position": 1.001842068378559,
-        "position_from_end": 1.0016095014003603
-      },
-      "silhouette": {
-        "dfa": 0.4074419482649393,
-        "char": -0.1167561559537208,
-        "position": 0.011328963829184652,
-        "position_from_end": 0.11247620257358143
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4644059104712372,
-        "char": -0.35339680322720113,
-        "position": -0.07769328594117868,
-        "position_from_end": -0.0885515363679855
-      },
-      "centroid_gap": {
-        "dfa": 8.418094837727534,
-        "char": 5.899737449456197,
-        "position": 0.5345172408998362,
-        "position_from_end": 0.5639402610405204
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.6396337300877075,
-        "char": 4.460576579748999,
-        "position": -2.708307059000217,
-        "position_from_end": -2.366501431406655
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.202358371578738,
+        "char": 9.20142687566681,
+        "position": 9.198975230912968,
+        "position_from_end": 9.200016531709494
       }
     },
     {
@@ -3607,18 +2536,7 @@
       "run_id": 45,
       "n_words": 23,
       "n_dfa_states": 41,
-      "within_corr": {
-        "dfa": 0.6866632395833354,
-        "char": 0.47113842951082296,
-        "position": 0.31531891418568714,
-        "position_from_end": 0.2810468740758393
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.11287892654474005,
-        "char": 0.11590311047685137,
-        "position": 0.10922930344167882,
-        "position_from_end": 0.11251169422780423
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6869349242854297,
         "char": 0.47237509061508504,
@@ -3630,6 +2548,18 @@
         "char": 0.11621322466197719,
         "position": 0.10918411376875684,
         "position_from_end": 0.11250783411378419
+      },
+      "between_cosine": {
+        "dfa": 0.07430976496772357,
+        "char": 0.0764190723617081,
+        "position": 0.06838145235331697,
+        "position_from_end": 0.07289237086386413
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.11105735359339994,
+        "char": 0.11067559293429258,
+        "position": 0.11156795291279736,
+        "position_from_end": 0.11085590032206102
       },
       "pairwise_within_median": {
         "dfa": 4.902207766590007,
@@ -3643,41 +2573,17 @@
         "position": 8.890577215302201,
         "position_from_end": 8.844761283126173
       },
-      "pairwise_ratio": {
-        "dfa": 0.5451522139018907,
-        "char": 0.7706764938311664,
-        "position": 0.8664632508779755,
-        "position_from_end": 0.9141851679637669
+      "pairwise_between_median": {
+        "dfa": 8.99236514422785,
+        "char": 9.037071044313139,
+        "position": 9.050125348302764,
+        "position_from_end": 8.944332985953519
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9947507190844403,
-        "char": 0.9944636036709383,
-        "position": 1.0022263711576187,
-        "position_from_end": 0.9958314443106329
-      },
-      "silhouette": {
-        "dfa": 0.23210086858286866,
-        "char": 0.015462270641565735,
-        "position": 0.02285282606774498,
-        "position_from_end": 0.035604145874372495
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.45155772662151794,
-        "char": -0.2860603924498278,
-        "position": -0.06693342444075058,
-        "position_from_end": -0.07277191455918103
-      },
-      "centroid_gap": {
-        "dfa": 8.272640540518834,
-        "char": 5.510452639513913,
-        "position": 0.44986770785309194,
-        "position_from_end": -0.8735210168361514
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.611598967273118,
-        "char": 3.074684415105185,
-        "position": -3.0746216296203563,
-        "position_from_end": -2.629077647345033
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.878397938651032,
+        "char": 8.878520377117155,
+        "position": 8.871162511652997,
+        "position_from_end": 8.88204866727476
       }
     },
     {
@@ -3686,18 +2592,7 @@
       "run_id": 46,
       "n_words": 24,
       "n_dfa_states": 45,
-      "within_corr": {
-        "dfa": 0.7856717557369781,
-        "char": 0.4392480071816486,
-        "position": 0.311317445956753,
-        "position_from_end": 0.3283746021584533
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.08002391053202819,
-        "char": 0.08403403349024499,
-        "position": 0.08717420767993089,
-        "position_from_end": 0.08593606614265513
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7839759801707783,
         "char": 0.43954773998090857,
@@ -3709,6 +2604,18 @@
         "char": 0.08406690020952005,
         "position": 0.08719326340724348,
         "position_from_end": 0.08588879653367078
+      },
+      "between_cosine": {
+        "dfa": 0.0392606365379927,
+        "char": 0.058522462042311055,
+        "position": 0.04254675682058767,
+        "position_from_end": 0.033311981072136954
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.08655327883719799,
+        "char": 0.0862944026494508,
+        "position": 0.08592753841611288,
+        "position_from_end": 0.08618603738176596
       },
       "pairwise_within_median": {
         "dfa": 3.5278225067316002,
@@ -3722,41 +2629,17 @@
         "position": 8.028134211757505,
         "position_from_end": 8.021519545739364
       },
-      "pairwise_ratio": {
-        "dfa": 0.4344712335987089,
-        "char": 0.7677969558760948,
-        "position": 0.853691654210529,
-        "position_from_end": 0.8831323599430143
+      "pairwise_between_median": {
+        "dfa": 8.119806868479598,
+        "char": 8.135598587135078,
+        "position": 8.17308010843286,
+        "position_from_end": 8.135706891362863
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.003331092697611,
-        "char": 1.0002594708726646,
-        "position": 0.9988193184625067,
-        "position_from_end": 0.9978511294913267
-      },
-      "silhouette": {
-        "dfa": 0.38837182309087964,
-        "char": 0.09344230085560741,
-        "position": 0.05604538281902033,
-        "position_from_end": 0.10069587063604259
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.45011324822033677,
-        "char": -0.30623845269544825,
-        "position": -0.060880262855313866,
-        "position_from_end": -0.066116802898519
-      },
-      "centroid_gap": {
-        "dfa": 7.480251460201341,
-        "char": 5.191387680887529,
-        "position": 0.6546652432377034,
-        "position_from_end": 0.2065543058192958
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 5.821833904515247,
-        "char": 2.494409553517436,
-        "position": -2.901546764777274,
-        "position_from_end": -2.6965979843622883
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.035780561312933,
+        "char": 8.036343354363098,
+        "position": 8.037721496022462,
+        "position_from_end": 8.038914660844872
       }
     },
     {
@@ -3765,18 +2648,7 @@
       "run_id": 47,
       "n_words": 24,
       "n_dfa_states": 47,
-      "within_corr": {
-        "dfa": 0.7046705815903147,
-        "char": 0.4794924273767722,
-        "position": 0.27030433964828104,
-        "position_from_end": 0.28259970578077775
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07671602600829226,
-        "char": 0.07769703339218957,
-        "position": 0.07831356934971351,
-        "position_from_end": 0.07827099261327032
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.707953265726299,
         "char": 0.4819231406922013,
@@ -3788,6 +2660,18 @@
         "char": 0.07723591732406716,
         "position": 0.07786862999309323,
         "position_from_end": 0.07781560857963785
+      },
+      "between_cosine": {
+        "dfa": 0.03870717621216772,
+        "char": 0.05112886339340009,
+        "position": 0.038014338621691485,
+        "position_from_end": 0.0336598401665675
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07773711761080704,
+        "char": 0.07766573049950726,
+        "position": 0.077592401253594,
+        "position_from_end": 0.07760150321295485
       },
       "pairwise_within_median": {
         "dfa": 4.901221581094169,
@@ -3801,41 +2685,17 @@
         "position": 8.925872092410772,
         "position_from_end": 8.914964387967599
       },
-      "pairwise_ratio": {
-        "dfa": 0.5439326572583504,
-        "char": 0.7303597797439897,
-        "position": 0.8712397607900644,
-        "position_from_end": 0.8999174482181056
+      "pairwise_between_median": {
+        "dfa": 9.010713947197782,
+        "char": 9.012485053720944,
+        "position": 9.050130444054922,
+        "position_from_end": 9.010713947197782
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9996145036088194,
-        "char": 0.9997048721696995,
-        "position": 1.0018027237256237,
-        "position_from_end": 1.000212050713407
-      },
-      "silhouette": {
-        "dfa": 0.30640929979105436,
-        "char": 0.09030371058989047,
-        "position": 0.03383283140357602,
-        "position_from_end": 0.059498651583350166
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4384484182221305,
-        "char": -0.27750021148154047,
-        "position": -0.0653837985232234,
-        "position_from_end": -0.06596794674718297
-      },
-      "centroid_gap": {
-        "dfa": 8.226985461880798,
-        "char": 5.296163236055824,
-        "position": 0.4000867169924449,
-        "position_from_end": -0.6916586452631588
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.689484472054254,
-        "char": 2.185022232992764,
-        "position": -3.0002343110193825,
-        "position_from_end": -2.8375215158812583
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.912637937287837,
+        "char": 8.912871491872933,
+        "position": 8.909980493605971,
+        "position_from_end": 8.913242772621384
       }
     },
     {
@@ -3844,18 +2704,7 @@
       "run_id": 48,
       "n_words": 25,
       "n_dfa_states": 46,
-      "within_corr": {
-        "dfa": 0.6784687382036468,
-        "char": 0.3671906526919842,
-        "position": 0.259760518426498,
-        "position_from_end": 0.33261094675435576
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.09990230047357568,
-        "char": 0.09109275461462318,
-        "position": 0.09320104213643052,
-        "position_from_end": 0.09498579012991884
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.6797671681256053,
         "char": 0.3706085486603766,
@@ -3867,6 +2716,18 @@
         "char": 0.08936849656564139,
         "position": 0.09151456591624729,
         "position_from_end": 0.09346448796556804
+      },
+      "between_cosine": {
+        "dfa": 0.052674356193027176,
+        "char": 0.07064789175944088,
+        "position": 0.05715777459067825,
+        "position_from_end": 0.03811285644457707
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.09337570631187794,
+        "char": 0.09405112957046259,
+        "position": 0.09417203174071606,
+        "position_from_end": 0.09374435196129412
       },
       "pairwise_within_median": {
         "dfa": 4.907785784012078,
@@ -3880,41 +2741,17 @@
         "position": 8.749333746356022,
         "position_from_end": 8.752648933599746
       },
-      "pairwise_ratio": {
-        "dfa": 0.555463225404719,
-        "char": 0.8238582126632233,
-        "position": 0.9088982062595048,
-        "position_from_end": 0.8602112545139122
+      "pairwise_between_median": {
+        "dfa": 8.835482817852055,
+        "char": 8.831025709518604,
+        "position": 8.83832494148156,
+        "position_from_end": 8.852958769869348
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 0.9942493733780372,
-        "char": 1.0018525966905947,
-        "position": 1.0001189090976532,
-        "position_from_end": 1.0004533263901567
-      },
-      "silhouette": {
-        "dfa": 0.2569854383364565,
-        "char": -0.05469350822038423,
-        "position": -0.013048423610888487,
-        "position_from_end": 0.06975637784068575
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4160141910904529,
-        "char": -0.2634028722013876,
-        "position": -0.06734109473975584,
-        "position_from_end": -0.07373862830960938
-      },
-      "centroid_gap": {
-        "dfa": 8.392606693291343,
-        "char": 4.744431024784343,
-        "position": 0.18361018064447965,
-        "position_from_end": 0.32752481478272166
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 7.269963203329141,
-        "char": 2.9125011657813373,
-        "position": -2.837338555529768,
-        "position_from_end": -2.3246404610343383
+      "shuffle_pairwise_between_median": {
+        "dfa": 8.752125692407501,
+        "char": 8.747939689178931,
+        "position": 8.748393025624063,
+        "position_from_end": 8.748822145132593
       }
     },
     {
@@ -3923,18 +2760,7 @@
       "run_id": 49,
       "n_words": 25,
       "n_dfa_states": 44,
-      "within_corr": {
-        "dfa": 0.7023318579998011,
-        "char": 0.4563830979258286,
-        "position": 0.2748515532564348,
-        "position_from_end": 0.3043870090344315
-      },
-      "shuffle_within_corr": {
-        "dfa": 0.07360122602009153,
-        "char": 0.07705314010789306,
-        "position": 0.07419773263418715,
-        "position_from_end": 0.07368994558385747
-      },
+      "hidden_size": 100,
       "within_cosine": {
         "dfa": 0.7021959466361698,
         "char": 0.4550907516455438,
@@ -3946,6 +2772,18 @@
         "char": 0.0765392882782336,
         "position": 0.073558252178009,
         "position_from_end": 0.07319905037460638
+      },
+      "between_cosine": {
+        "dfa": 0.03451646613060828,
+        "char": 0.04661273468135408,
+        "position": 0.032333487327331184,
+        "position_from_end": 0.022273909377470293
+      },
+      "shuffle_between_cosine": {
+        "dfa": 0.07474648062753675,
+        "char": 0.07450600040315589,
+        "position": 0.07487512191682268,
+        "position_from_end": 0.07497666384493884
       },
       "pairwise_within_median": {
         "dfa": 5.458940103946496,
@@ -3959,41 +2797,17 @@
         "position": 9.611776785484306,
         "position_from_end": 9.614111983272998
       },
-      "pairwise_ratio": {
-        "dfa": 0.5631253450603153,
-        "char": 0.7749327856627743,
-        "position": 0.8760265414910873,
-        "position_from_end": 0.8729478573391388
+      "pairwise_between_median": {
+        "dfa": 9.694005343271842,
+        "char": 9.707196470248002,
+        "position": 9.744311255338818,
+        "position_from_end": 9.736857621949047
       },
-      "shuffle_pairwise_ratio": {
-        "dfa": 1.0010747487680562,
-        "char": 0.9965898631193915,
-        "position": 1.0003949515889385,
-        "position_from_end": 1.0007325289295381
-      },
-      "silhouette": {
-        "dfa": 0.36652918909027055,
-        "char": 0.09656763953028434,
-        "position": 0.050140144662362676,
-        "position_from_end": 0.060804512217554105
-      },
-      "shuffle_silhouette": {
-        "dfa": -0.4517649025596645,
-        "char": -0.2566368391766814,
-        "position": -0.06487957238983148,
-        "position_from_end": -0.07707816919395617
-      },
-      "centroid_gap": {
-        "dfa": 8.69672336604577,
-        "char": 5.008468836186166,
-        "position": 0.8903259001090067,
-        "position_from_end": 0.3042994468301128
-      },
-      "shuffle_centroid_gap": {
-        "dfa": 6.897915684390255,
-        "char": 2.172330513428056,
-        "position": -3.3150735233051574,
-        "position_from_end": -2.5842413131623796
+      "shuffle_pairwise_between_median": {
+        "dfa": 9.609198153403689,
+        "char": 9.610948642230792,
+        "position": 9.608078188484038,
+        "position_from_end": 9.60722897667118
       }
     }
   ]

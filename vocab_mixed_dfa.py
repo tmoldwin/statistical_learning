@@ -19,6 +19,8 @@ N_WORDS_MIN = 1
 N_WORDS_MAX = 25
 RUNS_PER_COUNT = 2  # 2 × 25 sizes = 50 runs
 HIDDEN_SIZE = 100
+# Extra capacity ablation (separate comparison dirs / task names).
+HIDDEN_SIZE_ABLATION: tuple[int, ...] = (50, 150)
 DEFAULT_SEEDS: tuple[int, ...] = (1,)
 # Fixed RNG so regimes are reproducible across machines.
 BANK_SAMPLE_SEED = 20260714
@@ -79,8 +81,17 @@ def regime_name(run_id: int) -> str:
     return f"{TASK_PREFIX}_r{run_id:02d}"
 
 
-def task_name(run_id: int) -> str:
-    return f"{regime_name(run_id)}_ns"
+def task_name(run_id: int, *, hidden_size: int = HIDDEN_SIZE) -> str:
+    """Task folder name. H=100 keeps legacy ``mixeddfa_rXX_ns`` names."""
+    if int(hidden_size) == HIDDEN_SIZE:
+        return f"{regime_name(run_id)}_ns"
+    return f"{TASK_PREFIX}_h{int(hidden_size)}_r{run_id:02d}_ns"
+
+
+def comparison_name_for_h(hidden_size: int) -> str:
+    if int(hidden_size) == HIDDEN_SIZE:
+        return COMPARISON_NAME
+    return f"mixed_vocab_dfa_h{int(hidden_size)}_ns"
 
 
 def _sample_vocab(n_words: int, rng: random.Random) -> list[str]:
@@ -137,7 +148,7 @@ def iter_task_names() -> Iterable[str]:
         yield entry["task"]
 
 
-def mixed_dfa_task_config(run_id: int) -> dict[str, object]:
+def mixed_dfa_task_config(run_id: int, *, hidden_size: int = HIDDEN_SIZE) -> dict[str, object]:
     entry = run_plan()[run_id]
     words: list[str] = list(entry["words"])
     n_words = int(entry["n_words"])
@@ -170,7 +181,7 @@ def mixed_dfa_task_config(run_id: int) -> dict[str, object]:
         "early_stop_patience": 3,
         "min_checkpoint_iter": max(1_000, int(steps * 0.08)),
         "viz_length": int(viz_length),
-        "hidden_size": HIDDEN_SIZE,
+        "hidden_size": int(hidden_size),
         "sequence_length": int(sequence_length),
         "eval_interval": 50,
         "eval_iterations": 20,
@@ -185,6 +196,8 @@ def mixed_dfa_task_config(run_id: int) -> dict[str, object]:
         "sweep_n_words": int(n_words),
         "sweep_length": "mixed",
         "mixed_dfa_run_id": int(run_id),
+        "mixed_dfa_hidden_size": int(hidden_size),
+        "comparison": comparison_name_for_h(int(hidden_size)),
     }
 
 
@@ -195,7 +208,24 @@ def register_mixed_dfa_regimes(regimes: dict[str, list[str]]) -> None:
 
 def register_mixed_dfa_tasks(tasks: dict[str, dict]) -> None:
     for entry in run_plan():
-        tasks[entry["task"]] = mixed_dfa_task_config(int(entry["run_id"]))
+        rid = int(entry["run_id"])
+        tasks[task_name(rid)] = mixed_dfa_task_config(rid)
+        for h in HIDDEN_SIZE_ABLATION:
+            tasks[task_name(rid, hidden_size=h)] = mixed_dfa_task_config(
+                rid, hidden_size=h,
+            )
+
+
+def iter_tasks_for_h(hidden_size: int = HIDDEN_SIZE) -> Iterable[dict]:
+    """Run plan entries with task names rewritten for ``hidden_size``."""
+    for entry in run_plan():
+        rid = int(entry["run_id"])
+        yield {
+            **entry,
+            "task": task_name(rid, hidden_size=hidden_size),
+            "hidden_size": int(hidden_size),
+            "comparison": comparison_name_for_h(hidden_size),
+        }
 
 
 def write_run_manifest(out_path: Path) -> Path:

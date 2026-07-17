@@ -126,20 +126,25 @@ def paper_manifest() -> list[FigureRef]:
                   max_w=1400),
         FigureRef("compare", "fig_mixed_decoding_curves.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "decoding_curves_by_dfa.png",
-                  max_w=1200),
-        FigureRef("compare", "fig_mixed_learning_decode.jpg",
-                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "learning_decode_by_dfa.png",
+                  / "decoding" / "decoding_and_learning_combined.png",
                   max_w=1400),
-        FigureRef("compare", "fig_mixed_decoding_by_position_word_length.jpg",
-                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "decoding_by_position_word_length.png",
-                  max_w=1100),
         FigureRef("compare", "fig_mixed_cosine_within.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "fig15_geometry_and_selectivity.png",
                   max_w=1200),
+        FigureRef("compare", "fig_mixed_decoding_vs_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "decoding_vs_dfa_pc_scatters.png",
+                  max_w=1200),
+        FigureRef("compare", "fig_mixed_decoding_by_position_word_length.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "decoding_by_position_word_length.png",
+                  max_w=1100),
+        # Standalone leftovers (also produced by sweep; not required by draft order).
+        FigureRef("compare", "fig_mixed_learning_decode.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "decoding" / "learning_decode_by_dfa.png",
+                  max_w=1400),
         # Leftover metrics board (not in draft; weight scatters live on fig_weight_matrices).
         FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"

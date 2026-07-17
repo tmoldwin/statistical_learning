@@ -890,19 +890,32 @@ def _category_means(
     unit_acts: np.ndarray,
     labels: list,
     valid_mask: list[bool] | None,
+    *,
+    feature: str | None = None,
 ) -> tuple[list, list[float], list[float]]:
     groups: dict[Any, list[float]] = defaultdict(list)
     for i, lbl in enumerate(labels):
         if valid_mask is not None and not valid_mask[i]:
             continue
         groups[lbl].append(float(unit_acts[i]))
-    cats = sorted(groups.keys(), key=lambda k: (str(type(k)), str(k)))
+    if feature == "position_from_end" and groups and all(
+        isinstance(c, (int, np.integer)) for c in groups
+    ):
+        # 0 = last letter; show high→low so 0 sits at the word end (right).
+        cats = sorted(groups.keys(), key=lambda c: int(c), reverse=True)
+    else:
+        cats = sorted(groups.keys(), key=lambda k: (str(type(k)), str(k)))
     means = [float(np.mean(groups[c])) for c in cats]
     sems = [
         float(np.std(groups[c]) / np.sqrt(len(groups[c]))) if len(groups[c]) > 1 else 0.0
         for c in cats
     ]
     return cats, means, sems
+
+
+def _feature_category_label(feature: str, category) -> str:
+    del feature
+    return str(category)
 
 
 def _category_color_map(
@@ -955,6 +968,7 @@ def _set_all_timestep_xticks(
     labels: TimestepLabels,
     indices: list[int] | None = None,
     *,
+    x_positions: list[int] | None = None,
     feature: str | None = None,
     automaton: MinimizedVocabAutomaton | None = None,
     show_labels: bool = True,
@@ -964,7 +978,8 @@ def _set_all_timestep_xticks(
     n = len(labels.chars)
     if indices is None:
         indices = list(range(n))
-    ax.set_xticks(indices)
+    ticks = indices if x_positions is None else x_positions
+    ax.set_xticks(ticks)
     if show_labels:
         ax.set_xticklabels(
             _timestep_tick_labels(
@@ -986,6 +1001,12 @@ def _set_all_timestep_xticks(
     ax.tick_params(axis="x", pad=1, labelbottom=True)
 
 
+def _feature_k(k: int | dict[str, int], feat: str) -> int:
+    if isinstance(k, dict):
+        return int(k.get(feat, 2))
+    return int(k)
+
+
 def _example_panel_figsize(
     n_timesteps: int,
     n_rows: int,
@@ -993,9 +1014,13 @@ def _example_panel_figsize(
     *,
     compact: bool = False,
 ) -> tuple[float, float]:
-    width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
+    if n_cols == 4:
+        trace_w = max(2.8, 0.11 * n_timesteps + 1.0)
+        width = 2 * trace_w + 2 * 1.45 + 0.6
+    else:
+        width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
     if compact:
-        row_h = max(1.85, 1.45 + 0.006 * n_timesteps)
+        row_h = max(1.25, 0.95 + 0.004 * n_timesteps)
     else:
         row_h = max(1.7, 1.2 + 0.012 * n_timesteps)
     height = row_h * n_rows
@@ -1014,47 +1039,49 @@ def _plot_unit_timestep_trace(
     compact: bool = False,
     show_xticks: bool = True,
     ylim: tuple[float, float] | None = None,
+    trace_indices: list[int] | None = None,
 ) -> None:
     """Lollipop (stem) plot of activation vs timestep; color = feature category."""
     vals, mask = labels.feature_values(feature)
     n = len(unit_acts)
-    # Keep every timestep so all panels share the same x sequence.
-    xs = list(range(n))
+    if trace_indices is None:
+        trace_indices = list(range(n))
+    xs = list(range(len(trace_indices)))
     if not xs:
         ax.set_axis_off()
         return
 
     cat_to_color, legend_labels = _category_color_map(
-        feature, vals, xs, automaton,
+        feature, vals, trace_indices, automaton,
     )
-    ys = [float(unit_acts[i]) for i in xs]
+    ys = [float(unit_acts[i]) for i in trace_indices]
     colors = [
         cat_to_color[vals[i]]
         if (mask is None or mask[i]) and vals[i] in cat_to_color
         else "#bbbbbb"
-        for i in xs
+        for i in trace_indices
     ]
 
     lw = 1.0 if compact else 1.4
     pt = 18 if compact else 32
-    for i, y, color in zip(xs, ys, colors):
+    for x, y, color in zip(xs, ys, colors):
         ax.plot(
-            [i, i], [0.0, y],
+            [x, x], [0.0, y],
             color=color, linewidth=lw, solid_capstyle="round", zorder=2,
         )
         ax.scatter(
-            i, y, c=[color], s=pt, zorder=3, edgecolors="0.25", linewidths=0.3,
+            x, y, c=[color], s=pt, zorder=3, edgecolors="0.25", linewidths=0.3,
         )
     ax.axhline(0.0, color="0.8", linewidth=0.6, zorder=1)
-    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_xlim(-0.6, len(trace_indices) - 0.4)
     if ylim is not None:
         ax.set_ylim(*ylim)
     ax.set_ylabel("activation", fontsize=7 if compact else 9)
     if compact:
         ax.set_title(unit_label, fontsize=8, loc="left")
         _set_all_timestep_xticks(
-            ax, labels, feature=None, automaton=None,
-            show_labels=show_xticks, show_xlabel=False, fontsize=5.5,
+            ax, labels, trace_indices, x_positions=xs, feature=None,
+            automaton=None, show_labels=show_xticks, show_xlabel=False, fontsize=4.8,
         )
         ax.tick_params(axis="both", labelsize=6, labelbottom=show_xticks)
     else:
@@ -1063,7 +1090,10 @@ def _plot_unit_timestep_trace(
             f"lollipop color = {FEATURE_DISPLAY[feature]}",
             fontsize=9,
         )
-        _set_all_timestep_xticks(ax, labels, feature=None, automaton=None)
+        _set_all_timestep_xticks(
+            ax, labels, trace_indices, x_positions=xs,
+            feature=None, automaton=None,
+        )
         cats = list(cat_to_color.keys())
         if len(cats) <= 10:
             handles = [
@@ -1082,7 +1112,7 @@ def _plot_unit_timestep_trace(
     if target_prob is not None and feature in PREDICTION_SET:
         ax2 = ax.twinx()
         ax2.plot(
-            xs, [target_prob[i] for i in xs],
+            xs, [target_prob[i] for i in trace_indices],
             color="0.55", linewidth=0.8, linestyle="--", alpha=0.8,
         )
         ax2.set_ylabel("P(correct next char)", fontsize=7 if compact else 8, color="0.45")
@@ -1098,10 +1128,14 @@ def _plot_unit_category_bars(
     cat_to_color: dict,
     legend_labels: dict,
     *,
+    feature: str | None = None,
     compact: bool = False,
     show_xticks: bool = True,
+    bar_title: str | None = None,
 ) -> None:
-    bar_cats, means, sems = _category_means(unit_acts, vals, mask)
+    bar_cats, means, sems = _category_means(
+        unit_acts, vals, mask, feature=feature,
+    )
     x = np.arange(len(bar_cats))
     colors = [cat_to_color.get(c, "#888") for c in bar_cats]
     cap = 2 if compact else 4
@@ -1118,7 +1152,7 @@ def _plot_unit_category_bars(
         ax.set_xticklabels([])
     ax.set_ylabel("mean" if compact else "mean activation", fontsize=7 if compact else 9)
     if compact:
-        ax.set_title("mean by category", fontsize=7)
+        ax.set_title(bar_title or "mean by category", fontsize=7)
     else:
         ax.set_title("average over timesteps in each category")
     ax.axhline(0, color="0.8", linewidth=0.5)
@@ -1139,14 +1173,17 @@ def _plot_unit_example_panel(
     target_prob: np.ndarray | None,
     automaton: MinimizedVocabAutomaton | None = None,
     compact: bool = False,
-    show_xticks: bool = True,
+    show_trace_xticks: bool = True,
+    show_bar_xticks: bool = True,
     ylim: tuple[float, float] | None = None,
+    trace_indices: list[int] | None = None,
+    bar_title: str | None = None,
 ) -> None:
     unit_acts = activations[:, unit_ix]
     vals, mask = labels.feature_values(feature)
-    visible = list(range(len(unit_acts)))
+    all_ix = list(range(len(unit_acts)))
     cat_to_color, legend_labels = _category_color_map(
-        feature, vals, visible, automaton,
+        feature, vals, all_ix, automaton,
     )
 
     _plot_unit_timestep_trace(
@@ -1154,13 +1191,16 @@ def _plot_unit_example_panel(
         automaton=automaton,
         target_prob=target_prob,
         compact=compact,
-        show_xticks=show_xticks,
+        show_xticks=show_trace_xticks,
         ylim=ylim,
+        trace_indices=trace_indices,
     )
     _plot_unit_category_bars(
         ax_tune, unit_acts, vals, mask, cat_to_color, legend_labels,
+        feature=feature,
         compact=compact,
-        show_xticks=show_xticks,
+        show_xticks=show_bar_xticks,
+        bar_title=bar_title,
     )
 
 
@@ -1219,7 +1259,8 @@ def plot_example_units_for_feature(
             feature=feature,
             target_prob=target_prob if feature in PREDICTION_SET else None,
             automaton=automaton,
-            show_xticks=(row == len(units) - 1),
+            show_trace_xticks=(row == len(units) - 1),
+            show_bar_xticks=(row == len(units) - 1),
         )
     fig.suptitle(
         f"Top units for {FEATURE_DISPLAY[feature]} "
@@ -1258,102 +1299,139 @@ def plot_example_units_combined(
     text: str,
     model: dict,
     automaton: MinimizedVocabAutomaton | None = None,
-    features: tuple[str, ...] = ("dfa", "char", "position", "position_from_end"),
-    k: int = 2,
+    features: tuple[str, ...] = WORD_ANALYSIS_FEATURES,
+    k: int | dict[str, int] = 2,
     rank_si: dict[str, np.ndarray] | None = None,
 ) -> None:
-    """One figure: top-``k`` distinct units per feature on a shared input sequence.
+    """One figure: one row per feature, four columns (ex1, mean, ex2, mean).
 
-    Ranking uses ``rank_si`` when provided (typically condensed-prefix SI);
-    traces always use the chronological ``activations`` / ``labels`` here.
+    Lollipop panels show the first half of the shared corpus window; bar panels
+    aggregate over the full window. ``k`` may be an int or per-feature map.
     """
-    scores = rank_si if rank_si is not None else {
-        feat: _si_scores_for_feature(activations, labels, feat) for feat in features
-    }
+    scores = dict(rank_si) if rank_si is not None else {}
+    for feat in features:
+        if feat not in scores:
+            scores[feat] = _si_scores_for_feature(activations, labels, feat)
 
-    rows: list[tuple[str, int, float]] = []
+    feature_rows: list[tuple[str, list[tuple[int, float]]]] = []
     used: set[int] = set()
+    all_unit_ixs: list[int] = []
     for feat in features:
         picks = _top_selective_units(
-            scores[feat], activations, k=k, exclude=used,
+            scores[feat], activations, k=_feature_k(k, feat), exclude=used,
         )
         used.update(picks)
-        for u in picks:
-            rows.append((feat, u, float(scores[feat][u])))
-    if not rows:
+        units = [(u, float(scores[feat][u])) for u in picks]
+        if units:
+            feature_rows.append((feat, units))
+            all_unit_ixs.extend(u for u, _ in units)
+    if not feature_rows:
         return
 
-    unit_ixs = [u for _, u, _ in rows]
-    y_stack = np.concatenate([activations[:, u] for u in unit_ixs])
+    y_stack = np.concatenate([activations[:, u] for u in all_unit_ixs])
     y_lo = float(np.min(y_stack))
     y_hi = float(np.max(y_stack))
     pad = 0.06 * max(y_hi - y_lo, 0.2)
     ylim = (y_lo - pad, y_hi + pad)
 
+    n_timesteps = activations.shape[0]
+    trace_indices = list(range(n_timesteps))
     target_prob = _target_prob_array(
         model, activations, text, next_chars=labels.next_char,
     )
-    fig, axes = plt.subplots(
-        len(rows), 2,
-        figsize=_example_panel_figsize(len(activations), len(rows), compact=True),
-    )
-    if len(rows) == 1:
-        axes = np.array([axes])
 
-    prev_feat: str | None = None
-    for row, (feat, u, si) in enumerate(rows):
-        rank = 1 + sum(1 for f, uu, _ in rows[:row] if f == feat)
-        title = f"{FEATURE_DISPLAY[feat]} #{rank} · {unit_labels[u]} (SI={si:.2f})"
-        _plot_unit_example_panel(
-            axes[row, 0], axes[row, 1],
-            unit_ix=u,
-            unit_label=title,
-            activations=activations,
-            labels=labels,
-            feature=feat,
-            target_prob=target_prob if feat in PREDICTION_SET else None,
-            automaton=automaton,
-            compact=True,
-            show_xticks=True,
-            ylim=ylim,
+    n_rows = len(feature_rows)
+    fig, axes = plt.subplots(
+        n_rows, 4,
+        figsize=_example_panel_figsize(
+            len(trace_indices), n_rows, n_cols=4, compact=True,
+        ),
+        gridspec_kw={"width_ratios": [2.2, 1.0, 2.2, 1.0], "wspace": 0.34, "hspace": 0.92},
+    )
+    if n_rows == 1:
+        axes = axes[np.newaxis, :]
+
+    feat_short = {
+        "dfa": "DFA",
+        "char": "char",
+        "position": "pos→",
+        "position_from_end": "←pos",
+        "word": "word",
+    }
+
+    for row, (feat, units) in enumerate(feature_rows):
+        for ex_i in range(2):
+            trace_col = ex_i * 2
+            bar_col = ex_i * 2 + 1
+            if ex_i >= len(units):
+                axes[row, trace_col].set_axis_off()
+                axes[row, bar_col].set_axis_off()
+                continue
+            u, si = units[ex_i]
+            rank = ex_i + 1
+            trace_title = (
+                f"{FEATURE_DISPLAY[feat]} #{rank} · {unit_labels[u]} (SI={si:.2f})"
+            )
+            _plot_unit_example_panel(
+                axes[row, trace_col], axes[row, bar_col],
+                unit_ix=u,
+                unit_label=trace_title,
+                activations=activations,
+                labels=labels,
+                feature=feat,
+                target_prob=target_prob if feat in PREDICTION_SET else None,
+                automaton=automaton,
+                compact=True,
+                show_trace_xticks=True,
+                show_bar_xticks=True,
+                ylim=ylim,
+                trace_indices=trace_indices,
+                bar_title=f"ex {rank} mean",
+            )
+            for col in (trace_col, bar_col):
+                axes[row, col].tick_params(
+                    axis="x", which="both", labelbottom=True, labelsize=5.5,
+                )
+                for tick in axes[row, col].get_xticklabels():
+                    tick.set_clip_on(False)
+                    tick.set_zorder(10)
+                if col in (bar_col,):
+                    axes[row, col].set_ylabel("")
+            if ex_i == 0:
+                short = feat_short.get(feat, FEATURE_DISPLAY[feat])
+                axes[row, trace_col].set_ylabel(
+                    f"{short}\nact.",
+                    fontsize=7,
+                    color=FEATURE_COLORS.get(feat, "#333"),
+                )
+            else:
+                axes[row, trace_col].set_ylabel("")
+
+        if row == 0:
+            for col, hdr in enumerate(("ex 1", "ex 1 mean", "ex 2", "ex 2 mean")):
+                axes[row, col].text(
+                    0.5, 1.08, hdr, transform=axes[row, col].transAxes,
+                    ha="center", va="bottom", fontsize=7, color="0.35",
+                )
+
+    if n_rows > 0:
+        axes[-1, 0].set_xlabel(
+            "input character (shared corpus window)", fontsize=7,
         )
-        for col in (0, 1):
-            axes[row, col].tick_params(axis="x", labelbottom=True, labelsize=5.5)
-            # Labels sit in the inter-row gap; don't let the next axes cover them.
-            for tick in axes[row, col].get_xticklabels():
-                tick.set_clip_on(False)
-                tick.set_zorder(10)
-        if row == len(rows) - 1:
-            axes[row, 0].set_xlabel(
-                "input character (same sequence in every panel)", fontsize=7,
+        axes[-1, 0].xaxis.label.set_clip_on(False)
+        if len(feature_rows[-1][1]) > 1:
+            axes[-1, 2].set_xlabel(
+                "input character (shared corpus window)", fontsize=7,
             )
-            axes[row, 0].xaxis.label.set_clip_on(False)
-        if feat != prev_feat:
-            short = {
-                "dfa": "DFA",
-                "char": "char",
-                "position": "pos→",
-                "position_from_end": "←pos",
-            }.get(feat, FEATURE_DISPLAY[feat])
-            axes[row, 0].set_ylabel(
-                f"{short}\nact.",
-                fontsize=7,
-                color=FEATURE_COLORS.get(feat, "#333"),
-            )
-            prev_feat = feat
-        else:
-            axes[row, 0].set_ylabel("act.", fontsize=6)
-        axes[row, 1].set_ylabel("")
+            axes[-1, 2].xaxis.label.set_clip_on(False)
 
     fig.suptitle(
-        f"Top-{k} units per feature on one corpus window "
-        f"(lollipop color = feature category; peak SI)",
-        fontsize=11,
+        "Top-2 units per feature on one corpus window "
+        "(lollipop color = feature category; peak SI)",
+        fontsize=10,
         y=0.995,
     )
-    fig.subplots_adjust(
-        left=0.07, right=0.99, top=0.96, bottom=0.05, hspace=1.05, wspace=0.22,
-    )
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.90, bottom=0.04)
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
     print(f"wrote {save_path}")
@@ -1558,7 +1636,7 @@ def _panel_feature_colors(
             }
     else:
         cat_to_color = _colors_for_categories(feat, cats, cmap)
-        legend_labels = {c: str(c) for c in cats}
+        legend_labels = {c: _feature_category_label(feat, c) for c in cats}
     vis_colors = [cat_to_color[vals[j]] for j in visible]
     return cat_to_color, legend_labels, vis_colors
 
@@ -1956,14 +2034,17 @@ def plot_unit_selectivity_suite(
             k=example_k,
         )
 
+    word_si, *_rest = compute_unit_selectivity_matrix(
+        activations, labels, features=("word",),
+    )
     plot_example_units_combined(
         result, chrono_activations, chrono_labels,
         os.path.join(save_dir, "example_units_combined.png"),
         unit_labels=unit_labels, text=text, model=model,
         automaton=automaton,
-        features=ANALYSIS_FEATURES,
+        features=WORD_ANALYSIS_FEATURES,
         k=2,
-        rank_si=result.si,
+        rank_si={**result.si, **word_si},
     )
 
     plot_example_predictor_units(

@@ -1,5 +1,5 @@
 {
-  "copied": 29,
+  "copied": 30,
   "missing": [
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_with_word_seed_mean.png",
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_by_position_word_length.png"
@@ -232,16 +232,24 @@
     {
       "section": "compare",
       "paper_name": "fig_mixed_decoding_curves.jpg",
-      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/decoding_curves_by_dfa.png",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/decoding_and_learning_combined.png",
       "dest": "paper/figures/compare/fig_mixed_decoding_curves.jpg",
       "exists": true,
       "skipped_self": false
     },
     {
       "section": "compare",
-      "paper_name": "fig_mixed_learning_decode.jpg",
-      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/learning_decode_by_dfa.png",
-      "dest": "paper/figures/compare/fig_mixed_learning_decode.jpg",
+      "paper_name": "fig_mixed_cosine_within.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/fig15_geometry_and_selectivity.png",
+      "dest": "paper/figures/compare/fig_mixed_cosine_within.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_mixed_decoding_vs_dfa.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/decoding_vs_dfa_pc_scatters.png",
+      "dest": "paper/figures/compare/fig_mixed_decoding_vs_dfa.jpg",
       "exists": true,
       "skipped_self": false
     },
@@ -255,9 +263,9 @@
     },
     {
       "section": "compare",
-      "paper_name": "fig_mixed_cosine_within.jpg",
-      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/fig15_geometry_and_selectivity.png",
-      "dest": "paper/figures/compare/fig_mixed_cosine_within.jpg",
+      "paper_name": "fig_mixed_learning_decode.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/learning_decode_by_dfa.png",
+      "dest": "paper/figures/compare/fig_mixed_learning_decode.jpg",
       "exists": true,
       "skipped_self": false
     },

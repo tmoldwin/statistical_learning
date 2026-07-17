@@ -381,58 +381,54 @@ def _pca_readout_cc(blob: dict[str, Any], *, k: int | None) -> float | None:
     return float(chance_corrected(float(v), float(chance)))
 
 
-def plot_decoding_curves_by_dfa_bins(
-    payload: dict[str, Any] | None = None,
+def _select_middle_items(items: list[Any], n_middle: int | None) -> list[Any]:
+    """Keep the centered ``n_middle`` entries (same rule as learning-decode paper figs)."""
+    if n_middle is None or len(items) <= int(n_middle):
+        return list(items)
+    n_keep = int(n_middle)
+    start = max(0, (len(items) - n_keep) // 2)
+    return list(items[start : start + n_keep])
+
+
+def _resolve_decoding_dfa_edges(
+    panels: list[dict[str, Any]],
     *,
-    outfile: str = "decoding_curves_by_dfa.png",
     n_bins: int = 4,
-    pc_ks: tuple[int | None, ...] = (1, 5, None),
-) -> Path:
-    """PCA/neuron curves by DFA bin, plus readout-vs-DFA scatters at fixed PC counts."""
-    from viz.compare.pow2_sweep_metric_board import _fit_trend
-
-    payload = payload or _load_panels()
-    panels = [p for p in payload["panels"] if "error" not in p and p.get("features")]
-    if not panels:
-        raise FileNotFoundError("no mixed-dfa panels with decoding features")
-
+    edges: np.ndarray | list[float] | None = None,
+) -> np.ndarray:
+    """Prefer learning-decode quantile edges so curve/learning columns match."""
+    if edges is not None:
+        return np.asarray(edges, dtype=float)
+    learn_path = sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json"
+    if learn_path.is_file():
+        learn = json.loads(learn_path.read_text(encoding="utf-8"))
+        if learn.get("edges"):
+            return np.asarray(learn["edges"], dtype=float)
     dfa_vals = np.asarray([p["n_dfa_states"] for p in panels], dtype=float)
-    edges = np.unique(np.quantile(dfa_vals, np.linspace(0, 1, n_bins + 1)))
-    if len(edges) < 2:
-        edges = np.asarray([dfa_vals.min() - 0.5, dfa_vals.max() + 0.5])
-    n_bin_cols = max(1, len(edges) - 1)
-    n_feat = len(_FEATURE_ORDER)
-    n_cols = max(n_bin_cols, n_feat)
-    n_k_rows = len(pc_ks)
-    n_rows = 2 + n_k_rows
+    return _dfa_quantile_edges(dfa_vals, n_bins=n_bins)
 
-    fig = plt.figure(figsize=(3.2 * n_cols + 0.8, 2.15 * n_rows + 1.2))
-    gs = fig.add_gridspec(n_rows, n_cols, height_ratios=[1.05, 1.05] + [1.0] * n_k_rows)
-    axes = np.empty((n_rows, n_cols), dtype=object)
-    for r in range(n_rows):
-        for c in range(n_cols):
-            axes[r, c] = fig.add_subplot(gs[r, c])
 
-    max_k = int(payload.get("max_k", _DEFAULT_MAX_PCS))
+def _draw_decoding_curves_on_axes(
+    axes: np.ndarray,
+    *,
+    panels: list[dict[str, Any]],
+    edges: np.ndarray,
+    bin_indices: list[int],
+    max_k: int,
+    set_col_titles: bool = True,
+    label_features: bool = True,
+) -> None:
+    """Fill a (2 × n_bins) axes grid: PCA then random-neuron readout curves."""
     ks = np.arange(1, max_k + 1, dtype=float)
     row_specs = (
         ("by_k", "PCA dims (k)", "PCA"),
         ("by_k_neurons", "# neurons (k)", "random neurons"),
     )
-    words_cmap = plt.get_cmap("YlOrRd")
-    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
-
-    for bi in range(n_bin_cols):
-        lo, hi = float(edges[bi]), float(edges[bi + 1])
-        if bi == n_bin_cols - 1:
-            subset = [p for p in panels if lo <= p["n_dfa_states"] <= hi]
-            title = f"DFA {int(round(lo))}–{int(round(hi))}"
-        else:
-            subset = [p for p in panels if lo <= p["n_dfa_states"] < hi]
-            title = f"DFA {int(round(lo))}–{int(round(hi - 1e-9))}"
-
+    for col_i, bi in enumerate(bin_indices):
+        subset = _subset_for_dfa_bin(panels, edges=edges, bin_index=bi)
+        title = _dfa_bin_title(edges, bi).replace("-", "–")
         for ri, (field, xlabel, basis_label) in enumerate(row_specs):
-            ax = axes[ri, bi]
+            ax = axes[ri, col_i]
             oracles_cc: dict[str, float] = {}
             for feat in _FEATURE_ORDER:
                 y = _mean_chance_corrected_curve(
@@ -445,7 +441,11 @@ def plot_decoding_curves_by_dfa_bins(
                     y,
                     color=DECODE_FEATURE_COLORS[feat],
                     lw=1.6,
-                    label=feature_display_name(feat) if (ri == 0 and bi == 0) else None,
+                    label=(
+                        feature_display_name(feat)
+                        if (label_features and ri == 0 and col_i == 0)
+                        else None
+                    ),
                 )
                 o = _mean_dfa_oracle_cc(subset, feat=feat)
                 if o is not None:
@@ -456,31 +456,120 @@ def plot_decoding_curves_by_dfa_bins(
                 features=_FEATURE_ORDER,
                 show_legend=False,
             )
-            if ri == 0:
+            if set_col_titles and ri == 0:
                 ax.set_title(f"{title}  (n={len(subset)})", fontsize=8)
             ax.set_xlim(1, max_k)
             ax.set_ylim(-0.05, 1.05)
             ax.grid(True, alpha=0.25)
             ax.tick_params(labelsize=6)
-            if bi == 0:
+            if col_i == 0:
                 ax.set_ylabel(f"{basis_label}\nchance-corr. acc.", fontsize=7, labelpad=6)
             if ri == 1:
                 ax.set_xlabel(xlabel, fontsize=7)
             else:
                 hide_x_tick_labels(ax)
-    for bi in range(n_bin_cols, n_cols):
-        axes[0, bi].set_axis_off()
-        axes[1, bi].set_axis_off()
 
+
+def plot_decoding_curves_by_dfa_bins(
+    payload: dict[str, Any] | None = None,
+    *,
+    outfile: str = "decoding_curves_by_dfa.png",
+    n_bins: int = 4,
+    n_middle_cols: int | None = 3,
+    edges: np.ndarray | list[float] | None = None,
+) -> Path:
+    """PCA vs random-neuron readout curves in middle DFA quantile bins."""
+    payload = payload or _load_panels()
+    panels = [p for p in payload["panels"] if "error" not in p and p.get("features")]
+    if not panels:
+        raise FileNotFoundError("no mixed-dfa panels with decoding features")
+
+    edges_arr = _resolve_decoding_dfa_edges(panels, n_bins=n_bins, edges=edges)
+    bin_indices = _select_middle_items(list(range(len(edges_arr) - 1)), n_middle_cols)
+    n_bin_cols = len(bin_indices)
+
+    fig, axes = plt.subplots(
+        2,
+        n_bin_cols,
+        figsize=(2.9 * n_bin_cols + 0.7, 2.35 * 2 + 0.85),
+        squeeze=False,
+    )
+    max_k = int(payload.get("max_k", _DEFAULT_MAX_PCS))
+    _draw_decoding_curves_on_axes(
+        axes,
+        panels=panels,
+        edges=edges_arr,
+        bin_indices=bin_indices,
+        max_k=max_k,
+    )
+
+    if axes[0, 0].get_legend_handles_labels()[0]:
+        from matplotlib.lines import Line2D
+
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        handles = list(handles) + [
+            Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
+        ]
+        labels = list(labels) + ["DFA-state oracle"]
+        fig.legend(
+            handles, labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 0.01),
+            ncol=min(len(labels), 6),
+            fontsize=6.5,
+            frameon=False,
+            columnspacing=1.0,
+        )
+
+    finalize_grid_figure(
+        fig,
+        suptitle="Readouts by DFA bin (PCA vs random neurons); dashed = DFA-state oracle",
+        bottom=0.14,
+        left=0.10,
+        right=0.98,
+        top=0.88,
+        wspace=0.28,
+        hspace=0.32,
+    )
+    out = sweep_decoding_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out)
+    plt.close(fig)
+    return out
+
+
+def plot_decoding_vs_dfa_pc_scatters(
+    payload: dict[str, Any] | None = None,
+    *,
+    outfile: str = "decoding_vs_dfa_pc_scatters.png",
+    pc_ks: tuple[int | None, ...] = (1, 5, None),
+) -> Path:
+    """Chance-corrected readout vs DFA size at fixed PC counts (paper Fig 15)."""
+    from viz.compare.pow2_sweep_metric_board import _fit_trend
+
+    payload = payload or _load_panels()
+    panels = [p for p in payload["panels"] if "error" not in p and p.get("features")]
+    if not panels:
+        raise FileNotFoundError("no mixed-dfa panels with decoding features")
+
+    n_feat = len(_FEATURE_ORDER)
+    n_k_rows = len(pc_ks)
+    words_cmap = plt.get_cmap("YlOrRd")
+    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
     k_ylabels = {
         1: "1 PC",
         5: "5 PCs",
         None: "full hidden\n(all H)",
     }
+
+    fig, axes = plt.subplots(
+        n_k_rows,
+        n_feat,
+        figsize=(2.55 * n_feat + 0.9, 2.05 * n_k_rows + 0.9),
+        squeeze=False,
+    )
     for ki, k in enumerate(pc_ks):
-        ri = 2 + ki
         for bi, feat in enumerate(_FEATURE_ORDER):
-            ax = axes[ri, bi]
+            ax = axes[ki, bi]
             xs: list[float] = []
             ys: list[float] = []
             ns: list[float] = []
@@ -501,7 +590,6 @@ def plot_decoding_curves_by_dfa_bins(
                     c=n_words, cmap=words_cmap, norm=words_norm,
                     s=14, alpha=0.8, linewidths=0.25, edgecolors="white", zorder=2,
                 )
-                # DFA-oracle floor for the same runs (open markers).
                 ox, oy = [], []
                 for p in panels:
                     oo = dfa_oracle_cc_from_feat(p.get("features", {}).get(feat, {}))
@@ -543,28 +631,22 @@ def plot_decoding_curves_by_dfa_bins(
                     f"{k_ylabels.get(k, f'{k} PCs')}\nchance-corr. acc.",
                     fontsize=6.5, labelpad=6,
                 )
-        for bi in range(n_feat, n_cols):
-            axes[ri, bi].set_axis_off()
 
-    if axes[0, 0].get_legend_handles_labels()[0]:
-        from matplotlib.lines import Line2D
+    from matplotlib.lines import Line2D
 
-        handles, labels = axes[0, 0].get_legend_handles_labels()
-        handles = list(handles) + [
-            Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
-            Line2D(
-                [0], [0], marker="o", color="0.35", ls="none",
-                markerfacecolor="none", markeredgewidth=0.8, markersize=5,
-            ),
-        ]
-        labels = list(labels) + ["DFA-state oracle (curves)", "DFA-state oracle (scatters)"]
-        axes[0, 0].legend(
-            handles, labels,
-            fontsize=5.5, frameon=False, loc="lower right",
-            ncol=1,
-        )
-
-    cax = fig.add_axes([0.92, 0.08, 0.014, 0.42])
+    oracle_handle = Line2D(
+        [0], [0], marker="o", color="0.35", ls="none",
+        markerfacecolor="none", markeredgewidth=0.8, markersize=5,
+    )
+    fig.legend(
+        [oracle_handle],
+        ["DFA-state oracle"],
+        loc="lower left",
+        bbox_to_anchor=(0.10, 0.01),
+        fontsize=6.5,
+        frameon=False,
+    )
+    cax = fig.add_axes([0.92, 0.16, 0.014, 0.70])
     cbar = fig.colorbar(
         plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
         cax=cax,
@@ -574,13 +656,13 @@ def plot_decoding_curves_by_dfa_bins(
 
     finalize_grid_figure(
         fig,
-        suptitle="Readouts by DFA bin; dashed/open = DFA-state oracle baseline",
-        bottom=0.06,
-        left=0.11,
+        suptitle="Readout vs DFA size at fixed PC counts; open = DFA-state oracle",
+        bottom=0.10,
+        left=0.10,
         right=0.90,
         top=0.90,
         wspace=0.28,
-        hspace=0.55,
+        hspace=0.38,
     )
     out = sweep_decoding_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -1973,19 +2055,14 @@ def _bin_dfa_oracle_cc(
     return {feat: float(np.mean(vals)) for feat, vals in acc.items() if vals}
 
 
-def plot_learning_decode_by_dfa_bins(
+def _prepare_learning_decode_bins(
     *,
     json_path: Path | None = None,
-    outfile: str = "learning_decode_by_dfa.png",
-    early_xlim: float | None = None,
     progress_xlim: float | None = 0.22,
     pc_row_ks: tuple[int | None, ...] | None = None,
-) -> Path:
-    """Columns = DFA bins; rows = PC probes (default 1/3/5/15/full); mean ± std bands.
-
-    ``progress_xlim`` crops the x-axis (default: auto to max progress with finite
-    readout data). Pass ``early_xlim`` to add a second zoomed row-block.
-    """
+    n_middle_cols: int | None = 3,
+) -> tuple[dict[str, Any], list[dict[str, Any]], tuple[tuple[str, str], ...], float]:
+    """Load learning-decode JSON and return (payload, bins, basis_keys, xlim)."""
     path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json")
     if not path.is_file():
         path = collect_learning_decode_by_dfa(recompute=True)
@@ -1993,6 +2070,7 @@ def plot_learning_decode_by_dfa_bins(
     bins = [b for b in payload.get("bins", []) if b.get("aggregated")]
     if not bins:
         raise FileNotFoundError(f"no binned learning curves in {path}")
+    bins = _select_middle_items(bins, n_middle_cols)
 
     raw_ks = payload.get("pc_ks") or [1, 3, 5, 15, "full"]
     parsed: list[int | None] = []
@@ -2002,13 +2080,12 @@ def plot_learning_decode_by_dfa_bins(
         else:
             parsed.append(int(k))
     all_basis = _learning_basis_specs(tuple(parsed))
-    row_ks = pc_row_ks if pc_row_ks is not None else _LEARNING_PC_KS
+    row_ks = pc_row_ks if pc_row_ks is not None else (3, 15)
     want = {"full" if k is None else f"pc{int(k)}" for k in row_ks}
     basis_keys = tuple((b, lab) for b, lab in all_basis if b in want)
     if not basis_keys:
         basis_keys = all_basis
 
-    # Crop x to where curves actually have data (avoids empty 0.2–1.0 whitespace).
     if progress_xlim is None:
         data_max = 0.0
         for blob in bins:
@@ -2031,26 +2108,23 @@ def plot_learning_decode_by_dfa_bins(
                 if np.any(finite):
                     data_max = max(data_max, float(np.max(pg[:n][finite])))
         progress_xlim = float(min(1.02, data_max + 0.02)) if data_max > 0 else 1.02
+    return payload, bins, basis_keys, float(progress_xlim)
 
-    if early_xlim is None:
-        row_blocks = (("full training", 0.0, float(progress_xlim)),)
-    else:
-        row_blocks = (
-            ("full training", 0.0, float(progress_xlim)),
-            (f"early (0-{early_xlim:g})", 0.0, float(early_xlim)),
-        )
+
+def _draw_learning_decode_on_axes(
+    axes: np.ndarray,
+    *,
+    payload: dict[str, Any],
+    bins: list[dict[str, Any]],
+    basis_keys: tuple[tuple[str, str], ...],
+    x0: float,
+    x1: float,
+    xlabel_on_last: bool = True,
+) -> Any:
+    """Fill a (n_basis × n_bins) axes grid; return word-err line handle if drawn."""
     n_basis = len(basis_keys)
     n_bins = len(bins)
-    n_rows = len(row_blocks) * n_basis
-    fig, axes = plt.subplots(
-        n_rows,
-        n_bins,
-        figsize=(2.55 * n_bins + 0.8, 2.05 * n_rows + 0.75),
-        sharey=True,
-        squeeze=False,
-    )
     word_err_line = None
-
     for bi, blob in enumerate(bins):
         agg = blob["aggregated"]
         progress_all = np.asarray(agg["progress_grid"], dtype=float)
@@ -2060,87 +2134,150 @@ def plot_learning_decode_by_dfa_bins(
         if not oracles_cc:
             oracles_cc = _bin_dfa_oracle_cc(blob, payload)
         oracles_cc = {k: float(v) for k, v in oracles_cc.items()}
-        for block_i, (block_name, x0, x1) in enumerate(row_blocks):
-            zoom = (progress_all >= x0) & (progress_all <= x1 + 1e-9)
-            progress = progress_all[zoom]
-            we_mean = we_mean_all[zoom]
-            we_std = we_std_all[zoom]
-            for ki, (bkey, blabel) in enumerate(basis_keys):
-                ri = block_i * n_basis + ki
-                ax = axes[ri, bi]
-                for feat in _FEATURE_ORDER:
-                    color = DECODE_FEATURE_COLORS[feat]
-                    feat_blob = agg.get("features", {}).get(feat, {})
-                    y_mean = np.asarray(feat_blob.get(f"{bkey}_mean", []), dtype=float)
-                    y_std = np.asarray(feat_blob.get(f"{bkey}_std", []), dtype=float)
-                    if y_mean.size == 0:
-                        continue
-                    y_mean = y_mean[zoom]
-                    if y_std.size == zoom.size:
-                        y_std = y_std[zoom]
-                    ax.plot(
-                        progress,
-                        y_mean,
-                        color=color,
-                        lw=1.5,
-                        label=feature_display_name(feat) if (ri == 0 and bi == 0) else None,
-                    )
-                    if y_std.size == y_mean.size and np.any(np.isfinite(y_std)):
-                        ax.fill_between(
-                            progress,
-                            y_mean - y_std,
-                            y_mean + y_std,
-                            color=color,
-                            alpha=0.14,
-                            linewidth=0,
-                        )
-                draw_dfa_oracle_baselines(
-                    ax,
-                    oracles_cc=oracles_cc,
-                    features=_FEATURE_ORDER,
-                    show_legend=False,
+        zoom = (progress_all >= x0) & (progress_all <= x1 + 1e-9)
+        progress = progress_all[zoom]
+        we_mean = we_mean_all[zoom]
+        we_std = we_std_all[zoom]
+        for ki, (bkey, blabel) in enumerate(basis_keys):
+            ax = axes[ki, bi]
+            for feat in _FEATURE_ORDER:
+                color = DECODE_FEATURE_COLORS[feat]
+                feat_blob = agg.get("features", {}).get(feat, {})
+                y_mean = np.asarray(feat_blob.get(f"{bkey}_mean", []), dtype=float)
+                y_std = np.asarray(feat_blob.get(f"{bkey}_std", []), dtype=float)
+                if y_mean.size == 0:
+                    continue
+                y_mean = y_mean[zoom]
+                if y_std.size == zoom.size:
+                    y_std = y_std[zoom]
+                ax.plot(
+                    progress,
+                    y_mean,
+                    color=color,
+                    lw=1.5,
+                    label=feature_display_name(feat) if (ki == 0 and bi == 0) else None,
                 )
-                if ri == 0:
-                    n_v = int(blob.get("n_vocabs", blob.get("n_runs", 0)))
-                    n_c = int(blob.get("n_runs", 0))
-                    ax.set_title(
-                        f"{blob['title']}  (n={n_v} vocabs, {n_c} curves)",
-                        fontsize=7.5, pad=3,
+                if y_std.size == y_mean.size and np.any(np.isfinite(y_std)):
+                    ax.fill_between(
+                        progress,
+                        y_mean - y_std,
+                        y_mean + y_std,
+                        color=color,
+                        alpha=0.14,
+                        linewidth=0,
                     )
-                if ri == n_rows - 1:
-                    ax.set_xlabel("progress", fontsize=7)
+            draw_dfa_oracle_baselines(
+                ax,
+                oracles_cc=oracles_cc,
+                features=_FEATURE_ORDER,
+                show_legend=False,
+            )
+            if ki == 0:
+                n_v = int(blob.get("n_vocabs", blob.get("n_runs", 0)))
+                n_c = int(blob.get("n_runs", 0))
+                ax.set_title(
+                    f"{blob['title']}  (n={n_v} vocabs, {n_c} curves)",
+                    fontsize=7.5, pad=3,
+                )
+            if xlabel_on_last and ki == n_basis - 1:
+                ax.set_xlabel("progress", fontsize=7)
+            else:
+                hide_x_tick_labels(ax)
+            ax.set_xlim(x0, x1)
+            ax.set_ylim(-0.05, 1.05)
+            ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
+            ax.grid(True, alpha=0.25)
+            ax.tick_params(labelsize=5.5)
+            if bi == 0:
+                ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=6.5, labelpad=4)
+            if np.any(np.isfinite(we_mean)):
+                ax2 = ax.twinx()
+                (line,) = ax2.plot(progress, we_mean, color="0.45", lw=0.9, ls="--", alpha=0.8)
+                if word_err_line is None:
+                    word_err_line = line
+                if np.any(np.isfinite(we_std)):
+                    ax2.fill_between(
+                        progress,
+                        we_mean - we_std,
+                        we_mean + we_std,
+                        color="0.45",
+                        alpha=0.10,
+                        linewidth=0,
+                    )
+                ax2.set_ylim(-0.02, 1.05)
+                ax2.tick_params(labelsize=5, colors="0.45")
+                if bi == n_bins - 1:
+                    ax2.set_ylabel("word err", fontsize=6, color="0.45")
                 else:
-                    hide_x_tick_labels(ax)
-                ax.set_xlim(x0, x1)
-                ax.set_ylim(-0.05, 1.05)
-                ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
-                ax.grid(True, alpha=0.25)
-                ax.tick_params(labelsize=5.5)
-                if bi == 0:
-                    ylab = f"{blabel}\nchance-corr. acc."
-                    if len(row_blocks) > 1:
-                        ylab = f"{block_name}\n{blabel}\nchance-corr. acc."
-                    ax.set_ylabel(ylab, fontsize=6.5, labelpad=4)
-                if np.any(np.isfinite(we_mean)):
-                    ax2 = ax.twinx()
-                    (line,) = ax2.plot(progress, we_mean, color="0.45", lw=0.9, ls="--", alpha=0.8)
-                    if word_err_line is None:
-                        word_err_line = line
-                    if np.any(np.isfinite(we_std)):
-                        ax2.fill_between(
-                            progress,
-                            we_mean - we_std,
-                            we_mean + we_std,
-                            color="0.45",
-                            alpha=0.10,
-                            linewidth=0,
-                        )
-                    ax2.set_ylim(-0.02, 1.05)
-                    ax2.tick_params(labelsize=5, colors="0.45")
-                    if bi == n_bins - 1:
-                        ax2.set_ylabel("word err", fontsize=6, color="0.45")
-                    else:
-                        ax2.set_yticklabels([])
+                    ax2.set_yticklabels([])
+    return word_err_line
+
+
+def plot_learning_decode_by_dfa_bins(
+    *,
+    json_path: Path | None = None,
+    outfile: str = "learning_decode_by_dfa.png",
+    early_xlim: float | None = None,
+    progress_xlim: float | None = 0.22,
+    pc_row_ks: tuple[int | None, ...] | None = None,
+    n_middle_cols: int | None = 3,
+) -> Path:
+    """Columns = DFA bins; rows = PC probes; mean ± std bands.
+
+    Defaults keep the figure readable for the paper: middle ``n_middle_cols``
+    DFA bins and only 3 / 15 PC rows. Pass ``pc_row_ks=_LEARNING_PC_KS`` and
+    ``n_middle_cols=None`` for the full grid.
+
+    ``progress_xlim`` crops the x-axis (default: auto to max progress with finite
+    readout data). Pass ``early_xlim`` to add a second zoomed row-block.
+    """
+    payload, bins, basis_keys, xlim = _prepare_learning_decode_bins(
+        json_path=json_path,
+        progress_xlim=progress_xlim,
+        pc_row_ks=pc_row_ks,
+        n_middle_cols=n_middle_cols,
+    )
+    if early_xlim is not None:
+        # Rare zoomed companion block — keep as a stacked full plot for CLI use.
+        row_blocks = (
+            ("full training", 0.0, float(xlim)),
+            (f"early (0-{early_xlim:g})", 0.0, float(early_xlim)),
+        )
+        n_basis = len(basis_keys)
+        n_bins = len(bins)
+        n_rows = len(row_blocks) * n_basis
+        fig, axes = plt.subplots(
+            n_rows, n_bins,
+            figsize=(2.55 * n_bins + 0.8, 2.05 * n_rows + 0.75),
+            sharey=True, squeeze=False,
+        )
+        word_err_line = None
+        for block_i, (_block_name, x0, x1) in enumerate(row_blocks):
+            sub = axes[block_i * n_basis:(block_i + 1) * n_basis, :]
+            line = _draw_learning_decode_on_axes(
+                sub, payload=payload, bins=bins, basis_keys=basis_keys,
+                x0=x0, x1=x1, xlabel_on_last=(block_i == len(row_blocks) - 1),
+            )
+            if word_err_line is None:
+                word_err_line = line
+            for ki, (_bkey, blabel) in enumerate(basis_keys):
+                if axes[block_i * n_basis + ki, 0].get_ylabel():
+                    axes[block_i * n_basis + ki, 0].set_ylabel(
+                        f"{_block_name}\n{blabel}\nchance-corr. acc.",
+                        fontsize=6.5, labelpad=4,
+                    )
+    else:
+        n_basis = len(basis_keys)
+        n_bins = len(bins)
+        fig, axes = plt.subplots(
+            n_basis, n_bins,
+            figsize=(2.55 * n_bins + 0.8, 2.05 * n_basis + 0.75),
+            sharey=True, squeeze=False,
+        )
+        word_err_line = _draw_learning_decode_on_axes(
+            axes, payload=payload, bins=bins, basis_keys=basis_keys,
+            x0=0.0, x1=float(xlim),
+        )
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
     from matplotlib.lines import Line2D
@@ -2153,8 +2290,7 @@ def plot_learning_decode_by_dfa_bins(
         handles = [*handles, word_err_line]
         labels = [*labels, "word err"]
     fig.legend(
-        handles,
-        labels,
+        handles, labels,
         loc="lower center",
         bbox_to_anchor=(0.5, 0.004),
         ncol=min(len(labels), 8),
@@ -2189,6 +2325,144 @@ def plot_learning_decode_by_dfa_bins(
     save_figure(fig, out)
     plt.close(fig)
     return out
+
+
+def plot_decoding_and_learning_combined(
+    payload: dict[str, Any] | None = None,
+    *,
+    outfile: str = "decoding_and_learning_combined.png",
+    json_path: Path | None = None,
+    progress_xlim: float | None = 0.22,
+    pc_row_ks: tuple[int | None, ...] | None = None,
+    n_middle_cols: int | None = 3,
+    n_bins: int = 4,
+) -> Path:
+    """Paper Fig 13: final PCA/neuron curves (A) + learning 3/15-PC probes (B)."""
+    from matplotlib.lines import Line2D
+
+    payload = payload or _load_panels()
+    panels = [p for p in payload["panels"] if "error" not in p and p.get("features")]
+    if not panels:
+        raise FileNotFoundError("no mixed-dfa panels with decoding features")
+
+    learn_payload, learn_bins, basis_keys, xlim = _prepare_learning_decode_bins(
+        json_path=json_path,
+        progress_xlim=progress_xlim,
+        pc_row_ks=pc_row_ks,
+        n_middle_cols=n_middle_cols,
+    )
+    edges = _resolve_decoding_dfa_edges(
+        panels,
+        n_bins=n_bins,
+        edges=learn_payload.get("edges"),
+    )
+    bin_indices = _select_middle_items(list(range(len(edges) - 1)), n_middle_cols)
+    n_bin_cols = len(bin_indices)
+    n_learn = len(basis_keys)
+    max_k = int(payload.get("max_k", _DEFAULT_MAX_PCS))
+
+    # Banner A | curve rows | banner B | learning rows
+    fig = plt.figure(figsize=(2.75 * n_bin_cols + 0.9, 1.95 * (2 + n_learn) + 1.45))
+    gs = fig.add_gridspec(
+        2 + 2 + n_learn,
+        n_bin_cols,
+        height_ratios=[0.20, 1.0, 1.0, 0.20] + [1.0] * n_learn,
+        hspace=0.50,
+        wspace=0.28,
+    )
+    ax_ban_a = fig.add_subplot(gs[0, :])
+    ax_ban_a.set_axis_off()
+    ax_ban_a.text(
+        0.0, 0.35,
+        "A. Final readout vs # dimensions (PCA / random neurons)",
+        fontsize=9, fontweight="bold", va="center",
+    )
+    curve_axes = np.empty((2, n_bin_cols), dtype=object)
+    for r in range(2):
+        for c in range(n_bin_cols):
+            curve_axes[r, c] = fig.add_subplot(gs[1 + r, c])
+    _draw_decoding_curves_on_axes(
+        curve_axes,
+        panels=panels,
+        edges=edges,
+        bin_indices=bin_indices,
+        max_k=max_k,
+        set_col_titles=True,
+        label_features=True,
+    )
+
+    ax_ban_b = fig.add_subplot(gs[3, :])
+    ax_ban_b.set_axis_off()
+    ax_ban_b.text(
+        0.0, 0.35,
+        "B. Readout over learning (3 / 15 PCs)",
+        fontsize=9, fontweight="bold", va="center",
+    )
+    learn_axes = np.empty((n_learn, n_bin_cols), dtype=object)
+    for r in range(n_learn):
+        for c in range(n_bin_cols):
+            learn_axes[r, c] = fig.add_subplot(gs[4 + r, c])
+    # Align learning columns with curve bin order (same middle indices).
+    learn_bins_aligned = [learn_bins[i] for i in range(min(len(learn_bins), n_bin_cols))]
+    word_err_line = _draw_learning_decode_on_axes(
+        learn_axes,
+        payload=learn_payload,
+        bins=learn_bins_aligned,
+        basis_keys=basis_keys,
+        x0=0.0,
+        x1=float(xlim),
+    )
+    # Drop duplicate DFA titles on learning row (already on A).
+    for c in range(n_bin_cols):
+        learn_axes[0, c].set_title("")
+
+    handles, labels = curve_axes[0, 0].get_legend_handles_labels()
+    handles = list(handles) + [
+        Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
+    ]
+    labels = list(labels) + ["DFA-state oracle"]
+    if word_err_line is not None:
+        handles = [*handles, word_err_line]
+        labels = [*labels, "word err"]
+    fig.legend(
+        handles, labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.004),
+        ncol=min(len(labels), 8),
+        fontsize=6.5,
+        frameon=False,
+        columnspacing=0.9,
+        handletextpad=0.35,
+    )
+
+    n_curves = int(learn_payload.get("n_curves", sum(int(b.get("n_runs", 0)) for b in learn_bins)))
+    n_vocabs = int(learn_payload.get("n_vocabs", n_curves))
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"Readouts by DFA bin: final curves and learning "
+            f"({n_vocabs} mixed vocabs; dashed = DFA-state oracle)"
+        ),
+        top=0.94,
+        bottom=0.055,
+        left=0.08,
+        right=0.97,
+        wspace=0.28,
+        hspace=0.50,
+    )
+    out = sweep_decoding_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out)
+    plt.close(fig)
+    return out
+
+
+def plot_learning_and_geometry_combined(
+    *,
+    outfile: str = "learning_and_geometry_combined.png",
+    **kwargs: Any,
+) -> Path:
+    """Deprecated alias — paper fig is decoding+learning; keep CLI compatibility."""
+    return plot_decoding_and_learning_combined(outfile=outfile, **kwargs)
 
 
 _TRAJECTORY_GRID_N = 5
@@ -2360,26 +2634,40 @@ def collect_mixed_dfa_within_corr(
     recompute: bool = False,
     n_shuffle: int = _WITHIN_CORR_N_SHUFFLE,
     model_type: str = "rnn",
+    hidden_size: int | None = None,
 ) -> Path:
     """Per-run separation metrics vs DFA (observed + label-shuffle means)."""
-    out = sweep_data_dir(COMPARISON_NAME) / "within_corr_vs_dfa.json"
+    from vocab_mixed_dfa import (
+        HIDDEN_SIZE,
+        comparison_name_for_h,
+        iter_tasks_for_h,
+    )
+
+    h = HIDDEN_SIZE if hidden_size is None else int(hidden_size)
+    comp = comparison_name_for_h(h)
+    out = sweep_data_dir(comp) / "within_corr_vs_dfa.json"
     if out.is_file() and not recompute:
-        # Recompute when older JSON lacked multi-metric fields.
+        # Recompute when older JSON lacked between-cosine fields.
         try:
             old = json.loads(out.read_text(encoding="utf-8"))
             panels_old = old.get("panels") or []
-            if panels_old and "within_cosine" in panels_old[0]:
+            if (
+                panels_old
+                and "between_cosine" in panels_old[0]
+                and "pairwise_within_median" in panels_old[0]
+                and int(old.get("hidden_size", h)) == h
+            ):
                 return out
         except Exception:  # noqa: BLE001
             pass
 
     panels: list[dict[str, Any]] = []
-    for entry in iter_runs():
+    for entry in iter_tasks_for_h(h):
         task = entry["task"]
         if not checkpoint_path(task, model_type, seed=seed).is_file():
             continue
         n_dfa = _dfa_states(list(entry["words"]))
-        print(f"within-corr {task} seed {seed}  dfa={n_dfa}", flush=True)
+        print(f"within-corr {task} seed {seed}  dfa={n_dfa}  H={h}", flush=True)
         try:
             from experiment import TASKS
             from task import corpus_for_experiment, label_extensions_for_experiment
@@ -2441,12 +2729,21 @@ def collect_mixed_dfa_within_corr(
             "run_id": entry["run_id"],
             "n_words": entry["n_words"],
             "n_dfa_states": n_dfa,
+            "hidden_size": h,
             "within_cosine": _feat_map(stats.within_cosine),
             "shuffle_within_cosine": _feat_map(stats.shuffle_within_cosine),
+            "between_cosine": _feat_map(stats.between_cosine),
+            "shuffle_between_cosine": _feat_map(stats.shuffle_between_cosine),
+            "pairwise_within_median": _feat_map(stats.pairwise_within_median),
+            "shuffle_pairwise_within_median": _feat_map(stats.shuffle_pairwise_within_median),
+            "pairwise_between_median": _feat_map(stats.pairwise_between_median),
+            "shuffle_pairwise_between_median": _feat_map(stats.shuffle_pairwise_between_median),
         })
 
     payload = {
         "seed": seed,
+        "hidden_size": h,
+        "comparison": comp,
         "n_shuffle": int(n_shuffle),
         "features": list(_WITHIN_CORR_FEATURES),
         "panels": panels,
@@ -2636,6 +2933,7 @@ def run_all_mixed_dfa_plots(
         plot_nwords_vs_dfa_sanity(payload),
         plot_decoding_vs_dfa(payload),
         plot_decoding_curves_by_dfa_bins(payload),
+        plot_decoding_vs_dfa_pc_scatters(payload),
         plot_spectra_vs_dfa(payload),
         plot_training_vs_dfa(payload),
         plot_metrics_vs_dfa(recompute=recompute),
@@ -2644,9 +2942,257 @@ def run_all_mixed_dfa_plots(
         plot_mixed_dfa_trajectory_vocab_grid(),
         plot_mixed_dfa_within_corr_vs_dfa(recompute=False),
         plot_mixed_position_word_length_decode(pos_payload),
+        plot_learning_decode_by_dfa_bins(),
+        plot_decoding_and_learning_combined(payload),
     ]
     from viz.compare.mixed_dfa_unit_selectivity import plot_mixed_fig15_geometry_and_selectivity
     outs.append(plot_mixed_fig15_geometry_and_selectivity())
     for p in outs:
         print(f"wrote {p}", flush=True)
+    return outs
+
+
+def _classical_mds_2d(dist: np.ndarray) -> np.ndarray:
+    """Classical MDS embedding of a symmetric distance matrix → (n, 2)."""
+    n = dist.shape[0]
+    if n < 2:
+        return np.zeros((n, 2), dtype=float)
+    d2 = dist.astype(float) ** 2
+    j = np.eye(n) - np.ones((n, n)) / n
+    b = -0.5 * j @ d2 @ j
+    evals, evecs = np.linalg.eigh(b)
+    order = np.argsort(evals)[::-1]
+    evals = evals[order]
+    evecs = evecs[:, order]
+    keep = max(2, min(2, int(np.sum(evals > 1e-10))))
+    lam = np.clip(evals[:keep], 0.0, None)
+    xy = evecs[:, :keep] * np.sqrt(lam)[None, :]
+    if xy.shape[1] == 1:
+        xy = np.column_stack([xy[:, 0], np.zeros(n)])
+    return xy[:, :2]
+
+
+def _pairwise_euclidean(X: np.ndarray) -> np.ndarray:
+    norms = np.sum(X * X, axis=1, keepdims=True)
+    d2 = np.maximum(norms + norms.T - 2.0 * (X @ X.T), 0.0)
+    return np.sqrt(d2)
+
+
+def _pairwise_cosine_distance(X: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(X, axis=1, keepdims=True)
+    norms = np.maximum(norms, 1e-12)
+    unit = X / norms
+    sim = np.clip(unit @ unit.T, -1.0, 1.0)
+    return 1.0 - sim
+
+
+def _load_hard_run_condensed(
+    run_id: int,
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+):
+    """Forward pass + condensed prefixes for one mixed-dfa run."""
+    from experiment import TASKS
+    from task import corpus_for_experiment, label_extensions_for_experiment
+    from unit_selectivity import build_timestep_labels
+    from vocab_diagrams import (
+        select_analysis_window,
+        vocabulary_for_experiment,
+    )
+    from visualize import (
+        condense_hidden_states_by_prefix,
+        corpus_uses_word_spacing,
+        load_model_for_viz,
+        run_forward_pass,
+    )
+    from vocab_mixed_dfa import task_name
+
+    entry = next(e for e in iter_runs() if int(e["run_id"]) == int(run_id))
+    task = task_name(int(run_id))
+    ckpt = checkpoint_path(task, model_type, seed=seed)
+    if not ckpt.is_file():
+        raise FileNotFoundError(ckpt)
+    words = list(entry["words"])
+    cfg = TASKS[task]
+    model = load_model_for_viz(str(ckpt), model_type)
+    full_text = corpus_for_experiment(task, seed=seed)
+    spaced = corpus_uses_word_spacing(full_text, task)
+    length = min(int(cfg.get("viz_length", 80)), 160, len(full_text))
+    if words and not spaced:
+        extensions = label_extensions_for_experiment(task)
+        _ws, text, label_words = select_analysis_window(
+            full_text, words, length, spaced=spaced, extensions=extensions,
+        )
+    else:
+        text = full_text[:length]
+        label_words = None
+    automaton = build_minimized_vocabulary_automaton(words)
+    hidden_states, output_probs = run_forward_pass(model, text, model_type)
+    condensed = condense_hidden_states_by_prefix(
+        text, hidden_states, output_probs, spaced=spaced, words=words,
+    )
+    ts_labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=condensed,
+    )
+    return {
+        "task": task,
+        "run_id": int(run_id),
+        "n_words": int(entry["n_words"]),
+        "n_dfa": int(automaton.dfa._n),
+        "words": words,
+        "text": text,
+        "spaced": spaced,
+        "automaton": automaton,
+        "condensed": condensed,
+        "ts_labels": ts_labels,
+        "model": model,
+    }
+
+
+def plot_hard_dfa_state_geometry(
+    *,
+    run_id: int = 41,
+    seed: int = 1,
+    outdir: Path | str | None = None,
+) -> list[Path]:
+    """Exploratory: prefix correlation + cosine/Euclidean MDS for one hard run.
+
+    Not a paper figure. Outputs under ``trajectories/hard_dfa_rXX/``.
+    """
+    from visualize import (
+        _dfa_automaton_state_colors,
+        _display_prefix_label,
+        dfa_state_for_prefix,
+        plot_dfa_grouped_state_correlation,
+        plot_hidden_states_correlation_clustermap,
+    )
+
+    ctx = _load_hard_run_condensed(run_id, seed=seed)
+    condensed = ctx["condensed"]
+    automaton = ctx["automaton"]
+    text = ctx["text"]
+    model = ctx["model"]
+    out_root = Path(
+        outdir
+        or (sweep_figures_dir(COMPARISON_NAME) / f"hard_dfa_r{run_id:02d}")
+    )
+    out_root.mkdir(parents=True, exist_ok=True)
+    outs: list[Path] = []
+
+    corr_clustered = out_root / "state_correlation_clustered.png"
+    plot_hidden_states_correlation_clustermap(
+        text,
+        condensed.hidden_states,
+        model["chars"],
+        str(corr_clustered),
+        spaced=ctx["spaced"],
+        automaton=automaton,
+        words=ctx["words"],
+        condensed=condensed,
+        repr_label=f"r{run_id:02d} H={int(model['hidden_size'])} condensed",
+    )
+    outs.append(corr_clustered)
+
+    corr_dfa = out_root / "state_correlation_by_dfa.png"
+    plot_dfa_grouped_state_correlation(
+        text,
+        condensed.hidden_states,
+        str(corr_dfa),
+        spaced=ctx["spaced"],
+        automaton=automaton,
+        condensed=condensed,
+        repr_label=f"r{run_id:02d} H={int(model['hidden_size'])} condensed",
+    )
+    outs.append(corr_dfa)
+
+    # Distance geometries (MDS), not PCA.
+    X = np.asarray(condensed.hidden_states, dtype=float)
+    prefixes = [_display_prefix_label(l) for l in condensed.labels]
+    state_ids = [
+        dfa_state_for_prefix(l, automaton, spaced=ctx["spaced"])
+        for l in condensed.labels
+    ]
+    state_colors = _dfa_automaton_state_colors(automaton)
+    point_colors = [state_colors[s] for s in state_ids]
+
+    embeddings = {
+        "cosine": _classical_mds_2d(_pairwise_cosine_distance(X)),
+        "euclidean": _classical_mds_2d(_pairwise_euclidean(X)),
+    }
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 5.2), squeeze=False)
+    for ax, (metric, xy) in zip(axes[0], embeddings.items()):
+        ax.scatter(
+            xy[:, 0], xy[:, 1],
+            c=point_colors, s=42, edgecolors="0.2", linewidths=0.35, zorder=3,
+        )
+        # Avoid label pile-up on large DFAs: annotate every point but tiny.
+        fs = 5.5 if len(prefixes) <= 40 else 4.5
+        for i, lab in enumerate(prefixes):
+            ax.text(
+                xy[i, 0], xy[i, 1], lab,
+                fontsize=fs, color="#222", ha="left", va="bottom",
+                clip_on=True, zorder=4,
+            )
+        ax.set_title(f"MDS from {metric} distance", fontsize=10)
+        ax.set_xlabel(f"{metric} MDS-1", fontsize=8)
+        ax.set_ylabel(f"{metric} MDS-2", fontsize=8)
+        ax.grid(True, alpha=0.25)
+        ax.tick_params(labelsize=7)
+        ax.set_aspect("equal", adjustable="datalim")
+
+    # Compact DFA color legend (unique states present).
+    uniq = sorted(set(state_ids))
+    handles = [
+        plt.Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor=state_colors[s], markeredgecolor="0.25",
+            markersize=7, label=f"s{s}",
+        )
+        for s in uniq[:18]
+    ]
+    if len(uniq) > 18:
+        handles.append(
+            plt.Line2D([0], [0], marker="", color="w", label=f"+{len(uniq) - 18} more"),
+        )
+    fig.legend(
+        handles=handles,
+        loc="center left", bbox_to_anchor=(1.01, 0.5),
+        fontsize=6, frameon=False, title="DFA", title_fontsize=7,
+    )
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"Hard run r{run_id:02d}: DFA={ctx['n_dfa']} states, "
+            f"{ctx['n_words']} words · condensed prefixes "
+            f"(color = min DFA state; not PCA)"
+        ),
+        top=0.88,
+        bottom=0.10,
+        left=0.07,
+        right=0.86,
+        wspace=0.28,
+    )
+    mds_path = out_root / "state_mds_cosine_euclidean.png"
+    save_figure(fig, mds_path, dpi=150)
+    plt.close(fig)
+    print(f"wrote {mds_path}", flush=True)
+    outs.append(mds_path)
+
+    # Combined overview: correlation (clustered) already separate; write a thin meta note.
+    meta = {
+        "run_id": run_id,
+        "task": ctx["task"],
+        "n_dfa_states": ctx["n_dfa"],
+        "n_words": ctx["n_words"],
+        "n_condensed_prefixes": int(X.shape[0]),
+        "hidden_size": int(model["hidden_size"]),
+        "words": ctx["words"],
+        "outputs": [str(p) for p in outs],
+    }
+    meta_path = out_root / "summary.json"
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    print(f"wrote {meta_path}", flush=True)
     return outs

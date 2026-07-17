@@ -2296,11 +2296,13 @@ class FeatureSeparationStats:
     pairwise_between_median: dict[str, float]
     within_corr: dict[str, float]
     within_cosine: dict[str, float]
+    between_cosine: dict[str, float]
     shuffle_z: dict[str, float]
     shuffle_p: dict[str, float]
     shuffle_silhouette: dict[str, float]
     shuffle_within_corr: dict[str, float]
     shuffle_within_cosine: dict[str, float]
+    shuffle_between_cosine: dict[str, float]
     shuffle_pairwise_within_median: dict[str, float]
     shuffle_pairwise_between_median: dict[str, float]
     shuffle_pairwise_ratio: dict[str, float]
@@ -2478,6 +2480,38 @@ def _mean_within_group_cosine(
     return float(np.mean(sims)) if sims else float("nan")
 
 
+def _mean_between_group_cosine(
+    states: np.ndarray,
+    group_map: dict[Any, list[int]],
+) -> float:
+    """Mean cosine similarity of hidden-state pairs with different feature labels."""
+    if len(group_map) < 2:
+        return float("nan")
+    indices: list[int] = []
+    labels: list[Any] = []
+    for lbl, idxs in group_map.items():
+        for i in idxs:
+            indices.append(i)
+            labels.append(lbl)
+    if len(indices) < 2:
+        return float("nan")
+    pts = states[indices]
+    norms = np.linalg.norm(pts, axis=1, keepdims=True)
+    norms = np.maximum(norms, 1e-12)
+    unit = pts / norms
+    sim_mat = unit @ unit.T
+    sims: list[float] = []
+    n = len(indices)
+    for a in range(n):
+        for b in range(a + 1, n):
+            if labels[a] == labels[b]:
+                continue
+            v = float(sim_mat[a, b])
+            if np.isfinite(v):
+                sims.append(v)
+    return float(np.mean(sims)) if sims else float("nan")
+
+
 def _label_shuffle_null_summary(
     states: np.ndarray,
     labels: list[Any],
@@ -2500,6 +2534,7 @@ def _label_shuffle_null_summary(
         "shuffle_silhouette": float("nan"),
         "shuffle_within_corr": float("nan"),
         "shuffle_within_cosine": float("nan"),
+        "shuffle_between_cosine": float("nan"),
         "shuffle_pairwise_within_median": float("nan"),
         "shuffle_pairwise_between_median": float("nan"),
         "shuffle_pairwise_ratio": float("nan"),
@@ -2513,6 +2548,7 @@ def _label_shuffle_null_summary(
     null_sil: list[float] = []
     null_corr: list[float] = []
     null_cos: list[float] = []
+    null_bcos: list[float] = []
     null_w: list[float] = []
     null_b: list[float] = []
     null_ratio: list[float] = []
@@ -2541,6 +2577,10 @@ def _label_shuffle_null_summary(
         if np.isfinite(cos):
             null_cos.append(cos)
 
+        bcos = _mean_between_group_cosine(states, gm)
+        if np.isfinite(bcos):
+            null_bcos.append(bcos)
+
         w_med, b_med = _pairwise_within_between_medians(states, gm)
         if np.isfinite(w_med):
             null_w.append(w_med)
@@ -2563,6 +2603,8 @@ def _label_shuffle_null_summary(
         out["shuffle_within_corr"] = float(np.mean(null_corr))
     if null_cos:
         out["shuffle_within_cosine"] = float(np.mean(null_cos))
+    if null_bcos:
+        out["shuffle_between_cosine"] = float(np.mean(null_bcos))
     if null_w:
         out["shuffle_pairwise_within_median"] = float(np.mean(null_w))
     if null_b:
@@ -2596,11 +2638,13 @@ def compute_feature_separation_stats(
     pairwise_between_median: dict[str, float] = {}
     within_corr: dict[str, float] = {}
     within_cosine: dict[str, float] = {}
+    between_cosine: dict[str, float] = {}
     shuffle_z: dict[str, float] = {}
     shuffle_p: dict[str, float] = {}
     shuffle_silhouette: dict[str, float] = {}
     shuffle_within_corr: dict[str, float] = {}
     shuffle_within_cosine: dict[str, float] = {}
+    shuffle_between_cosine: dict[str, float] = {}
     shuffle_pairwise_within_median: dict[str, float] = {}
     shuffle_pairwise_between_median: dict[str, float] = {}
     shuffle_pairwise_ratio: dict[str, float] = {}
@@ -2625,6 +2669,7 @@ def compute_feature_separation_stats(
         pairwise_between_median[feat] = b_med
         within_corr[feat] = _mean_within_group_correlation(hidden_states, group_map)
         within_cosine[feat] = _mean_within_group_cosine(hidden_states, group_map)
+        between_cosine[feat] = _mean_between_group_cosine(hidden_states, group_map)
 
         ratio = (
             w_med / b_med
@@ -2643,6 +2688,7 @@ def compute_feature_separation_stats(
         shuffle_silhouette[feat] = nulls["shuffle_silhouette"]
         shuffle_within_corr[feat] = nulls["shuffle_within_corr"]
         shuffle_within_cosine[feat] = nulls["shuffle_within_cosine"]
+        shuffle_between_cosine[feat] = nulls["shuffle_between_cosine"]
         shuffle_pairwise_within_median[feat] = nulls["shuffle_pairwise_within_median"]
         shuffle_pairwise_between_median[feat] = nulls["shuffle_pairwise_between_median"]
         shuffle_pairwise_ratio[feat] = nulls["shuffle_pairwise_ratio"]
@@ -2659,11 +2705,13 @@ def compute_feature_separation_stats(
         pairwise_between_median=pairwise_between_median,
         within_corr=within_corr,
         within_cosine=within_cosine,
+        between_cosine=between_cosine,
         shuffle_z=shuffle_z,
         shuffle_p=shuffle_p,
         shuffle_silhouette=shuffle_silhouette,
         shuffle_within_corr=shuffle_within_corr,
         shuffle_within_cosine=shuffle_within_cosine,
+        shuffle_between_cosine=shuffle_between_cosine,
         shuffle_pairwise_within_median=shuffle_pairwise_within_median,
         shuffle_pairwise_between_median=shuffle_pairwise_between_median,
         shuffle_pairwise_ratio=shuffle_pairwise_ratio,
@@ -2732,12 +2780,16 @@ def plot_feature_separation_summary(
         "pairwise_between_median": {k: _json_float(v) for k, v in stats.pairwise_between_median.items()},
         "within_corr": {k: _json_float(v) for k, v in stats.within_corr.items()},
         "within_cosine": {k: _json_float(v) for k, v in stats.within_cosine.items()},
+        "between_cosine": {k: _json_float(v) for k, v in stats.between_cosine.items()},
         "shuffle_z": {k: _json_float(v) for k, v in stats.shuffle_z.items()},
         "shuffle_p": {k: _json_float(v) for k, v in stats.shuffle_p.items()},
         "shuffle_silhouette": {k: _json_float(v) for k, v in stats.shuffle_silhouette.items()},
         "shuffle_within_corr": {k: _json_float(v) for k, v in stats.shuffle_within_corr.items()},
         "shuffle_within_cosine": {
             k: _json_float(v) for k, v in stats.shuffle_within_cosine.items()
+        },
+        "shuffle_between_cosine": {
+            k: _json_float(v) for k, v in stats.shuffle_between_cosine.items()
         },
         "shuffle_pairwise_within_median": {
             k: _json_float(v) for k, v in stats.shuffle_pairwise_within_median.items()

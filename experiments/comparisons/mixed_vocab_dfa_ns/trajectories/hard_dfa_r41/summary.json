@@ -1,0 +1,36 @@
+{
+  "run_id": 41,
+  "task": "mixeddfa_r41_ns",
+  "n_dfa_states": 49,
+  "n_words": 21,
+  "n_condensed_prefixes": 60,
+  "hidden_size": 100,
+  "words": [
+    "nation",
+    "fought",
+    "far",
+    "yank",
+    "fine",
+    "cement",
+    "rank",
+    "master",
+    "sister",
+    "window",
+    "bat",
+    "mine",
+    "rate",
+    "faster",
+    "hatch",
+    "forest",
+    "bought",
+    "bound",
+    "match",
+    "hate",
+    "paint"
+  ],
+  "outputs": [
+    "C:\\Code\\statistical_learning\\experiments\\comparisons\\mixed_vocab_dfa_ns\\trajectories\\hard_dfa_r41\\state_correlation_clustered.png",
+    "C:\\Code\\statistical_learning\\experiments\\comparisons\\mixed_vocab_dfa_ns\\trajectories\\hard_dfa_r41\\state_correlation_by_dfa.png",
+    "C:\\Code\\statistical_learning\\experiments\\comparisons\\mixed_vocab_dfa_ns\\trajectories\\hard_dfa_r41\\state_mds_cosine_euclidean.png"
+  ]
+}

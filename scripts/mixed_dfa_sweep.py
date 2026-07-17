@@ -16,8 +16,11 @@ from experiment import EXPERIMENTS_ROOT, checkpoint_path, comparison_dir
 from vocab_mixed_dfa import (
     COMPARISON_NAME,
     DEFAULT_SEEDS,
+    HIDDEN_SIZE_ABLATION,
     N_RUNS,
+    comparison_name_for_h,
     iter_runs,
+    iter_tasks_for_h,
     task_name,
     write_run_manifest,
 )
@@ -86,10 +89,24 @@ def cmd_plan(args: argparse.Namespace) -> None:
 
 def cmd_train(args: argparse.Namespace) -> None:
     seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
-    tasks = [e["task"] for e in iter_runs()]
-    if args.runs is not None:
-        want = set(args.runs)
-        tasks = [task_name(i) for i in sorted(want)]
+    hidden_size = int(args.hidden_size) if args.hidden_size is not None else None
+    if hidden_size is None:
+        tasks = [e["task"] for e in iter_runs()]
+        if args.runs is not None:
+            want = set(args.runs)
+            tasks = [task_name(i) for i in sorted(want)]
+    else:
+        tasks = [e["task"] for e in iter_tasks_for_h(hidden_size)]
+        if args.runs is not None:
+            want = set(args.runs)
+            tasks = [
+                task_name(i, hidden_size=hidden_size) for i in sorted(want)
+            ]
+        print(
+            f"training H={hidden_size} -> {comparison_name_for_h(hidden_size)} "
+            f"({len(tasks)} tasks)",
+            flush=True,
+        )
     jobs = max(1, int(args.jobs))
     if jobs == 1:
         for task in tasks:
@@ -102,6 +119,27 @@ def cmd_train(args: argparse.Namespace) -> None:
         ]
         for fut in as_completed(futs):
             fut.result()
+
+
+def cmd_train_h_ablation(args: argparse.Namespace) -> None:
+    """Train H=50 and H=150 (H=100 already exists under mixed_vocab_dfa_ns)."""
+    hs = tuple(args.hidden_sizes) if args.hidden_sizes else HIDDEN_SIZE_ABLATION
+    for h in hs:
+        print(f"\n=== train hidden_size={h} ===", flush=True)
+        args.hidden_size = int(h)
+        cmd_train(args)
+
+
+def cmd_plot_h_ablation(args: argparse.Namespace) -> None:
+    from viz.compare.mixed_dfa_h_ablation import plot_mixed_dfa_h_ablation
+
+    hs = tuple(args.hidden_sizes) if args.hidden_sizes else (50, 100, 150)
+    out = plot_mixed_dfa_h_ablation(
+        seed=(args.seeds[0] if args.seeds else 1),
+        recompute=not args.replot_only,
+        hs=hs,
+    )
+    print(f"wrote {out}", flush=True)
 
 
 def cmd_plot(args: argparse.Namespace) -> None:
@@ -198,6 +236,7 @@ def main() -> None:
         choices=(
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
+            "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -211,6 +250,14 @@ def main() -> None:
         "--retrain", action="store_true",
         help="with learning-decode: force retrain with --save-learning-snaps",
     )
+    parser.add_argument(
+        "--hidden-size", type=int, default=None,
+        help="with train: use mixeddfa_h{H}_* tasks (default: legacy H=100 names)",
+    )
+    parser.add_argument(
+        "--hidden-sizes", type=int, nargs="+", default=None,
+        help="with train-h-ablation / plot-h-ablation (default: 50 150 or 50 100 150)",
+    )
     args = parser.parse_args()
 
     (EXPERIMENTS_ROOT / "comparisons" / COMPARISON_NAME).mkdir(parents=True, exist_ok=True)
@@ -219,8 +266,18 @@ def main() -> None:
         cmd_plan(args)
     elif args.command == "train":
         cmd_train(args)
+    elif args.command == "train-h-ablation":
+        cmd_train_h_ablation(args)
     elif args.command == "plot":
         cmd_plot(args)
+    elif args.command == "plot-h-ablation":
+        cmd_plot_h_ablation(args)
+    elif args.command == "hard-dfa-geometry":
+        from viz.compare.mixed_dfa_viz import plot_hard_dfa_state_geometry
+
+        outs = plot_hard_dfa_state_geometry(run_id=int(args.run_id), seed=(args.seeds[0] if args.seeds else 1))
+        for p in outs:
+            print(f"wrote {p}", flush=True)
     elif args.command == "learning-decode":
         cmd_learning_decode(args)
     elif args.command == "learning-decode-bins":

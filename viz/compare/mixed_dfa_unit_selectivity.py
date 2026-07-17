@@ -496,29 +496,39 @@ def _plot_mean_si_scatter_on_ax(
     ax.tick_params(labelsize=7)
 
 
-def _plot_cosine_within_on_ax(
+def _plot_geometry_metric_on_ax(
     ax,
     panels: list[dict[str, Any]],
     *,
     features: tuple[str, ...],
+    obs_key: str,
+    shuffle_key: str,
+    ylabel: str,
+    title: str,
+    ylim: tuple[float, float] | None = None,
+    y_floor: float | None = None,
 ) -> None:
-    """Within-feature cosine vs DFA (observed + shuffle)."""
-    from matplotlib.lines import Line2D
+    """Metric vs DFA (observed + shuffle) for one JSON key pair."""
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     xs = np.asarray([float(p["n_dfa_states"]) for p in panels], dtype=float)
+    y_all: list[float] = []
     for feat in features:
         color = DECODE_FEATURE_COLORS.get(feat, FEATURE_COLORS.get(feat, "#666"))
         y_obs = np.asarray(
-            [float(p.get("within_cosine", {}).get(feat, float("nan"))) for p in panels],
+            [float(p.get(obs_key, {}).get(feat, float("nan"))) for p in panels],
             dtype=float,
         )
         y_sh = np.asarray(
-            [float(p.get("shuffle_within_cosine", {}).get(feat, float("nan"))) for p in panels],
+            [float(p.get(shuffle_key, {}).get(feat, float("nan"))) for p in panels],
             dtype=float,
         )
         mask_o = np.isfinite(xs) & np.isfinite(y_obs)
         mask_s = np.isfinite(xs) & np.isfinite(y_sh)
+        if mask_o.any():
+            y_all.extend(y_obs[mask_o].tolist())
+        if mask_s.any():
+            y_all.extend(y_sh[mask_s].tolist())
         ax.scatter(
             xs[mask_o], y_obs[mask_o], s=20, color=color, marker="o", alpha=0.78,
             edgecolors="white", linewidths=0.3, zorder=3,
@@ -531,17 +541,117 @@ def _plot_cosine_within_on_ax(
         x_fit_s, y_fit_s, _, _ = _fit_trend(xs[mask_s], y_sh[mask_s])
         if x_fit_o is not None:
             ax.plot(x_fit_o, y_fit_o, color=color, lw=1.3, zorder=4)
+            y_all.extend(np.asarray(y_fit_o, dtype=float).tolist())
         if x_fit_s is not None:
             ax.plot(x_fit_s, y_fit_s, color=color, lw=1.0, ls="--", alpha=0.7, zorder=3)
+            y_all.extend(np.asarray(y_fit_s, dtype=float).tolist())
     ax.set_xlabel("DFA states", fontsize=8)
-    ax.set_ylabel("within-feature cosine", fontsize=8)
-    ax.set_title("Condensed hidden states", fontsize=9)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylabel(ylabel, fontsize=8)
+    ax.set_title(title, fontsize=9)
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+    else:
+        finite = [y for y in y_all if np.isfinite(y)]
+        if finite:
+            lo, hi = float(np.min(finite)), float(np.max(finite))
+            pad = max(0.02, 0.08 * (hi - lo if hi > lo else 0.1))
+            y0 = lo - pad
+            if y_floor is not None:
+                y0 = max(y_floor, y0)
+            ax.set_ylim(y0, hi + pad)
+        else:
+            ax.set_ylim(-0.05, 1.05)
     ax.grid(True, alpha=0.25)
     ax.tick_params(labelsize=7)
     ax.text(
         0.02, 0.02, "open/dashed = shuffle",
         transform=ax.transAxes, fontsize=6, color="0.45", va="bottom",
+    )
+
+
+def _plot_cosine_metric_on_ax(
+    ax,
+    panels: list[dict[str, Any]],
+    *,
+    features: tuple[str, ...],
+    obs_key: str,
+    shuffle_key: str,
+    ylabel: str,
+    title: str,
+    ylim: tuple[float, float] | None = None,
+) -> None:
+    _plot_geometry_metric_on_ax(
+        ax, panels, features=features,
+        obs_key=obs_key, shuffle_key=shuffle_key,
+        ylabel=ylabel, title=title, ylim=ylim,
+    )
+
+
+def _plot_cosine_within_on_ax(
+    ax,
+    panels: list[dict[str, Any]],
+    *,
+    features: tuple[str, ...],
+) -> None:
+    """Within-feature cosine vs DFA (observed + shuffle)."""
+    _plot_cosine_metric_on_ax(
+        ax, panels, features=features,
+        obs_key="within_cosine", shuffle_key="shuffle_within_cosine",
+        ylabel="within-label cosine",
+        title="Within-label cosine",
+        ylim=(-0.05, 1.05),
+    )
+
+
+def _plot_cosine_between_on_ax(
+    ax,
+    panels: list[dict[str, Any]],
+    *,
+    features: tuple[str, ...],
+) -> None:
+    """Between-label cosine vs DFA (observed + shuffle)."""
+    _plot_cosine_metric_on_ax(
+        ax, panels, features=features,
+        obs_key="between_cosine", shuffle_key="shuffle_between_cosine",
+        ylabel="between-label cosine",
+        title="Between-label cosine",
+        ylim=None,
+    )
+
+
+def _plot_euclidean_within_on_ax(
+    ax,
+    panels: list[dict[str, Any]],
+    *,
+    features: tuple[str, ...],
+) -> None:
+    """Within-label Euclidean median distance vs DFA."""
+    _plot_geometry_metric_on_ax(
+        ax, panels, features=features,
+        obs_key="pairwise_within_median",
+        shuffle_key="shuffle_pairwise_within_median",
+        ylabel="within-label Euclidean",
+        title="Within-label Euclidean",
+        ylim=None,
+        y_floor=0.0,
+    )
+
+
+def _plot_euclidean_between_on_ax(
+    ax,
+    panels: list[dict[str, Any]],
+    *,
+    features: tuple[str, ...],
+) -> None:
+    """Between-label Euclidean median distance vs DFA."""
+    _plot_geometry_metric_on_ax(
+        ax, panels, features=features,
+        obs_key="pairwise_between_median",
+        shuffle_key="shuffle_pairwise_between_median",
+        ylabel="between-label Euclidean",
+        title="Between-label Euclidean",
+        ylim=None,
+        y_floor=0.0,
     )
 
 
@@ -552,7 +662,7 @@ def plot_mixed_fig15_geometry_and_selectivity(
     outfile: str | None = None,
     features: tuple[str, ...] = DEFAULT_FEATURES,
 ) -> Path:
-    """Figure 15: cosine within + pooled unit SI + mean SI vs DFA (3 panels)."""
+    """Figure 15: cosine/Euclidean within–between + unit SI panels."""
     from viz.compare.sweep_output import sweep_data_dir, sweep_decoding_dir
 
     si_path = Path(si_json or comparison_dir(COMPARISON_NAME, "unit_selectivity") / "mixed_dfa_unit_selectivity_pooled.json")
@@ -572,29 +682,34 @@ def plot_mixed_fig15_geometry_and_selectivity(
     within_panels = within_payload.get("panels", [])
     within_feats = tuple(within_payload.get("features", features[:4]))
 
-    fig, axes = plt.subplots(1, 3, figsize=(11.2, 3.6), squeeze=False)
-    ax_cos, ax_den, ax_sc = axes[0]
+    fig, axes = plt.subplots(2, 3, figsize=(12.6, 6.4), squeeze=False)
+    ax_cw, ax_cb, ax_den = axes[0]
+    ax_ew, ax_eb, ax_sc = axes[1]
 
-    _plot_cosine_within_on_ax(ax_cos, within_panels, features=within_feats)
+    _plot_cosine_within_on_ax(ax_cw, within_panels, features=within_feats)
+    _plot_cosine_between_on_ax(ax_cb, within_panels, features=within_feats)
     _plot_pooled_si_density_on_ax(ax_den, pooled_all, features=features)
+    _plot_euclidean_within_on_ax(ax_ew, within_panels, features=within_feats)
+    _plot_euclidean_between_on_ax(ax_eb, within_panels, features=within_feats)
     _plot_mean_si_scatter_on_ax(ax_sc, si_payload.get("per_run", []), features=features)
 
     handles, labels = ax_sc.get_legend_handles_labels()
     if handles:
         fig.legend(
             handles, labels,
-            loc="lower center", bbox_to_anchor=(0.5, 0.01),
+            loc="lower center", bbox_to_anchor=(0.5, 0.005),
             ncol=len(handles), fontsize=7, frameon=False, columnspacing=1.0,
         )
 
     finalize_grid_figure(
         fig,
         suptitle="Population geometry and unit selectivity vs DFA size (mixed vocabs)",
-        top=0.86,
-        bottom=0.18,
-        left=0.07,
-        right=0.98,
-        wspace=0.32,
+        top=0.90,
+        bottom=0.10,
+        left=0.06,
+        right=0.99,
+        wspace=0.34,
+        hspace=0.42,
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     save_figure(fig, out, dpi=150)

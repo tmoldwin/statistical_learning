@@ -1,19 +1,8 @@
 {
-  "copied": 18,
+  "copied": 29,
   "missing": [
-    "experiments/six_word_mixed_demo_ns/shared/vocabulary_trie.svg",
-    "experiments/six_word_mixed_demo_ns/shared/vocabulary_min_dfa.svg",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/training/3_learning_curve.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/training/learning_curve_with_samples.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/activations/8_next_char_prob_sequence_condensed.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/activations/7_activation_heatmap.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/correlation/17_state_correlation_clustered_condensed.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/unit_selectivity/example_units_combined.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/trajectories/dfa_and_trajectory_by_seed.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/embeddings/11_embedding_panels_context_condensed.png",
-    "experiments/six_word_mixed_demo_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png"
+    "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_with_word_seed_mean.png",
+    "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_by_position_word_length.png"
   ],
   "figures": [
     {
@@ -21,7 +10,7 @@
       "paper_name": "fig01_trie.svg",
       "source": "experiments/six_word_mixed_demo_ns/shared/vocabulary_trie.svg",
       "dest": "paper/figures/demo/fig01_trie.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -37,7 +26,7 @@
       "paper_name": "fig02_dfa.svg",
       "source": "experiments/six_word_mixed_demo_ns/shared/vocabulary_min_dfa.svg",
       "dest": "paper/figures/demo/fig02_dfa.svg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -53,7 +42,7 @@
       "paper_name": "fig03_learning_curve.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/training/3_learning_curve.png",
       "dest": "paper/figures/demo/fig03_learning_curve.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -61,7 +50,7 @@
       "paper_name": "fig03_learning_with_samples.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/training/learning_curve_with_samples.png",
       "dest": "paper/figures/demo/fig03_learning_with_samples.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -101,7 +90,7 @@
       "paper_name": "fig_next_char_probs.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/8_next_char_prob_sequence_condensed.png",
       "dest": "paper/figures/demo/fig_next_char_probs.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -109,7 +98,7 @@
       "paper_name": "fig_activation_heatmap.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/7_activation_heatmap.png",
       "dest": "paper/figures/demo/fig_activation_heatmap.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -117,7 +106,7 @@
       "paper_name": "fig_activation_clustered.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/activations/10_activation_clustered_heatmap.png",
       "dest": "paper/figures/demo/fig_activation_clustered.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -125,7 +114,7 @@
       "paper_name": "fig_state_correlation.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/correlation/17_state_correlation_clustered_condensed.png",
       "dest": "paper/figures/demo/fig_state_correlation.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -141,7 +130,7 @@
       "paper_name": "fig_example_units.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/unit_selectivity/example_units_combined.png",
       "dest": "paper/figures/demo/fig_example_units.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -149,7 +138,7 @@
       "paper_name": "fig_decoding_seed_mean.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_curves_seed_mean.png",
       "dest": "paper/figures/demo/fig_decoding_seed_mean.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -157,7 +146,7 @@
       "paper_name": "fig_decoding_with_word.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_with_word_seed_mean.png",
       "dest": "paper/figures/demo/fig_decoding_with_word.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -165,7 +154,7 @@
       "paper_name": "fig_decoding_by_position_word_length.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_by_position_word_length.png",
       "dest": "paper/figures/demo/fig_decoding_by_position_word_length.jpg",
-      "exists": true,
+      "exists": false,
       "skipped_self": false
     },
     {
@@ -173,7 +162,7 @@
       "paper_name": "fig_word_trajectories.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/trajectories/dfa_and_trajectory_by_seed.png",
       "dest": "paper/figures/demo/fig_word_trajectories.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -181,7 +170,7 @@
       "paper_name": "fig11_embedding_panels.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/embeddings/11_embedding_panels_context_condensed.png",
       "dest": "paper/figures/main/fig11_embedding_panels.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -197,7 +186,7 @@
       "paper_name": "fig19_dfa_distance.jpg",
       "source": "experiments/six_word_mixed_demo_ns/rnn/plots/separation/19_dfa_state_distance_comparison_condensed.png",
       "dest": "paper/figures/main/fig19_dfa_distance.jpg",
-      "exists": false,
+      "exists": true,
       "skipped_self": false
     },
     {
@@ -267,7 +256,7 @@
     {
       "section": "compare",
       "paper_name": "fig_mixed_cosine_within.jpg",
-      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/cosine_within_vs_dfa.png",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/decoding/fig15_geometry_and_selectivity.png",
       "dest": "paper/figures/compare/fig_mixed_cosine_within.jpg",
       "exists": true,
       "skipped_self": false

@@ -100,7 +100,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Mixed-vocab scaling overview](figures/compare/fig_mixed_scaling_overview.jpg)
 
-**Figure 11.** Mixed-vocab scaling with minimized DFA size. Left: sampled vocabulary size vs DFA state count. Middle: closed-loop PC spectra colored by DFA size (larger automata flatten the scree). Right: iterations to 3\% word error (color = \# words).
+**Figure 11.** Mixed-vocab scaling with minimized DFA size. Left: sampled vocabulary size vs DFA state count. Middle: iterations to 3\% word error (color = \# words). Right: closed-loop PC spectra colored by DFA size (larger automata flatten the scree).
 
 ![Closed-loop trajectories by DFA span](figures/compare/fig_mixed_traj_by_dfa.jpg)
 
@@ -114,9 +114,9 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 **Figure 14.** Readout over learning, mean ± std across mixed-vocab learning curves binned by minimized DFA size (columns; same quantile bins as Figure 13). Rows = probe basis (1, 3, 5, 15 PCs, full \(H\)). Aggregation uses all 50 vocabs (seed 1) plus extra seeds where learning checkpoints exist (64 curves total); shaded bands = across-curve std; dashed colored = DFA-state oracle; dashed grey = word error. Character and DFA state become linearly available early and on few PCs across bins; word identity stays weak at 1–5 PCs and needs \(\sim\)15 PCs / full \(H\), rising after word error has already collapsed—most clearly in larger-DFA bins.
 
-![Within-feature cosine similarity vs DFA](figures/compare/fig_mixed_cosine_within.jpg)
+![Within-feature geometry and unit selectivity](figures/compare/fig_mixed_cosine_within.jpg)
 
-**Figure 15.** Mean within-feature cosine similarity of condensed hidden states vs minimized DFA size (seed 1; filled/solid = observed, open/dashed = label shuffle). DFA-state grouping stays high above shuffle across the sweep; position features sit lower.
+**Figure 15.** Mixed-vocab geometry and unit selectivity vs minimized DFA size. Left: mean within-feature cosine similarity of condensed hidden states (seed 1; solid = observed, open/dashed = label shuffle). Middle: pooled per-unit selectivity index (SI > 0; DFA ≥ 10). Right: per-run mean SI vs DFA size (DFA ≥ 10; flat after excluding tiny automata). Feature colors match Figures 13–14.
 
 ### 3.9 Weight structure
 

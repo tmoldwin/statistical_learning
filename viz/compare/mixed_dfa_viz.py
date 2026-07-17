@@ -769,7 +769,7 @@ def plot_mixed_dfa_scaling_overview(
         if "error" not in p
     ]
 
-    fig, (ax_nw, ax_sp, ax_it) = plt.subplots(1, 3, figsize=(10.2, 3.5))
+    fig, (ax_nw, ax_it, ax_sp) = plt.subplots(1, 3, figsize=(10.2, 3.5))
 
     xs, ys = _nwords_dfa_xy(decode_payload)
     ax_nw.scatter(xs, ys, s=28, alpha=0.8, color="#E45756", edgecolors="white", linewidths=0.4)
@@ -2645,6 +2645,8 @@ def run_all_mixed_dfa_plots(
         plot_mixed_dfa_within_corr_vs_dfa(recompute=False),
         plot_mixed_position_word_length_decode(pos_payload),
     ]
+    from viz.compare.mixed_dfa_unit_selectivity import plot_mixed_fig15_geometry_and_selectivity
+    outs.append(plot_mixed_fig15_geometry_and_selectivity())
     for p in outs:
         print(f"wrote {p}", flush=True)
     return outs

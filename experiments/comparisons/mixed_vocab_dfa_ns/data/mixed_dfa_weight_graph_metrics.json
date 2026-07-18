@@ -57,6 +57,20 @@
         "triad_connected": 66237.0,
         "triad_ff_over_cycle": 2.7426404995539695
       },
+      "signed": {
+        "signed_threshold": 0.21585096616850166,
+        "signed_pos_edge_frac": 0.4771717171717172,
+        "signed_neg_edge_frac": 0.5228282828282829,
+        "signed_recip_pp_frac": 0.14375,
+        "signed_recip_pm_frac": 0.70625,
+        "signed_recip_mm_frac": 0.15,
+        "signed_cycle_balanced_frac": 0.5736301369863014,
+        "signed_cycle_unbalanced_frac": 0.4263698630136986,
+        "signed_ff_all_pos_rate": 0.09318588388355831,
+        "signed_ff_all_neg_rate": 0.14799154334038056,
+        "signed_ff_mixed_rate": 0.7588225727760611,
+        "signed_undir_tri_balanced_frac": 0.495139146567718
+      },
       "rank": {
         "stable_rank": 4.488164255756015,
         "effective_rank": 18.803321856416005,
@@ -150,6 +164,20 @@
         "triad_300_frac": 0.0004329004329004329,
         "triad_connected": 62634.0,
         "triad_ff_over_cycle": 3.003674219228414
+      },
+      "signed": {
+        "signed_threshold": 0.20884710609018795,
+        "signed_pos_edge_frac": 0.498989898989899,
+        "signed_neg_edge_frac": 0.501010101010101,
+        "signed_recip_pp_frac": 0.09438775510204081,
+        "signed_recip_pm_frac": 0.7729591836734694,
+        "signed_recip_mm_frac": 0.1326530612244898,
+        "signed_cycle_balanced_frac": 0.576797385620915,
+        "signed_cycle_unbalanced_frac": 0.42320261437908496,
+        "signed_ff_all_pos_rate": 0.11885830784913354,
+        "signed_ff_all_neg_rate": 0.13333333333333333,
+        "signed_ff_mixed_rate": 0.7478083588175332,
+        "signed_undir_tri_balanced_frac": 0.4780712788259958
       },
       "rank": {
         "stable_rank": 5.095081709255731,
@@ -245,6 +273,20 @@
         "triad_connected": 65677.0,
         "triad_ff_over_cycle": 3.3363821138211383
       },
+      "signed": {
+        "signed_threshold": 0.25983815593350157,
+        "signed_pos_edge_frac": 0.47555555555555556,
+        "signed_neg_edge_frac": 0.5244444444444445,
+        "signed_recip_pp_frac": 0.1910828025477707,
+        "signed_recip_pm_frac": 0.5923566878980892,
+        "signed_recip_mm_frac": 0.21656050955414013,
+        "signed_cycle_balanced_frac": 0.5041206030150753,
+        "signed_cycle_unbalanced_frac": 0.4958793969849246,
+        "signed_ff_all_pos_rate": 0.10752360645750837,
+        "signed_ff_all_neg_rate": 0.13889734998477002,
+        "signed_ff_mixed_rate": 0.7535790435577217,
+        "signed_undir_tri_balanced_frac": 0.5173787110789283
+      },
       "rank": {
         "stable_rank": 6.486564449499704,
         "effective_rank": 31.466383214958828,
@@ -338,6 +380,20 @@
         "triad_300_frac": 0.000383426097711812,
         "triad_connected": 64663.0,
         "triad_ff_over_cycle": 3.2511923688394275
+      },
+      "signed": {
+        "signed_threshold": 0.09646860968224405,
+        "signed_pos_edge_frac": 0.48808080808080806,
+        "signed_neg_edge_frac": 0.5119191919191919,
+        "signed_recip_pp_frac": 0.20481927710843373,
+        "signed_recip_pm_frac": 0.5903614457831325,
+        "signed_recip_mm_frac": 0.20481927710843373,
+        "signed_cycle_balanced_frac": 0.47181421198888446,
+        "signed_cycle_unbalanced_frac": 0.5281857880111155,
+        "signed_ff_all_pos_rate": 0.11833740831295844,
+        "signed_ff_all_neg_rate": 0.13317033414832927,
+        "signed_ff_mixed_rate": 0.7484922575387123,
+        "signed_undir_tri_balanced_frac": 0.49936817066825245
       },
       "rank": {
         "stable_rank": 8.640921174064998,
@@ -433,6 +489,20 @@
         "triad_connected": 66489.0,
         "triad_ff_over_cycle": 3.197163769441903
       },
+      "signed": {
+        "signed_threshold": 0.25533696281368534,
+        "signed_pos_edge_frac": 0.4864646464646465,
+        "signed_neg_edge_frac": 0.5135353535353535,
+        "signed_recip_pp_frac": 0.2179930795847751,
+        "signed_recip_pm_frac": 0.5501730103806228,
+        "signed_recip_mm_frac": 0.23183391003460208,
+        "signed_cycle_balanced_frac": 0.6051527860994608,
+        "signed_cycle_unbalanced_frac": 0.39484721390053923,
+        "signed_ff_all_pos_rate": 0.08828158534840463,
+        "signed_ff_all_neg_rate": 0.16711975962226355,
+        "signed_ff_mixed_rate": 0.7445986550293318,
+        "signed_undir_tri_balanced_frac": 0.4565696805861848
+      },
       "rank": {
         "stable_rank": 7.422947626070305,
         "effective_rank": 31.35612889457981,
@@ -526,6 +596,20 @@
         "triad_300_frac": 0.00020408163265306123,
         "triad_connected": 67585.0,
         "triad_ff_over_cycle": 3.5843118835133865
+      },
+      "signed": {
+        "signed_threshold": 0.10400445276048519,
+        "signed_pos_edge_frac": 0.5054545454545455,
+        "signed_neg_edge_frac": 0.4945454545454545,
+        "signed_recip_pp_frac": 0.22962962962962963,
+        "signed_recip_pm_frac": 0.5444444444444444,
+        "signed_recip_mm_frac": 0.22592592592592592,
+        "signed_cycle_balanced_frac": 0.5287792536369387,
+        "signed_cycle_unbalanced_frac": 0.4712207463630613,
+        "signed_ff_all_pos_rate": 0.12383698073646966,
+        "signed_ff_all_neg_rate": 0.13379635696501113,
+        "signed_ff_mixed_rate": 0.7423666622985192,
+        "signed_undir_tri_balanced_frac": 0.47591270930551743
       },
       "rank": {
         "stable_rank": 9.281336812606321,
@@ -621,6 +705,20 @@
         "triad_connected": 66277.0,
         "triad_ff_over_cycle": 3.428717424629535
       },
+      "signed": {
+        "signed_threshold": 0.09436508230748908,
+        "signed_pos_edge_frac": 0.48808080808080806,
+        "signed_neg_edge_frac": 0.5119191919191919,
+        "signed_recip_pp_frac": 0.20846905537459284,
+        "signed_recip_pm_frac": 0.5602605863192183,
+        "signed_recip_mm_frac": 0.23127035830618892,
+        "signed_cycle_balanced_frac": 0.4992878942014242,
+        "signed_cycle_unbalanced_frac": 0.5007121057985758,
+        "signed_ff_all_pos_rate": 0.11520119225037258,
+        "signed_ff_all_neg_rate": 0.1332339791356185,
+        "signed_ff_mixed_rate": 0.751564828614009,
+        "signed_undir_tri_balanced_frac": 0.49916684778671305
+      },
       "rank": {
         "stable_rank": 8.864524299834072,
         "effective_rank": 33.706123568405644,
@@ -714,6 +812,20 @@
         "triad_300_frac": 0.0003215831787260359,
         "triad_connected": 65303.0,
         "triad_ff_over_cycle": 4.042985074626865
+      },
+      "signed": {
+        "signed_threshold": 0.09788078571413296,
+        "signed_pos_edge_frac": 0.48323232323232324,
+        "signed_neg_edge_frac": 0.5167676767676768,
+        "signed_recip_pp_frac": 0.22741433021806853,
+        "signed_recip_pm_frac": 0.5451713395638629,
+        "signed_recip_mm_frac": 0.22741433021806853,
+        "signed_cycle_balanced_frac": 0.4884763124199744,
+        "signed_cycle_unbalanced_frac": 0.5115236875800256,
+        "signed_ff_all_pos_rate": 0.11591848789131719,
+        "signed_ff_all_neg_rate": 0.14500886001181335,
+        "signed_ff_mixed_rate": 0.7390726520968695,
+        "signed_undir_tri_balanced_frac": 0.5011569052783803
       },
       "rank": {
         "stable_rank": 9.471307715170706,
@@ -809,6 +921,20 @@
         "triad_connected": 65682.0,
         "triad_ff_over_cycle": 4.112492599171107
       },
+      "signed": {
+        "signed_threshold": 0.09903631056911812,
+        "signed_pos_edge_frac": 0.5248484848484849,
+        "signed_neg_edge_frac": 0.4751515151515151,
+        "signed_recip_pp_frac": 0.2626582278481013,
+        "signed_recip_pm_frac": 0.49050632911392406,
+        "signed_recip_mm_frac": 0.2468354430379747,
+        "signed_cycle_balanced_frac": 0.5103537532355479,
+        "signed_cycle_unbalanced_frac": 0.4896462467644521,
+        "signed_ff_all_pos_rate": 0.14411171897494962,
+        "signed_ff_all_neg_rate": 0.10437661963720127,
+        "signed_ff_mixed_rate": 0.7515116613878491,
+        "signed_undir_tri_balanced_frac": 0.4953976700704732
+      },
       "rank": {
         "stable_rank": 6.585809968664622,
         "effective_rank": 35.62539619384631,
@@ -902,6 +1028,20 @@
         "triad_300_frac": 0.0003215831787260359,
         "triad_connected": 65465.0,
         "triad_ff_over_cycle": 3.3771251931993818
+      },
+      "signed": {
+        "signed_threshold": 0.09111977065259352,
+        "signed_pos_edge_frac": 0.498989898989899,
+        "signed_neg_edge_frac": 0.501010101010101,
+        "signed_recip_pp_frac": 0.277602523659306,
+        "signed_recip_pm_frac": 0.47003154574132494,
+        "signed_recip_mm_frac": 0.25236593059936907,
+        "signed_cycle_balanced_frac": 0.5146443514644351,
+        "signed_cycle_unbalanced_frac": 0.48535564853556484,
+        "signed_ff_all_pos_rate": 0.11472158657513348,
+        "signed_ff_all_neg_rate": 0.14279176201372998,
+        "signed_ff_mixed_rate": 0.7424866514111366,
+        "signed_undir_tri_balanced_frac": 0.4946252074164923
       },
       "rank": {
         "stable_rank": 9.151143822535081,
@@ -997,6 +1137,20 @@
         "triad_connected": 67511.0,
         "triad_ff_over_cycle": 3.477469276285844
       },
+      "signed": {
+        "signed_threshold": 0.0920178689104603,
+        "signed_pos_edge_frac": 0.5078787878787879,
+        "signed_neg_edge_frac": 0.49212121212121207,
+        "signed_recip_pp_frac": 0.2391304347826087,
+        "signed_recip_pm_frac": 0.5471014492753623,
+        "signed_recip_mm_frac": 0.213768115942029,
+        "signed_cycle_balanced_frac": 0.4975718332658843,
+        "signed_cycle_unbalanced_frac": 0.5024281667341157,
+        "signed_ff_all_pos_rate": 0.11557591623036649,
+        "signed_ff_all_neg_rate": 0.12761780104712042,
+        "signed_ff_mixed_rate": 0.756806282722513,
+        "signed_undir_tri_balanced_frac": 0.4785350966429298
+      },
       "rank": {
         "stable_rank": 7.099450945435788,
         "effective_rank": 34.37730721564466,
@@ -1090,6 +1244,20 @@
         "triad_300_frac": 0.00017316017316017316,
         "triad_connected": 66177.0,
         "triad_ff_over_cycle": 3.720604099244876
+      },
+      "signed": {
+        "signed_threshold": 0.09711609918908232,
+        "signed_pos_edge_frac": 0.5046464646464647,
+        "signed_neg_edge_frac": 0.4953535353535353,
+        "signed_recip_pp_frac": 0.22772277227722773,
+        "signed_recip_pm_frac": 0.5610561056105611,
+        "signed_recip_mm_frac": 0.21122112211221122,
+        "signed_cycle_balanced_frac": 0.5110113320504597,
+        "signed_cycle_unbalanced_frac": 0.4889886679495403,
+        "signed_ff_all_pos_rate": 0.12829805740794434,
+        "signed_ff_all_neg_rate": 0.12713830095679907,
+        "signed_ff_mixed_rate": 0.7445636416352566,
+        "signed_undir_tri_balanced_frac": 0.4964200477326969
       },
       "rank": {
         "stable_rank": 9.110411994202746,
@@ -1185,6 +1353,20 @@
         "triad_connected": 65694.0,
         "triad_ff_over_cycle": 3.6268253109789077
       },
+      "signed": {
+        "signed_threshold": 0.08557197566987616,
+        "signed_pos_edge_frac": 0.48767676767676765,
+        "signed_neg_edge_frac": 0.5123232323232323,
+        "signed_recip_pp_frac": 0.21656050955414013,
+        "signed_recip_pm_frac": 0.5063694267515924,
+        "signed_recip_mm_frac": 0.2770700636942675,
+        "signed_cycle_balanced_frac": 0.4872055239642567,
+        "signed_cycle_unbalanced_frac": 0.5127944760357434,
+        "signed_ff_all_pos_rate": 0.12570832090665077,
+        "signed_ff_all_neg_rate": 0.12660304205189382,
+        "signed_ff_mixed_rate": 0.7476886370414554,
+        "signed_undir_tri_balanced_frac": 0.5
+      },
       "rank": {
         "stable_rank": 10.158949231226357,
         "effective_rank": 42.70737028142566,
@@ -1278,6 +1460,20 @@
         "triad_300_frac": 0.0002782931354359926,
         "triad_connected": 64752.0,
         "triad_ff_over_cycle": 3.529152915291529
+      },
+      "signed": {
+        "signed_threshold": 0.095457711754243,
+        "signed_pos_edge_frac": 0.5070707070707071,
+        "signed_neg_edge_frac": 0.4929292929292929,
+        "signed_recip_pp_frac": 0.25835866261398177,
+        "signed_recip_pm_frac": 0.5501519756838906,
+        "signed_recip_mm_frac": 0.19148936170212766,
+        "signed_cycle_balanced_frac": 0.48021657642648896,
+        "signed_cycle_unbalanced_frac": 0.519783423573511,
+        "signed_ff_all_pos_rate": 0.12079177057356609,
+        "signed_ff_all_neg_rate": 0.1345074812967581,
+        "signed_ff_mixed_rate": 0.7447007481296758,
+        "signed_undir_tri_balanced_frac": 0.48128975003697677
       },
       "rank": {
         "stable_rank": 9.489725118709304,
@@ -1373,6 +1569,20 @@
         "triad_connected": 67007.0,
         "triad_ff_over_cycle": 4.701818181818182
       },
+      "signed": {
+        "signed_threshold": 0.09548174716315525,
+        "signed_pos_edge_frac": 0.4771717171717172,
+        "signed_neg_edge_frac": 0.5228282828282829,
+        "signed_recip_pp_frac": 0.21554770318021202,
+        "signed_recip_pm_frac": 0.5547703180212014,
+        "signed_recip_mm_frac": 0.22968197879858657,
+        "signed_cycle_balanced_frac": 0.5155618911855547,
+        "signed_cycle_unbalanced_frac": 0.4844381088144452,
+        "signed_ff_all_pos_rate": 0.09860788863109049,
+        "signed_ff_all_neg_rate": 0.15583913379737047,
+        "signed_ff_mixed_rate": 0.745552977571539,
+        "signed_undir_tri_balanced_frac": 0.47595344924284916
+      },
       "rank": {
         "stable_rank": 9.912077939096994,
         "effective_rank": 36.607588739838015,
@@ -1466,6 +1676,20 @@
         "triad_300_frac": 0.00027210884353741496,
         "triad_connected": 66769.0,
         "triad_ff_over_cycle": 3.9798087141339002
+      },
+      "signed": {
+        "signed_threshold": 0.09071741284875066,
+        "signed_pos_edge_frac": 0.5082828282828283,
+        "signed_neg_edge_frac": 0.49171717171717166,
+        "signed_recip_pp_frac": 0.2777777777777778,
+        "signed_recip_pm_frac": 0.4513888888888889,
+        "signed_recip_mm_frac": 0.2708333333333333,
+        "signed_cycle_balanced_frac": 0.4831168831168831,
+        "signed_cycle_unbalanced_frac": 0.5168831168831168,
+        "signed_ff_all_pos_rate": 0.12723631508678238,
+        "signed_ff_all_neg_rate": 0.12029372496662216,
+        "signed_ff_mixed_rate": 0.7524699599465955,
+        "signed_undir_tri_balanced_frac": 0.47396231662379196
       },
       "rank": {
         "stable_rank": 9.526158376439591,
@@ -1561,6 +1785,20 @@
         "triad_connected": 66223.0,
         "triad_ff_over_cycle": 4.024599542334096
       },
+      "signed": {
+        "signed_threshold": 0.0904600800849166,
+        "signed_pos_edge_frac": 0.49737373737373736,
+        "signed_neg_edge_frac": 0.5026262626262626,
+        "signed_recip_pp_frac": 0.25,
+        "signed_recip_pm_frac": 0.5333333333333333,
+        "signed_recip_mm_frac": 0.21666666666666667,
+        "signed_cycle_balanced_frac": 0.5012717253073337,
+        "signed_cycle_unbalanced_frac": 0.4987282746926664,
+        "signed_ff_all_pos_rate": 0.10433546552949538,
+        "signed_ff_all_neg_rate": 0.13859275053304904,
+        "signed_ff_mixed_rate": 0.7570717839374556,
+        "signed_undir_tri_balanced_frac": 0.47684855392506054
+      },
       "rank": {
         "stable_rank": 8.616126946512132,
         "effective_rank": 35.68892142826687,
@@ -1654,6 +1892,20 @@
         "triad_300_frac": 0.00031539888682745825,
         "triad_connected": 65823.0,
         "triad_ff_over_cycle": 4.2391041162227605
+      },
+      "signed": {
+        "signed_threshold": 0.09233433494069394,
+        "signed_pos_edge_frac": 0.5046464646464647,
+        "signed_neg_edge_frac": 0.4953535353535353,
+        "signed_recip_pp_frac": 0.2247557003257329,
+        "signed_recip_pm_frac": 0.504885993485342,
+        "signed_recip_mm_frac": 0.2703583061889251,
+        "signed_cycle_balanced_frac": 0.49637919684002635,
+        "signed_cycle_unbalanced_frac": 0.5036208031599737,
+        "signed_ff_all_pos_rate": 0.13508496358703412,
+        "signed_ff_all_neg_rate": 0.11780665429101814,
+        "signed_ff_mixed_rate": 0.7471083821219477,
+        "signed_undir_tri_balanced_frac": 0.4871980326920295
       },
       "rank": {
         "stable_rank": 9.415413807949614,
@@ -1749,6 +2001,20 @@
         "triad_connected": 65730.0,
         "triad_ff_over_cycle": 3.927178899082569
       },
+      "signed": {
+        "signed_threshold": 0.0864564228978441,
+        "signed_pos_edge_frac": 0.4868686868686869,
+        "signed_neg_edge_frac": 0.5131313131313131,
+        "signed_recip_pp_frac": 0.1597444089456869,
+        "signed_recip_pm_frac": 0.5750798722044729,
+        "signed_recip_mm_frac": 0.26517571884984026,
+        "signed_cycle_balanced_frac": 0.4861402771944561,
+        "signed_cycle_unbalanced_frac": 0.5138597228055439,
+        "signed_ff_all_pos_rate": 0.12687983647247775,
+        "signed_ff_all_neg_rate": 0.12629580960724193,
+        "signed_ff_mixed_rate": 0.7468243539202803,
+        "signed_undir_tri_balanced_frac": 0.4995343505981804
+      },
       "rank": {
         "stable_rank": 9.22537411816097,
         "effective_rank": 39.23014574916172,
@@ -1842,6 +2108,20 @@
         "triad_300_frac": 0.00015460729746444033,
         "triad_connected": 68528.0,
         "triad_ff_over_cycle": 6.273235499650594
+      },
+      "signed": {
+        "signed_threshold": 0.09713137492953797,
+        "signed_pos_edge_frac": 0.5228282828282829,
+        "signed_neg_edge_frac": 0.47717171717171714,
+        "signed_recip_pp_frac": 0.2578125,
+        "signed_recip_pm_frac": 0.52734375,
+        "signed_recip_mm_frac": 0.21484375,
+        "signed_cycle_balanced_frac": 0.4949850908105178,
+        "signed_cycle_unbalanced_frac": 0.5050149091894822,
+        "signed_ff_all_pos_rate": 0.13957892391667595,
+        "signed_ff_all_neg_rate": 0.11340091344547176,
+        "signed_ff_mixed_rate": 0.7470201626378523,
+        "signed_undir_tri_balanced_frac": 0.48841059602649006
       },
       "rank": {
         "stable_rank": 7.31455027457914,
@@ -1937,6 +2217,20 @@
         "triad_connected": 66632.0,
         "triad_ff_over_cycle": 4.046617396247868
       },
+      "signed": {
+        "signed_threshold": 0.08540978597849513,
+        "signed_pos_edge_frac": 0.5002020202020202,
+        "signed_neg_edge_frac": 0.4997979797979798,
+        "signed_recip_pp_frac": 0.2222222222222222,
+        "signed_recip_pm_frac": 0.5420875420875421,
+        "signed_recip_mm_frac": 0.2356902356902357,
+        "signed_cycle_balanced_frac": 0.5040250447227191,
+        "signed_cycle_unbalanced_frac": 0.49597495527728086,
+        "signed_ff_all_pos_rate": 0.12110143298679404,
+        "signed_ff_all_neg_rate": 0.1296712559707783,
+        "signed_ff_mixed_rate": 0.7492273110424277,
+        "signed_undir_tri_balanced_frac": 0.4822837469516569
+      },
       "rank": {
         "stable_rank": 7.970228927872221,
         "effective_rank": 39.1110229581555,
@@ -2030,6 +2324,20 @@
         "triad_300_frac": 0.0002659245516388374,
         "triad_connected": 66944.0,
         "triad_ff_over_cycle": 3.7060327198364007
+      },
+      "signed": {
+        "signed_threshold": 0.0877621343027514,
+        "signed_pos_edge_frac": 0.4901010101010101,
+        "signed_neg_edge_frac": 0.5098989898989899,
+        "signed_recip_pp_frac": 0.2422145328719723,
+        "signed_recip_pm_frac": 0.5605536332179931,
+        "signed_recip_mm_frac": 0.1972318339100346,
+        "signed_cycle_balanced_frac": 0.4863917525773196,
+        "signed_cycle_unbalanced_frac": 0.5136082474226804,
+        "signed_ff_all_pos_rate": 0.10360049662022348,
+        "signed_ff_all_neg_rate": 0.1362946613325976,
+        "signed_ff_mixed_rate": 0.7601048420471789,
+        "signed_undir_tri_balanced_frac": 0.4909862880211596
       },
       "rank": {
         "stable_rank": 10.051502565283961,
@@ -2125,6 +2433,20 @@
         "triad_connected": 67488.0,
         "triad_ff_over_cycle": 4.65319273579379
       },
+      "signed": {
+        "signed_threshold": 0.08556468253908436,
+        "signed_pos_edge_frac": 0.498989898989899,
+        "signed_neg_edge_frac": 0.501010101010101,
+        "signed_recip_pp_frac": 0.2246376811594203,
+        "signed_recip_pm_frac": 0.5108695652173914,
+        "signed_recip_mm_frac": 0.2644927536231884,
+        "signed_cycle_balanced_frac": 0.4875857176637503,
+        "signed_cycle_unbalanced_frac": 0.5124142823362497,
+        "signed_ff_all_pos_rate": 0.12954802971169582,
+        "signed_ff_all_neg_rate": 0.12237189978597507,
+        "signed_ff_mixed_rate": 0.748080070502329,
+        "signed_undir_tri_balanced_frac": 0.48690060879677133
+      },
       "rank": {
         "stable_rank": 8.381959041954389,
         "effective_rank": 35.994602457749714,
@@ -2218,6 +2540,20 @@
         "triad_300_frac": 0.0002411873840445269,
         "triad_connected": 66686.0,
         "triad_ff_over_cycle": 5.099532398129592
+      },
+      "signed": {
+        "signed_threshold": 0.08907636448758255,
+        "signed_pos_edge_frac": 0.5034343434343435,
+        "signed_neg_edge_frac": 0.49656565656565654,
+        "signed_recip_pp_frac": 0.23024054982817868,
+        "signed_recip_pm_frac": 0.5395189003436426,
+        "signed_recip_mm_frac": 0.23024054982817868,
+        "signed_cycle_balanced_frac": 0.4899377096310494,
+        "signed_cycle_unbalanced_frac": 0.5100622903689507,
+        "signed_ff_all_pos_rate": 0.1341367566151428,
+        "signed_ff_all_neg_rate": 0.12169242860885512,
+        "signed_ff_mixed_rate": 0.7441708147760021,
+        "signed_undir_tri_balanced_frac": 0.48896542029800394
       },
       "rank": {
         "stable_rank": 8.339288177472328,
@@ -2313,6 +2649,20 @@
         "triad_connected": 68819.0,
         "triad_ff_over_cycle": 4.5989100817438695
       },
+      "signed": {
+        "signed_threshold": 0.08961678185817316,
+        "signed_pos_edge_frac": 0.5078787878787879,
+        "signed_neg_edge_frac": 0.49212121212121207,
+        "signed_recip_pp_frac": 0.23228346456692914,
+        "signed_recip_pm_frac": 0.5787401574803149,
+        "signed_recip_mm_frac": 0.1889763779527559,
+        "signed_cycle_balanced_frac": 0.5056280954524989,
+        "signed_cycle_unbalanced_frac": 0.49437190454750113,
+        "signed_ff_all_pos_rate": 0.11908993956629932,
+        "signed_ff_all_neg_rate": 0.12525180708614764,
+        "signed_ff_mixed_rate": 0.755658253347553,
+        "signed_undir_tri_balanced_frac": 0.4826604897418928
+      },
       "rank": {
         "stable_rank": 7.929112593489116,
         "effective_rank": 33.90021228874623,
@@ -2406,6 +2756,20 @@
         "triad_300_frac": 0.0002968460111317254,
         "triad_connected": 66553.0,
         "triad_ff_over_cycle": 4.970783532536521
+      },
+      "signed": {
+        "signed_threshold": 0.08944129052602205,
+        "signed_pos_edge_frac": 0.5131313131313131,
+        "signed_neg_edge_frac": 0.4868686868686869,
+        "signed_recip_pp_frac": 0.21621621621621623,
+        "signed_recip_pm_frac": 0.5574324324324325,
+        "signed_recip_mm_frac": 0.22635135135135134,
+        "signed_cycle_balanced_frac": 0.5108593012275732,
+        "signed_cycle_unbalanced_frac": 0.48914069877242683,
+        "signed_ff_all_pos_rate": 0.139861074004809,
+        "signed_ff_all_neg_rate": 0.11594977290943094,
+        "signed_ff_mixed_rate": 0.7441891530857601,
+        "signed_undir_tri_balanced_frac": 0.4866535543692048
       },
       "rank": {
         "stable_rank": 7.187208792741284,
@@ -2501,6 +2865,20 @@
         "triad_connected": 67284.0,
         "triad_ff_over_cycle": 4.074863387978142
       },
+      "signed": {
+        "signed_threshold": 0.08211973959533955,
+        "signed_pos_edge_frac": 0.49414141414141416,
+        "signed_neg_edge_frac": 0.5058585858585858,
+        "signed_recip_pp_frac": 0.2846975088967972,
+        "signed_recip_pm_frac": 0.48398576512455516,
+        "signed_recip_mm_frac": 0.2313167259786477,
+        "signed_cycle_balanced_frac": 0.4828532235939643,
+        "signed_cycle_unbalanced_frac": 0.5171467764060357,
+        "signed_ff_all_pos_rate": 0.11318224487059139,
+        "signed_ff_all_neg_rate": 0.13450449242322648,
+        "signed_ff_mixed_rate": 0.7523132627061822,
+        "signed_undir_tri_balanced_frac": 0.49718600840635463
+      },
       "rank": {
         "stable_rank": 11.585193970414267,
         "effective_rank": 40.263123729652904,
@@ -2594,6 +2972,20 @@
         "triad_300_frac": 0.00021026592455163884,
         "triad_connected": 67904.0,
         "triad_ff_over_cycle": 5.057835820895522
+      },
+      "signed": {
+        "signed_threshold": 0.09382340904571146,
+        "signed_pos_edge_frac": 0.5050505050505051,
+        "signed_neg_edge_frac": 0.4949494949494949,
+        "signed_recip_pp_frac": 0.2527881040892193,
+        "signed_recip_pm_frac": 0.5613382899628253,
+        "signed_recip_mm_frac": 0.18587360594795538,
+        "signed_cycle_balanced_frac": 0.49389350268685883,
+        "signed_cycle_unbalanced_frac": 0.5061064973131412,
+        "signed_ff_all_pos_rate": 0.11619328661010697,
+        "signed_ff_all_neg_rate": 0.1311939013894012,
+        "signed_ff_mixed_rate": 0.7526128120004918,
+        "signed_undir_tri_balanced_frac": 0.4790217016879091
       },
       "rank": {
         "stable_rank": 9.973223666246687,
@@ -2689,6 +3081,20 @@
         "triad_connected": 67303.0,
         "triad_ff_over_cycle": 6.541471048513302
       },
+      "signed": {
+        "signed_threshold": 0.08680535993491734,
+        "signed_pos_edge_frac": 0.4783838383838384,
+        "signed_neg_edge_frac": 0.5216161616161616,
+        "signed_recip_pp_frac": 0.19285714285714287,
+        "signed_recip_pm_frac": 0.5428571428571428,
+        "signed_recip_mm_frac": 0.2642857142857143,
+        "signed_cycle_balanced_frac": 0.4891540130151844,
+        "signed_cycle_unbalanced_frac": 0.5108459869848156,
+        "signed_ff_all_pos_rate": 0.11471291866028709,
+        "signed_ff_all_neg_rate": 0.13672248803827752,
+        "signed_ff_mixed_rate": 0.7485645933014354,
+        "signed_undir_tri_balanced_frac": 0.5025665594415166
+      },
       "rank": {
         "stable_rank": 6.647870138502105,
         "effective_rank": 32.023765642898226,
@@ -2782,6 +3188,20 @@
         "triad_300_frac": 0.00018552875695732838,
         "triad_connected": 67239.0,
         "triad_ff_over_cycle": 4.340909090909091
+      },
+      "signed": {
+        "signed_threshold": 0.08176898723995563,
+        "signed_pos_edge_frac": 0.49414141414141416,
+        "signed_neg_edge_frac": 0.5058585858585858,
+        "signed_recip_pp_frac": 0.22021660649819494,
+        "signed_recip_pm_frac": 0.5415162454873647,
+        "signed_recip_mm_frac": 0.23826714801444043,
+        "signed_cycle_balanced_frac": 0.49547715965626415,
+        "signed_cycle_unbalanced_frac": 0.5045228403437358,
+        "signed_ff_all_pos_rate": 0.11377857234069723,
+        "signed_ff_all_neg_rate": 0.1366364448984804,
+        "signed_ff_mixed_rate": 0.7495849827608224,
+        "signed_undir_tri_balanced_frac": 0.4826969384244926
       },
       "rank": {
         "stable_rank": 8.273379498313371,
@@ -2877,6 +3297,20 @@
         "triad_connected": 67209.0,
         "triad_ff_over_cycle": 4.7112426035502954
       },
+      "signed": {
+        "signed_threshold": 0.08287447990070534,
+        "signed_pos_edge_frac": 0.5107070707070707,
+        "signed_neg_edge_frac": 0.48929292929292934,
+        "signed_recip_pp_frac": 0.25539568345323743,
+        "signed_recip_pm_frac": 0.5179856115107914,
+        "signed_recip_mm_frac": 0.22661870503597123,
+        "signed_cycle_balanced_frac": 0.49370277078085645,
+        "signed_cycle_unbalanced_frac": 0.5062972292191436,
+        "signed_ff_all_pos_rate": 0.12697814619442352,
+        "signed_ff_all_neg_rate": 0.12245666917859835,
+        "signed_ff_mixed_rate": 0.7505651846269782,
+        "signed_undir_tri_balanced_frac": 0.4913239513594753
+      },
       "rank": {
         "stable_rank": 8.434140321646927,
         "effective_rank": 38.515793359122625,
@@ -2970,6 +3404,20 @@
         "triad_300_frac": 0.00023500309214594928,
         "triad_connected": 67521.0,
         "triad_ff_over_cycle": 5.792665726375176
+      },
+      "signed": {
+        "signed_threshold": 0.08113038005574096,
+        "signed_pos_edge_frac": 0.5002020202020202,
+        "signed_neg_edge_frac": 0.4997979797979798,
+        "signed_recip_pp_frac": 0.22661870503597123,
+        "signed_recip_pm_frac": 0.5683453237410072,
+        "signed_recip_mm_frac": 0.20503597122302158,
+        "signed_cycle_balanced_frac": 0.5042362002567394,
+        "signed_cycle_unbalanced_frac": 0.49576379974326057,
+        "signed_ff_all_pos_rate": 0.12028244460676893,
+        "signed_ff_all_neg_rate": 0.1346481616751887,
+        "signed_ff_mixed_rate": 0.7450693937180424,
+        "signed_undir_tri_balanced_frac": 0.47821014343559126
       },
       "rank": {
         "stable_rank": 8.450257442989404,
@@ -3065,6 +3513,20 @@
         "triad_connected": 69540.0,
         "triad_ff_over_cycle": 7.5922178988326845
       },
+      "signed": {
+        "signed_threshold": 0.08533539605210588,
+        "signed_pos_edge_frac": 0.5191919191919192,
+        "signed_neg_edge_frac": 0.4808080808080808,
+        "signed_recip_pp_frac": 0.2288135593220339,
+        "signed_recip_pm_frac": 0.5677966101694916,
+        "signed_recip_mm_frac": 0.2033898305084746,
+        "signed_cycle_balanced_frac": 0.492797118847539,
+        "signed_cycle_unbalanced_frac": 0.507202881152461,
+        "signed_ff_all_pos_rate": 0.14452644526445266,
+        "signed_ff_all_neg_rate": 0.1025010250102501,
+        "signed_ff_mixed_rate": 0.7529725297252973,
+        "signed_undir_tri_balanced_frac": 0.5110781914208424
+      },
       "rank": {
         "stable_rank": 8.015977381809476,
         "effective_rank": 32.43382977220342,
@@ -3158,6 +3620,20 @@
         "triad_300_frac": 0.00025974025974025974,
         "triad_connected": 67904.0,
         "triad_ff_over_cycle": 5.493195074530136
+      },
+      "signed": {
+        "signed_threshold": 0.08183574298559959,
+        "signed_pos_edge_frac": 0.5014141414141414,
+        "signed_neg_edge_frac": 0.4985858585858586,
+        "signed_recip_pp_frac": 0.2379182156133829,
+        "signed_recip_pm_frac": 0.5055762081784386,
+        "signed_recip_mm_frac": 0.25650557620817843,
+        "signed_cycle_balanced_frac": 0.489433237271854,
+        "signed_cycle_unbalanced_frac": 0.510566762728146,
+        "signed_ff_all_pos_rate": 0.12163756488909863,
+        "signed_ff_all_neg_rate": 0.12022180273714016,
+        "signed_ff_mixed_rate": 0.7581406323737612,
+        "signed_undir_tri_balanced_frac": 0.49317157252718113
       },
       "rank": {
         "stable_rank": 6.9636575650823715,
@@ -3253,6 +3729,20 @@
         "triad_connected": 67865.0,
         "triad_ff_over_cycle": 5.8902777777777775
       },
+      "signed": {
+        "signed_threshold": 0.0823563941187569,
+        "signed_pos_edge_frac": 0.4985858585858586,
+        "signed_neg_edge_frac": 0.5014141414141414,
+        "signed_recip_pp_frac": 0.2222222222222222,
+        "signed_recip_pm_frac": 0.5703703703703704,
+        "signed_recip_mm_frac": 0.2074074074074074,
+        "signed_cycle_balanced_frac": 0.505938842557493,
+        "signed_cycle_unbalanced_frac": 0.49406115744250695,
+        "signed_ff_all_pos_rate": 0.12084414053289319,
+        "signed_ff_all_neg_rate": 0.1386465456260316,
+        "signed_ff_mixed_rate": 0.7405093138410752,
+        "signed_undir_tri_balanced_frac": 0.485483327719771
+      },
       "rank": {
         "stable_rank": 8.516402905122597,
         "effective_rank": 34.29546026815592,
@@ -3346,6 +3836,20 @@
         "triad_300_frac": 0.000191713048855906,
         "triad_connected": 68744.0,
         "triad_ff_over_cycle": 6.905703422053232
+      },
+      "signed": {
+        "signed_threshold": 0.08352170668271174,
+        "signed_pos_edge_frac": 0.49656565656565654,
+        "signed_neg_edge_frac": 0.5034343434343435,
+        "signed_recip_pp_frac": 0.234375,
+        "signed_recip_pm_frac": 0.5078125,
+        "signed_recip_mm_frac": 0.2578125,
+        "signed_cycle_balanced_frac": 0.48644833427442125,
+        "signed_cycle_unbalanced_frac": 0.5135516657255788,
+        "signed_ff_all_pos_rate": 0.11981059354696619,
+        "signed_ff_all_neg_rate": 0.12828983592115406,
+        "signed_ff_mixed_rate": 0.7518995705318797,
+        "signed_undir_tri_balanced_frac": 0.5024377212315502
       },
       "rank": {
         "stable_rank": 8.08939176163616,
@@ -3441,6 +3945,20 @@
         "triad_connected": 67724.0,
         "triad_ff_over_cycle": 5.329987452948557
       },
+      "signed": {
+        "signed_threshold": 0.08396627908266553,
+        "signed_pos_edge_frac": 0.48323232323232324,
+        "signed_neg_edge_frac": 0.5167676767676768,
+        "signed_recip_pp_frac": 0.24253731343283583,
+        "signed_recip_pm_frac": 0.48134328358208955,
+        "signed_recip_mm_frac": 0.27611940298507465,
+        "signed_cycle_balanced_frac": 0.4974245768947756,
+        "signed_cycle_unbalanced_frac": 0.5025754231052244,
+        "signed_ff_all_pos_rate": 0.10958097928436912,
+        "signed_ff_all_neg_rate": 0.15324858757062146,
+        "signed_ff_mixed_rate": 0.7371704331450094,
+        "signed_undir_tri_balanced_frac": 0.4757034957556313
+      },
       "rank": {
         "stable_rank": 8.277883469081491,
         "effective_rank": 34.96991276650612,
@@ -3534,6 +4052,20 @@
         "triad_300_frac": 0.00011750154607297464,
         "triad_connected": 68136.0,
         "triad_ff_over_cycle": 5.59662775616083
+      },
+      "signed": {
+        "signed_threshold": 0.08744586679070514,
+        "signed_pos_edge_frac": 0.4816161616161616,
+        "signed_neg_edge_frac": 0.5183838383838384,
+        "signed_recip_pp_frac": 0.23371647509578544,
+        "signed_recip_pm_frac": 0.5478927203065134,
+        "signed_recip_mm_frac": 0.21839080459770116,
+        "signed_cycle_balanced_frac": 0.49234362834155204,
+        "signed_cycle_unbalanced_frac": 0.507656371658448,
+        "signed_ff_all_pos_rate": 0.10057937427578216,
+        "signed_ff_all_neg_rate": 0.14982618771726536,
+        "signed_ff_mixed_rate": 0.7495944380069525,
+        "signed_undir_tri_balanced_frac": 0.4889784946236559
       },
       "rank": {
         "stable_rank": 7.627576156168608,
@@ -3629,6 +4161,20 @@
         "triad_connected": 69294.0,
         "triad_ff_over_cycle": 6.1525423728813555
       },
+      "signed": {
+        "signed_threshold": 0.08265876866619684,
+        "signed_pos_edge_frac": 0.4993939393939394,
+        "signed_neg_edge_frac": 0.5006060606060606,
+        "signed_recip_pp_frac": 0.2109704641350211,
+        "signed_recip_pm_frac": 0.569620253164557,
+        "signed_recip_mm_frac": 0.21940928270042195,
+        "signed_cycle_balanced_frac": 0.49693087803576197,
+        "signed_cycle_unbalanced_frac": 0.503069121964238,
+        "signed_ff_all_pos_rate": 0.12640389913117187,
+        "signed_ff_all_neg_rate": 0.12703962703962704,
+        "signed_ff_mixed_rate": 0.7465564738292011,
+        "signed_undir_tri_balanced_frac": 0.48187399030694666
+      },
       "rank": {
         "stable_rank": 9.12210448258275,
         "effective_rank": 34.33695831783134,
@@ -3722,6 +4268,20 @@
         "triad_300_frac": 0.0002844774273345702,
         "triad_connected": 68162.0,
         "triad_ff_over_cycle": 5.482870071105365
+      },
+      "signed": {
+        "signed_threshold": 0.08048563206853591,
+        "signed_pos_edge_frac": 0.5014141414141414,
+        "signed_neg_edge_frac": 0.4985858585858586,
+        "signed_recip_pp_frac": 0.2830188679245283,
+        "signed_recip_pm_frac": 0.5207547169811321,
+        "signed_recip_mm_frac": 0.19622641509433963,
+        "signed_cycle_balanced_frac": 0.49365829395672717,
+        "signed_cycle_unbalanced_frac": 0.5063417060432728,
+        "signed_ff_all_pos_rate": 0.11459561424192408,
+        "signed_ff_all_neg_rate": 0.12897901438340015,
+        "signed_ff_mixed_rate": 0.7564253713746758,
+        "signed_undir_tri_balanced_frac": 0.4857813547954393
       },
       "rank": {
         "stable_rank": 8.038335857024888,
@@ -3817,6 +4377,20 @@
         "triad_connected": 68236.0,
         "triad_ff_over_cycle": 6.940998487140696
       },
+      "signed": {
+        "signed_threshold": 0.0808684204459212,
+        "signed_pos_edge_frac": 0.5131313131313131,
+        "signed_neg_edge_frac": 0.4868686868686869,
+        "signed_recip_pp_frac": 0.2558139534883721,
+        "signed_recip_pm_frac": 0.5426356589147286,
+        "signed_recip_mm_frac": 0.20155038759689922,
+        "signed_cycle_balanced_frac": 0.5084974372808201,
+        "signed_cycle_unbalanced_frac": 0.4915025627191799,
+        "signed_ff_all_pos_rate": 0.12445510026155188,
+        "signed_ff_all_neg_rate": 0.12085876198779424,
+        "signed_ff_mixed_rate": 0.7546861377506539,
+        "signed_undir_tri_balanced_frac": 0.4853359173126615
+      },
       "rank": {
         "stable_rank": 8.907915812529335,
         "effective_rank": 31.92652121859492,
@@ -3910,6 +4484,20 @@
         "triad_300_frac": 0.00022881880024737167,
         "triad_connected": 68984.0,
         "triad_ff_over_cycle": 8.773550724637682
+      },
+      "signed": {
+        "signed_threshold": 0.08549986166673487,
+        "signed_pos_edge_frac": 0.5002020202020202,
+        "signed_neg_edge_frac": 0.4997979797979798,
+        "signed_recip_pp_frac": 0.2289156626506024,
+        "signed_recip_pm_frac": 0.5140562248995983,
+        "signed_recip_mm_frac": 0.2570281124497992,
+        "signed_cycle_balanced_frac": 0.4860935524652339,
+        "signed_cycle_unbalanced_frac": 0.5139064475347661,
+        "signed_ff_all_pos_rate": 0.11934751187280611,
+        "signed_ff_all_neg_rate": 0.12409663431757176,
+        "signed_ff_mixed_rate": 0.7565558538096221,
+        "signed_undir_tri_balanced_frac": 0.4798690040454633
       },
       "rank": {
         "stable_rank": 7.454768585625688,
@@ -4005,6 +4593,20 @@
         "triad_connected": 70665.0,
         "triad_ff_over_cycle": 10.596711798839458
       },
+      "signed": {
+        "signed_threshold": 0.08794046943362804,
+        "signed_pos_edge_frac": 0.49777777777777776,
+        "signed_neg_edge_frac": 0.5022222222222222,
+        "signed_recip_pp_frac": 0.22065727699530516,
+        "signed_recip_pm_frac": 0.5774647887323944,
+        "signed_recip_mm_frac": 0.20187793427230047,
+        "signed_cycle_balanced_frac": 0.5031799476243921,
+        "signed_cycle_unbalanced_frac": 0.49682005237560795,
+        "signed_ff_all_pos_rate": 0.12567308569864014,
+        "signed_ff_all_neg_rate": 0.12768093456238022,
+        "signed_ff_mixed_rate": 0.7466459797389796,
+        "signed_undir_tri_balanced_frac": 0.5004603203829866
+      },
       "rank": {
         "stable_rank": 7.141266245384854,
         "effective_rank": 28.74223968456969,
@@ -4098,6 +4700,20 @@
         "triad_300_frac": 0.00016697588126159555,
         "triad_connected": 70237.0,
         "triad_ff_over_cycle": 10.275334608030592
+      },
+      "signed": {
+        "signed_threshold": 0.0902237174424213,
+        "signed_pos_edge_frac": 0.494949494949495,
+        "signed_neg_edge_frac": 0.505050505050505,
+        "signed_recip_pp_frac": 0.2073732718894009,
+        "signed_recip_pm_frac": 0.5990783410138248,
+        "signed_recip_mm_frac": 0.1935483870967742,
+        "signed_cycle_balanced_frac": 0.5005347593582887,
+        "signed_cycle_unbalanced_frac": 0.4994652406417112,
+        "signed_ff_all_pos_rate": 0.10392631187197618,
+        "signed_ff_all_neg_rate": 0.14235206550055823,
+        "signed_ff_mixed_rate": 0.7537216226274656,
+        "signed_undir_tri_balanced_frac": 0.4601726263871763
       },
       "rank": {
         "stable_rank": 7.631834833115154,
@@ -4193,6 +4809,20 @@
         "triad_connected": 68130.0,
         "triad_ff_over_cycle": 7.564422277639236
       },
+      "signed": {
+        "signed_threshold": 0.08493774060053162,
+        "signed_pos_edge_frac": 0.5115151515151515,
+        "signed_neg_edge_frac": 0.4884848484848485,
+        "signed_recip_pp_frac": 0.210727969348659,
+        "signed_recip_pm_frac": 0.578544061302682,
+        "signed_recip_mm_frac": 0.210727969348659,
+        "signed_cycle_balanced_frac": 0.532996349340073,
+        "signed_cycle_unbalanced_frac": 0.467003650659927,
+        "signed_ff_all_pos_rate": 0.14153846153846153,
+        "signed_ff_all_neg_rate": 0.11417582417582417,
+        "signed_ff_mixed_rate": 0.7442857142857143,
+        "signed_undir_tri_balanced_frac": 0.4914798794075239
+      },
       "rank": {
         "stable_rank": 8.20791082242111,
         "effective_rank": 28.91674972406571,
@@ -4286,6 +4916,20 @@
         "triad_300_frac": 0.00017934446505875077,
         "triad_connected": 70666.0,
         "triad_ff_over_cycle": 11.518557794273596
+      },
+      "signed": {
+        "signed_threshold": 0.08282018984452955,
+        "signed_pos_edge_frac": 0.498989898989899,
+        "signed_neg_edge_frac": 0.501010101010101,
+        "signed_recip_pp_frac": 0.2,
+        "signed_recip_pm_frac": 0.627906976744186,
+        "signed_recip_mm_frac": 0.17209302325581396,
+        "signed_cycle_balanced_frac": 0.522265764161026,
+        "signed_cycle_unbalanced_frac": 0.477734235838974,
+        "signed_ff_all_pos_rate": 0.11636899281900202,
+        "signed_ff_all_neg_rate": 0.12815319462345792,
+        "signed_ff_mixed_rate": 0.7554778125575401,
+        "signed_undir_tri_balanced_frac": 0.4948859166011015
       },
       "rank": {
         "stable_rank": 5.832336061374204,
@@ -4381,6 +5025,20 @@
         "triad_connected": 70095.0,
         "triad_ff_over_cycle": 8.610693400167085
       },
+      "signed": {
+        "signed_threshold": 0.07470525361222251,
+        "signed_pos_edge_frac": 0.5163636363636364,
+        "signed_neg_edge_frac": 0.48363636363636364,
+        "signed_recip_pp_frac": 0.22466960352422907,
+        "signed_recip_pm_frac": 0.5814977973568282,
+        "signed_recip_mm_frac": 0.19383259911894274,
+        "signed_cycle_balanced_frac": 0.5141225007933989,
+        "signed_cycle_unbalanced_frac": 0.48587749920660106,
+        "signed_ff_all_pos_rate": 0.1297176676045406,
+        "signed_ff_all_neg_rate": 0.12020956631415543,
+        "signed_ff_mixed_rate": 0.750072766081304,
+        "signed_undir_tri_balanced_frac": 0.4850945150294391
+      },
       "rank": {
         "stable_rank": 7.546910507104261,
         "effective_rank": 30.71098688298255,
@@ -4474,6 +5132,20 @@
         "triad_300_frac": 0.0001484230055658627,
         "triad_connected": 70620.0,
         "triad_ff_over_cycle": 9.932344763670065
+      },
+      "signed": {
+        "signed_threshold": 0.0813686609886562,
+        "signed_pos_edge_frac": 0.5070707070707071,
+        "signed_neg_edge_frac": 0.4929292929292929,
+        "signed_recip_pp_frac": 0.22935779816513763,
+        "signed_recip_pm_frac": 0.5412844036697247,
+        "signed_recip_mm_frac": 0.22935779816513763,
+        "signed_cycle_balanced_frac": 0.5055632823365785,
+        "signed_cycle_unbalanced_frac": 0.4944367176634214,
+        "signed_ff_all_pos_rate": 0.12811421106652982,
+        "signed_ff_all_neg_rate": 0.1161705701222357,
+        "signed_ff_mixed_rate": 0.7557152188112345,
+        "signed_undir_tri_balanced_frac": 0.5046930962084722
       },
       "rank": {
         "stable_rank": 8.18588731710364,
@@ -4569,6 +5241,20 @@
         "triad_connected": 70382.0,
         "triad_ff_over_cycle": 7.931192660550459
       },
+      "signed": {
+        "signed_threshold": 0.08450072139897095,
+        "signed_pos_edge_frac": 0.509090909090909,
+        "signed_neg_edge_frac": 0.49090909090909096,
+        "signed_recip_pp_frac": 0.19369369369369369,
+        "signed_recip_pm_frac": 0.6036036036036037,
+        "signed_recip_mm_frac": 0.20270270270270271,
+        "signed_cycle_balanced_frac": 0.48255813953488375,
+        "signed_cycle_unbalanced_frac": 0.5174418604651163,
+        "signed_ff_all_pos_rate": 0.13861577019471757,
+        "signed_ff_all_neg_rate": 0.11104684788895315,
+        "signed_ff_mixed_rate": 0.7503373819163293,
+        "signed_undir_tri_balanced_frac": 0.5032995234021752
+      },
       "rank": {
         "stable_rank": 6.933739457576416,
         "effective_rank": 29.00642749588703,
@@ -4662,6 +5348,20 @@
         "triad_300_frac": 0.00013605442176870748,
         "triad_connected": 69008.0,
         "triad_ff_over_cycle": 7.341167551175133
+      },
+      "signed": {
+        "signed_threshold": 0.08648590492066799,
+        "signed_pos_edge_frac": 0.49373737373737375,
+        "signed_neg_edge_frac": 0.5062626262626262,
+        "signed_recip_pp_frac": 0.1469387755102041,
+        "signed_recip_pm_frac": 0.5918367346938775,
+        "signed_recip_mm_frac": 0.2612244897959184,
+        "signed_cycle_balanced_frac": 0.53035413153457,
+        "signed_cycle_unbalanced_frac": 0.46964586846543,
+        "signed_ff_all_pos_rate": 0.13373954352989775,
+        "signed_ff_all_neg_rate": 0.11566663224207374,
+        "signed_ff_mixed_rate": 0.7505938242280285,
+        "signed_undir_tri_balanced_frac": 0.5092394720301697
       },
       "rank": {
         "stable_rank": 6.5074211127233825,

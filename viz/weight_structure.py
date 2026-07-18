@@ -751,44 +751,6 @@ _MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
-def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
-    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown."""
-    from matplotlib.patches import Circle, FancyArrowPatch
-
-    ax.set_xlim(0.0, 1.0)
-    ax.set_ylim(0.0, 1.0)
-    ax.set_aspect("equal")
-    ax.axis("off")
-
-    if key == "triad_ff_over_cycle":
-        # Side-by-side 030T | 030C.
-        for x0, edges in (
-            (0.0, _MOTIF_SCHEMA_EDGES["triad_030T_frac"]),
-            (0.52, _MOTIF_SCHEMA_EDGES["triad_030C_frac"]),
-        ):
-            pos = {
-                0: (x0 + 0.24, 0.78),
-                1: (x0 + 0.08, 0.22),
-                2: (x0 + 0.40, 0.22),
-            }
-            _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.055)
-        ax.text(0.50, 0.48, "/", fontsize=9, ha="center", va="center", color=color)
-        return True
-
-    edges = _MOTIF_SCHEMA_EDGES.get(key)
-    if edges is None:
-        return False
-
-    if key == "motif_reciprocal_frac":
-        pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
-        _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.07, rad=0.25)
-        return True
-
-    pos = _triangle_node_xy()
-    _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.065)
-    return True
-
-
 def _draw_motif_nodes_edges(
     ax,
     pos: dict[int, tuple[float, float]],
@@ -843,6 +805,265 @@ def _draw_motif_nodes_edges(
 
     for idx, (x, y) in pos.items():
         circ = Circle((x, y), node_r, facecolor="white", edgecolor=color, lw=1.0, zorder=3)
+        ax.add_patch(circ)
+
+
+def _signed_threshold_adj(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "quantile",
+    q: float = 0.75,
+) -> tuple[np.ndarray, float]:
+    """Signed adjacency: S_ij ∈ {-1,0,+1} for |W_ij| at/above threshold."""
+    w = np.asarray(w_rec, dtype=float)
+    abs_w = np.abs(w)
+    np.fill_diagonal(abs_w, 0.0)
+    pos = abs_w[abs_w > 0]
+    if pos.size == 0:
+        return np.zeros_like(w), float("nan")
+    thr = float(np.quantile(pos, q)) if mode == "quantile" else float(np.mean(pos))
+    s = np.zeros_like(w)
+    mask = abs_w >= thr
+    s[mask] = np.sign(w[mask])
+    return s, thr
+
+
+def compute_weight_signed_motifs(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "quantile",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """Signed digraph motifs on thresholded W_hh (keep edge signs).
+
+    Blue(+) / red(−) structure: edge polarity, signed reciprocal dyads,
+    balanced vs unbalanced directed 3-cycles (sign product), and signed
+    feedforward triples (all+/all−/mixed).
+    """
+    s, thr = _signed_threshold_adj(w_rec, mode=mode, q=q)
+    n = s.shape[0]
+    out: dict[str, float] = {
+        "signed_threshold": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+    edges = [(i, j, int(s[i, j])) for i in range(n) for j in range(n) if s[i, j] != 0]
+    n_edge = len(edges)
+    if n_edge == 0:
+        for k in (
+            "signed_pos_edge_frac", "signed_neg_edge_frac",
+            "signed_recip_pp_frac", "signed_recip_pm_frac", "signed_recip_mm_frac",
+            "signed_cycle_balanced_frac", "signed_cycle_unbalanced_frac",
+            "signed_ff_all_pos_rate", "signed_ff_all_neg_rate", "signed_ff_mixed_rate",
+            "signed_undir_tri_balanced_frac",
+        ):
+            out[k] = float("nan")
+        return out
+
+    n_pos = sum(1 for _, _, sg in edges if sg > 0)
+    out["signed_pos_edge_frac"] = float(n_pos / n_edge)
+    out["signed_neg_edge_frac"] = float(1.0 - out["signed_pos_edge_frac"])
+
+    # Reciprocal dyads (unordered pairs).
+    pp = pm = mm = 0
+    n_rec = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = s[i, j], s[j, i]
+            if a == 0 or b == 0:
+                continue
+            n_rec += 1
+            if a > 0 and b > 0:
+                pp += 1
+            elif a < 0 and b < 0:
+                mm += 1
+            else:
+                pm += 1
+    if n_rec:
+        out["signed_recip_pp_frac"] = float(pp / n_rec)
+        out["signed_recip_pm_frac"] = float(pm / n_rec)
+        out["signed_recip_mm_frac"] = float(mm / n_rec)
+    else:
+        out["signed_recip_pp_frac"] = float("nan")
+        out["signed_recip_pm_frac"] = float("nan")
+        out["signed_recip_mm_frac"] = float("nan")
+
+    # Directed 3-cycles and feedforward triples among connected triples.
+    bal = unbal = 0
+    ff_pos = ff_neg = ff_mix = 0
+    ff_n = 0
+    undir_bal = undir_unbal = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                # Undirected structural-balance triangle on strong |W| edges.
+                e_ij = 1 if (s[i, j] or s[j, i]) else 0
+                e_ik = 1 if (s[i, k] or s[k, i]) else 0
+                e_jk = 1 if (s[j, k] or s[k, j]) else 0
+                if e_ij + e_ik + e_jk == 3:
+                    def _u_sign(a: int, b: int) -> int:
+                        sab, sba = s[a, b], s[b, a]
+                        if sab != 0 and sba == 0:
+                            return int(sab)
+                        if sba != 0 and sab == 0:
+                            return int(sba)
+                        if sab != 0 and sba != 0:
+                            return 1 if (sab > 0 and sba > 0) else -1
+                        return 0
+
+                    p = _u_sign(i, j) * _u_sign(i, k) * _u_sign(j, k)
+                    if p > 0:
+                        undir_bal += 1
+                    elif p < 0:
+                        undir_unbal += 1
+
+                # Directed cycles (both orientations).
+                for a, b, c in ((i, j, k), (i, k, j)):
+                    if s[a, b] and s[b, c] and s[c, a]:
+                        prod = int(s[a, b] * s[b, c] * s[c, a])
+                        if prod > 0:
+                            bal += 1
+                        else:
+                            unbal += 1
+
+                # Feedforward transitive (no back-edges), track signs.
+                for a, b, c in (
+                    (i, j, k), (i, k, j), (j, i, k),
+                    (j, k, i), (k, i, j), (k, j, i),
+                ):
+                    if not (s[a, b] and s[b, c] and s[a, c]):
+                        continue
+                    if s[b, a] or s[c, b] or s[c, a]:
+                        continue
+                    ff_n += 1
+                    signs = (s[a, b], s[b, c], s[a, c])
+                    if all(x > 0 for x in signs):
+                        ff_pos += 1
+                    elif all(x < 0 for x in signs):
+                        ff_neg += 1
+                    else:
+                        ff_mix += 1
+                    break  # count each unordered triple at most once as FF
+
+    n_cyc = bal + unbal
+    out["signed_cycle_balanced_frac"] = float(bal / n_cyc) if n_cyc else float("nan")
+    out["signed_cycle_unbalanced_frac"] = float(unbal / n_cyc) if n_cyc else float("nan")
+    out["signed_ff_all_pos_rate"] = float(ff_pos / ff_n) if ff_n else float("nan")
+    out["signed_ff_all_neg_rate"] = float(ff_neg / ff_n) if ff_n else float("nan")
+    out["signed_ff_mixed_rate"] = float(ff_mix / ff_n) if ff_n else float("nan")
+    n_utri = undir_bal + undir_unbal
+    out["signed_undir_tri_balanced_frac"] = (
+        float(undir_bal / n_utri) if n_utri else float("nan")
+    )
+    return out
+
+
+# Signed motif schematics: (src, dst, sign) with sign ∈ {+1, −1}.
+_SIGNED_MOTIF_SCHEMAS: dict[str, tuple[tuple[int, int, int], ...]] = {
+    "signed_pos_edge_frac": ((0, 1, +1),),
+    "signed_neg_edge_frac": ((0, 1, -1),),
+    "signed_recip_pp_frac": ((0, 1, +1), (1, 0, +1)),
+    "signed_recip_pm_frac": ((0, 1, +1), (1, 0, -1)),
+    "signed_recip_mm_frac": ((0, 1, -1), (1, 0, -1)),
+    "signed_cycle_balanced_frac": ((0, 1, +1), (1, 2, +1), (2, 0, +1)),  # +++ cycle
+    "signed_cycle_unbalanced_frac": ((0, 1, +1), (1, 2, +1), (2, 0, -1)),  # ++− cycle
+    "signed_ff_all_pos_rate": ((0, 1, +1), (1, 2, +1), (0, 2, +1)),
+    "signed_ff_all_neg_rate": ((0, 1, -1), (1, 2, -1), (0, 2, -1)),
+    "signed_ff_mixed_rate": ((0, 1, +1), (1, 2, +1), (0, 2, -1)),
+    "signed_undir_tri_balanced_frac": ((0, 1, +1), (1, 2, +1), (0, 2, +1)),
+}
+
+_SIGNED_POS_COLOR = "#2166ac"
+_SIGNED_NEG_COLOR = "#b2182b"
+
+
+def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
+    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown."""
+    from matplotlib.patches import Circle, FancyArrowPatch
+
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    signed = _SIGNED_MOTIF_SCHEMAS.get(key)
+    if signed is not None:
+        # Dyad-only schemas use two nodes; triangles use three.
+        nodes = {i for e in signed for i in e[:2]}
+        if nodes <= {0, 1} and max(nodes) <= 1:
+            pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
+            _draw_signed_motif_edges(ax, pos, signed, node_r=0.07, rad=0.28)
+        else:
+            pos = _triangle_node_xy()
+            _draw_signed_motif_edges(ax, pos, signed, node_r=0.065)
+        return True
+
+    if key == "triad_ff_over_cycle":
+        # Side-by-side 030T | 030C.
+        for x0, edges in (
+            (0.0, _MOTIF_SCHEMA_EDGES["triad_030T_frac"]),
+            (0.52, _MOTIF_SCHEMA_EDGES["triad_030C_frac"]),
+        ):
+            pos = {
+                0: (x0 + 0.24, 0.78),
+                1: (x0 + 0.08, 0.22),
+                2: (x0 + 0.40, 0.22),
+            }
+            _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.055)
+        ax.text(0.50, 0.48, "/", fontsize=9, ha="center", va="center", color=color)
+        return True
+
+    edges = _MOTIF_SCHEMA_EDGES.get(key)
+    if edges is None:
+        return False
+
+    if key == "motif_reciprocal_frac":
+        pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
+        _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.07, rad=0.25)
+        return True
+
+    pos = _triangle_node_xy()
+    _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.065)
+    return True
+
+
+def _draw_signed_motif_edges(
+    ax,
+    pos: dict[int, tuple[float, float]],
+    edges: tuple[tuple[int, int, int], ...],
+    *,
+    node_r: float,
+    rad: float = 0.0,
+) -> None:
+    from matplotlib.patches import Circle, FancyArrowPatch
+
+    # Group by unordered pair to curve mutuals.
+    by_pair: dict[tuple[int, int], list[tuple[int, int, int]]] = {}
+    for i, j, sg in edges:
+        key = (min(i, j), max(i, j))
+        by_pair.setdefault(key, []).append((i, j, sg))
+
+    for pair_edges in by_pair.values():
+        mutual = len(pair_edges) == 2
+        for idx, (i, j, sg) in enumerate(pair_edges):
+            col = _SIGNED_POS_COLOR if sg > 0 else _SIGNED_NEG_COLOR
+            curve = rad
+            if mutual:
+                curve = 0.22 if idx == 0 else -0.22
+            elif i > j and rad == 0.0:
+                curve = 0.0
+            arr = FancyArrowPatch(
+                pos[i], pos[j],
+                arrowstyle="-|>",
+                mutation_scale=7,
+                lw=1.15,
+                color=col,
+                connectionstyle=f"arc3,rad={curve}",
+                shrinkA=6,
+                shrinkB=6,
+            )
+            ax.add_patch(arr)
+
+    for idx, (x, y) in pos.items():
+        circ = Circle((x, y), node_r, facecolor="white", edgecolor="#333333", lw=1.0, zorder=3)
         ax.add_patch(circ)
 
 

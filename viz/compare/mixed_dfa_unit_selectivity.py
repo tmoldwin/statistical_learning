@@ -107,6 +107,104 @@ def _compute_si_for_ctx(
     return n_dfa, si
 
 
+def _compute_pc_si_for_ctx(
+    ctx,
+    *,
+    features: tuple[str, ...] = DEFAULT_FEATURES,
+) -> tuple[int, dict[str, np.ndarray], np.ndarray]:
+    """Return (n_dfa_states, si_per_feature on PCs, variance_pct)."""
+    from unit_selectivity import compute_pc_selectivity
+
+    automaton = build_minimized_vocabulary_automaton(ctx.words)
+    n_dfa = int(automaton.dfa._n)
+    condensed = condense_hidden_states_by_prefix(
+        ctx.text,
+        ctx.hidden_states,
+        output_probs=None,
+        spaced=ctx.spaced,
+        words=ctx.words,
+    )
+    labels = build_timestep_labels(
+        ctx.text,
+        automaton,
+        spaced=ctx.spaced,
+        words=ctx.words,
+        condensed=condensed,
+        model=None,
+        activations=None,
+    )
+    bundle = compute_pc_selectivity(
+        condensed.hidden_states,
+        labels,
+        features=features,
+        decode=False,
+    )
+    return n_dfa, {f: bundle.result.si[f] for f in features}, bundle.variance_pct
+
+
+def collect_mixed_dfa_pc_selectivity(
+    *,
+    model_type: str = DEFAULT_MODEL_TYPE,
+    features: tuple[str, ...] = DEFAULT_FEATURES,
+    bins: list[DifficultyBin] | None = None,
+    max_tasks: int | None = None,
+) -> dict[str, Any]:
+    """Pool per-PC SI across mixed DFA runs (same bins as unit SI)."""
+    if bins is None:
+        bins = _default_difficulty_bins()
+
+    pooled_si: dict[str, dict[str, list[float]]] = {
+        b.label: {f: [] for f in features} for b in bins
+    }
+    per_run: list[dict[str, Any]] = []
+    tasks_seen = 0
+    for entry in iter_runs():
+        task = entry["task"]
+        words = list(entry["words"])
+        if max_tasks is not None and tasks_seen >= max_tasks:
+            break
+        from experiment import seeds_for_task
+
+        seeds = sorted(seeds_for_task(task, model_type))
+        if not seeds:
+            continue
+        tasks_seen += 1
+        for seed in seeds:
+            print(f"pc-selectivity {task} seed {seed} ...", flush=True)
+            ctx = load_task_viz_context(task, model_type=model_type, seed=seed)
+            n_dfa, si, var_pct = _compute_pc_si_for_ctx(ctx, features=features)
+            mean_si = {
+                f: float(np.nanmean(si[f])) if si.get(f) is not None else float("nan")
+                for f in features
+            }
+            per_run.append({
+                "task": task,
+                "seed": seed,
+                "n_dfa_states": int(n_dfa),
+                "n_words": int(entry["n_words"]),
+                "words": words,
+                "mean_si": mean_si,
+                "variance_pct": [float(v) for v in var_pct.tolist()],
+            })
+            for b in bins:
+                if not b.contains(int(n_dfa)):
+                    continue
+                for f in features:
+                    vals = np.asarray(si[f], dtype=float)
+                    vals = vals[np.isfinite(vals)]
+                    pooled_si[b.label][f].extend(vals.tolist())
+
+    return {
+        "comparison": COMPARISON_NAME,
+        "basis": "pca_condensed",
+        "model_type": model_type,
+        "features": list(features),
+        "bins": [b.label for b in bins],
+        "pooled_si": pooled_si,
+        "per_run": per_run,
+    }
+
+
 def collect_mixed_dfa_unit_selectivity(
     *,
     model_type: str = DEFAULT_MODEL_TYPE,
@@ -411,6 +509,60 @@ def run_mixed_dfa_unit_selectivity_analysis(
     fig15_path = plot_mixed_fig15_geometry_and_selectivity(si_json=out_json_path)
 
     return out_json_path, out_hist_path, out_reg_path, fig15_path
+
+
+def run_mixed_dfa_pc_selectivity_analysis(
+    *,
+    model_type: str = DEFAULT_MODEL_TYPE,
+    features: tuple[str, ...] = DEFAULT_FEATURES,
+    recompute: bool = False,
+    max_tasks: int | None = None,
+    out_json: str = "mixed_dfa_pc_selectivity_pooled.json",
+    out_hist: str = "mixed_dfa_pc_selectivity_histograms.png",
+    out_reg: str = "mixed_dfa_pc_selectivity_regression.png",
+) -> tuple[Path, Path, Path]:
+    """Pool per-PC SI across the mixed sweep (same plots as unit SI)."""
+    out_dir = comparison_dir(COMPARISON_NAME, "unit_selectivity")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_json_path = out_dir / out_json
+    out_hist_path = out_dir / out_hist
+    out_reg_path = out_dir / out_reg
+
+    if out_json_path.is_file() and not recompute:
+        payload = json.loads(out_json_path.read_text(encoding="utf-8"))
+    else:
+        payload = collect_mixed_dfa_pc_selectivity(
+            model_type=model_type,
+            features=features,
+            max_tasks=max_tasks,
+        )
+        out_json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    bins = _default_difficulty_bins()
+    old_pooled = payload.get("pooled_si", {})
+    pooled_si = {
+        b.label: {f: list(old_pooled.get(b.label, {}).get(f, [])) for f in features}
+        for b in bins
+    }
+    fig = plot_mixed_dfa_si_histograms(pooled_si, features=features, bins=bins)
+    fig.suptitle(
+        "Per-PC SI by DFA difficulty (PCA on condensed prefixes)",
+        fontsize=11, y=0.98,
+    )
+    save_figure(fig, out_hist_path, dpi=150)
+    plt.close(fig)
+
+    fig = plot_mixed_dfa_si_regression(payload["per_run"], features=features)
+    fig.suptitle(
+        "Mean per-PC SI vs minimized DFA size",
+        fontsize=11, y=0.98,
+    )
+    save_figure(fig, out_reg_path, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out_json_path}", flush=True)
+    print(f"wrote {out_hist_path}", flush=True)
+    print(f"wrote {out_reg_path}", flush=True)
+    return out_json_path, out_hist_path, out_reg_path
 
 
 def _pool_si_all_runs(

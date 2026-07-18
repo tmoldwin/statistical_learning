@@ -229,6 +229,19 @@ def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
     print(f"wrote {out}", flush=True)
 
 
+def cmd_linear_vs_nonlinear(args: argparse.Namespace) -> None:
+    from viz.compare.nonlinear_decoding import run_mixed_linear_vs_nonlinear
+
+    seeds = tuple(args.seeds) if args.seeds else None
+    json_path, fig_path = run_mixed_linear_vs_nonlinear(
+        recompute=not args.replot_only,
+        max_tasks=None,
+        seeds=seeds,
+    )
+    print(f"wrote {json_path}", flush=True)
+    print(f"wrote {fig_path}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -237,6 +250,7 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
+            "linear-vs-nonlinear",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -288,6 +302,8 @@ def main() -> None:
     elif args.command == "within-corr":
         out = plot_mixed_dfa_within_corr_vs_dfa(recompute=True)
         print(f"wrote {out}", flush=True)
+    elif args.command == "linear-vs-nonlinear":
+        cmd_linear_vs_nonlinear(args)
     elif args.command == "all":
         cmd_plan(args)
         cmd_train(args)

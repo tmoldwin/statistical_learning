@@ -1230,7 +1230,7 @@ def plot_example_units_for_feature(
     *,
     unit_labels: list[str],
     text: str,
-    model: dict,
+    model: dict | None,
     automaton: MinimizedVocabAutomaton | None = None,
     k: int = 6,
 ) -> None:
@@ -1238,9 +1238,11 @@ def plot_example_units_for_feature(
     units = _top_selective_units(scores, activations, k=k)
     if not units:
         return
-    target_prob = _target_prob_array(
-        model, activations, text, next_chars=labels.next_char,
-    )
+    target_prob = None
+    if model is not None and activations.shape[1] == int(model.get("hidden_size", -1)):
+        target_prob = _target_prob_array(
+            model, activations, text, next_chars=labels.next_char,
+        )
 
     fig, axes = plt.subplots(
         len(units), 2,
@@ -2063,3 +2065,358 @@ def plot_unit_selectivity_suite(
     )
     _save_summary_json(result, os.path.join(save_dir, "selectivity_summary.json"), unit_labels)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Principal-component selectivity (same SI math, PC scores as "units")
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PCSelectivityBundle:
+    """Selectivity on PCA scores of condensed hidden states."""
+
+    result: SelectivityResult
+    pc_scores: np.ndarray          # (n_points, n_pcs)
+    variance_pct: np.ndarray       # (n_pcs,)
+    mean: np.ndarray               # (H,)
+    components: np.ndarray         # (n_pcs, H)
+    pc_labels: list[str]
+    decode_cc: dict[str, np.ndarray]  # feature -> chance-corrected acc per PC
+
+
+def fit_pca_full(
+    points: np.ndarray,
+    *,
+    max_pcs: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """SVD PCA on rows of ``points``. Returns scores, mean, components, var%."""
+    x = np.asarray(points, dtype=float)
+    if x.ndim != 2 or x.shape[0] < 2 or x.shape[1] < 1:
+        raise ValueError("PCA needs at least 2 points and 1 dimension")
+    mean = np.mean(x, axis=0)
+    centered = x - mean
+    _, s, vh = np.linalg.svd(centered, full_matrices=False)
+    n_keep = int(s.size)
+    if max_pcs is not None:
+        n_keep = min(n_keep, int(max_pcs))
+    n_keep = max(1, n_keep)
+    components = vh[:n_keep]
+    scores = centered @ components.T
+    var = (s[:n_keep] ** 2).astype(float)
+    total = float(np.sum(s ** 2))
+    var_pct = 100.0 * var / total if total > 1e-18 else np.zeros_like(var)
+    return scores, mean, components, var_pct
+
+
+def project_onto_pcs(
+    points: np.ndarray,
+    mean: np.ndarray,
+    components: np.ndarray,
+) -> np.ndarray:
+    return (np.asarray(points, dtype=float) - mean) @ components.T
+
+
+def _per_pc_decode_cc(
+    scores: np.ndarray,
+    labels: TimestepLabels,
+    features: tuple[str, ...],
+    *,
+    test_size: float = 0.25,
+    random_state: int = 0,
+) -> dict[str, np.ndarray]:
+    """Chance-corrected linear probe accuracy using each PC alone."""
+    from sklearn.model_selection import train_test_split
+
+    from viz.compare.decoding import _fit_probe_accuracy, chance_corrected, empirical_null_chance
+
+    n_pcs = scores.shape[1]
+    out: dict[str, np.ndarray] = {}
+    for feat in features:
+        vals, mask = labels.feature_values(feat)
+        y_all = np.asarray([
+            vals[i] for i in range(len(vals))
+            if mask is None or mask[i]
+        ], dtype=object)
+        idx = np.asarray([
+            i for i in range(len(vals))
+            if mask is None or mask[i]
+        ], dtype=int)
+        cc = np.full(n_pcs, np.nan)
+        if idx.size < 8 or len(np.unique(y_all)) < 2:
+            out[feat] = cc
+            continue
+        x_all = scores[idx]
+        try:
+            x_tr, x_te, y_tr, y_te = train_test_split(
+                x_all, y_all,
+                test_size=test_size,
+                random_state=random_state,
+                stratify=y_all if len(np.unique(y_all)) * 2 <= len(y_all) else None,
+            )
+        except ValueError:
+            x_tr, x_te, y_tr, y_te = train_test_split(
+                x_all, y_all, test_size=test_size, random_state=random_state,
+            )
+        chance = empirical_null_chance(feat, y_all)
+        if chance is None:
+            out[feat] = cc
+            continue
+        n_classes = len(np.unique(y_all))
+        for pc in range(n_pcs):
+            acc = _fit_probe_accuracy(
+                x_tr[:, pc:pc + 1], y_tr,
+                x_te[:, pc:pc + 1], y_te,
+                n_classes=n_classes,
+                k=1,
+            )
+            cc[pc] = chance_corrected(acc, chance)
+        out[feat] = cc
+    return out
+
+
+def compute_pc_selectivity(
+    activations: np.ndarray,
+    labels: TimestepLabels,
+    *,
+    features: tuple[str, ...] = ALL_CATEGORICAL_FEATURES,
+    max_pcs: int | None = None,
+    decode: bool = True,
+) -> PCSelectivityBundle:
+    """Peak-vs-rest SI (and optional 1-PC probes) on PCA scores of ``activations``."""
+    scores, mean, components, var_pct = fit_pca_full(activations, max_pcs=max_pcs)
+    n_pcs = scores.shape[1]
+    pc_labels = [f"PC{i + 1}" for i in range(n_pcs)]
+
+    si, peak_gap, eta2, gap, peak_label = compute_unit_selectivity_matrix(
+        scores, labels, features=features,
+    )
+    # Fill unused categorical features with NaN so SelectivityResult helpers work.
+    for feat in ALL_CATEGORICAL_FEATURES:
+        if feat not in si:
+            si[feat] = np.full(n_pcs, np.nan)
+            peak_gap[feat] = np.full(n_pcs, np.nan)
+            eta2[feat] = np.full(n_pcs, np.nan)
+            gap[feat] = np.full(n_pcs, np.nan)
+            peak_label[feat] = [""] * n_pcs
+
+    primary, categories, groups, mixed = _assign_primary_features(si, peak_label)
+    result = SelectivityResult(
+        si=si,
+        peak_gap=peak_gap,
+        eta2=eta2,
+        gap=gap,
+        peak_label=peak_label,
+        target_prob_r=np.full(n_pcs, np.nan),
+        max_logit_r=np.full(n_pcs, np.nan),
+        entropy_r=np.full(n_pcs, np.nan),
+        best_predicted_char=[""] * n_pcs,
+        primary_feature=primary,
+        primary_category=categories,
+        primary_group=groups,
+        mixed=mixed,
+        n_points=int(activations.shape[0]),
+    )
+    decode_cc = (
+        _per_pc_decode_cc(scores, labels, features)
+        if decode else {f: np.full(n_pcs, np.nan) for f in features}
+    )
+    return PCSelectivityBundle(
+        result=result,
+        pc_scores=scores,
+        variance_pct=var_pct,
+        mean=mean,
+        components=components,
+        pc_labels=pc_labels,
+        decode_cc=decode_cc,
+    )
+
+
+def plot_pc_si_vs_index(
+    bundle: PCSelectivityBundle,
+    save_path: str | Path,
+    *,
+    title: str,
+    features: tuple[str, ...] = ANALYSIS_FEATURES,
+    max_pcs_shown: int = 30,
+) -> None:
+    """SI and single-PC decoding vs PC index, with variance bars."""
+    from viz.plot_layout import finalize_grid_figure, save_figure
+
+    n = min(len(bundle.pc_labels), int(max_pcs_shown))
+    xs = np.arange(1, n + 1)
+    fig, axes = plt.subplots(3, 1, figsize=(8.5, 7.2), sharex=True, squeeze=False)
+    ax_var, ax_si, ax_dec = axes[:, 0]
+
+    ax_var.bar(xs, bundle.variance_pct[:n], color="0.65", edgecolor="0.35", width=0.8)
+    ax_var.set_ylabel("% variance", fontsize=8)
+    ax_var.set_title("PC variance explained", fontsize=9)
+    ax_var.grid(True, axis="y", alpha=0.3)
+
+    for feat in features:
+        color = FEATURE_COLORS.get(feat, "#888")
+        y = bundle.result.si[feat][:n]
+        ax_si.plot(xs, y, color=color, lw=1.5, marker="o", ms=3,
+                   label=FEATURE_DISPLAY.get(feat, feat))
+    ax_si.set_ylabel("SI (peak vs rest)", fontsize=8)
+    ax_si.set_ylim(-0.05, 1.05)
+    ax_si.set_title("Per-PC selectivity index", fontsize=9)
+    ax_si.legend(fontsize=6.5, frameon=False, ncol=2, loc="upper right")
+    ax_si.grid(True, alpha=0.3)
+
+    for feat in features:
+        if feat not in bundle.decode_cc:
+            continue
+        color = FEATURE_COLORS.get(feat, "#888")
+        y = bundle.decode_cc[feat][:n]
+        ax_dec.plot(xs, y, color=color, lw=1.5, marker="o", ms=3,
+                    label=FEATURE_DISPLAY.get(feat, feat))
+    ax_dec.set_ylabel("chance-corr. acc.", fontsize=8)
+    ax_dec.set_xlabel("PC index", fontsize=8)
+    ax_dec.set_ylim(-0.05, 1.05)
+    ax_dec.set_title("Single-PC linear probe (chance-corrected)", fontsize=9)
+    ax_dec.axhline(0.0, color="0.7", lw=0.6, ls=":")
+    ax_dec.grid(True, alpha=0.3)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=title,
+        top=0.92,
+        bottom=0.08,
+        left=0.10,
+        right=0.98,
+        hspace=0.35,
+    )
+    save_figure(fig, save_path, dpi=150)
+    plt.close(fig)
+    print(f"wrote {save_path}")
+
+
+def plot_pc_selectivity_suite(
+    activations: np.ndarray,
+    text: str,
+    automaton: MinimizedVocabAutomaton,
+    save_dir: str | Path,
+    *,
+    model: dict,
+    spaced: bool,
+    words: list[str] | None,
+    condensed: CondensedView | None,
+    repr_label: str,
+    label_words: list[str] | None = None,
+    output_probs: np.ndarray | None = None,
+    max_pcs: int | None = None,
+    example_k: int = 3,
+) -> PCSelectivityBundle | None:
+    """PCA on condensed prefixes → SI / 1-PC decode plots (parallel to unit suite)."""
+    from viz.plot_layout import save_figure
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    chrono_activations = activations
+    chrono_labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=None,
+        model=model, activations=chrono_activations,
+    )
+
+    if condensed is None:
+        from visualize import condense_hidden_states_by_prefix
+
+        condensed = condense_hidden_states_by_prefix(
+            text, activations, output_probs, spaced=spaced, words=words,
+        )
+
+    condensed_h = condensed.hidden_states
+    if condensed_h.shape[0] < 2:
+        print("pc selectivity: need at least 2 condensed points")
+        return None
+
+    labels = build_timestep_labels(
+        text, automaton,
+        spaced=spaced, words=words, label_words=label_words, condensed=condensed,
+        model=model, activations=condensed_h,
+    )
+    bundle = compute_pc_selectivity(
+        condensed_h, labels,
+        features=ALL_CATEGORICAL_FEATURES,
+        max_pcs=max_pcs,
+        decode=False,
+    )
+    # Single-PC probes need more samples than condensed prefixes provide on the
+    # short viz window — project the chronological rollout onto the same axes.
+    chrono_scores = project_onto_pcs(chrono_activations, bundle.mean, bundle.components)
+    bundle.decode_cc = _per_pc_decode_cc(
+        chrono_scores, chrono_labels, ANALYSIS_FEATURES,
+    )
+    result = bundle.result
+    pc_labels = bundle.pc_labels
+
+    plot_unit_selectivity_summary(
+        result,
+        os.path.join(save_dir, "pc_selectivity_summary.png"),
+        repr_label=f"{repr_label} PCs",
+    )
+    plot_selectivity_heatmap(
+        result.si, ALL_CATEGORICAL_FEATURES,
+        os.path.join(save_dir, "pc_selectivity_heatmap_si.png"),
+        title=f"{repr_label} — PC peak-vs-rest SI",
+        unit_labels=pc_labels,
+        vmin=0.0,
+        vmax=1.0,
+    )
+    plot_selectivity_heatmap(
+        result.eta2, ALL_CATEGORICAL_FEATURES,
+        os.path.join(save_dir, "pc_selectivity_heatmap_eta2.png"),
+        title=f"{repr_label} — PC η²",
+        unit_labels=pc_labels,
+        vmin=0.0,
+        vmax=1.0,
+    )
+    plot_selectivity_distributions(
+        result,
+        os.path.join(save_dir, "pc_selectivity_distributions.png"),
+        title="Per-PC selectivity index",
+    )
+    plot_primary_feature_pie(
+        result,
+        os.path.join(save_dir, "pc_primary_feature_pie.png"),
+        title=f"{repr_label} — PC primary features",
+    )
+    plot_pc_si_vs_index(
+        bundle,
+        os.path.join(save_dir, "pc_si_and_decode_vs_index.png"),
+        title=f"{repr_label} — PC selectivity & single-PC decoding",
+        features=ANALYSIS_FEATURES,
+    )
+
+    # Example top-SI PCs: chronological scores already computed above.
+    for feat in ANALYSIS_FEATURES:
+        plot_example_units_for_feature(
+            result, chrono_scores, chrono_labels, feat,
+            os.path.join(save_dir, f"example_pcs_{feat}.png"),
+            unit_labels=pc_labels, text=text, model=None,
+            automaton=automaton,
+            k=example_k,
+        )
+
+    payload = {
+        "basis": "pca_condensed",
+        "n_points": result.n_points,
+        "n_pcs": len(pc_labels),
+        "pc_labels": pc_labels,
+        "variance_pct": bundle.variance_pct.tolist(),
+        "si": {k: v.tolist() for k, v in result.si.items()},
+        "eta2": {k: v.tolist() for k, v in result.eta2.items()},
+        "peak_label": result.peak_label,
+        "primary_feature": result.primary_feature,
+        "decode_cc": {k: v.tolist() for k, v in bundle.decode_cc.items()},
+        "population_median_si": {
+            f: float(np.nanmedian(result.si[f])) for f in ALL_CATEGORICAL_FEATURES
+        },
+    }
+    json_path = os.path.join(save_dir, "pc_selectivity_summary.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"wrote {json_path}")
+    return bundle

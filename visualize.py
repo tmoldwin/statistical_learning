@@ -9511,6 +9511,7 @@ def main() -> None:
             "correlation",
             "selectivity",
             "decoding",
+            "decoding_nonlinear",
         ],
         help="run only these plot sections (canonical selective replot; no sibling regen scripts)",
     )
@@ -9911,7 +9912,7 @@ def main() -> None:
                             )
 
         if automaton is not None and want("selectivity"):
-            from unit_selectivity import plot_unit_selectivity_suite
+            from unit_selectivity import plot_pc_selectivity_suite, plot_unit_selectivity_suite
 
             with timer.section("unit_selectivity"):
                 plot_unit_selectivity_suite(
@@ -9927,6 +9928,20 @@ def main() -> None:
                     unit_labels=hidden_unit_labels(
                         model.get("dale_sign"), model["hidden_size"],
                     ),
+                    label_words=label_words if not spaced else None,
+                    output_probs=output_probs,
+                )
+            with timer.section("pc_selectivity"):
+                plot_pc_selectivity_suite(
+                    hidden_states,
+                    text,
+                    automaton,
+                    os.path.join(out_dir, "pc_selectivity"),
+                    model=model,
+                    spaced=spaced,
+                    words=words,
+                    condensed=cv,
+                    repr_label="RNN hidden state",
                     label_words=label_words if not spaced else None,
                     output_probs=output_probs,
                 )
@@ -10007,6 +10022,19 @@ def main() -> None:
                                 seeds=anchor_seeds,
                                 model_type=model_type,
                             )
+
+        if args.exp and want("decoding_nonlinear"):
+            from experiment import DEFAULT_SEED
+            from viz.compare.nonlinear_decoding import run_task_linear_vs_nonlinear
+
+            with timer.section("decoding_linear_vs_nonlinear"):
+                nl_dir = Path(out_dir) / "decoding_linear_vs_nonlinear"
+                run_task_linear_vs_nonlinear(
+                    args.exp,
+                    nl_dir,
+                    model_type=model_type,
+                    seed=args.seed if args.seed is not None else DEFAULT_SEED,
+                )
 
         if model["hidden_size"] == 2:
             with timer.section("state_trajectories_2d"):

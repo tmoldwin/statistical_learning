@@ -474,6 +474,530 @@ def compute_weight_motif_metrics(
     }
 
 
+def compute_weight_rank_metrics(w_rec: np.ndarray) -> dict[str, float]:
+    """Matrix rank / pseudo-rank scalars for W_hh (singular spectrum)."""
+    w = np.asarray(w_rec, dtype=float)
+    try:
+        s = np.linalg.svd(w, compute_uv=False)
+    except np.linalg.LinAlgError:
+        return {
+            "stable_rank": float("nan"),
+            "effective_rank": float("nan"),
+            "numerical_rank_1e3": float("nan"),
+            "participation_ratio": float("nan"),
+            "spectral_gap_sv": float("nan"),
+            "nuclear_norm": float("nan"),
+            "op_norm": float("nan"),
+            "frobenius": float("nan"),
+        }
+    s = np.asarray(s, dtype=float)
+    s_pos = s[s > 0]
+    fro2 = float(np.sum(s ** 2))
+    op = float(s[0]) if s.size else float("nan")
+    if s_pos.size == 0 or fro2 < 1e-30:
+        return {
+            "stable_rank": float("nan"),
+            "effective_rank": float("nan"),
+            "numerical_rank_1e3": float("nan"),
+            "participation_ratio": float("nan"),
+            "spectral_gap_sv": float("nan"),
+            "nuclear_norm": float("nan"),
+            "op_norm": op,
+            "frobenius": float(np.sqrt(fro2)),
+        }
+    p = (s_pos ** 2) / fro2
+    # Roy & Vetterli effective rank; participation ratio = 1 / sum p^2.
+    effective_rank = float(np.exp(-np.sum(p * np.log(p + 1e-30))))
+    participation = float(1.0 / np.sum(p ** 2))
+    stable_rank = fro2 / max(op ** 2, 1e-30)
+    thr = op * 1e-3
+    numerical = float(np.sum(s >= thr))
+    gap = float(s[0] / s[1]) if s.size >= 2 and s[1] > 1e-30 else float("nan")
+    return {
+        "stable_rank": float(stable_rank),
+        "effective_rank": effective_rank,
+        "numerical_rank_1e3": numerical,
+        "participation_ratio": participation,
+        "spectral_gap_sv": gap,
+        "nuclear_norm": float(np.sum(s_pos)),
+        "op_norm": op,
+        "frobenius": float(np.sqrt(fro2)),
+    }
+
+
+def compute_weight_directionality_metrics(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, float]:
+    """Feedforward / ordering proxies after letter-cluster unit order."""
+    order = _cluster_unit_order(w_in, w_rec)
+    w_ord = np.asarray(w_rec, dtype=float)[np.ix_(order, order)]
+    abs_w = np.abs(w_ord)
+    n = abs_w.shape[0]
+    iu = np.triu_indices(n, k=1)
+    il = np.tril_indices(n, k=1)
+    upper = float(abs_w[iu].sum())
+    lower = float(abs_w[il].sum())
+    off = upper + lower
+    upper_frac = upper / max(off, 1e-12)
+    antisym = w_ord - w_ord.T
+    sym = w_ord + w_ord.T
+    asymmetry = _frobenius_norm(antisym) / max(_frobenius_norm(sym), 1e-12)
+    try:
+        rho = float(np.max(np.abs(np.linalg.eigvals(w_ord))))
+    except np.linalg.LinAlgError:
+        rho = float("nan")
+    try:
+        rho_abs = float(np.max(np.abs(np.linalg.eigvals(abs_w))))
+    except np.linalg.LinAlgError:
+        rho_abs = float("nan")
+    if not np.isfinite(rho_abs) or rho_abs < 1e-12:
+        walk_ratio_2 = float("nan")
+    else:
+        an = abs_w / rho_abs
+        walk_ratio_2 = _frobenius_norm(an @ an) / max(_frobenius_norm(an), 1e-12)
+
+    # Mean shortest path on strong-|W| undirected graph (legacy q=0.75 cut).
+    mean_path = float("nan")
+    pos = abs_w[abs_w > 0]
+    if pos.size >= 2:
+        thr = float(np.quantile(pos, 0.75))
+        adj = abs_w >= thr
+        np.fill_diagonal(adj, False)
+        adj = np.logical_or(adj, adj.T)
+        lens: list[float] = []
+        for src in range(n):
+            dist = np.full(n, -1, dtype=int)
+            dist[src] = 0
+            queue = [src]
+            qi = 0
+            while qi < len(queue):
+                u = queue[qi]
+                qi += 1
+                for v in np.where(adj[u])[0]:
+                    if dist[v] < 0:
+                        dist[v] = dist[u] + 1
+                        queue.append(int(v))
+            lens.extend(float(d) for d in dist if d > 0)
+        if lens:
+            mean_path = float(np.mean(lens))
+
+    return {
+        "hh_upper_frac": float(upper_frac),
+        "hh_asymmetry": float(asymmetry),
+        "hh_walk_ratio_2": float(walk_ratio_2),
+        "hh_mean_path_q75": mean_path,
+        "spectral_radius_hh": float(rho) if np.isfinite(rho) else float("nan"),
+        "spectral_radius_abs_hh": float(rho_abs) if np.isfinite(rho_abs) else float("nan"),
+    }
+
+
+def _thresholded_digraph(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+):
+    """Build a digraph from strong |W_hh| edges.
+
+    ``mode="mean"`` (default): keep |W_ij| ≥ mean(off-diagonal |W|), so density
+    can vary with weight concentration. ``mode="quantile"``: keep ≥ ``q`` quantile.
+    """
+    import networkx as nx
+
+    abs_w = np.abs(np.asarray(w_rec, dtype=float))
+    np.fill_diagonal(abs_w, 0.0)
+    pos = abs_w[abs_w > 0]
+    n = abs_w.shape[0]
+    g = nx.DiGraph()
+    g.add_nodes_from(range(n))
+    if pos.size == 0:
+        return g, float("nan")
+    if mode == "quantile":
+        thr = float(np.quantile(pos, q))
+    else:
+        thr = float(np.mean(pos))
+    src, dst = np.where(abs_w >= thr)
+    for i, j in zip(src.tolist(), dst.tolist()):
+        g.add_edge(i, j, weight=float(abs_w[i, j]))
+    return g, thr
+
+
+def _digraph_motif_rates_from_adj(E: np.ndarray) -> dict[str, float]:
+    """3-node motif rates on a boolean directed adjacency (no self-loops)."""
+    n = E.shape[0]
+    n_dir = int(np.sum(E))
+    n_rec = int(np.sum(E & E.T)) // 2
+    recip = (2.0 * n_rec) / max(n_dir, 1)
+    if n < 3 or n_dir < 2:
+        return {
+            "motif_feedforward_rate": float("nan"),
+            "motif_cycle_rate": float("nan"),
+            "motif_reciprocal_frac": float(recip),
+            "motif_n_triples": 0.0,
+        }
+    ff = 0
+    cyc = 0
+    triples = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                edges = (
+                    int(E[i, j]) + int(E[j, i])
+                    + int(E[i, k]) + int(E[k, i])
+                    + int(E[j, k]) + int(E[k, j])
+                )
+                if edges < 2:
+                    continue
+                triples += 1
+                if (
+                    (E[i, j] and E[j, k] and E[k, i])
+                    or (E[i, k] and E[k, j] and E[j, i])
+                ):
+                    cyc += 1
+                ff_hit = False
+                for a, b, c in (
+                    (i, j, k), (i, k, j), (j, i, k),
+                    (j, k, i), (k, i, j), (k, j, i),
+                ):
+                    if E[a, b] and E[b, c] and E[a, c]:
+                        if not (E[b, a] or E[c, b] or E[c, a]):
+                            ff_hit = True
+                            break
+                if ff_hit:
+                    ff += 1
+    return {
+        "motif_feedforward_rate": float(ff / triples) if triples else float("nan"),
+        "motif_cycle_rate": float(cyc / triples) if triples else float("nan"),
+        "motif_reciprocal_frac": float(recip),
+        "motif_n_triples": float(triples),
+    }
+
+
+def compute_weight_digraph_motifs(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """3-node digraph motifs + key triad-census fractions on thresholded |W_hh|."""
+    import networkx as nx
+
+    g, thr = _thresholded_digraph(w_rec, mode=mode, q=q)
+    n = g.number_of_nodes()
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+    out = _digraph_motif_rates_from_adj(E)
+    out["motif_threshold"] = float(thr) if np.isfinite(thr) else float("nan")
+
+    try:
+        census = nx.triadic_census(g)
+        total = float(sum(census.values())) or 1.0
+        # Holland–Leinhardt labels of interest for feedforward / cycle structure.
+        out["triad_030T_frac"] = float(census.get("030T", 0) / total)  # transitive
+        out["triad_030C_frac"] = float(census.get("030C", 0) / total)  # 3-cycle
+        out["triad_120D_frac"] = float(census.get("120D", 0) / total)
+        out["triad_120U_frac"] = float(census.get("120U", 0) / total)
+        out["triad_120C_frac"] = float(census.get("120C", 0) / total)
+        out["triad_210_frac"] = float(census.get("210", 0) / total)
+        out["triad_300_frac"] = float(census.get("300", 0) / total)  # complete mutual
+        # Among non-empty connected triads, share that are pure transitive vs cyclic.
+        connected = (
+            census.get("030T", 0) + census.get("030C", 0)
+            + census.get("120D", 0) + census.get("120U", 0) + census.get("120C", 0)
+            + census.get("210", 0) + census.get("300", 0)
+            + census.get("021D", 0) + census.get("021U", 0) + census.get("021C", 0)
+            + census.get("111D", 0) + census.get("111U", 0) + census.get("201", 0)
+        )
+        out["triad_connected"] = float(connected)
+        out["triad_ff_over_cycle"] = (
+            float(census.get("030T", 0) / max(census.get("030C", 0), 1))
+        )
+    except Exception:
+        for k in (
+            "triad_030T_frac", "triad_030C_frac", "triad_120D_frac",
+            "triad_120U_frac", "triad_120C_frac", "triad_210_frac",
+            "triad_300_frac", "triad_connected", "triad_ff_over_cycle",
+        ):
+            out[k] = float("nan")
+    return out
+
+
+def _triangle_node_xy() -> dict[int, tuple[float, float]]:
+    """Canonical 3-node layout: 0=top, 1=bottom-left, 2=bottom-right."""
+    return {
+        0: (0.50, 0.82),
+        1: (0.18, 0.18),
+        2: (0.82, 0.18),
+    }
+
+
+# Directed edges (i→j) for motif schematics on the metric board.
+_MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
+    # Transitive feedforward: i→j→k and i→k.
+    "motif_feedforward_rate": ((0, 1), (1, 2), (0, 2)),
+    "motif_cycle_rate": ((0, 1), (1, 2), (2, 0)),
+    # Reciprocal dyad (third node unused).
+    "motif_reciprocal_frac": ((0, 1), (1, 0)),
+    # Holland–Leinhardt (A=0, B=1, C=2).
+    "triad_030T_frac": ((0, 1), (2, 1), (0, 2)),  # A→B←C, A→C
+    "triad_030C_frac": ((1, 0), (2, 1), (0, 2)),  # A←B←C, A→C
+    "triad_120D_frac": ((1, 0), (1, 2), (0, 2), (2, 0)),  # A←B→C, A↔C
+    "triad_120U_frac": ((0, 1), (2, 1), (0, 2), (2, 0)),  # A→B←C, A↔C
+    "triad_120C_frac": ((0, 1), (1, 2), (0, 2), (2, 0)),  # A→B→C, A↔C
+    "triad_210_frac": ((0, 1), (1, 2), (2, 1), (0, 2), (2, 0)),
+    "triad_300_frac": ((0, 1), (1, 0), (1, 2), (2, 1), (0, 2), (2, 0)),
+}
+
+
+def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
+    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown."""
+    from matplotlib.patches import Circle, FancyArrowPatch
+
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    if key == "triad_ff_over_cycle":
+        # Side-by-side 030T | 030C.
+        for x0, edges in (
+            (0.0, _MOTIF_SCHEMA_EDGES["triad_030T_frac"]),
+            (0.52, _MOTIF_SCHEMA_EDGES["triad_030C_frac"]),
+        ):
+            pos = {
+                0: (x0 + 0.24, 0.78),
+                1: (x0 + 0.08, 0.22),
+                2: (x0 + 0.40, 0.22),
+            }
+            _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.055)
+        ax.text(0.50, 0.48, "/", fontsize=9, ha="center", va="center", color=color)
+        return True
+
+    edges = _MOTIF_SCHEMA_EDGES.get(key)
+    if edges is None:
+        return False
+
+    if key == "motif_reciprocal_frac":
+        pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
+        _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.07, rad=0.25)
+        return True
+
+    pos = _triangle_node_xy()
+    _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.065)
+    return True
+
+
+def _draw_motif_nodes_edges(
+    ax,
+    pos: dict[int, tuple[float, float]],
+    edges: tuple[tuple[int, int], ...],
+    *,
+    color: str,
+    node_r: float,
+    rad: float = 0.0,
+) -> None:
+    from matplotlib.patches import Circle, FancyArrowPatch
+
+    edge_set = set(edges)
+    drawn_pairs: set[tuple[int, int]] = set()
+    for i, j in edges:
+        if (i, j) in drawn_pairs:
+            continue
+        x0, y0 = pos[i]
+        x1, y1 = pos[j]
+        mutual = (j, i) in edge_set
+        if mutual:
+            # Two curved arrows for reciprocity.
+            for (a, b), sign in (((i, j), 1.0), ((j, i), -1.0)):
+                xa, ya = pos[a]
+                xb, yb = pos[b]
+                arr = FancyArrowPatch(
+                    (xa, ya), (xb, yb),
+                    arrowstyle="-|>",
+                    mutation_scale=7,
+                    lw=1.0,
+                    color=color,
+                    connectionstyle=f"arc3,rad={0.22 * sign}",
+                    shrinkA=6,
+                    shrinkB=6,
+                )
+                ax.add_patch(arr)
+            drawn_pairs.add((i, j))
+            drawn_pairs.add((j, i))
+        else:
+            use_rad = rad
+            arr = FancyArrowPatch(
+                (x0, y0), (x1, y1),
+                arrowstyle="-|>",
+                mutation_scale=7,
+                lw=1.0,
+                color=color,
+                connectionstyle=f"arc3,rad={use_rad}",
+                shrinkA=6,
+                shrinkB=6,
+            )
+            ax.add_patch(arr)
+            drawn_pairs.add((i, j))
+
+    for idx, (x, y) in pos.items():
+        circ = Circle((x, y), node_r, facecolor="white", edgecolor=color, lw=1.0, zorder=3)
+        ax.add_patch(circ)
+
+
+def compute_weight_graph_metrics(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """Standard network metrics on a thresholded |W_hh| digraph.
+
+    Default threshold: off-diagonal |W| ≥ mean(|W|) so edge density can vary.
+    Path / diameter / modularity use the undirected projection (largest CC).
+    SCC stats stay directed.
+    """
+    import networkx as nx
+    from networkx.algorithms import community as nx_comm
+
+    g, thr = _thresholded_digraph(w_rec, mode=mode, q=q)
+    n = g.number_of_nodes()
+    m = g.number_of_edges()
+    out: dict[str, float] = {
+        "threshold_mode": 0.0 if mode == "mean" else float(q),
+        "threshold_value": float(thr),
+        "n_nodes": float(n),
+        "n_edges": float(m),
+        "density": float(nx.density(g)) if n > 1 else float("nan"),
+        "mean_out_degree": float(m / n) if n else float("nan"),
+    }
+
+    try:
+        out["reciprocity"] = float(nx.reciprocity(g)) if m else float("nan")
+    except Exception:
+        out["reciprocity"] = float("nan")
+
+    try:
+        out["avg_clustering"] = float(nx.average_clustering(g)) if n > 2 else float("nan")
+    except Exception:
+        out["avg_clustering"] = float("nan")
+
+    try:
+        out["degree_assortativity"] = float(
+            nx.degree_assortativity_coefficient(g)
+        ) if m > 1 else float("nan")
+    except Exception:
+        out["degree_assortativity"] = float("nan")
+
+    # Strongly connected components (directed).
+    try:
+        sccs = list(nx.strongly_connected_components(g))
+        out["n_scc"] = float(len(sccs))
+        largest_scc = max((len(c) for c in sccs), default=0)
+        out["largest_scc_frac"] = float(largest_scc / n) if n else float("nan")
+    except Exception:
+        out["n_scc"] = float("nan")
+        out["largest_scc_frac"] = float("nan")
+
+    # Undirected projection for classical path / community metrics.
+    u = g.to_undirected()
+    if u.number_of_edges() == 0:
+        out["avg_shortest_path"] = float("nan")
+        out["diameter"] = float("nan")
+        out["modularity"] = float("nan")
+        out["n_communities"] = float("nan")
+        out["transitivity"] = float("nan")
+        out["mean_betweenness"] = float("nan")
+        out["max_betweenness"] = float("nan")
+        out["mean_closeness"] = float("nan")
+        out["out_degree_cv"] = float("nan")
+        out["condensation_height"] = float("nan")
+        out["n_condensation_nodes"] = float("nan")
+        out["largest_cc_frac"] = float("nan")
+        return out
+
+    try:
+        out["transitivity"] = float(nx.transitivity(u))
+    except Exception:
+        out["transitivity"] = float("nan")
+
+    # Largest connected component for paths.
+    try:
+        largest_cc_nodes = max(nx.connected_components(u), key=len)
+        u_cc = u.subgraph(largest_cc_nodes).copy()
+        if u_cc.number_of_nodes() >= 2 and nx.is_connected(u_cc):
+            out["avg_shortest_path"] = float(nx.average_shortest_path_length(u_cc))
+            out["diameter"] = float(nx.diameter(u_cc))
+            out["largest_cc_frac"] = float(u_cc.number_of_nodes() / n)
+        else:
+            out["avg_shortest_path"] = float("nan")
+            out["diameter"] = float("nan")
+            out["largest_cc_frac"] = float(u_cc.number_of_nodes() / n) if n else float("nan")
+    except Exception:
+        out["avg_shortest_path"] = float("nan")
+        out["diameter"] = float("nan")
+        out["largest_cc_frac"] = float("nan")
+
+    try:
+        communities = list(nx_comm.greedy_modularity_communities(u))
+        out["n_communities"] = float(len(communities))
+        out["modularity"] = float(nx_comm.modularity(u, communities))
+    except Exception:
+        out["n_communities"] = float("nan")
+        out["modularity"] = float("nan")
+
+    try:
+        bc = nx.betweenness_centrality(u)
+        vals = list(bc.values())
+        out["mean_betweenness"] = float(np.mean(vals)) if vals else float("nan")
+        out["max_betweenness"] = float(np.max(vals)) if vals else float("nan")
+    except Exception:
+        out["mean_betweenness"] = float("nan")
+        out["max_betweenness"] = float("nan")
+
+    try:
+        cc = nx.closeness_centrality(u)
+        out["mean_closeness"] = float(np.mean(list(cc.values()))) if cc else float("nan")
+    except Exception:
+        out["mean_closeness"] = float("nan")
+
+    # Degree heterogeneity on the digraph.
+    try:
+        out_degs = np.asarray([d for _, d in g.out_degree()], dtype=float)
+        if out_degs.size and float(np.mean(out_degs)) > 0:
+            out["out_degree_cv"] = float(np.std(out_degs) / np.mean(out_degs))
+        else:
+            out["out_degree_cv"] = float("nan")
+    except Exception:
+        out["out_degree_cv"] = float("nan")
+
+    # Condensation DAG height = longest path among SCCs (graph-theoretic "rank").
+    try:
+        cond = nx.condensation(g)
+        if cond.number_of_nodes() >= 1 and nx.is_directed_acyclic_graph(cond):
+            out["condensation_height"] = float(nx.dag_longest_path_length(cond))
+            out["n_condensation_nodes"] = float(cond.number_of_nodes())
+        else:
+            out["condensation_height"] = float("nan")
+            out["n_condensation_nodes"] = float(cond.number_of_nodes())
+    except Exception:
+        out["condensation_height"] = float("nan")
+        out["n_condensation_nodes"] = float("nan")
+
+    return out
+
+
+def compute_weight_layeredness_metrics(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, float]:
+    """Legacy layeredness bag: directionality + digraph motifs (quantile q=0.75)."""
+    direction = compute_weight_directionality_metrics(w_in, w_rec)
+    motifs = compute_weight_digraph_motifs(w_rec, mode="quantile", q=0.75)
+    return {**direction, **motifs}
+
+
 def collect_weight_metrics_by_seed(
     exp: str,
     *,

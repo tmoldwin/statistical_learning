@@ -1192,6 +1192,340 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
     return out
 
 
+# Full exploratory board: legacy norms/layeredness/motifs + networkx + rank.
+_MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
+    "motif_feedforward_rate",
+    "motif_cycle_rate",
+    "motif_reciprocal_frac",
+    "triad_030T_frac",
+    "triad_030C_frac",
+    "triad_ff_over_cycle",
+    "triad_120D_frac",
+    "triad_120U_frac",
+    "triad_120C_frac",
+    "triad_210_frac",
+    "triad_300_frac",
+})
+
+_WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...] = (
+    (
+        "A. Norms / drive balance (legacy)",
+        (
+            ("structure", "input_frobenius", r"$||W_{xh}||_F$"),
+            ("structure", "recurrent_frobenius", r"$||W_{hh}||_F$"),
+            ("structure", "readout_frobenius", r"$||W_{ho}||_F$"),
+            ("structure", "input_over_recurrent_norm", r"$||W_{xh}||_F / ||W_{hh}||_F$"),
+            ("structure", "mean_input_drive_fraction", "mean input-drive fraction"),
+            ("structure", "median_input_drive_fraction", "median input-drive fraction"),
+        ),
+    ),
+    (
+        "B. Spectral / walk / layeredness (legacy)",
+        (
+            ("structure", "spectral_radius_hh", r"$\rho(W_{hh})$"),
+            ("direction", "spectral_radius_abs_hh", r"$\rho(|W_{hh}|)$"),
+            ("direction", "hh_walk_ratio_2", r"$||A^2||_F / ||A||_F$"),
+            ("direction", "hh_mean_path_q75", "mean path (strong |W|, q=0.75)"),
+            ("direction", "hh_upper_frac", "upper-tri mass (cluster order)"),
+            ("direction", "hh_asymmetry", r"asymmetry $||W-W^T||/||W+W^T||$"),
+        ),
+    ),
+    (
+        "C. Cluster / letter structure (legacy)",
+        (
+            ("motif", "hh_adjacent_corr", r"$W_{hh}$ adjacent |corr|"),
+            ("motif", "hh_within_block_frac", r"$W_{hh}$ within-block frac"),
+            ("motif", "hh_within_between_ratio", r"$W_{hh}$ within/between |w|"),
+            ("motif", "block_coupling_hh", r"$W_{hh}$ between-block frac"),
+            ("motif", "xh_top1_mass", r"$W_{xh}$ top-1 mass"),
+            ("motif", "input_tuning_entropy", r"$W_{xh}$ tuning entropy"),
+            ("motif", "cluster_cohesion_xh", r"$W_{xh}$ cluster cohesion"),
+        ),
+    ),
+    (
+        "D. Digraph 3-node motifs (legacy q=0.75 + triad census)",
+        (
+            ("layeredness", "motif_feedforward_rate", "feedforward triple rate"),
+            ("layeredness", "motif_cycle_rate", "cycle triple rate"),
+            ("layeredness", "motif_reciprocal_frac", "reciprocal edge frac"),
+            ("layeredness", "triad_030T_frac", "triad 030T (transitive)"),
+            ("layeredness", "triad_030C_frac", "triad 030C (3-cycle)"),
+            ("layeredness", "triad_ff_over_cycle", "030T / 030C"),
+            ("layeredness", "triad_120D_frac", "triad 120D"),
+            ("layeredness", "triad_120U_frac", "triad 120U"),
+            ("layeredness", "triad_120C_frac", "triad 120C"),
+            ("layeredness", "triad_210_frac", "triad 210"),
+            ("layeredness", "triad_300_frac", "triad 300 (complete)"),
+        ),
+    ),
+    (
+        "E. Digraph topology (|W| ≥ mean |W|)",
+        (
+            ("graph", "density", "density"),
+            ("graph", "reciprocity", "reciprocity"),
+            ("graph", "avg_clustering", "avg clustering (dir.)"),
+            ("graph", "transitivity", "transitivity (undir.)"),
+            ("graph", "degree_assortativity", "degree assortativity"),
+            ("graph", "out_degree_cv", "out-degree CV"),
+            ("graph", "avg_shortest_path", "avg shortest path (LCC)"),
+            ("graph", "mean_betweenness", "mean betweenness"),
+            ("graph", "max_betweenness", "max betweenness"),
+            ("graph", "mean_closeness", "mean closeness"),
+            ("graph", "modularity", "modularity"),
+            ("graph", "n_communities", "# communities"),
+            ("graph", "condensation_height", "condensation DAG height"),
+            ("graph", "n_scc", "# SCCs"),
+        ),
+    ),
+    (
+        "F. Matrix rank / singular spectrum of W_hh",
+        (
+            ("rank", "stable_rank", r"stable rank $||W||_F^2/||W||_2^2$"),
+            ("rank", "effective_rank", "effective rank (Roy–Vetterli)"),
+            ("rank", "participation_ratio", "SV participation ratio"),
+            ("rank", "numerical_rank_1e3", r"numerical rank ($10^{-3}$)"),
+            ("rank", "spectral_gap_sv", r"SV gap $\sigma_1/\sigma_2$"),
+            ("rank", "nuclear_norm", r"nuclear norm $\sum\sigma$"),
+        ),
+    ),
+)
+
+
+def collect_mixed_dfa_weight_layeredness(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    recompute: bool = True,
+) -> Path:
+    """Compute graph + rank + motif + directionality metrics for every mixed run."""
+    from visualize import load_model_for_viz, weights_for_plot
+    from viz.weight_structure import (
+        compute_weight_directionality_metrics,
+        compute_weight_graph_metrics,
+        compute_weight_layeredness_metrics,
+        compute_weight_motif_metrics,
+        compute_weight_rank_metrics,
+        compute_weight_structure_metrics,
+    )
+
+    out = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_weight_graph_metrics.json"
+    if out.is_file() and not recompute:
+        return out
+
+    panels: list[dict[str, Any]] = []
+    for entry in iter_runs():
+        task = entry["task"]
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        words = list(entry["words"])
+        n_dfa = _dfa_states(words)
+        print(f"weight-graph {task} seed {seed} dfa={n_dfa}", flush=True)
+        try:
+            model = load_model_for_viz(str(ckpt), model_type)
+            w_in, w_rec, w_out, _dale = weights_for_plot(model)
+            panels.append({
+                "task": task,
+                "seed": seed,
+                "run_id": int(entry["run_id"]),
+                "n_words": int(entry["n_words"]),
+                "n_dfa_states": n_dfa,
+                "graph": compute_weight_graph_metrics(w_rec),
+                "layeredness": compute_weight_layeredness_metrics(w_in, w_rec),
+                "rank": compute_weight_rank_metrics(w_rec),
+                "motif": compute_weight_motif_metrics(w_in, w_rec),
+                "direction": compute_weight_directionality_metrics(w_in, w_rec),
+                "structure": compute_weight_structure_metrics(w_in, w_rec, w_out),
+            })
+        except Exception as exc:  # noqa: BLE001
+            panels.append({
+                "task": task, "seed": seed, "n_dfa_states": n_dfa,
+                "error": str(exc),
+            })
+
+    payload = {
+        "comparison": COMPARISON_NAME,
+        "seed": seed,
+        "model_type": model_type,
+        "threshold": "mean_abs_W",
+        "panels": panels,
+    }
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
+    *,
+    outfile: str = "weight_graph_metrics_vs_dfa.png",
+    seed: int = 1,
+    recompute: bool = False,
+) -> Path:
+    """Graph + rank + letter-block + directionality metrics vs DFA size.
+
+    Sibling to Figure 16 — does not overwrite ``weight_matrices_by_dfa.png``.
+    """
+    from viz.compare.pow2_sweep_metric_board import _fit_trend
+
+    path = collect_mixed_dfa_weight_layeredness(seed=seed, recompute=recompute)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    panels = [p for p in payload.get("panels", []) if "error" not in p]
+    if not panels:
+        raise FileNotFoundError("no weight-graph panels")
+
+    n_cols = 5
+    metric_rows: list[list[tuple[str, str, str]]] = []
+    banners_before: list[str | None] = []
+    for section_title, metrics in _WEIGHT_METRIC_SECTIONS:
+        pending_banner: str | None = section_title
+        cur: list[tuple[str, str, str]] = []
+        for bag, key, title in metrics:
+            cur.append((bag, key, title))
+            if len(cur) == n_cols:
+                metric_rows.append(cur)
+                banners_before.append(pending_banner)
+                cur = []
+                pending_banner = None
+        if cur:
+            metric_rows.append(cur)
+            banners_before.append(pending_banner)
+
+    height_ratios: list[float] = []
+    gs_map: list[tuple[str, int]] = []
+    for i, banner in enumerate(banners_before):
+        if banner:
+            height_ratios.append(0.28)
+            gs_map.append(("banner", i))
+        # Extra height when this row has digraph-motif schematics above the scatter.
+        has_schema = any(
+            key in _MOTIF_SCHEMA_KEYS for _, key, _ in metric_rows[i]
+        )
+        height_ratios.append(1.35 if has_schema else 1.0)
+        gs_map.append(("metrics", i))
+
+    n_banner = sum(1 for b in banners_before if b)
+    fig = plt.figure(
+        figsize=(2.5 * n_cols + 1.0, 2.15 * len(metric_rows) + 0.4 * n_banner + 1.1),
+    )
+    gs = fig.add_gridspec(
+        len(height_ratios), n_cols,
+        height_ratios=height_ratios, hspace=0.58, wspace=0.32,
+    )
+
+    words_cmap = plt.get_cmap("YlOrRd")
+    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
+
+    def _lookup(panel: dict[str, Any], bag: str, key: str) -> float | None:
+        v = panel.get(bag, {}).get(key)
+        if v is None:
+            return None
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            return None
+        return fv if np.isfinite(fv) else None
+
+    from viz.weight_structure import draw_digraph_motif_schema
+
+    for gs_i, (kind, row_i) in enumerate(gs_map):
+        if kind == "banner":
+            axb = fig.add_subplot(gs[gs_i, :])
+            axb.set_axis_off()
+            axb.text(
+                0.0, 0.35, banners_before[int(row_i)],
+                fontsize=9, fontweight="bold", va="center",
+            )
+            continue
+        metrics = metric_rows[int(row_i)]
+        for c, (bag, key, title) in enumerate(metrics):
+            cell = gs[gs_i, c]
+            if key in _MOTIF_SCHEMA_KEYS:
+                inner = cell.subgridspec(2, 1, height_ratios=[0.48, 1.0], hspace=0.42)
+                ax_schem = fig.add_subplot(inner[0])
+                ax = fig.add_subplot(inner[1])
+                draw_digraph_motif_schema(ax_schem, key)
+            else:
+                ax = fig.add_subplot(cell)
+            xs, ys, ns = [], [], []
+            for p in panels:
+                v = _lookup(p, bag, key)
+                if v is None:
+                    continue
+                xs.append(float(p["n_dfa_states"]))
+                ys.append(v)
+                ns.append(float(p["n_words"]))
+            if xs:
+                x = np.asarray(xs, dtype=float)
+                y = np.asarray(ys, dtype=float)
+                ax.scatter(
+                    x, y, c=ns, cmap=words_cmap, norm=words_norm,
+                    s=14, alpha=0.8, linewidths=0.2, edgecolors="white", zorder=2,
+                )
+                x_fit, y_fit, r2, _ = _fit_trend(x, y)
+                if x_fit is not None and y_fit is not None and np.isfinite(r2):
+                    ax.plot(x_fit, y_fit, color="0.15", lw=1.15, zorder=3)
+                    ax.set_title(f"{title}\n$R^2$={r2:.2f}", fontsize=7, pad=2)
+                else:
+                    ax.set_title(title, fontsize=7, pad=2)
+            else:
+                ax.set_title(title, fontsize=7, pad=2)
+            ax.set_xlabel("DFA states", fontsize=6.5)
+            ax.grid(True, alpha=0.25)
+            ax.tick_params(labelsize=5.5)
+        for c in range(len(metrics), n_cols):
+            fig.add_subplot(gs[gs_i, c]).set_axis_off()
+
+    cax = fig.add_axes([0.92, 0.12, 0.014, 0.55])
+    cbar = fig.colorbar(
+        plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm), cax=cax,
+    )
+    cbar.set_label("# words", fontsize=7)
+    cbar.ax.tick_params(labelsize=6)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"|W_hh| structure board vs DFA "
+            f"(seed {seed}; legacy + graph + rank; exploratory)"
+        ),
+        top=0.97,
+        bottom=0.04,
+        left=0.06,
+        right=0.90,
+        wspace=0.32,
+        hspace=0.55,
+    )
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def plot_mixed_dfa_weight_layeredness_vs_dfa(
+    *,
+    outfile: str = "weight_layeredness_vs_dfa.png",
+    seed: int = 1,
+    recompute: bool = False,
+) -> Path:
+    """Alias for the expanded weight-structure board."""
+    return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
+        outfile=outfile, seed=seed, recompute=recompute,
+    )
+
+
+def plot_mixed_dfa_all_weight_metrics_vs_dfa(
+    *,
+    outfile: str = "weight_graph_metrics_vs_dfa.png",
+    seed: int = 1,
+    recompute: bool = False,
+) -> Path:
+    """Alias for the expanded weight-structure board."""
+    return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
+        outfile=outfile, seed=seed, recompute=recompute,
+    )
+
+
 _METRIC_SPECS: tuple[tuple[str, str, bool], ...] = (
     # (path.in.panel, display title, log_y)
     ("geometry.state_space.loop_top2_variance_frac", "loop top-2 var frac", False),

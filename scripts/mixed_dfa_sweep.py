@@ -250,7 +250,7 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
-            "linear-vs-nonlinear",
+            "linear-vs-nonlinear", "weight-layeredness",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -304,6 +304,15 @@ def main() -> None:
         print(f"wrote {out}", flush=True)
     elif args.command == "linear-vs-nonlinear":
         cmd_linear_vs_nonlinear(args)
+    elif args.command == "weight-layeredness":
+        from viz.compare.mixed_dfa_viz import plot_mixed_dfa_weight_graph_metrics_vs_dfa
+
+        seed = args.seeds[0] if args.seeds else 1
+        out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
+            seed=seed,
+            recompute=not args.replot_only,
+        )
+        print(f"wrote {out}", flush=True)
     elif args.command == "all":
         cmd_plan(args)
         cmd_train(args)

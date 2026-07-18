@@ -376,11 +376,13 @@ from vocab_sweep import register_sweep_tasks
 from vocab_sweep_pow2 import register_pow2_sweep_tasks
 from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_tasks
 from vocab_mixed_dfa import register_mixed_dfa_tasks
+from vocab_fixed_letters_dfa import register_fixed_letters_dfa_tasks
 
 register_sweep_tasks(TASKS)
 register_pow2_sweep_tasks(TASKS)
 register_pow2_h100_sweep_tasks(TASKS)
 register_mixed_dfa_tasks(TASKS)
+register_fixed_letters_dfa_tasks(TASKS)
 
 # Backward-compatible alias used by training / visualization entry points.
 EXPERIMENT_CONFIG: dict[str, dict] = TASKS
@@ -485,6 +487,14 @@ def experiment_subpath(name: str) -> Path:
             / "checkpoints"
             / f"r{run_s}"
         )
+    if name.startswith("fixlettdfa_r") and name.endswith("_ns"):
+        run_s = name.removeprefix("fixlettdfa_r").removesuffix("_ns")
+        return (
+            Path("comparisons")
+            / "fixed_letters_dfa_ns"
+            / "checkpoints"
+            / f"r{run_s}"
+        )
     return Path(name)
 
 
@@ -570,3 +580,15 @@ def ensure_experiment_dirs(name: str, model_type: str = "rnn") -> None:
     shared_dir(name).mkdir(parents=True, exist_ok=True)
     plots_dir(name, model_type).mkdir(parents=True, exist_ok=True)
     learning_dynamics_dir(name, model_type).mkdir(parents=True, exist_ok=True)
+
+
+# Populate fixed-letter synthetic tasks after this module is fully defined so
+# vocab_diagrams → experiment imports succeed while building the DFA-stratified plan.
+def _bootstrap_fixed_letters_dfa() -> None:
+    from task import REGIMES
+    from vocab_fixed_letters_dfa import finalize_registrations
+
+    finalize_registrations(TASKS, REGIMES)
+
+
+_bootstrap_fixed_letters_dfa()

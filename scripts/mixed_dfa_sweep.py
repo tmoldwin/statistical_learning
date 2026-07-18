@@ -250,7 +250,7 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
-            "linear-vs-nonlinear", "weight-layeredness",
+            "linear-vs-nonlinear", "weight-layeredness", "spectra-by-letters",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -312,6 +312,11 @@ def main() -> None:
             seed=seed,
             recompute=not args.replot_only,
         )
+        print(f"wrote {out}", flush=True)
+    elif args.command == "spectra-by-letters":
+        from viz.compare.mixed_dfa_viz import plot_spectra_vs_dfa_by_n_letters
+
+        out = plot_spectra_vs_dfa_by_n_letters()
         print(f"wrote {out}", flush=True)
     elif args.command == "all":
         cmd_plan(args)

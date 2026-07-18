@@ -723,6 +723,109 @@ def plot_spectra_vs_dfa(
     return out
 
 
+def _n_unique_letters(words: list[str]) -> int:
+    return len({ch for w in words for ch in w})
+
+
+_LETTER_BINS: tuple[tuple[str, int, int | None], ...] = (
+    # (label, lo_inclusive, hi_inclusive or None for open)
+    ("#letters ≤ 12", 0, 12),
+    ("13–17 letters", 13, 17),
+    ("#letters ≥ 18", 18, None),
+)
+
+
+def plot_spectra_vs_dfa_by_n_letters(
+    payload: dict[str, Any] | None = None,
+    *,
+    outfile: str = "pc_spectra_vs_dfa_by_n_letters.png",
+) -> Path:
+    """Closed-loop PC screes stratified by alphabet size; color = DFA within each bin.
+
+    Control: if spectra track DFA inside letter bins (where #letters is roughly
+    held in a band), the scree story is not just alphabet size.
+    """
+    payload = payload or _load_panels()
+    panels = [
+        p for p in payload["panels"]
+        if p.get("spectrum_pct") and p.get("words")
+    ]
+    if not panels:
+        raise FileNotFoundError("no spectrum panels with words")
+
+    max_pcs = int(payload.get("max_k", _DEFAULT_MAX_PCS))
+    ks = np.arange(1, max_pcs + 1, dtype=float)
+    dfa_all = [float(p["n_dfa_states"]) for p in panels]
+    vmin = min(dfa_all)
+    vmax = max(dfa_all)
+    cmap = plt.get_cmap("viridis")
+    norm = plt.Normalize(vmin=vmin, vmax=max(vmax, vmin + 1e-6))
+
+    def _in_bin(n_let: int, lo: int, hi: int | None) -> bool:
+        if n_let < lo:
+            return False
+        if hi is None:
+            return True
+        return n_let <= hi
+
+    fig, axes = plt.subplots(1, len(_LETTER_BINS), figsize=(3.4 * len(_LETTER_BINS) + 0.9, 3.6), sharey=True)
+    for ax, (label, lo, hi) in zip(np.atleast_1d(axes), _LETTER_BINS):
+        bin_panels = [
+            p for p in panels
+            if _in_bin(_n_unique_letters(list(p["words"])), lo, hi)
+        ]
+        n_let_vals = [_n_unique_letters(list(p["words"])) for p in bin_panels]
+        dfa_vals = [int(p["n_dfa_states"]) for p in bin_panels]
+        for panel in bin_panels:
+            y = np.asarray(panel["spectrum_pct"], dtype=float)
+            n = min(len(y), max_pcs)
+            ax.plot(
+                ks[:n],
+                y[:n],
+                color=cmap(norm(float(panel["n_dfa_states"]))),
+                lw=1.05,
+                alpha=0.8,
+            )
+        if bin_panels:
+            sub = (
+                f"n={len(bin_panels)}; letters {min(n_let_vals)}–{max(n_let_vals)}; "
+                f"DFA {min(dfa_vals)}–{max(dfa_vals)}"
+            )
+        else:
+            sub = "n=0"
+        ax.set_title(f"{label}\n{sub}", fontsize=7.5, pad=4)
+        ax.set_xlabel("PC index", fontsize=8)
+        ax.set_xlim(1, max_pcs)
+        ax.grid(True, alpha=0.25)
+        ax.tick_params(labelsize=7)
+    axes[0].set_ylabel("% variance", fontsize=8)
+
+    cax = fig.add_axes([0.92, 0.22, 0.015, 0.55])
+    cbar = fig.colorbar(
+        plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cax,
+    )
+    cbar.set_label("DFA states", fontsize=8)
+    cbar.ax.tick_params(labelsize=7)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            "PC spectra stratified by #unique letters "
+            "(color = DFA; same colormap across panels)"
+        ),
+        top=0.82,
+        bottom=0.14,
+        left=0.07,
+        right=0.90,
+        wspace=0.22,
+    )
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
 def plot_training_vs_dfa(
     payload: dict[str, Any] | None = None,
     *,

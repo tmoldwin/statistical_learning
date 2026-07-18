@@ -319,13 +319,25 @@ from vocab_sweep import build_mixed_vocab, register_sweep_regimes
 from vocab_sweep_pow2 import register_pow2_sweep_regimes
 from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_regimes
 from vocab_mixed_dfa import register_mixed_dfa_regimes
+from vocab_fixed_letters_dfa import register_fixed_letters_dfa_regimes
 
 register_sweep_regimes(REGIMES)
 register_pow2_sweep_regimes(REGIMES)
 register_pow2_h100_sweep_regimes(REGIMES)
 register_mixed_dfa_regimes(REGIMES)
+register_fixed_letters_dfa_regimes(REGIMES)
 REGIMES["thirty_two_word_mixed_345"] = build_mixed_vocab(32, (3, 4, 5))
 REGIMES["sixteen_word_mixed_345"] = build_mixed_vocab(16, (3, 4, 5))
+
+# If experiment already finalized fixed-letter words during its import, keep them.
+# Otherwise finalize now (e.g. when task.py is the entrypoint).
+try:
+    from experiment import TASKS as _EXP_TASKS
+    from vocab_fixed_letters_dfa import finalize_registrations as _fin_fix
+
+    _fin_fix(_EXP_TASKS, REGIMES)
+except Exception:
+    pass
 
 
 if __name__ == "__main__":

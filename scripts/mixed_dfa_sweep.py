@@ -250,7 +250,7 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
-            "linear-vs-nonlinear", "weight-layeredness", "spectra-by-letters",
+            "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness", "spectra-by-letters",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -311,6 +311,31 @@ def main() -> None:
         out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             seed=seed,
             recompute=not args.replot_only,
+        )
+        print(f"wrote {out}", flush=True)
+    elif args.command == "weight-spikiness":
+        from viz.compare.mixed_dfa_viz import _dfa_states
+        from viz.compare.weight_spikiness import (
+            collect_weight_spikiness_panels,
+            plot_weight_spikiness_vs_dfa,
+        )
+
+        seed = args.seeds[0] if args.seeds else 1
+        runs = list(iter_runs())
+        if not args.replot_only:
+            collect_weight_spikiness_panels(
+                comparison=COMPARISON_NAME,
+                runs=runs,
+                seed=seed,
+                dfa_from_entry=lambda e: _dfa_states(list(e["words"])),
+            )
+        out = plot_weight_spikiness_vs_dfa(
+            comparison=COMPARISON_NAME,
+            seed=seed,
+            title=(
+                f"Weight spikiness / ergodicity vs DFA  "
+                f"(mixed vocab, seed {seed})"
+            ),
         )
         print(f"wrote {out}", flush=True)
     elif args.command == "spectra-by-letters":

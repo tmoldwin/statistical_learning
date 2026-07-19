@@ -1,0 +1,827 @@
+{
+  "comparison": "fixed_letters_dfa_ns",
+  "seed": 1,
+  "model_type": "rnn",
+  "panels": [
+    {
+      "task": "fixlettdfa_r00_ns",
+      "seed": 1,
+      "run_id": 0,
+      "n_words": 4,
+      "n_letters": 4,
+      "n_dfa_states": 6,
+      "structure": {
+        "input_frobenius": 16.674703956041437,
+        "recurrent_frobenius": 15.705079964138086,
+        "input_over_recurrent_norm": 1.061739513209576,
+        "mean_input_drive_fraction": 0.5081901965381789,
+        "median_input_drive_fraction": 0.4476411660058176,
+        "spectral_radius_hh": 5.090027304412231,
+        "mean_abs_input_per_unit": 0.3979629512743817,
+        "mean_abs_recurrent_in_per_unit": 0.12488352564362415,
+        "readout_frobenius": 2.0895967593278257
+      },
+      "motif": {
+        "xh_top1_mass": 0.44536604785804906,
+        "input_tuning_entropy": 0.8643158842015122
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 91.13579872981423,
+          "participation_frac": 0.22783949682453555,
+          "top1_mass": 0.020564989776112968,
+          "top1pct_mass": 0.08002598942847403,
+          "gini": 0.7222958044073005
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6323.0992391513955,
+          "participation_frac": 0.6323099239151395,
+          "top1_mass": 0.000505312925935148,
+          "top1pct_mass": 0.036040228124434075,
+          "gini": 0.41840490612438197
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r01_ns",
+      "seed": 1,
+      "run_id": 1,
+      "n_words": 4,
+      "n_letters": 4,
+      "n_dfa_states": 8,
+      "structure": {
+        "input_frobenius": 18.770639340486273,
+        "recurrent_frobenius": 22.39746448056749,
+        "input_over_recurrent_norm": 0.8380698340551929,
+        "mean_input_drive_fraction": 0.6804450626502364,
+        "median_input_drive_fraction": 0.6808804862198651,
+        "spectral_radius_hh": 5.791990584960282,
+        "mean_abs_input_per_unit": 0.6285401597876795,
+        "mean_abs_recurrent_in_per_unit": 0.17201310491714195,
+        "readout_frobenius": 2.1341832798657663
+      },
+      "motif": {
+        "xh_top1_mass": 0.4643694193536888,
+        "input_tuning_entropy": 0.8434373075709374
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 179.40226235226865,
+          "participation_frac": 0.44850565588067165,
+          "top1_mass": 0.01352792675872949,
+          "top1pct_mass": 0.04946522207975589,
+          "gini": 0.547764722522168
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5898.279618703095,
+          "participation_frac": 0.5898279618703095,
+          "top1_mass": 0.0007000380183755211,
+          "top1pct_mass": 0.042127233062658684,
+          "gini": 0.4470139993194677
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r02_ns",
+      "seed": 1,
+      "run_id": 2,
+      "n_words": 5,
+      "n_letters": 4,
+      "n_dfa_states": 10,
+      "structure": {
+        "input_frobenius": 10.272166804472269,
+        "recurrent_frobenius": 10.137600440030118,
+        "input_over_recurrent_norm": 1.0132739858153013,
+        "mean_input_drive_fraction": 0.7111149306402225,
+        "median_input_drive_fraction": 0.7216675524276679,
+        "spectral_radius_hh": 3.1259321076080755,
+        "mean_abs_input_per_unit": 0.35451523105304367,
+        "mean_abs_recurrent_in_per_unit": 0.0765074337454828,
+        "readout_frobenius": 2.4045000020158156
+      },
+      "motif": {
+        "xh_top1_mass": 0.44389458619428196,
+        "input_tuning_entropy": 0.8598371813725489
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 190.57487938805292,
+          "participation_frac": 0.47643719847013233,
+          "top1_mass": 0.011431420706351548,
+          "top1pct_mass": 0.0419527131805347,
+          "gini": 0.5418803832024939
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5695.566534257154,
+          "participation_frac": 0.5695566534257154,
+          "top1_mass": 0.0007567903426506043,
+          "top1pct_mass": 0.0480898023114499,
+          "gini": 0.45104052042991416
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r03_ns",
+      "seed": 1,
+      "run_id": 3,
+      "n_words": 6,
+      "n_letters": 4,
+      "n_dfa_states": 12,
+      "structure": {
+        "input_frobenius": 9.973697344969,
+        "recurrent_frobenius": 8.0614693032184,
+        "input_over_recurrent_norm": 1.2372058950825722,
+        "mean_input_drive_fraction": 0.8304575668411199,
+        "median_input_drive_fraction": 0.8733825100151358,
+        "spectral_radius_hh": 1.2590147436559171,
+        "mean_abs_input_per_unit": 0.40071933454561415,
+        "mean_abs_recurrent_in_per_unit": 0.06311282246024988,
+        "readout_frobenius": 2.2179986461124295
+      },
+      "motif": {
+        "xh_top1_mass": 0.4396977639805183,
+        "input_tuning_entropy": 0.8563988866271715
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 258.2784711847154,
+          "participation_frac": 0.6456961779617885,
+          "top1_mass": 0.007310629314525314,
+          "top1pct_mass": 0.028401103814363574,
+          "gini": 0.41781193517685433
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6129.242383780065,
+          "participation_frac": 0.6129242383780065,
+          "top1_mass": 0.0006877702546534543,
+          "top1pct_mass": 0.04107289334918564,
+          "gini": 0.4263391360446118
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r04_ns",
+      "seed": 1,
+      "run_id": 4,
+      "n_words": 7,
+      "n_letters": 4,
+      "n_dfa_states": 14,
+      "structure": {
+        "input_frobenius": 13.353995917275357,
+        "recurrent_frobenius": 9.385098960553947,
+        "input_over_recurrent_norm": 1.422893458385776,
+        "mean_input_drive_fraction": 0.8495056012994879,
+        "median_input_drive_fraction": 0.8862690586404283,
+        "spectral_radius_hh": 1.4993025378839957,
+        "mean_abs_input_per_unit": 0.5402414968955462,
+        "mean_abs_recurrent_in_per_unit": 0.07252161500692587,
+        "readout_frobenius": 2.240287004306786
+      },
+      "motif": {
+        "xh_top1_mass": 0.4352087953520535,
+        "input_tuning_entropy": 0.8632342516320276
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 261.8625450721025,
+          "participation_frac": 0.6546563626802562,
+          "top1_mass": 0.008703401582434007,
+          "top1pct_mass": 0.031774434436749335,
+          "gini": 0.4074266640249147
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5971.139551611062,
+          "participation_frac": 0.5971139551611062,
+          "top1_mass": 0.0007498024508497494,
+          "top1pct_mass": 0.043149650312136655,
+          "gini": 0.43495188633135307
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r05_ns",
+      "seed": 1,
+      "run_id": 5,
+      "n_words": 8,
+      "n_letters": 4,
+      "n_dfa_states": 16,
+      "structure": {
+        "input_frobenius": 12.514941038947502,
+        "recurrent_frobenius": 9.410734634595263,
+        "input_over_recurrent_norm": 1.3298580317992086,
+        "mean_input_drive_fraction": 0.8217457078216597,
+        "median_input_drive_fraction": 0.8687922510801841,
+        "spectral_radius_hh": 1.7991832692502105,
+        "mean_abs_input_per_unit": 0.4797799578953466,
+        "mean_abs_recurrent_in_per_unit": 0.0725808204491286,
+        "readout_frobenius": 1.9915844513141616
+      },
+      "motif": {
+        "xh_top1_mass": 0.4645225335637681,
+        "input_tuning_entropy": 0.8403281119274439
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 235.1508597249843,
+          "participation_frac": 0.5878771493124607,
+          "top1_mass": 0.008839360959912435,
+          "top1pct_mass": 0.034583253536690145,
+          "gini": 0.4575032278211508
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5948.3524279832845,
+          "participation_frac": 0.5948352427983284,
+          "top1_mass": 0.000715484149938326,
+          "top1pct_mass": 0.04498924535869731,
+          "gini": 0.4347653035806407
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r06_ns",
+      "seed": 1,
+      "run_id": 6,
+      "n_words": 9,
+      "n_letters": 4,
+      "n_dfa_states": 18,
+      "structure": {
+        "input_frobenius": 13.15899131477622,
+        "recurrent_frobenius": 10.676762712230406,
+        "input_over_recurrent_norm": 1.2324888797708673,
+        "mean_input_drive_fraction": 0.7081680196180783,
+        "median_input_drive_fraction": 0.7558628334135105,
+        "spectral_radius_hh": 3.2137240662381314,
+        "mean_abs_input_per_unit": 0.4217597636514164,
+        "mean_abs_recurrent_in_per_unit": 0.07730388790130964,
+        "readout_frobenius": 2.1654462124663714
+      },
+      "motif": {
+        "xh_top1_mass": 0.45924659666919715,
+        "input_tuning_entropy": 0.844748490928279
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 164.36338337211455,
+          "participation_frac": 0.4109084584302864,
+          "top1_mass": 0.016873343840763857,
+          "top1pct_mass": 0.05902287872798877,
+          "gini": 0.5914931333647666
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5242.319571451866,
+          "participation_frac": 0.5242319571451866,
+          "top1_mass": 0.000948079525430566,
+          "top1pct_mass": 0.05588555117763191,
+          "gini": 0.478716587372205
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r07_ns",
+      "seed": 1,
+      "run_id": 7,
+      "n_words": 10,
+      "n_letters": 4,
+      "n_dfa_states": 20,
+      "structure": {
+        "input_frobenius": 14.243476749783582,
+        "recurrent_frobenius": 10.485671403217024,
+        "input_over_recurrent_norm": 1.3583752725088882,
+        "mean_input_drive_fraction": 0.842565336335785,
+        "median_input_drive_fraction": 0.87833368744974,
+        "spectral_radius_hh": 1.636381198079837,
+        "mean_abs_input_per_unit": 0.5700561908990625,
+        "mean_abs_recurrent_in_per_unit": 0.081448554266809,
+        "readout_frobenius": 2.152187294525623
+      },
+      "motif": {
+        "xh_top1_mass": 0.4377044105143188,
+        "input_tuning_entropy": 0.866255584523547
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 256.28506223344675,
+          "participation_frac": 0.6407126555836169,
+          "top1_mass": 0.010242906221952628,
+          "top1pct_mass": 0.034590664219322054,
+          "gini": 0.41049802562257676
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6033.568839433633,
+          "participation_frac": 0.6033568839433633,
+          "top1_mass": 0.000711851505772265,
+          "top1pct_mass": 0.04280833350371276,
+          "gini": 0.4315659045340663
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r08_ns",
+      "seed": 1,
+      "run_id": 8,
+      "n_words": 11,
+      "n_letters": 4,
+      "n_dfa_states": 22,
+      "structure": {
+        "input_frobenius": 14.57550415031378,
+        "recurrent_frobenius": 10.726405159959887,
+        "input_over_recurrent_norm": 1.3588433340856843,
+        "mean_input_drive_fraction": 0.836748703111985,
+        "median_input_drive_fraction": 0.8899022205352729,
+        "spectral_radius_hh": 1.8950641460312103,
+        "mean_abs_input_per_unit": 0.5760440848553942,
+        "mean_abs_recurrent_in_per_unit": 0.08287904157035964,
+        "readout_frobenius": 2.210914499560995
+      },
+      "motif": {
+        "xh_top1_mass": 0.4599701264081778,
+        "input_tuning_entropy": 0.8492884746124312
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 249.91035680456216,
+          "participation_frac": 0.6247758920114054,
+          "top1_mass": 0.009087807865596573,
+          "top1pct_mass": 0.03385217387630176,
+          "gini": 0.42811486039875457
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5970.0923053084625,
+          "participation_frac": 0.5970092305308462,
+          "top1_mass": 0.0007415638778412608,
+          "top1pct_mass": 0.04387660428631244,
+          "gini": 0.43554727915273994
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r09_ns",
+      "seed": 1,
+      "run_id": 9,
+      "n_words": 12,
+      "n_letters": 4,
+      "n_dfa_states": 24,
+      "structure": {
+        "input_frobenius": 14.955667066586544,
+        "recurrent_frobenius": 10.361472497693272,
+        "input_over_recurrent_norm": 1.4433920535827371,
+        "mean_input_drive_fraction": 0.8410003722127429,
+        "median_input_drive_fraction": 0.8674657013848932,
+        "spectral_radius_hh": 1.642674458347463,
+        "mean_abs_input_per_unit": 0.5822567045475282,
+        "mean_abs_recurrent_in_per_unit": 0.08000381439451894,
+        "readout_frobenius": 2.0277249313273487
+      },
+      "motif": {
+        "xh_top1_mass": 0.44462681420497474,
+        "input_tuning_entropy": 0.8580254003803185
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 242.5143275766091,
+          "participation_frac": 0.6062858189415228,
+          "top1_mass": 0.010959711406806768,
+          "top1pct_mass": 0.03996547336706836,
+          "gini": 0.43576546831832563
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5961.814103330819,
+          "participation_frac": 0.5961814103330819,
+          "top1_mass": 0.0006645243617604157,
+          "top1pct_mass": 0.04282258131375903,
+          "gini": 0.43718109678788797
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r10_ns",
+      "seed": 1,
+      "run_id": 10,
+      "n_words": 13,
+      "n_letters": 4,
+      "n_dfa_states": 26,
+      "structure": {
+        "input_frobenius": 15.569174766599048,
+        "recurrent_frobenius": 10.831282696250184,
+        "input_over_recurrent_norm": 1.4374266837287086,
+        "mean_input_drive_fraction": 0.8494219878324284,
+        "median_input_drive_fraction": 0.886250932563708,
+        "spectral_radius_hh": 2.0130875159324924,
+        "mean_abs_input_per_unit": 0.6156664885738086,
+        "mean_abs_recurrent_in_per_unit": 0.0835493991772796,
+        "readout_frobenius": 2.1435603044247964
+      },
+      "motif": {
+        "xh_top1_mass": 0.46418578460848603,
+        "input_tuning_entropy": 0.846315552962544
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 250.19569080942682,
+          "participation_frac": 0.625489227023567,
+          "top1_mass": 0.00927807294116304,
+          "top1pct_mass": 0.03450325583893498,
+          "gini": 0.4246400137744637
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5950.135832803614,
+          "participation_frac": 0.5950135832803614,
+          "top1_mass": 0.0006892854659719782,
+          "top1pct_mass": 0.04479519392493261,
+          "gini": 0.4363871650865534
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r11_ns",
+      "seed": 1,
+      "run_id": 11,
+      "n_words": 14,
+      "n_letters": 4,
+      "n_dfa_states": 28,
+      "structure": {
+        "input_frobenius": 15.463212207100147,
+        "recurrent_frobenius": 10.57159376979725,
+        "input_over_recurrent_norm": 1.462713432224204,
+        "mean_input_drive_fraction": 0.8598927663130839,
+        "median_input_drive_fraction": 0.9026856468324777,
+        "spectral_radius_hh": 2.324315489340231,
+        "mean_abs_input_per_unit": 0.6231770922018665,
+        "mean_abs_recurrent_in_per_unit": 0.08163787078070951,
+        "readout_frobenius": 2.132016395420582
+      },
+      "motif": {
+        "xh_top1_mass": 0.44722317393438643,
+        "input_tuning_entropy": 0.8528204155813325
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 259.8624398366033,
+          "participation_frac": 0.6496560995915083,
+          "top1_mass": 0.00955175628245811,
+          "top1pct_mass": 0.0350206906615671,
+          "gini": 0.4049063375864914
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5963.516233834324,
+          "participation_frac": 0.5963516233834324,
+          "top1_mass": 0.0006421168790976315,
+          "top1pct_mass": 0.04304016046425551,
+          "gini": 0.43709453251026265
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r12_ns",
+      "seed": 1,
+      "run_id": 12,
+      "n_words": 14,
+      "n_letters": 4,
+      "n_dfa_states": 30,
+      "structure": {
+        "input_frobenius": 14.488049288577177,
+        "recurrent_frobenius": 10.344826845205272,
+        "input_over_recurrent_norm": 1.400511531547988,
+        "mean_input_drive_fraction": 0.8530766423319126,
+        "median_input_drive_fraction": 0.8859623122038724,
+        "spectral_radius_hh": 1.6123127252810945,
+        "mean_abs_input_per_unit": 0.5775350299337701,
+        "mean_abs_recurrent_in_per_unit": 0.0799899495798814,
+        "readout_frobenius": 2.1649244147742763
+      },
+      "motif": {
+        "xh_top1_mass": 0.45283575987467123,
+        "input_tuning_entropy": 0.8539128943367629
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 254.24757269131243,
+          "participation_frac": 0.6356189317282811,
+          "top1_mass": 0.008552859849698663,
+          "top1pct_mass": 0.033744315954128135,
+          "gini": 0.4146731013786029
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5978.942745899677,
+          "participation_frac": 0.5978942745899677,
+          "top1_mass": 0.0008392517544542995,
+          "top1pct_mass": 0.04365853785309533,
+          "gini": 0.43444076503335327
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r13_ns",
+      "seed": 1,
+      "run_id": 13,
+      "n_words": 16,
+      "n_letters": 4,
+      "n_dfa_states": 32,
+      "structure": {
+        "input_frobenius": 15.676083912506481,
+        "recurrent_frobenius": 10.998082223736837,
+        "input_over_recurrent_norm": 1.425347037201927,
+        "mean_input_drive_fraction": 0.8472553687904805,
+        "median_input_drive_fraction": 0.8747673969032739,
+        "spectral_radius_hh": 1.7599170728792402,
+        "mean_abs_input_per_unit": 0.6219520707626317,
+        "mean_abs_recurrent_in_per_unit": 0.08546917554380039,
+        "readout_frobenius": 2.155195632402145
+      },
+      "motif": {
+        "xh_top1_mass": 0.43940135505277966,
+        "input_tuning_entropy": 0.864421796665109
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 251.85968729279563,
+          "participation_frac": 0.629649218231989,
+          "top1_mass": 0.009592661839842035,
+          "top1pct_mass": 0.036877370708457494,
+          "gini": 0.418628470437576
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6039.279159494626,
+          "participation_frac": 0.6039279159494626,
+          "top1_mass": 0.0006367762176014192,
+          "top1pct_mass": 0.042236225851385555,
+          "gini": 0.43162659393291514
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r14_ns",
+      "seed": 1,
+      "run_id": 14,
+      "n_words": 18,
+      "n_letters": 4,
+      "n_dfa_states": 34,
+      "structure": {
+        "input_frobenius": 15.416042821274582,
+        "recurrent_frobenius": 10.359719045407445,
+        "input_over_recurrent_norm": 1.4880753767264228,
+        "mean_input_drive_fraction": 0.8593267332911664,
+        "median_input_drive_fraction": 0.8777651029795795,
+        "spectral_radius_hh": 1.6903345039464295,
+        "mean_abs_input_per_unit": 0.6141317336289085,
+        "mean_abs_recurrent_in_per_unit": 0.07961689236983316,
+        "readout_frobenius": 1.98875776439502
+      },
+      "motif": {
+        "xh_top1_mass": 0.4608994744358856,
+        "input_tuning_entropy": 0.8456079374645697
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 253.92019599132786,
+          "participation_frac": 0.6348004899783196,
+          "top1_mass": 0.008805381021360564,
+          "top1pct_mass": 0.033619651910283876,
+          "gini": 0.41691996391304253
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5906.286218603599,
+          "participation_frac": 0.5906286218603599,
+          "top1_mass": 0.0005900880844028569,
+          "top1pct_mass": 0.04303028321059733,
+          "gini": 0.44300015207061705
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r15_ns",
+      "seed": 1,
+      "run_id": 15,
+      "n_words": 18,
+      "n_letters": 4,
+      "n_dfa_states": 36,
+      "structure": {
+        "input_frobenius": 16.9736214786154,
+        "recurrent_frobenius": 11.290999705685586,
+        "input_over_recurrent_norm": 1.5032877443144674,
+        "mean_input_drive_fraction": 0.8526453780765592,
+        "median_input_drive_fraction": 0.8931876307922162,
+        "spectral_radius_hh": 1.890622809264741,
+        "mean_abs_input_per_unit": 0.6608454444883549,
+        "mean_abs_recurrent_in_per_unit": 0.08765344407205462,
+        "readout_frobenius": 2.1440392902799097
+      },
+      "motif": {
+        "xh_top1_mass": 0.47332954008954436,
+        "input_tuning_entropy": 0.8257516334399471
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 242.53295482467814,
+          "participation_frac": 0.6063323870616953,
+          "top1_mass": 0.009317283963160124,
+          "top1pct_mass": 0.035607499206413255,
+          "gini": 0.4422436400042522
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6026.61124908721,
+          "participation_frac": 0.602661124908721,
+          "top1_mass": 0.0006917217524973147,
+          "top1pct_mass": 0.042099608132001955,
+          "gini": 0.43238502567285275
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r16_ns",
+      "seed": 1,
+      "run_id": 16,
+      "n_words": 23,
+      "n_letters": 4,
+      "n_dfa_states": 38,
+      "structure": {
+        "input_frobenius": 17.784517193679157,
+        "recurrent_frobenius": 11.794025181799185,
+        "input_over_recurrent_norm": 1.50792599808288,
+        "mean_input_drive_fraction": 0.8316986029521238,
+        "median_input_drive_fraction": 0.8778971245255709,
+        "spectral_radius_hh": 1.7853454845022207,
+        "mean_abs_input_per_unit": 0.6771802988411547,
+        "mean_abs_recurrent_in_per_unit": 0.09078291110039005,
+        "readout_frobenius": 2.013445632932099
+      },
+      "motif": {
+        "xh_top1_mass": 0.4477967790349004,
+        "input_tuning_entropy": 0.8521394958996182
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 231.97674633937174,
+          "participation_frac": 0.5799418658484293,
+          "top1_mass": 0.011121320625744231,
+          "top1pct_mass": 0.0409194724089842,
+          "gini": 0.458483536018536
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5924.94207078094,
+          "participation_frac": 0.5924942070780941,
+          "top1_mass": 0.0006039976311529335,
+          "top1pct_mass": 0.042705547609214904,
+          "gini": 0.44182076384583535
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r17_ns",
+      "seed": 1,
+      "run_id": 17,
+      "n_words": 24,
+      "n_letters": 4,
+      "n_dfa_states": 40,
+      "structure": {
+        "input_frobenius": 17.24111571299407,
+        "recurrent_frobenius": 11.614895290951297,
+        "input_over_recurrent_norm": 1.4843969989489219,
+        "mean_input_drive_fraction": 0.8533594501263674,
+        "median_input_drive_fraction": 0.8900629769451582,
+        "spectral_radius_hh": 2.116257212749005,
+        "mean_abs_input_per_unit": 0.6823368114266413,
+        "mean_abs_recurrent_in_per_unit": 0.08999130642911579,
+        "readout_frobenius": 1.9323382541195762
+      },
+      "motif": {
+        "xh_top1_mass": 0.4573924829196679,
+        "input_tuning_entropy": 0.8405690764428096
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 250.60333879347402,
+          "participation_frac": 0.6265083469836851,
+          "top1_mass": 0.010455526776962399,
+          "top1pct_mass": 0.036527661191673354,
+          "gini": 0.4258201480886423
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6003.030022324382,
+          "participation_frac": 0.6003030022324383,
+          "top1_mass": 0.0006729800872856372,
+          "top1pct_mass": 0.042273362153003306,
+          "gini": 0.4344817052257455
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r18_ns",
+      "seed": 1,
+      "run_id": 18,
+      "n_words": 25,
+      "n_letters": 4,
+      "n_dfa_states": 42,
+      "structure": {
+        "input_frobenius": 16.123569373940775,
+        "recurrent_frobenius": 10.865035771946067,
+        "input_over_recurrent_norm": 1.4839867730184968,
+        "mean_input_drive_fraction": 0.8072073606507579,
+        "median_input_drive_fraction": 0.8673950124729337,
+        "spectral_radius_hh": 1.5794187765416163,
+        "mean_abs_input_per_unit": 0.5740656720615244,
+        "mean_abs_recurrent_in_per_unit": 0.08306016635877377,
+        "readout_frobenius": 1.7883648118341622
+      },
+      "motif": {
+        "xh_top1_mass": 0.4967020923984077,
+        "input_tuning_entropy": 0.8124739135258957
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 202.82466017406128,
+          "participation_frac": 0.5070616504351532,
+          "top1_mass": 0.010829626145741648,
+          "top1pct_mass": 0.04293875289587915,
+          "gini": 0.5143094214721151
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 5844.175808038241,
+          "participation_frac": 0.5844175808038241,
+          "top1_mass": 0.0007383076295434561,
+          "top1pct_mass": 0.04406739364997712,
+          "gini": 0.44570493842758885
+        }
+      }
+    },
+    {
+      "task": "fixlettdfa_r19_ns",
+      "seed": 1,
+      "run_id": 19,
+      "n_words": 28,
+      "n_letters": 4,
+      "n_dfa_states": 44,
+      "structure": {
+        "input_frobenius": 17.83555144271784,
+        "recurrent_frobenius": 11.329817906579843,
+        "input_over_recurrent_norm": 1.5742134242386865,
+        "mean_input_drive_fraction": 0.8655063666584675,
+        "median_input_drive_fraction": 0.9016665459661661,
+        "spectral_radius_hh": 1.9666349891483554,
+        "mean_abs_input_per_unit": 0.7055593578251513,
+        "mean_abs_recurrent_in_per_unit": 0.08801584096494867,
+        "readout_frobenius": 1.926155698981692
+      },
+      "motif": {
+        "xh_top1_mass": 0.4577238287522804,
+        "input_tuning_entropy": 0.8403232636019534
+      },
+      "spikiness": {
+        "xh": {
+          "n_entries": 400.0,
+          "participation_ratio": 250.38828887937362,
+          "participation_frac": 0.6259707221984341,
+          "top1_mass": 0.010128728318769514,
+          "top1pct_mass": 0.035146185855230216,
+          "gini": 0.42610204076234903
+        },
+        "hh": {
+          "n_entries": 10000.0,
+          "participation_ratio": 6034.979871551808,
+          "participation_frac": 0.6034979871551808,
+          "top1_mass": 0.0005795955404038664,
+          "top1pct_mass": 0.04259143534388361,
+          "gini": 0.4317864622950085
+        }
+      }
+    }
+  ]
+}

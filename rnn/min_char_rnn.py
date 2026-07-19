@@ -81,7 +81,12 @@ parser.add_argument('--noise-std', type=float, default=None,
 parser.add_argument('--dropout', type=float, default=None,
                     help='hidden dropout rate during training (default: from --exp config, else 0)')
 parser.add_argument('--l2-lambda', type=float, default=None,
-                    help='L2 weight decay on recurrent and output weights (default: from --exp config, else 0)')
+                    help='L2 weight decay coefficient (default: from --exp config, else 0)')
+parser.add_argument(
+    '--l2-on', default='all',
+    choices=('all', 'xh', 'hh', 'ho', 'xh,hh', 'hh,ho', 'xh,ho', 'none'),
+    help='which weight matrices get L2 (default: all)',
+)
 parser.add_argument('--seed', type=int, default=42,
                     help='RNG seed for weight initialization (default: 42)')
 parser.add_argument(
@@ -102,6 +107,10 @@ parser.add_argument(
     '--learning-snap-every', type=int, default=500,
     help='also save a learning snap every N iterations when --save-learning-snaps '
          '(default: 500)',
+)
+parser.add_argument(
+    '--log-weight-norms-every', type=int, default=0,
+    help='if >0, append Win/Whh/Who Frobenius norms to <model>.norms.jsonl every N iters',
 )
 args = parser.parse_args()
 
@@ -162,6 +171,18 @@ if args.dropout is not None:
     dropout_rate = float(args.dropout)
 if args.l2_lambda is not None:
     l2_lambda = float(args.l2_lambda)
+l2_on_raw = str(getattr(args, "l2_on", "all")).strip().lower()
+if l2_on_raw in ("none", ""):
+    l2_matrices: set[str] = set()
+elif l2_on_raw == "all":
+    l2_matrices = {"xh", "hh", "ho"}
+else:
+    l2_matrices = {p.strip() for p in l2_on_raw.split(",") if p.strip()}
+    unknown = l2_matrices - {"xh", "hh", "ho"}
+    if unknown:
+        raise ValueError(f"unknown --l2-on parts: {sorted(unknown)}")
+if l2_lambda <= 0.0:
+    l2_matrices = set()
 
 target_word_error = args.target_word_error
 if target_word_error is None and args.exp:
@@ -210,8 +231,10 @@ if timestep_noise_std > 0:
     print(f"timestep noise std: {timestep_noise_std}")
 if dropout_rate > 0:
     print(f"hidden dropout: {dropout_rate}")
-if l2_lambda > 0:
-    print(f"L2 lambda: {l2_lambda}")
+if l2_lambda > 0 and l2_matrices:
+    print(f"L2 lambda: {l2_lambda} on {sorted(l2_matrices)}")
+elif l2_lambda > 0:
+    print(f"L2 lambda: {l2_lambda} (no matrices selected)")
 
 bias_hidden = np.zeros((hidden_size, 1))
 bias_output = np.zeros((vocab_size, 1))
@@ -265,12 +288,15 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
     p = float(output_probs[t][target_indices[t], 0])
     loss += -np.log(max(p, 1e-12))
 
-  if l2_lambda > 0.0:
-    loss += l2_lambda * (
-        float(np.sum(weights_input_to_hidden ** 2))
-        + float(np.sum(weights_hidden_to_hidden ** 2))
-        + float(np.sum(weights_hidden_to_output ** 2))
-    )
+  if l2_lambda > 0.0 and l2_matrices:
+    l2_sum = 0.0
+    if "xh" in l2_matrices:
+      l2_sum += float(np.sum(weights_input_to_hidden ** 2))
+    if "hh" in l2_matrices:
+      l2_sum += float(np.sum(weights_hidden_to_hidden ** 2))
+    if "ho" in l2_matrices:
+      l2_sum += float(np.sum(weights_hidden_to_output ** 2))
+    loss += l2_lambda * l2_sum
 
   # ----- backward pass: BPTT, t = sequence_length - 1, ..., 0 -----------------
   # We need d(loss)/d(param) for every learnable parameter. Each parameter is shared
@@ -345,10 +371,13 @@ def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_st
                grad_weights_hidden_to_output, grad_bias_hidden, grad_bias_output]:
     np.clip(grad, -5, 5, out=grad)
 
-  if l2_lambda > 0.0:
-    grad_weights_input_to_hidden += 2.0 * l2_lambda * weights_input_to_hidden
-    grad_weights_hidden_to_hidden += 2.0 * l2_lambda * weights_hidden_to_hidden
-    grad_weights_hidden_to_output += 2.0 * l2_lambda * weights_hidden_to_output
+  if l2_lambda > 0.0 and l2_matrices:
+    if "xh" in l2_matrices:
+      grad_weights_input_to_hidden += 2.0 * l2_lambda * weights_input_to_hidden
+    if "hh" in l2_matrices:
+      grad_weights_hidden_to_hidden += 2.0 * l2_lambda * weights_hidden_to_hidden
+    if "ho" in l2_matrices:
+      grad_weights_hidden_to_output += 2.0 * l2_lambda * weights_hidden_to_output
 
   return (loss,
           grad_weights_input_to_hidden, grad_weights_hidden_to_hidden, grad_weights_hidden_to_output,
@@ -637,6 +666,13 @@ def valid_vocab_letter_fraction(sampled_text: str, vocab: set[str]) -> float:
 
 # ----- training loop ----------------------------------------------------------
 iteration, data_pointer = 0, 0
+
+_norms_every = int(getattr(args, "log_weight_norms_every", 0) or 0)
+_norms_path = Path(args.model).with_suffix(Path(args.model).suffix + ".norms.jsonl")
+if _norms_every > 0:
+    _norms_path.parent.mkdir(parents=True, exist_ok=True)
+    _norms_path.write_text("", encoding="utf-8")
+    print(f"logging weight norms every {_norms_every} iters -> {_norms_path}")
 
 # Adagrad accumulators: same shape as each parameter. They keep a running sum of squared
 # gradients, which is used to give each parameter its own adaptive (per-coordinate) learning rate.
@@ -969,6 +1005,20 @@ while iteration < max_iterations:
 
   data_pointer += sequence_length
   iteration += 1
+  if (
+      int(getattr(args, "log_weight_norms_every", 0) or 0) > 0
+      and iteration % int(args.log_weight_norms_every) == 0
+  ):
+      import json as _json
+      _norms_path = Path(args.model).with_suffix(Path(args.model).suffix + ".norms.jsonl")
+      _norms_path.parent.mkdir(parents=True, exist_ok=True)
+      with open(_norms_path, "a", encoding="utf-8") as _nf:
+          _nf.write(_json.dumps({
+              "iter": int(iteration),
+              "input_frobenius": float(np.linalg.norm(weights_input_to_hidden)),
+              "recurrent_frobenius": float(np.linalg.norm(weights_hidden_to_hidden)),
+              "readout_frobenius": float(np.linalg.norm(weights_hidden_to_output)),
+          }) + "\n")
   if iteration > 0 and _should_record_weight_snapshot(iteration):
     _append_weight_snapshot(iteration)
 
@@ -1119,6 +1169,7 @@ np.savez(
     timestep_noise_std=np.array(timestep_noise_std, dtype=np.float64),
     dropout_rate=np.array(dropout_rate, dtype=np.float64),
     l2_lambda=np.array(l2_lambda, dtype=np.float64),
+    l2_on=np.array(",".join(sorted(l2_matrices)) if l2_matrices else "none"),
     **snapshot_arrays,
 )
 print(f'saved trained model to {model_out}')

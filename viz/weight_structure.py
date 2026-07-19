@@ -57,6 +57,54 @@ def compute_weight_structure_metrics(
     return out
 
 
+def compute_weight_entry_spikiness(w: np.ndarray) -> dict[str, float]:
+    """Entrywise localization of |W|: spiky (concentrated) vs ergodic (spread).
+
+    participation_frac = PR / n_entries in (0, 1]; 1 = equal mass on all entries.
+    top1_mass / gini high ⇒ spiky; participation_frac high ⇒ ergodic.
+    """
+    abs_w = np.abs(np.asarray(w, dtype=float).ravel())
+    n = int(abs_w.size)
+    total = float(abs_w.sum())
+    nan = {
+        "n_entries": float(n),
+        "participation_ratio": float("nan"),
+        "participation_frac": float("nan"),
+        "top1_mass": float("nan"),
+        "top1pct_mass": float("nan"),
+        "gini": float("nan"),
+    }
+    if n == 0 or total < 1e-30:
+        return nan
+    p = abs_w / total
+    pr = float(1.0 / np.sum(p ** 2))
+    top1 = float(np.max(abs_w) / total)
+    k = max(1, int(np.ceil(0.01 * n)))
+    top1pct = float(np.sort(abs_w)[-k:].sum() / total)
+    xs = np.sort(abs_w)
+    idx = np.arange(1, n + 1, dtype=float)
+    gini = float((2.0 * np.sum(idx * xs) / (n * total)) - (n + 1.0) / n)
+    return {
+        "n_entries": float(n),
+        "participation_ratio": pr,
+        "participation_frac": float(pr / n),
+        "top1_mass": top1,
+        "top1pct_mass": top1pct,
+        "gini": gini,
+    }
+
+
+def compute_weight_spikiness_pair(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, dict[str, float]]:
+    """Entrywise spikiness for input and recurrent matrices."""
+    return {
+        "xh": compute_weight_entry_spikiness(w_in),
+        "hh": compute_weight_entry_spikiness(w_rec),
+    }
+
+
 def init_weights_for_model(model: dict, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     hidden_size = int(model["hidden_size"])
     vocab_size = int(model["vocab_size"])

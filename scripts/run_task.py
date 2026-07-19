@@ -39,6 +39,11 @@ def train_task(
     save_snapshots: bool = False,
     save_learning_snaps: bool = False,
     device: str = "cpu",
+    dropout: float | None = None,
+    l2_lambda: float | None = None,
+    l2_on: str | None = None,
+    model_out: Path | None = None,
+    log_weight_norms_every: int = 0,
 ) -> None:
     cfg = TASKS[name]
     regime = experiment_regime(name)
@@ -56,8 +61,11 @@ def train_task(
     ])
 
     if model_type in ("rnn", "rnn_dale"):
-        model_out = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
-        model_out.parent.mkdir(parents=True, exist_ok=True)
+        if model_out is not None:
+            out_path = Path(model_out)
+        else:
+            out_path = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         use_dale = model_uses_dale(model_type) or bool(cfg.get("dale"))
         use_gpu = device in ("cuda", "gpu", "auto")
         if use_gpu and use_dale:
@@ -69,7 +77,7 @@ def train_task(
         train_cmd = [
             sys.executable, train_script,
             "--input", str(corpus_out),
-            "--model", str(model_out),
+            "--model", str(out_path),
             "--exp", name,
             "--seed", str(seed),
         ]
@@ -87,6 +95,14 @@ def train_task(
             train_cmd.extend(["--learning-rate", str(cfg["learning_rate"])])
         if "target_word_error_frac" in cfg:
             train_cmd.extend(["--target-word-error", str(cfg["target_word_error_frac"])])
+        if dropout is not None:
+            train_cmd.extend(["--dropout", str(dropout)])
+        if l2_lambda is not None:
+            train_cmd.extend(["--l2-lambda", str(l2_lambda)])
+        if l2_on is not None:
+            train_cmd.extend(["--l2-on", str(l2_on)])
+        if log_weight_norms_every and not use_gpu:
+            train_cmd.extend(["--log-weight-norms-every", str(int(log_weight_norms_every))])
         if save_snapshots:
             train_cmd.append("--save-snapshots")
         if save_learning_snaps:
@@ -97,22 +113,22 @@ def train_task(
             steps = 500 if smoke else int(cfg["steps"])
         train_cmd.extend(["--steps", str(steps)])
         run(train_cmd)
-        if multi_seed and seed == DEFAULT_SEED:
-            shutil.copy2(model_out, model_path(name, model_type))
+        if multi_seed and seed == DEFAULT_SEED and model_out is None:
+            shutil.copy2(out_path, model_path(name, model_type))
             print(f"promoted seed {seed} -> model.npz")
     elif model_type == "transformer":
-        model_out = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
+        model_out_tf = model_path(name, model_type, seed=seed) if multi_seed else model_path(name, model_type)
         tf_cmd = [
             sys.executable, "-m", "transformer.train",
             "--exp", name,
             "--seed", str(seed),
-            "--model", str(model_out),
+            "--model", str(model_out_tf),
         ]
         if smoke:
             tf_cmd.extend(["--steps", "500"])
         run(tf_cmd)
         if multi_seed and seed == DEFAULT_SEED:
-            shutil.copy2(model_out, model_path(name, model_type))
+            shutil.copy2(model_out_tf, model_path(name, model_type))
     else:
         raise ValueError(f"unknown model_type {model_type!r}")
 
@@ -169,6 +185,11 @@ def main() -> None:
         choices=["cpu", "cuda", "auto"],
         help="training device for RNN tasks (cuda uses rnn/torch_char_rnn.py)",
     )
+    parser.add_argument("--dropout", type=float, default=None)
+    parser.add_argument("--l2-lambda", type=float, default=None)
+    parser.add_argument("--l2-on", default=None)
+    parser.add_argument("--model-out", default=None, help="override model output path")
+    parser.add_argument("--log-weight-norms-every", type=int, default=0)
     args = parser.parse_args()
 
     write_vocabulary_diagrams_for_experiment(args.task)
@@ -188,6 +209,11 @@ def main() -> None:
                     save_snapshots=args.save_snapshots,
                     save_learning_snaps=args.save_learning_snaps,
                     device=args.device,
+                    dropout=args.dropout,
+                    l2_lambda=args.l2_lambda,
+                    l2_on=args.l2_on,
+                    model_out=Path(args.model_out) if args.model_out else None,
+                    log_weight_norms_every=int(args.log_weight_norms_every or 0),
                 )
             if not args.skip_viz and not multi_seed:
                 visualize_task(

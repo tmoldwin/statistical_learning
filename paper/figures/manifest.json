@@ -1,5 +1,5 @@
 {
-  "copied": 30,
+  "copied": 32,
   "missing": [
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_with_word_seed_mean.png",
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_by_position_word_length.png"
@@ -55,19 +55,19 @@
     },
     {
       "section": "demo",
-      "paper_name": "fig04_corpus_stream.svg",
-      "source": "paper/figures/demo/fig04_corpus_stream.svg",
-      "dest": "paper/figures/demo/fig04_corpus_stream.svg",
+      "paper_name": "fig_dfa_examples.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/shared/vocabulary_dfa_examples.png",
+      "dest": "paper/figures/demo/fig_dfa_examples.jpg",
       "exists": true,
-      "skipped_self": true
+      "skipped_self": false
     },
     {
       "section": "demo",
       "paper_name": "fig04_corpus_stream.jpg",
-      "source": "paper/figures/demo/fig04_corpus_stream.jpg",
+      "source": "experiments/six_word_mixed_demo_ns/shared/corpus_stream_overview.png",
       "dest": "paper/figures/demo/fig04_corpus_stream.jpg",
       "exists": true,
-      "skipped_self": true
+      "skipped_self": false
     },
     {
       "section": "demo",

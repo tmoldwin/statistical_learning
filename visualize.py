@@ -9512,6 +9512,7 @@ def main() -> None:
             "selectivity",
             "decoding",
             "decoding_nonlinear",
+            "setup",
         ],
         help="run only these plot sections (canonical selective replot; no sibling regen scripts)",
     )
@@ -10060,13 +10061,34 @@ def main() -> None:
     print(f"top-1 next-char accuracy over the {len(text)}-char window: "
           f"{correct}/{len(text)} = {100*correct/len(text):.1f}%")
 
-    if words and args.exp:
+    if words and args.exp and (want("setup") or not args.only):
         with timer.section("vocab_diagrams"):
             shared = shared_dir(args.exp)
             shared.mkdir(parents=True, exist_ok=True)
             trie_path, dfa_path = write_vocabulary_diagrams(words, shared)
             print(f"wrote {trie_path}")
             print(f"wrote {dfa_path}")
+            from viz.demo_setup_figure import (
+                DEMO_STREAM,
+                DEMO_WORDS,
+                plot_dfa_examples,
+                plot_training_stream,
+            )
+
+            dfa_examples = shared / "vocabulary_dfa_examples.png"
+            plot_dfa_examples(dfa_examples)
+            print(f"wrote {dfa_examples}")
+
+            stream_path = shared / "corpus_stream_overview.png"
+            if list(words) == list(DEMO_WORDS):
+                plot_training_stream(stream_path, demo_words=words, stream=DEMO_STREAM)
+            else:
+                plot_training_stream(
+                    stream_path,
+                    demo_words=words,
+                    stream="".join(list(words) * 2),
+                )
+            print(f"wrote {stream_path}")
 
     if (
         args.learning_dynamics_video

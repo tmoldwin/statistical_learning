@@ -1229,6 +1229,68 @@ def _dfa_state_label_map(automaton: MinimizedVocabAutomaton) -> dict[int, set[st
     return labels
 
 
+def _uniform_node_radii(
+    coords: dict[int, tuple[float, float]],
+    radii: dict[int, float],
+    *,
+    gap_ratio: float = 2.9,
+) -> dict[int, float]:
+    """Grow every node to the largest common radius that keeps circles apart."""
+    keys = sorted(coords)
+    if len(keys) < 2:
+        return dict(radii)
+    closest = min(
+        math.hypot(coords[a][0] - coords[b][0], coords[a][1] - coords[b][1])
+        for i, a in enumerate(keys)
+        for b in keys[i + 1:]
+    )
+    target = max(closest / gap_ratio, MIN_NODE_R * 0.5)
+    return {key: target for key in radii}
+
+
+def _fitted_font_size(
+    ax,
+    lines: list[str],
+    radius: float,
+    base_fontsize: float,
+    *,
+    pad_frac: float = 0.86,
+    line_spacing: float = 1.25,
+) -> tuple[float, float]:
+    """Largest font (<= base) whose text block fits inside a circle of ``radius``.
+
+    Returns ``(fontsize, line_step_in_data_units)``.
+    """
+    fig = ax.figure
+    try:
+        renderer = fig.canvas.get_renderer()
+    except AttributeError:
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+
+    inverse = ax.transData.inverted()
+    origin = inverse.transform((0.0, 0.0))
+    step = inverse.transform((1.0, 0.0))
+    data_per_pixel = abs(step[0] - origin[0]) or 1.0
+
+    widest = 0.0
+    tallest = 0.0
+    for line in lines:
+        probe = ax.text(0.0, 0.0, line, fontsize=base_fontsize)
+        box = probe.get_window_extent(renderer=renderer)
+        probe.remove()
+        widest = max(widest, box.width * data_per_pixel)
+        tallest = max(tallest, box.height * data_per_pixel)
+
+    block_w = widest
+    block_h = tallest * (1 + line_spacing * (len(lines) - 1))
+    half_diagonal = math.hypot(block_w / 2.0, block_h / 2.0)
+    allowed = radius * pad_frac
+    shrink = min(1.0, allowed / half_diagonal) if half_diagonal else 1.0
+    fontsize = max(4.0, base_fontsize * shrink)
+    return fontsize, tallest * shrink * line_spacing
+
+
 def draw_minimized_dfa_on_axes(
     ax,
     automaton: MinimizedVocabAutomaton,
@@ -1238,19 +1300,72 @@ def draw_minimized_dfa_on_axes(
     compact: bool = False,
     label_fontsize: float | None = None,
     node_scale: float = 1.0,
+    circle_scale: float = 1.0,
+    shortest_prefix_labels: bool = False,
+    fit_labels: bool = False,
 ) -> None:
-    """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`."""
+    """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`.
+
+    ``shortest_prefix_labels`` keeps non-accept nodes to a single short prefix
+    while accept nodes name the completed words. ``fit_labels`` grows circles
+    until they nearly touch and then picks the largest font that fits inside
+    each circle, so node text is never clipped in multipanel figures.
+    """
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
     from matplotlib.path import Path
 
     dfa = automaton.dfa
     state_labels = _dfa_state_label_map(automaton)
-    radii = {
+    if shortest_prefix_labels:
+        vocab = set(words)
+
+        def _simple_prefix_set(prefs: set[str], *, accepting: bool) -> set[str]:
+            shown = {display_prefix(p) for p in prefs}
+            shown.discard("")
+            if not shown:
+                return {""}
+            if accepting:
+                # Accept states name the completed words themselves.
+                complete = sorted(w for w in shown if w in vocab)
+                if complete:
+                    return set(complete[:3])
+            ordered = sorted(shown, key=lambda s: (len(s), s))
+            if len(ordered) <= 2 and all(len(s) <= 2 for s in ordered):
+                return {"/".join(ordered)}
+            return {ordered[0]}
+
+        state_labels = {
+            s: _simple_prefix_set(prefs, accepting=(s in dfa.finals))
+            for s, prefs in state_labels.items()
+        }
+    if shortest_prefix_labels:
+        # One word per line keeps multi-word accept states compact and legible.
+        lines_by_state = {
+            s: (sorted(prefs, key=lambda p: (len(p), p)) if prefs else ["ε"])
+            for s, prefs in state_labels.items()
+        }
+        lines_by_state = {
+            s: [display_prefix(p) for p in lines] for s, lines in lines_by_state.items()
+        }
+    else:
+        lines_by_state = {
+            s: _fit_state(prefs, compact=compact)[0] for s, prefs in state_labels.items()
+        }
+
+    layout_radii = {
         key: val * float(node_scale)
         for key, val in _compute_radii(state_labels, compact=compact).items()
     }
-    gap_scale = _gap_scale(radii) * (1.12 if compact else 1.0)
+    gap_scale = _gap_scale(layout_radii) * (1.12 if compact else 1.0)
     coords = _scale_positions(layout_dfa(dfa), gap_scale=gap_scale)
+    # Deliberately separate circle size from graph spacing. Scaling both together
+    # is mostly cancelled when Matplotlib fits the graph into the same axes.
+    radii = {
+        key: radius * float(circle_scale)
+        for key, radius in layout_radii.items()
+    }
+    if fit_labels:
+        radii = _uniform_node_radii(coords, radii)
     width, height = _canvas_size(coords, radii)
 
     ax.set_facecolor(BG_COLOR)
@@ -1270,8 +1385,11 @@ def draw_minimized_dfa_on_axes(
         sx, sy = coords[s]
         tx, ty = coords[t]
         rs, rt = radii[s], radii[t]
-        for i, label in enumerate(labels):
-            curve = 26 * (i - (len(labels) - 1) / 2.0)
+        # Big circles leave only a short visible span, where one curve per letter
+        # collapses into a tangle; merge parallel letters onto a single edge.
+        drawn = [",".join(labels)] if (fit_labels and len(labels) > 1) else list(labels)
+        for i, label in enumerate(drawn):
+            curve = 26 * (i - (len(drawn) - 1) / 2.0)
             start, control, end, (lx, ly), (nx, ny) = _edge_curve_points(
                 sx, sy, tx, ty, rs, rt, curved=curve
             )
@@ -1346,7 +1464,7 @@ def draw_minimized_dfa_on_axes(
         if accepting:
             ax.add_patch(
                 Circle(
-                    (cx, cy), r + 4,
+                    (cx, cy), r + max(4.0, 0.11 * r),
                     fill=False, edgecolor="#111111", linewidth=1.5, zorder=4,
                 )
             )
@@ -1357,10 +1475,14 @@ def draw_minimized_dfa_on_axes(
                 facecolor=node_fill, edgecolor="#111111", linewidth=1.5, zorder=5,
             )
         )
-        wrapped, _ = _fit_state(prefix_set, compact=compact)
+        wrapped = lines_by_state.get(s) or _fit_state(prefix_set, compact=compact)[0]
         # Matplotlib fonts don't scale with data coords; keep them smaller so labels
         # stay inside nodes when this DFA is embedded in a compact multipanel figure.
-        if label_fontsize is not None:
+        if fit_labels:
+            fs, line_step = _fitted_font_size(
+                ax, wrapped, r, float(label_fontsize or 10.0),
+            )
+        elif label_fontsize is not None:
             fs = float(label_fontsize)
             line_step = max(fs * 1.45, 9.0)
         elif compact:

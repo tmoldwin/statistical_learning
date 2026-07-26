@@ -1017,6 +1017,9 @@ def _example_panel_figsize(
     if n_cols == 4:
         trace_w = max(2.8, 0.11 * n_timesteps + 1.0)
         width = 2 * trace_w + 2 * 1.45 + 0.6
+    elif n_cols == 2:
+        trace_w = max(3.4, 0.12 * n_timesteps + 1.2)
+        width = trace_w + 1.6 + 0.4
     else:
         width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
     if compact:
@@ -1302,13 +1305,14 @@ def plot_example_units_combined(
     model: dict,
     automaton: MinimizedVocabAutomaton | None = None,
     features: tuple[str, ...] = WORD_ANALYSIS_FEATURES,
-    k: int | dict[str, int] = 2,
+    k: int | dict[str, int] = 1,
     rank_si: dict[str, np.ndarray] | None = None,
 ) -> None:
-    """One figure: one row per feature, four columns (ex1, mean, ex2, mean).
+    """One figure: one row per feature; each example is (lollipop, category mean).
 
     Lollipop panels show the first half of the shared corpus window; bar panels
-    aggregate over the full window. ``k`` may be an int or per-feature map.
+    aggregate over the full window. ``k`` may be an int or per-feature map
+    (default one example per feature).
     """
     scores = dict(rank_si) if rank_si is not None else {}
     for feat in features:
@@ -1330,6 +1334,9 @@ def plot_example_units_combined(
     if not feature_rows:
         return
 
+    n_examples = max(len(units) for _, units in feature_rows)
+    n_cols = 2 * n_examples
+
     y_stack = np.concatenate([activations[:, u] for u in all_unit_ixs])
     y_lo = float(np.min(y_stack))
     y_hi = float(np.max(y_stack))
@@ -1343,15 +1350,18 @@ def plot_example_units_combined(
     )
 
     n_rows = len(feature_rows)
+    width_ratios = [2.2, 1.0] * n_examples
     fig, axes = plt.subplots(
-        n_rows, 4,
+        n_rows, n_cols,
         figsize=_example_panel_figsize(
-            len(trace_indices), n_rows, n_cols=4, compact=True,
+            len(trace_indices), n_rows, n_cols=n_cols, compact=True,
         ),
-        gridspec_kw={"width_ratios": [2.2, 1.0, 2.2, 1.0], "wspace": 0.34, "hspace": 0.92},
+        gridspec_kw={"width_ratios": width_ratios, "wspace": 0.34, "hspace": 0.92},
     )
     if n_rows == 1:
         axes = axes[np.newaxis, :]
+    if n_cols == 1:
+        axes = axes[:, np.newaxis]
 
     feat_short = {
         "dfa": "DFA",
@@ -1362,7 +1372,7 @@ def plot_example_units_combined(
     }
 
     for row, (feat, units) in enumerate(feature_rows):
-        for ex_i in range(2):
+        for ex_i in range(n_examples):
             trace_col = ex_i * 2
             bar_col = ex_i * 2 + 1
             if ex_i >= len(units):
@@ -1371,9 +1381,12 @@ def plot_example_units_combined(
                 continue
             u, si = units[ex_i]
             rank = ex_i + 1
-            trace_title = (
-                f"{FEATURE_DISPLAY[feat]} #{rank} · {unit_labels[u]} (SI={si:.2f})"
-            )
+            if n_examples == 1:
+                trace_title = f"{FEATURE_DISPLAY[feat]} · {unit_labels[u]} (SI={si:.2f})"
+            else:
+                trace_title = (
+                    f"{FEATURE_DISPLAY[feat]} #{rank} · {unit_labels[u]} (SI={si:.2f})"
+                )
             _plot_unit_example_panel(
                 axes[row, trace_col], axes[row, bar_col],
                 unit_ix=u,
@@ -1388,7 +1401,7 @@ def plot_example_units_combined(
                 show_bar_xticks=True,
                 ylim=ylim,
                 trace_indices=trace_indices,
-                bar_title=f"ex {rank} mean",
+                bar_title="mean" if n_examples == 1 else f"ex {rank} mean",
             )
             for col in (trace_col, bar_col):
                 axes[row, col].tick_params(
@@ -1410,7 +1423,14 @@ def plot_example_units_combined(
                 axes[row, trace_col].set_ylabel("")
 
         if row == 0:
-            for col, hdr in enumerate(("ex 1", "ex 1 mean", "ex 2", "ex 2 mean")):
+            if n_examples == 1:
+                headers = ("example", "category mean")
+            else:
+                headers = tuple(
+                    h for i in range(n_examples)
+                    for h in (f"ex {i + 1}", f"ex {i + 1} mean")
+                )
+            for col, hdr in enumerate(headers):
                 axes[row, col].text(
                     0.5, 1.08, hdr, transform=axes[row, col].transAxes,
                     ha="center", va="bottom", fontsize=7, color="0.35",
@@ -1421,18 +1441,23 @@ def plot_example_units_combined(
             "input character (shared corpus window)", fontsize=7,
         )
         axes[-1, 0].xaxis.label.set_clip_on(False)
-        if len(feature_rows[-1][1]) > 1:
+        if n_examples > 1 and len(feature_rows[-1][1]) > 1:
             axes[-1, 2].set_xlabel(
                 "input character (shared corpus window)", fontsize=7,
             )
             axes[-1, 2].xaxis.label.set_clip_on(False)
 
-    fig.suptitle(
-        "Top-2 units per feature on one corpus window "
-        "(lollipop color = feature category; peak SI)",
-        fontsize=10,
-        y=0.995,
-    )
+    if n_examples == 1:
+        suptitle = (
+            "Top unit per feature on one corpus window "
+            "(lollipop color = feature category; peak SI)"
+        )
+    else:
+        suptitle = (
+            f"Top-{n_examples} units per feature on one corpus window "
+            "(lollipop color = feature category; peak SI)"
+        )
+    fig.suptitle(suptitle, fontsize=10, y=0.995)
     fig.subplots_adjust(left=0.07, right=0.99, top=0.90, bottom=0.04)
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
@@ -2045,7 +2070,7 @@ def plot_unit_selectivity_suite(
         unit_labels=unit_labels, text=text, model=model,
         automaton=automaton,
         features=WORD_ANALYSIS_FEATURES,
-        k=2,
+        k=1,
         rank_si={**result.si, **word_si},
     )
 

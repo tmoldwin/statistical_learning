@@ -56,7 +56,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 ![Next-character probabilities](figures/demo/fig_next_char_probs.jpg)
 
-**Figure 4.** Softmax \(P(\text{next char} \mid \text{input so far})\). Top: unique in-word prefixes (condensed). Bottom: sequential teacher-forced timesteps on the same corpus window. Red dots mark the actual next character. Probability mass concentrates late in words and spreads at ambiguous prefixes and word boundaries.
+**Figure 4.** Softmax \(P(\text{next char} \mid \text{input so far})\). Top: sequential teacher-forced timesteps on the corpus window. Bottom: unique in-word prefixes (condensed). Red dots mark the actual next character. Probability mass concentrates late in words and spreads at ambiguous prefixes and word boundaries.
 
 ### 3.4 Hidden states and clustering
 
@@ -86,7 +86,7 @@ Per-unit selectivity uses a peak-vs-rest index on category-mean activations (fla
 
 ![Example selective units](figures/demo/fig_example_units.jpg)
 
-**Figure 9.** Top-2 units per feature (DFA state, character, position from beginning, position from end, word identity) on one shared corpus window. Each row: example lollipop, category mean, second example, category mean. Position-from-end bars use 0 for the last in-word character, increasing toward the word start (right to left).
+**Figure 9.** One top unit per feature (DFA state, character, position from beginning, position from end, word identity) on one shared corpus window. Each row: example lollipop and category mean. Position-from-end bars use 0 for the last in-word character, increasing toward the word start (right to left).
 
 ### 3.7 Decoding
 

@@ -9271,8 +9271,8 @@ def plot_output_probs(
 ):
     """Heatmap of P(next char); overlay true next char.
 
-    With ``condensed``, draws two rows: prefix-averaged (top) and sequential
-    teacher-forced timesteps (bottom). Otherwise sequential only.
+    With ``condensed``, draws two rows: sequential teacher-forced timesteps
+    (top) and prefix-averaged (bottom). Otherwise sequential only.
     """
     from viz.plot_layout import apply_category_tick_labels, finalize_grid_figure, save_figure
 
@@ -9280,6 +9280,17 @@ def plot_output_probs(
     vocab_size = len(chars)
     panels: list[tuple[np.ndarray, list[str], list[str], str, list[str] | None, bool]] = []
     # Each: probs, x_labels, targets, x_axis, prefix_keys_or_None, is_sequence
+
+    # Sequence first (paper Fig 4 top), then prefix-condensed.
+    seq_probs = np.asarray(output_probs, dtype=float)
+    panels.append((
+        seq_probs,
+        list(text),
+        list(text[1:]) + [text[0]],
+        "timestep / input character",
+        None,
+        True,
+    ))
 
     if condensed is not None:
         if condensed.output_probs is None:
@@ -9297,25 +9308,17 @@ def plot_output_probs(
         spaced = condensed.spaced
         words = condensed.words
 
-    seq_probs = np.asarray(output_probs, dtype=float)
-    panels.append((
-        seq_probs,
-        list(text),
-        list(text[1:]) + [text[0]],
-        "timestep / input character",
-        None,
-        True,
-    ))
-
     n_rows = len(panels)
     max_len = max(p[0].shape[0] for p in panels)
-    fig_w = float(max(8.5, min(14.0, max_len * 0.16 + 1.2)))
-    fig_h = float(max(3.2, vocab_size * 0.20 + 1.0) * n_rows + (0.55 if n_rows > 1 else 0.0))
+    # Wide enough that every single-char column can carry an upright tick.
+    fig_w = float(max(12.0, min(20.0, max_len * 0.32 + 2.0)))
+    fig_h = float(max(3.6, vocab_size * 0.28 + 1.3) * n_rows + (0.55 if n_rows > 1 else 0.0))
     fig, axes = plt.subplots(
         n_rows, 1, figsize=(fig_w, fig_h), squeeze=False, sharey=True,
     )
 
     last_im = None
+    bottom_need = 0.18
     for ri, (probs, x_labels, targets, x_axis, prefix_keys, is_sequence) in enumerate(panels):
         ax = axes[ri, 0]
         length = probs.shape[0]
@@ -9326,12 +9329,25 @@ def plot_output_probs(
             interpolation="nearest", origin="lower",
         )
         ax.set_yticks(range(vocab_size))
-        ax.set_yticklabels(chars, fontsize=7)
-        tick_fs = 5.5 if (is_sequence and length > 28) else 6.5
-        apply_category_tick_labels(ax, x_labels, fontsize=tick_fs)
-        if is_sequence and length > 48:
-            for i, tick in enumerate(ax.get_xticklabels()):
-                tick.set_visible(i % 2 == 0)
+        ax.set_yticklabels(chars, fontsize=8)
+        short_seq = is_sequence and all(len(str(lab)) <= 1 for lab in x_labels)
+        if short_seq:
+            # Every timestep labeled, upright only on the bottom edge.
+            ax.set_xticks(list(range(length)))
+            ax.set_xticklabels(
+                [str(lab) for lab in x_labels],
+                fontsize=7.0, rotation=0, ha="center", fontfamily="monospace",
+            )
+            bottom_need = max(bottom_need, 0.20)
+        else:
+            tick_fs = 6.5 if length > 16 else 7.5
+            bottom_need = max(
+                bottom_need,
+                apply_category_tick_labels(ax, x_labels, fontsize=tick_fs),
+            )
+        # No tick labels on the top edge of either panel.
+        ax.tick_params(axis="x", which="both", top=False, bottom=True,
+                       labeltop=False, labelbottom=True, length=3, pad=2)
         axis_label = x_axis
         if automaton is not None:
             if prefix_keys is not None:
@@ -9344,6 +9360,8 @@ def plot_output_probs(
                 )
             _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
             axis_label += " · tick color = min DFA state"
+        # Only the last row keeps the x-axis label (avoids colliding with the
+        # next panel when both rows have dense ticks).
         ax.set_xlabel(axis_label if ri == n_rows - 1 else "", fontsize=8)
         ax.set_ylabel("predicted next char", fontsize=8)
         if n_rows > 1:
@@ -9355,7 +9373,7 @@ def plot_output_probs(
                     f"({len(x_labels)} prefixes, avg over {sum(condensed.counts)} steps)"
                 )
             )
-            ax.set_title(row_title, fontsize=9, pad=3)
+            ax.set_title(row_title, fontsize=9, pad=4)
         else:
             ax.set_title(
                 "P(next char | input so far)  —  red dots = actual next char",
@@ -9363,28 +9381,28 @@ def plot_output_probs(
             )
         ax.scatter(
             np.arange(length), target_indices,
-            color="red", s=14 if is_sequence else 18,
-            edgecolor="white", linewidth=0.45, zorder=3,
+            color="red", s=22 if is_sequence else 26,
+            edgecolor="black", linewidth=0.7, zorder=3,
         )
 
     if n_rows > 1:
         finalize_grid_figure(
             fig,
-            # Condensed prefixes (top) + teacher-forced sequence (bottom).
+            # Sequence (top) + condensed prefixes (bottom).
             suptitle="P(next char | input so far)  —  red dots = actual next char",
-            top=0.90,
-            bottom=0.10,
-            left=0.07,
-            right=0.96,
-            hspace=0.42,
+            top=0.92,
+            bottom=max(0.18, bottom_need),
+            left=0.05,
+            right=0.97,
+            hspace=0.55,
         )
     else:
         finalize_grid_figure(
             fig,
             top=0.90,
-            bottom=0.14,
-            left=0.08,
-            right=0.90,
+            bottom=max(0.18, bottom_need),
+            left=0.06,
+            right=0.92,
         )
 
     if last_im is not None:
@@ -9403,7 +9421,7 @@ def plot_output_probs(
             )
         cbar.ax.tick_params(labelsize=6, length=2)
         cbar.set_label("probability", fontsize=7)
-    save_figure(fig, save_path, dpi=150)
+    save_figure(fig, save_path, dpi=220)
     plt.close(fig)
     print(f"wrote {save_path}")
 

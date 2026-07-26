@@ -81,7 +81,8 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.jpg", as_jpg=False),
         # Demo narrative figs 3–10 (same six-word mixed-length vocab through trajectories).
         FigureRef("demo", "fig_next_char_probs.jpg",
-                  _demo("activations/8_next_char_prob_sequence_condensed.png")),
+                  _demo("activations/8_next_char_prob_sequence_condensed.png"),
+                  max_w=2800),
         FigureRef("demo", "fig_activation_heatmap.jpg", _demo("activations/7_activation_heatmap.png")),
         FigureRef("demo", "fig_activation_clustered.jpg",
                   _demo("activations/10_activation_clustered_heatmap.png")),

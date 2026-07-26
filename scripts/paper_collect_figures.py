@@ -170,6 +170,10 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "weight_matrices_by_dfa.png",
                   max_w=1400),
+        FigureRef("main", "fig_weight_graph_motifs_vs_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "weight_graph_metrics_vs_dfa_paper.png",
+                  max_w=1400),
     ]
 
 

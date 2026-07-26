@@ -672,16 +672,34 @@ def _thresholded_digraph(
 
 
 def _digraph_motif_rates_from_adj(E: np.ndarray) -> dict[str, float]:
-    """3-node motif rates on a boolean directed adjacency (no self-loops)."""
+    """Pairwise dyad census + 3-node motif rates on a boolean directed adjacency."""
     n = E.shape[0]
     n_dir = int(np.sum(E))
     n_rec = int(np.sum(E & E.T)) // 2
     recip = (2.0 * n_rec) / max(n_dir, 1)
+
+    # Holland–Leinhardt dyad census among unordered pairs with ≥1 directed edge.
+    n_asym = n_mutual = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = bool(E[i, j]), bool(E[j, i])
+            if a and b:
+                n_mutual += 1
+            elif a or b:
+                n_asym += 1
+    n_conn = n_asym + n_mutual
+    dyad = {
+        "dyad_connected": float(n_conn),
+        "dyad_asym_frac": float(n_asym / n_conn) if n_conn else float("nan"),
+        "dyad_mutual_frac": float(n_mutual / n_conn) if n_conn else float("nan"),
+        "motif_reciprocal_frac": float(recip),
+    }
+
     if n < 3 or n_dir < 2:
         return {
+            **dyad,
             "motif_feedforward_rate": float("nan"),
             "motif_cycle_rate": float("nan"),
-            "motif_reciprocal_frac": float(recip),
             "motif_n_triples": 0.0,
         }
     ff = 0
@@ -715,9 +733,9 @@ def _digraph_motif_rates_from_adj(E: np.ndarray) -> dict[str, float]:
                 if ff_hit:
                     ff += 1
     return {
+        **dyad,
         "motif_feedforward_rate": float(ff / triples) if triples else float("nan"),
         "motif_cycle_rate": float(cyc / triples) if triples else float("nan"),
-        "motif_reciprocal_frac": float(recip),
         "motif_n_triples": float(triples),
     }
 
@@ -783,11 +801,14 @@ def _triangle_node_xy() -> dict[int, tuple[float, float]]:
 
 # Directed edges (i→j) for motif schematics on the metric board.
 _MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
+    # Pairwise (dyad) motifs.
+    "dyad_asym_frac": ((0, 1),),
+    "dyad_mutual_frac": ((0, 1), (1, 0)),
+    # Reciprocal dyad (edge-fraction definition; same schematic as mutual).
+    "motif_reciprocal_frac": ((0, 1), (1, 0)),
     # Transitive feedforward: i→j→k and i→k.
     "motif_feedforward_rate": ((0, 1), (1, 2), (0, 2)),
     "motif_cycle_rate": ((0, 1), (1, 2), (2, 0)),
-    # Reciprocal dyad (third node unused).
-    "motif_reciprocal_frac": ((0, 1), (1, 0)),
     # Holland–Leinhardt (A=0, B=1, C=2).
     "triad_030T_frac": ((0, 1), (2, 1), (0, 2)),  # A→B←C, A→C
     "triad_030C_frac": ((1, 0), (2, 1), (0, 2)),  # A←B←C, A→C
@@ -1063,7 +1084,7 @@ def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
     if edges is None:
         return False
 
-    if key == "motif_reciprocal_frac":
+    if key in ("motif_reciprocal_frac", "dyad_mutual_frac", "dyad_asym_frac"):
         pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
         _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.07, rad=0.25)
         return True

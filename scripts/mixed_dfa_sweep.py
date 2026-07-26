@@ -305,7 +305,10 @@ def main() -> None:
     elif args.command == "linear-vs-nonlinear":
         cmd_linear_vs_nonlinear(args)
     elif args.command == "weight-layeredness":
-        from viz.compare.mixed_dfa_viz import plot_mixed_dfa_weight_graph_metrics_vs_dfa
+        from viz.compare.mixed_dfa_viz import (
+            plot_mixed_dfa_weight_graph_metrics_paper,
+            plot_mixed_dfa_weight_graph_metrics_vs_dfa,
+        )
 
         seed = args.seeds[0] if args.seeds else 1
         out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
@@ -313,6 +316,11 @@ def main() -> None:
             recompute=not args.replot_only,
         )
         print(f"wrote {out}", flush=True)
+        out_paper = plot_mixed_dfa_weight_graph_metrics_paper(
+            seed=seed,
+            recompute=False,
+        )
+        print(f"wrote {out_paper}", flush=True)
     elif args.command == "weight-spikiness":
         from viz.compare.mixed_dfa_viz import _dfa_states
         from viz.compare.weight_spikiness import (

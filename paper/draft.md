@@ -30,7 +30,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Model.** Elman RNN, \(H = 50\) (demo), \(H{=}100\) (mixed-vocab runs); next-character cross-entropy; early stop on word-error \(\leq 3\%\).
 
-**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected vs uniform label chance; mean ± std across seeds), with a **DFA-state oracle** baseline \(\mathbb{E}_s[\max_y P(y\mid s)]\) for each non-DFA feature (dashed on readout plots)—the expected accuracy if \(\mathbf{h}\) carried only automaton state; readout over learning; closed-loop word trajectories; weight-matrix structure vs DFA size.
+**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected vs uniform label chance; mean ± std across seeds), with a **DFA-state oracle** baseline \(\mathbb{E}_s[\max_y P(y\mid s)]\) for each non-DFA feature (dashed on readout plots)—the expected accuracy if \(\mathbf{h}\) carried only automaton state; readout over learning; closed-loop word trajectories; weight-matrix structure and digraph motifs (pairwise + 3-node) vs DFA size.
 
 ---
 
@@ -132,11 +132,15 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer \(W_{xh}\) letter stripes; larger DFAs yield denser, more feedforward-looking weight maps. The scatters quantify that shift across the full sweep.
 
+![Weight graph structure and motifs vs DFA](figures/main/fig_weight_graph_motifs_vs_dfa.jpg)
+
+**Figure 18.** Structural analysis of thresholded \(W_{hh}\) vs minimized DFA size (same mixed-vocab runs, seed 1; color = \# words). Panels are restricted to metrics with a linear \(R^2 > 0.5\) against DFA size (least-squares line shown). Surviving blocks typically include norms / drive, spectral–walk layeredness, letter-block cluster metrics, pairwise motifs (asymmetric vs mutual dyads, reciprocal-edge fraction, signed reciprocals), unsigned 3-node motifs (feedforward vs cycle), digraph topology, and rank / signed feedforward where they clear the threshold. Schematics above motif panels show the counted pattern. Larger DFAs shift toward more feedforward / less cyclic local structure, with reciprocal and opposing-sign (\({+}{-}\)) dyads declining.
+
 ---
 
 ## 4. Discussion
 
-Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The six-word mixed-length demo makes the task transparent: activations and state correlations cluster by prefix and automaton state; population separation and multi-seed decoding show that automaton state is low-dimensional and stable; trajectories form labeled geometric motifs that recur across training seeds. Fifty mixed-length English vocab runs (\(H{=}100\)) make the scaling claim concrete without fixing length or word count: hidden dimensionality, training iterations, and readout of position-from-end track minimized DFA size—so the network’s geometry expands when the word automaton expands. Weight analyses on that same sweep (Figure 17) show letter-columnar input weights and locally clumped recurrent connectivity, clearest for small DFAs. Word-identity readout (Figures 10, 14–16) lags DFA/character: it needs many PCs (or full \(H\)) and rises later than word-error collapse on mid-sized automata.
+Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hidden geometry. The six-word mixed-length demo makes the task transparent: activations and state correlations cluster by prefix and automaton state; population separation and multi-seed decoding show that automaton state is low-dimensional and stable; trajectories form labeled geometric motifs that recur across training seeds. Fifty mixed-length English vocab runs (\(H{=}100\)) make the scaling claim concrete without fixing length or word count: hidden dimensionality, training iterations, and readout of position-from-end track minimized DFA size—so the network’s geometry expands when the word automaton expands. Weight analyses on that same sweep (Figures 17–18) show letter-columnar input weights and locally clumped recurrent connectivity, clearest for small DFAs, with digraph motifs shifting toward feedforward (and away from cycles / opposing-sign reciprocity) as DFA size grows. Word-identity readout (Figures 10, 14–16) lags DFA/character: it needs many PCs (or full \(H\)) and rises later than word-error collapse on mid-sized automata.
 
 **Limits.** Toy character languages; \(H = 50\) for the demo analyses (\(H{=}100\) in the mixed-vocab runs); small seed counts for grids; no acoustic noise. The model is a hypothesis generator, not a claim that infants are Elman networks.
 
@@ -146,7 +150,7 @@ Next-character prediction on an unsegmented finite lexicon yields DFA-aligned hi
 
 ## 5. Conclusion
 
-Small next-character RNNs discover word structure in unsegmented streams. States cluster by prefix and DFA identity; decoding recovers that structure across seeds; across mixed-length English vocabs, larger minimized DFAs yield higher-dimensional closed-loop geometry, slower word-error acquisition, and weaker position-from-end readout, while weight matrices develop letter-columnar \(W_{xh}\) and locally clumped \(W_{hh}\).
+Small next-character RNNs discover word structure in unsegmented streams. States cluster by prefix and DFA identity; decoding recovers that structure across seeds; across mixed-length English vocabs, larger minimized DFAs yield higher-dimensional closed-loop geometry, slower word-error acquisition, and weaker position-from-end readout, while weight matrices develop letter-columnar \(W_{xh}\) and locally clumped \(W_{hh}\), with recurrent digraph motifs shifting toward feedforward structure.
 
 ---
 

@@ -1297,6 +1297,8 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
 
 # Full exploratory board: legacy norms/layeredness/motifs + networkx + rank.
 _MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
+    "dyad_asym_frac",
+    "dyad_mutual_frac",
     "motif_feedforward_rate",
     "motif_cycle_rate",
     "motif_reciprocal_frac",
@@ -1347,11 +1349,22 @@ _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...
         ),
     ),
     (
-        "D. Digraph 3-node motifs (q=0.75)",
+        "D. Pairwise motifs (q=0.75)",
+        (
+            ("layeredness", "dyad_asym_frac", "asymmetric dyad frac"),
+            ("layeredness", "dyad_mutual_frac", "mutual dyad frac"),
+            ("layeredness", "motif_reciprocal_frac", "reciprocal edge frac"),
+            ("signed", "signed_pos_edge_frac", "positive edge frac"),
+            ("signed", "signed_recip_pp_frac", "reciprocal ++"),
+            ("signed", "signed_recip_pm_frac", "reciprocal +−"),
+            ("signed", "signed_recip_mm_frac", "reciprocal −−"),
+        ),
+    ),
+    (
+        "E. Digraph 3-node motifs (q=0.75)",
         (
             ("layeredness", "motif_feedforward_rate", "feedforward triple rate"),
             ("layeredness", "motif_cycle_rate", "cycle triple rate"),
-            ("layeredness", "motif_reciprocal_frac", "reciprocal edge frac"),
             ("layeredness", "triad_ff_over_cycle", "030T / 030C"),
             ("layeredness", "triad_120D_frac", "triad 120D"),
             ("layeredness", "triad_120U_frac", "triad 120U"),
@@ -1360,7 +1373,7 @@ _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...
         ),
     ),
     (
-        "E. Digraph topology (|W| ≥ mean |W|)",
+        "F. Digraph topology (|W| ≥ mean |W|)",
         (
             ("graph", "density", "density"),
             ("graph", "reciprocity", "reciprocity"),
@@ -1373,7 +1386,7 @@ _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...
         ),
     ),
     (
-        "F. Matrix rank / singular spectrum of W_hh",
+        "G. Matrix rank / singular spectrum of W_hh",
         (
             ("rank", "stable_rank", r"stable rank $||W||_F^2/||W||_2^2$"),
             ("rank", "effective_rank", "effective rank (Roy–Vetterli)"),
@@ -1381,12 +1394,8 @@ _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...
         ),
     ),
     (
-        "G. Signed motifs (q=0.75; blue +, red −)",
+        "H. Signed 3-node motifs (q=0.75; blue +, red −)",
         (
-            ("signed", "signed_pos_edge_frac", "positive edge frac"),
-            ("signed", "signed_recip_pp_frac", "reciprocal ++"),
-            ("signed", "signed_recip_pm_frac", "reciprocal +−"),
-            ("signed", "signed_recip_mm_frac", "reciprocal −−"),
             ("signed", "signed_cycle_balanced_frac", "cycle balanced (sign prod +)"),
             ("signed", "signed_ff_all_pos_rate", "feedforward all +"),
             ("signed", "signed_ff_all_neg_rate", "feedforward all −"),
@@ -1467,12 +1476,18 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     outfile: str = "weight_graph_metrics_vs_dfa.png",
     seed: int = 1,
     recompute: bool = False,
+    linear_only: bool = False,
+    min_r2: float | None = None,
 ) -> Path:
     """Graph + rank + letter-block + directionality metrics vs DFA size.
 
     Sibling to Figure 16 — does not overwrite ``weight_matrices_by_dfa.png``.
+
+    ``linear_only`` fits a straight line (least squares) instead of the
+    best-of-several curve family. ``min_r2`` drops any panel whose fit
+    R^2 is at or below the threshold (and any section left empty).
     """
-    from viz.compare.pow2_sweep_metric_board import _fit_trend
+    from viz.compare.pow2_sweep_metric_board import _fit_line, _fit_trend
 
     path = collect_mixed_dfa_weight_layeredness(seed=seed, recompute=recompute)
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -1480,13 +1495,65 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     if not panels:
         raise FileNotFoundError("no weight-graph panels")
 
+    def _lookup(panel: dict[str, Any], bag: str, key: str) -> float | None:
+        v = panel.get(bag, {}).get(key)
+        if v is None:
+            return None
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            return None
+        return fv if np.isfinite(fv) else None
+
+    def _series(bag: str, key: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        xs, ys, ns = [], [], []
+        for p in panels:
+            v = _lookup(p, bag, key)
+            if v is None:
+                continue
+            xs.append(float(p["n_dfa_states"]))
+            ys.append(v)
+            ns.append(float(p["n_words"]))
+        return (
+            np.asarray(xs, dtype=float),
+            np.asarray(ys, dtype=float),
+            np.asarray(ns, dtype=float),
+        )
+
+    def _fit(x: np.ndarray, y: np.ndarray):
+        """Return (x_grid, y_hat, r2) for either a straight line or best curve."""
+        if x.size == 0:
+            return None, None, float("nan")
+        if linear_only:
+            coef, r2 = _fit_line(x, y)
+            if coef is None:
+                return None, None, float("nan")
+            xg = np.linspace(float(np.min(x)), float(np.max(x)), 80)
+            return xg, coef[0] + coef[1] * xg, r2
+        xg, yg, r2, _ = _fit_trend(x, y)
+        return xg, yg, r2
+
+    # Precompute fits so we can filter weak panels (and empty sections) up front.
+    fit_cache: dict[tuple[str, str], tuple[Any, Any, float]] = {}
+
+    def _keep(bag: str, key: str) -> bool:
+        x, y, _ = _series(bag, key)
+        xg, yg, r2 = _fit(x, y)
+        fit_cache[(bag, key)] = (xg, yg, r2)
+        if min_r2 is None:
+            return True
+        return bool(np.isfinite(r2) and r2 > min_r2)
+
     n_cols = 5
     metric_rows: list[list[tuple[str, str, str]]] = []
     banners_before: list[str | None] = []
     for section_title, metrics in _WEIGHT_METRIC_SECTIONS:
+        kept = [(bag, key, title) for bag, key, title in metrics if _keep(bag, key)]
+        if not kept:
+            continue
         pending_banner: str | None = section_title
         cur: list[tuple[str, str, str]] = []
-        for bag, key, title in metrics:
+        for bag, key, title in kept:
             cur.append((bag, key, title))
             if len(cur) == n_cols:
                 metric_rows.append(cur)
@@ -1496,6 +1563,9 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         if cur:
             metric_rows.append(cur)
             banners_before.append(pending_banner)
+
+    if not metric_rows:
+        raise ValueError(f"no weight-graph panels passed min_r2={min_r2}")
 
     height_ratios: list[float] = []
     gs_map: list[tuple[str, int]] = []
@@ -1522,16 +1592,6 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     words_cmap = plt.get_cmap("YlOrRd")
     words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
 
-    def _lookup(panel: dict[str, Any], bag: str, key: str) -> float | None:
-        v = panel.get(bag, {}).get(key)
-        if v is None:
-            return None
-        try:
-            fv = float(v)
-        except (TypeError, ValueError):
-            return None
-        return fv if np.isfinite(fv) else None
-
     from viz.weight_structure import draw_digraph_motif_schema
 
     for gs_i, (kind, row_i) in enumerate(gs_map):
@@ -1553,22 +1613,13 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
                 draw_digraph_motif_schema(ax_schem, key)
             else:
                 ax = fig.add_subplot(cell)
-            xs, ys, ns = [], [], []
-            for p in panels:
-                v = _lookup(p, bag, key)
-                if v is None:
-                    continue
-                xs.append(float(p["n_dfa_states"]))
-                ys.append(v)
-                ns.append(float(p["n_words"]))
-            if xs:
-                x = np.asarray(xs, dtype=float)
-                y = np.asarray(ys, dtype=float)
+            x, y, ns = _series(bag, key)
+            if x.size:
                 ax.scatter(
                     x, y, c=ns, cmap=words_cmap, norm=words_norm,
-                    s=14, alpha=0.8, linewidths=0.2, edgecolors="white", zorder=2,
+                    s=16, alpha=0.85, linewidths=0.55, edgecolors="black", zorder=2,
                 )
-                x_fit, y_fit, r2, _ = _fit_trend(x, y)
+                x_fit, y_fit, r2 = fit_cache[(bag, key)]
                 if x_fit is not None and y_fit is not None and np.isfinite(r2):
                     ax.plot(x_fit, y_fit, color="0.15", lw=1.15, zorder=3)
                     ax.set_title(f"{title}\n$R^2$={r2:.2f}", fontsize=7, pad=2)
@@ -1589,12 +1640,17 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     cbar.set_label("# words", fontsize=7)
     cbar.ax.tick_params(labelsize=6)
 
+    if linear_only and min_r2 is not None:
+        subtitle = f"seed {seed}; linear fit; $R^2>{min_r2:g}$ only"
+    elif linear_only:
+        subtitle = f"seed {seed}; linear fit"
+    elif min_r2 is not None:
+        subtitle = f"seed {seed}; $R^2>{min_r2:g}$ only"
+    else:
+        subtitle = f"seed {seed}; pairwise + 3-node; exploratory"
     finalize_grid_figure(
         fig,
-        suptitle=(
-            f"|W_hh| structure board vs DFA "
-            f"(seed {seed}; legacy + graph + rank; exploratory)"
-        ),
+        suptitle=f"$|W_{{hh}}|$ structure + motifs vs DFA ({subtitle})",
         top=0.97,
         bottom=0.04,
         left=0.06,
@@ -1630,6 +1686,23 @@ def plot_mixed_dfa_all_weight_metrics_vs_dfa(
     """Alias for the expanded weight-structure board."""
     return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         outfile=outfile, seed=seed, recompute=recompute,
+    )
+
+
+def plot_mixed_dfa_weight_graph_metrics_paper(
+    *,
+    outfile: str = "weight_graph_metrics_vs_dfa_paper.png",
+    seed: int = 1,
+    recompute: bool = False,
+    min_r2: float = 0.5,
+) -> Path:
+    """Paper board: linear fits only, keep panels with R^2 > min_r2."""
+    return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
+        outfile=outfile,
+        seed=seed,
+        recompute=recompute,
+        linear_only=True,
+        min_r2=min_r2,
     )
 
 

@@ -3030,6 +3030,96 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     return out[:n]
 
 
+def plot_mixed_dfa_activation_heatmap_grid(
+    *,
+    n_rows: int = 4,
+    n_cols: int = 5,
+    seed: int = 1,
+    model_type: str = "rnn",
+    text_chars: int = 100,
+    outfile: str = "activation_heatmaps_by_dfa.png",
+) -> Path:
+    """Small-multiple activation rasters spanning the mixed-vocab DFA range."""
+    from scipy.cluster.hierarchy import leaves_list, linkage
+
+    from viz.compare._data import load_task_viz_context
+
+    def _mean_abs_unit_corr(hidden: np.ndarray) -> float:
+        """Mean off-diagonal |Pearson corr| between unit time courses."""
+        h = np.asarray(hidden, dtype=float)
+        if h.ndim != 2 or h.shape[1] < 2 or h.shape[0] < 2:
+            return float("nan")
+        # Drop near-constant units so corrcoef stays finite.
+        std = np.std(h, axis=0)
+        keep = std > 1e-12
+        if int(np.count_nonzero(keep)) < 2:
+            return float("nan")
+        c = np.corrcoef(h[:, keep].T)
+        tri = c[np.triu_indices(c.shape[0], k=1)]
+        tri = tri[np.isfinite(tri)]
+        return float(np.mean(np.abs(tri))) if tri.size else float("nan")
+
+    panels = _pick_mixed_dfa_trajectory_span_tasks(
+        n_panels=n_rows * n_cols,
+        seed=seed,
+        model_type=model_type,
+    )
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(2.05 * n_cols, 1.75 * n_rows),
+        squeeze=False,
+    )
+    for ax, (n_dfa, _n_words, task, _words) in zip(axes.ravel(), panels):
+        ctx = load_task_viz_context(
+            task,
+            model_type=model_type,
+            seed=seed,
+            text_chars=text_chars,
+        )
+        hidden = np.asarray(ctx.hidden_states, dtype=float)
+        unit_coh = _mean_abs_unit_corr(hidden)
+        if hidden.shape[1] > 1:
+            order = leaves_list(linkage(hidden.T, method="average", metric="euclidean"))
+            hidden = hidden[:, order]
+        ax.imshow(
+            hidden.T,
+            aspect="auto",
+            interpolation="nearest",
+            cmap="RdBu_r",
+            vmin=-1.0,
+            vmax=1.0,
+            rasterized=True,
+        )
+        if np.isfinite(unit_coh):
+            ax.set_title(f"DFA={n_dfa}  ⟨|r|⟩={unit_coh:.2f}", fontsize=6.5, pad=2)
+        else:
+            ax.set_title(f"DFA={n_dfa}", fontsize=6.5, pad=2)
+        ax.set_axis_off()
+
+    for ax in axes.ravel()[len(panels):]:
+        ax.set_axis_off()
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            "Hidden-state activation heatmaps across DFA size "
+            f"(seed {seed}; rows clustered; ⟨|r|⟩ = mean pairwise |unit corr|)"
+        ),
+        top=0.91,
+        bottom=0.03,
+        left=0.02,
+        right=0.99,
+        hspace=0.22,
+        wspace=0.08,
+    )
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=180)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
 def plot_mixed_dfa_trajectory_vocab_grid(
     *,
     n: int = _TRAJECTORY_GRID_N,

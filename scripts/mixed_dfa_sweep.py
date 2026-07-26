@@ -250,7 +250,8 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
-            "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness", "spectra-by-letters",
+            "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness",
+            "spectra-by-letters", "activation-grid",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -298,6 +299,13 @@ def main() -> None:
         cmd_learning_decode_bins(args)
     elif args.command == "trajectory-grid":
         out = plot_mixed_dfa_trajectory_vocab_grid()
+        print(f"wrote {out}", flush=True)
+    elif args.command == "activation-grid":
+        from viz.compare.mixed_dfa_viz import plot_mixed_dfa_activation_heatmap_grid
+
+        out = plot_mixed_dfa_activation_heatmap_grid(
+            seed=(args.seeds[0] if args.seeds else 1),
+        )
         print(f"wrote {out}", flush=True)
     elif args.command == "within-corr":
         out = plot_mixed_dfa_within_corr_vs_dfa(recompute=True)

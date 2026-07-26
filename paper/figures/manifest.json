@@ -1,5 +1,5 @@
 {
-  "copied": 33,
+  "copied": 34,
   "missing": [
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_with_word_seed_mean.png",
     "experiments/six_word_mixed_demo_ns/rnn/plots/decoding/decoding_by_position_word_length.png"
@@ -218,6 +218,14 @@
       "paper_name": "fig_mixed_traj_by_dfa.jpg",
       "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/closed_loop_by_dfa_vocab_grid.png",
       "dest": "paper/figures/compare/fig_mixed_traj_by_dfa.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "compare",
+      "paper_name": "fig_activation_heatmaps_by_dfa.jpg",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/activation_heatmaps_by_dfa.png",
+      "dest": "paper/figures/compare/fig_activation_heatmaps_by_dfa.jpg",
       "exists": true,
       "skipped_self": false
     },

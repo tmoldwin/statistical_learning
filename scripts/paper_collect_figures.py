@@ -120,6 +120,10 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "closed_loop_by_dfa_vocab_grid.png",
                   max_w=1400),
+        FigureRef("compare", "fig_activation_heatmaps_by_dfa.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "activation_heatmaps_by_dfa.png",
+                  max_w=1400),
         FigureRef("compare", "fig_mixed_scaling_overview.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "scaling_overview.png",

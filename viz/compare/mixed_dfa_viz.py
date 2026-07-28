@@ -1126,15 +1126,15 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
         model = load_model_for_viz(str(checkpoint_path(task, model_type, seed=seed)), model_type)
         w_in_f, w_rec_f, _w_out_f, _dale = weights_for_plot(model)
         order_f = _cluster_unit_order(w_in_f, w_rec_f)
-        label = f"DFA={n_dfa}\n{n_words}w"
+        label = f"DFA={n_dfa} · {n_words}w"
         finals.append((label, w_in_f[order_f].T, w_rec_f[np.ix_(order_f, order_f)]))
 
     n_cols = 1 + len(finals)
     n_met = len(_WEIGHT_FIGURE_METRICS)
-    fig = plt.figure(figsize=(1.55 * n_cols + 0.85, 6.35))
+    fig = plt.figure(figsize=(1.55 * n_cols + 0.85, 6.75))
     outer = fig.add_gridspec(
-        2, 1, height_ratios=[2.55, 1.15], hspace=0.32,
-        left=0.08, right=0.90, top=0.93, bottom=0.07,
+        2, 1, height_ratios=[2.55, 1.15], hspace=0.28,
+        left=0.08, right=0.90, top=0.84, bottom=0.07,
     )
     gs_mat = outer[0].subgridspec(
         3, n_cols, height_ratios=[0.55, 1.0, 0.58], wspace=0.22, hspace=0.38,
@@ -1146,7 +1146,7 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
 
     xh_panels = [init_xh] + [xh for _lab, xh, _hh in finals]
     hh_panels = [init_hh] + [hh for _lab, _xh, hh in finals]
-    col_titles = ["Init"] + [lab for lab, *_ in finals]
+    col_titles = ["Init"] + [lab.replace("\n", " · ") for lab, *_ in finals]
     row_panels = (xh_panels, hh_panels)
     row_ylabels = (r"$W_{xh}$", r"$W_{hh}$")
     # Avoid red/blue (reserved for signed weight heatmaps / E–I).
@@ -1165,7 +1165,7 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
                 interpolation="nearest", origin="lower",
             )
             if row == 0:
-                ax.set_title(col_titles[col], fontsize=7, pad=6)
+                ax.set_title(col_titles[col], fontsize=6.5, pad=3)
             ax.text(
                 0.97, 0.97, f"±{vmax:.2g}",
                 transform=ax.transAxes, ha="right", va="top",
@@ -1287,7 +1287,7 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
     fig.suptitle(
         rf"Weight structure by DFA size (seed {seed})",
         fontsize=10,
-        y=0.98,
+        y=0.97,
     )
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out, dpi=150)
@@ -1544,49 +1544,68 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             return True
         return bool(np.isfinite(r2) and r2 > min_r2)
 
-    n_cols = 5
-    metric_rows: list[list[tuple[str, str, str]]] = []
-    banners_before: list[str | None] = []
+    n_wrap = 4
+    sections_kept: list[tuple[str, list[tuple[str, str, str]]]] = []
     for section_title, metrics in _WEIGHT_METRIC_SECTIONS:
         kept = [(bag, key, title) for bag, key, title in metrics if _keep(bag, key)]
-        if not kept:
-            continue
-        pending_banner: str | None = section_title
-        cur: list[tuple[str, str, str]] = []
-        for bag, key, title in kept:
-            cur.append((bag, key, title))
-            if len(cur) == n_cols:
-                metric_rows.append(cur)
-                banners_before.append(pending_banner)
-                cur = []
-                pending_banner = None
-        if cur:
-            metric_rows.append(cur)
-            banners_before.append(pending_banner)
+        if kept:
+            sections_kept.append((section_title, kept))
 
-    if not metric_rows:
+    if not sections_kept:
         raise ValueError(f"no weight-graph panels passed min_r2={min_r2}")
 
-    height_ratios: list[float] = []
-    gs_map: list[tuple[str, int]] = []
-    for i, banner in enumerate(banners_before):
-        if banner:
-            height_ratios.append(0.28)
-            gs_map.append(("banner", i))
-        # Extra height when this row has digraph-motif schematics above the scatter.
-        has_schema = any(
-            key in _MOTIF_SCHEMA_KEYS for _, key, _ in metric_rows[i]
-        )
-        height_ratios.append(1.35 if has_schema else 1.0)
-        gs_map.append(("metrics", i))
+    # Pack rows without empty cells: full n_wrap chunks stay alone; short
+    # leftovers from consecutive sections share a row when they fit.
+    # Each row_plan entry: ("banner", title) or ("metrics", (panels, has_schema)).
+    row_plan: list[tuple[str, Any]] = []
+    pending: list[tuple[str, list[tuple[str, str, str]]]] = []
 
-    n_banner = sum(1 for b in banners_before if b)
+    def _pending_n() -> int:
+        return sum(len(m) for _, m in pending)
+
+    def _flush_pending() -> None:
+        if not pending:
+            return
+        titles = "   ·   ".join(t for t, _ in pending if t)
+        panels = [p for _, mets in pending for p in mets]
+        has_schema = any(key in _MOTIF_SCHEMA_KEYS for _, key, _ in panels)
+        if titles:
+            row_plan.append(("banner", titles))
+        row_plan.append(("metrics", (panels, has_schema)))
+        pending.clear()
+
+    for section_title, kept in sections_kept:
+        n_full = len(kept) // n_wrap
+        rem = kept[n_full * n_wrap :]
+        if n_full:
+            _flush_pending()
+            row_plan.append(("banner", section_title))
+            for i in range(n_full):
+                chunk = kept[i * n_wrap : (i + 1) * n_wrap]
+                has_schema = any(key in _MOTIF_SCHEMA_KEYS for _, key, _ in chunk)
+                row_plan.append(("metrics", (chunk, has_schema)))
+            if rem:
+                pending.append((f"{section_title} (cont.)", rem))
+            continue
+        if _pending_n() + len(kept) <= n_wrap:
+            pending.append((section_title, kept))
+        else:
+            _flush_pending()
+            pending.append((section_title, kept))
+    _flush_pending()
+
+    height_ratios = [
+        0.28 if kind == "banner" else (1.35 if payload[1] else 1.0)
+        for kind, payload in row_plan
+    ]
+    n_metric_rows = sum(1 for kind, _ in row_plan if kind == "metrics")
+    n_banner = sum(1 for kind, _ in row_plan if kind == "banner")
     fig = plt.figure(
-        figsize=(2.5 * n_cols + 1.0, 2.15 * len(metric_rows) + 0.4 * n_banner + 1.1),
+        figsize=(2.55 * n_wrap + 0.95, 2.05 * n_metric_rows + 0.36 * n_banner + 0.85),
     )
     gs = fig.add_gridspec(
-        len(height_ratios), n_cols,
-        height_ratios=height_ratios, hspace=0.58, wspace=0.32,
+        len(height_ratios), 1,
+        height_ratios=height_ratios, hspace=0.50,
     )
 
     words_cmap = plt.get_cmap("YlOrRd")
@@ -1594,25 +1613,31 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
 
     from viz.weight_structure import draw_digraph_motif_schema
 
-    for gs_i, (kind, row_i) in enumerate(gs_map):
+    scatter_axes: list[Any] = []
+    for gs_i, (kind, payload) in enumerate(row_plan):
         if kind == "banner":
-            axb = fig.add_subplot(gs[gs_i, :])
+            axb = fig.add_subplot(gs[gs_i, 0])
             axb.set_axis_off()
             axb.text(
-                0.0, 0.35, banners_before[int(row_i)],
-                fontsize=9, fontweight="bold", va="center",
+                0.0, 0.35, str(payload),
+                fontsize=8.5, fontweight="bold", va="center",
             )
             continue
-        metrics = metric_rows[int(row_i)]
+
+        metrics, _has_schema = payload
+        n_here = len(metrics)
+        # Panels fill the row (no spacer columns / blank axes).
+        inner = gs[gs_i, 0].subgridspec(1, n_here, wspace=0.30)
         for c, (bag, key, title) in enumerate(metrics):
-            cell = gs[gs_i, c]
+            cell = inner[0, c]
             if key in _MOTIF_SCHEMA_KEYS:
-                inner = cell.subgridspec(2, 1, height_ratios=[0.48, 1.0], hspace=0.42)
-                ax_schem = fig.add_subplot(inner[0])
-                ax = fig.add_subplot(inner[1])
+                nested = cell.subgridspec(2, 1, height_ratios=[0.48, 1.0], hspace=0.42)
+                ax_schem = fig.add_subplot(nested[0])
+                ax = fig.add_subplot(nested[1])
                 draw_digraph_motif_schema(ax_schem, key)
             else:
                 ax = fig.add_subplot(cell)
+            scatter_axes.append(ax)
             x, y, ns = _series(bag, key)
             if x.size:
                 ax.scatter(
@@ -1630,15 +1655,6 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             ax.set_xlabel("DFA states", fontsize=6.5)
             ax.grid(True, alpha=0.25)
             ax.tick_params(labelsize=5.5)
-        for c in range(len(metrics), n_cols):
-            fig.add_subplot(gs[gs_i, c]).set_axis_off()
-
-    cax = fig.add_axes([0.92, 0.12, 0.014, 0.55])
-    cbar = fig.colorbar(
-        plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm), cax=cax,
-    )
-    cbar.set_label("# words", fontsize=7)
-    cbar.ax.tick_params(labelsize=6)
 
     if linear_only and min_r2 is not None:
         subtitle = f"seed {seed}; linear fit; $R^2>{min_r2:g}$ only"
@@ -1651,13 +1667,23 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     finalize_grid_figure(
         fig,
         suptitle=f"$|W_{{hh}}|$ structure + motifs vs DFA ({subtitle})",
-        top=0.97,
-        bottom=0.04,
-        left=0.06,
-        right=0.90,
-        wspace=0.32,
-        hspace=0.55,
+        top=0.955,
+        bottom=0.055,
+        left=0.07,
+        right=0.88,
+        wspace=0.30,
+        hspace=0.50,
     )
+    if scatter_axes:
+        sm = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
+        sm.set_array([])
+        x1 = max(ax.get_position().x1 for ax in scatter_axes)
+        y0 = min(ax.get_position().y0 for ax in scatter_axes)
+        y1 = max(ax.get_position().y1 for ax in scatter_axes)
+        cax = fig.add_axes([min(x1 + 0.012, 0.93), y0, 0.018, y1 - y0])
+        cbar = fig.colorbar(sm, cax=cax)
+        cbar.set_label("# words", fontsize=7)
+        cbar.ax.tick_params(labelsize=6)
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out, dpi=150)
     plt.close(fig)

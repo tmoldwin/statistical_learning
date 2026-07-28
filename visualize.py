@@ -8466,7 +8466,7 @@ def plot_dfa_pca_and_separation_combined(
     separation_n_points: int | None = None,
     separation_task_label: str | None = None,
 ) -> None:
-    """Paper composite: DFA + PCA (incl. position-from-end) + separation metrics below."""
+    """Paper composite: PCA feature panels + separation metrics (no DFA diagram)."""
     from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
     from viz.plot_layout import save_figure
 
@@ -8504,43 +8504,34 @@ def plot_dfa_pca_and_separation_combined(
     if n_pts is None and features:
         n_pts = int(next(iter(separation_per_seed.values())).n_points.get(features[0], 0))
 
-    state_colors = _dfa_automaton_state_colors(automaton)
-    fig = plt.figure(figsize=(12.2, 14.8))
+    fig = plt.figure(figsize=(12.2, 11.8))
     outer = fig.add_gridspec(
         3, 1,
-        height_ratios=[1.45, 0.12, 1.35],
-        hspace=0.18,
-        left=0.06, right=0.98, top=0.92, bottom=0.07,
+        height_ratios=[1.15, 0.10, 1.35],
+        hspace=0.16,
+        left=0.06, right=0.98, top=0.90, bottom=0.07,
     )
     gs_geo = outer[0].subgridspec(
-        2, 4,
-        width_ratios=[1.35, 1.0, 1.0, 1.0],
-        height_ratios=[1.2, 1.0],
-        hspace=0.48,
-        wspace=0.32,
+        2, 3,
+        height_ratios=[1.0, 1.0],
+        hspace=0.42,
+        wspace=0.28,
     )
     ax_band = fig.add_subplot(outer[1])
     ax_band.axis("off")
     gs_sep = outer[2].subgridspec(2, 2, hspace=0.72, wspace=0.40)
 
-    ax_dfa = fig.add_subplot(gs_geo[:, 0])
-    ax_dfa_pca = fig.add_subplot(gs_geo[0, 1])
-    ax_char = fig.add_subplot(gs_geo[0, 2])
-    ax_word = fig.add_subplot(gs_geo[0, 3])
-    ax_pos = fig.add_subplot(gs_geo[1, 1])
-    ax_pos_end = fig.add_subplot(gs_geo[1, 2])
-    ax_geo_spacer = fig.add_subplot(gs_geo[1, 3])
+    ax_dfa_pca = fig.add_subplot(gs_geo[0, 0])
+    ax_char = fig.add_subplot(gs_geo[0, 1])
+    ax_word = fig.add_subplot(gs_geo[0, 2])
+    ax_pos = fig.add_subplot(gs_geo[1, 0])
+    ax_pos_end = fig.add_subplot(gs_geo[1, 1])
+    ax_geo_spacer = fig.add_subplot(gs_geo[1, 2])
     ax_geo_spacer.axis("off")
     sep_axes = np.array([
         [fig.add_subplot(gs_sep[0, 0]), fig.add_subplot(gs_sep[0, 1])],
         [fig.add_subplot(gs_sep[1, 0]), fig.add_subplot(gs_sep[1, 1])],
     ])
-
-    draw_minimized_dfa_on_axes(
-        ax_dfa, automaton, words, state_colors=state_colors, compact=True,
-        node_scale=2.6,
-    )
-    ax_dfa.set_title("Minimal DFA", fontsize=11, pad=6)
 
     for ax, feat, title in [
         (ax_dfa_pca, "dfa", "PCA · DFA state"),
@@ -8590,13 +8581,13 @@ def plot_dfa_pca_and_separation_combined(
 def write_paper_figure_dfa_geometry_and_separation(
     save_path: str | Path,
     *,
-    separation_task: str = "six_word_mixed_demo_ns",
-    geometry_task: str = "six_word_mixed_demo_ns",
+    separation_task: str = "eight_word_ate_at_demo_ns",
+    geometry_task: str = "eight_word_ate_at_demo_ns",
     model_type: str = "rnn",
     geometry_seed: int = 1,
     separation_seeds: tuple[int, ...] | None = None,
 ) -> Path | None:
-    """Build paper Fig 6: mixed-length demo DFA/PCA + multi-seed separation."""
+    """Build paper PCA geometry + multi-seed separation composite."""
     from experiment import checkpoint_path, seeds_for_task
     from viz.compare.feature_separation import compute_task_feature_separation
 
@@ -8643,7 +8634,7 @@ def write_paper_figure_dfa_geometry_and_separation(
         spaced=False,
         condensed=demo_condensed,
         separation_per_seed=per_seed,
-        separation_task_label=f"{len(demo_words)}-word mixed-length demo",
+        separation_task_label=f"{len(demo_words)}-word -ate/-at demo",
     )
     return out
 
@@ -9894,7 +9885,7 @@ def main() -> None:
                         condensed=cv,
                         output_probs=output_probs,
                     )
-                    if args.exp == "six_word_mixed_demo_ns":
+                    if args.exp in ("eight_word_ate_at_demo_ns", "six_word_mixed_demo_ns"):
                         from experiment import seeds_for_task
 
                         sep_seeds = tuple(
@@ -9980,7 +9971,11 @@ def main() -> None:
                         model_type=model_type,
                         seed=args.seed if args.seed is not None else DEFAULT_SEED,
                     )
-                    if args.exp in ("sixteen_word_four_letter_ns", "six_word_mixed_demo_ns"):
+                    if args.exp in (
+                        "sixteen_word_four_letter_ns",
+                        "eight_word_ate_at_demo_ns",
+                        "six_word_mixed_demo_ns",
+                    ):
                         from experiment import seeds_for_task
 
                         anchor_seeds = tuple(
@@ -9994,7 +9989,10 @@ def main() -> None:
                                 seeds=anchor_seeds,
                                 model_type=model_type,
                             )
-                            if args.exp == "six_word_mixed_demo_ns":
+                            if args.exp in (
+                                "eight_word_ate_at_demo_ns",
+                                "six_word_mixed_demo_ns",
+                            ):
                                 from viz.single_task_decoding import run_demo_word_analyses
 
                                 run_demo_word_analyses(
@@ -10018,7 +10016,11 @@ def main() -> None:
                     model_type=model_type,
                     seed=args.seed if args.seed is not None else DEFAULT_SEED,
                 )
-                if args.exp in ("sixteen_word_four_letter_ns", "six_word_mixed_demo_ns"):
+                if args.exp in (
+                    "sixteen_word_four_letter_ns",
+                    "eight_word_ate_at_demo_ns",
+                    "six_word_mixed_demo_ns",
+                ):
                     from experiment import seeds_for_task
 
                     anchor_seeds = tuple(
@@ -10032,7 +10034,10 @@ def main() -> None:
                             seeds=anchor_seeds,
                             model_type=model_type,
                         )
-                        if args.exp == "six_word_mixed_demo_ns":
+                        if args.exp in (
+                            "eight_word_ate_at_demo_ns",
+                            "six_word_mixed_demo_ns",
+                        ):
                             from viz.single_task_decoding import run_demo_word_analyses
 
                             run_demo_word_analyses(

@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPER_ROOT = ROOT / "paper" / "figures"
 
 ANCHOR = "sixteen_word_four_letter_ns"
-DEMO = "six_word_mixed_demo_ns"
+DEMO = "eight_word_ate_at_demo_ns"
 COMPARE = "comparisons"
 
 
@@ -79,7 +79,7 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.svg", as_jpg=False),
         FigureRef("demo", "fig04_samples.jpg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.jpg", as_jpg=False),
-        # Demo narrative figs 3–10 (same six-word mixed-length vocab through trajectories).
+        # Demo narrative figs (eight-word -ate/-at demo through trajectories).
         FigureRef("demo", "fig_next_char_probs.jpg",
                   _demo("activations/8_next_char_prob_sequence_condensed.png"),
                   max_w=2800),

@@ -40,6 +40,17 @@ REGIMES: dict[str, list[str]] = {
     # Six-word mixed-length paper demo: 3-/4-/5-letter words with a/e/t overlap so
     # position-from-beginning ≠ position-from-end.
     "six_word_mixed_demo": ["cat", "ate", "tea", "cake", "late", "plant"],
+    # Five-word shared-suffix demo: every depth merges 5 prefixes into one DFA
+    # state (20 in-word prefixes, DFA=5) — clearest prefix→state clustering.
+    "five_word_ake_demo": ["bake", "cake", "lake", "make", "sake"],
+    # Five-word -ate chain: mixed lengths 3–5; multi-prefix DFA states where
+    # position-from-beginning differs within the same state (~21 prefixes).
+    "five_word_ate_chain_demo": ["ate", "late", "plate", "slate", "gate"],
+    # -ate chain + -at suffix family: two overlapping families, ~30 prefixes.
+    "eight_word_ate_at_demo": [
+        "ate", "late", "plate", "slate", "gate",
+        "cat", "hat", "mat",
+    ],
     # 10 words, length 3; overlap on -at/-et/-ea; vowels a, e, i.
     "ten_word_overlap": [
         "cat", "hat", "mat", "rat",

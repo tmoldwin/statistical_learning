@@ -10,21 +10,24 @@ from matplotlib.patches import FancyBboxPatch
 
 from viz.plot_layout import finalize_grid_figure, save_figure
 
-# Match existing paper fig04 chip palette.
+# Demo chip palette (-ate chain + -at family).
 WORD_STYLE: dict[str, tuple[str, str]] = {
-    "cat": ("#4477AA", "#eef4fb"),
     "ate": ("#EE6677", "#fdeef0"),
-    "tea": ("#228833", "#e8f5ea"),
-    "cake": ("#F58518", "#fff4e8"),
     "late": ("#CCBB44", "#faf6e3"),
-    "plant": ("#9467bd", "#f3eef8"),
+    "plate": ("#4477AA", "#eef4fb"),
+    "slate": ("#228833", "#e8f5ea"),
+    "gate": ("#F58518", "#fff4e8"),
+    "cat": ("#9467bd", "#f3eef8"),
+    "hat": ("#66CCEE", "#e8f7fb"),
+    "mat": ("#AA3377", "#f8eaf2"),
 }
 
-DEMO_WORDS: tuple[str, ...] = ("cat", "ate", "tea", "cake", "late", "plant")
-# Concatenation of demo words (correct spelling; older paper SVG omitted one "a").
+DEMO_WORDS: tuple[str, ...] = (
+    "ate", "late", "plate", "slate", "gate", "cat", "hat", "mat",
+)
 DEMO_STREAM_WORDS: tuple[str, ...] = (
-    "tea", "cat", "ate", "cake", "late", "plant",
-    "cat", "ate", "cake", "tea", "plant", "late",
+    "plate", "late", "gate", "cat", "hat", "mat", "ate", "slate",
+    "late", "mat", "ate", "hat", "plate", "gate", "slate", "cat",
 )
 DEMO_STREAM = "".join(DEMO_STREAM_WORDS)
 

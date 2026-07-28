@@ -241,6 +241,8 @@ PLOT_SUBDIR: dict[str, str] = {
     "feature_separation_summary.png": "separation",
     "decoding_curves.png": "decoding",
     "decoding_curves_by_seed.png": "decoding",
+    "decoding_with_word_seed_mean.png": "decoding",
+    "decoding_by_position_word_length.png": "decoding",
     "word_trajectories_pca.png": "trajectories",
     "word_trajectories_pca_3d.png": "trajectories",
     "word_trajectories_pca_3d_trained.png": "trajectories",

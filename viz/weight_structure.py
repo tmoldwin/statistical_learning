@@ -820,6 +820,97 @@ _MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
+def _motif_node_pt(ax, node_r: float) -> float:
+    """Node radius in points for a unit-x-range axes, so nodes stay circular.
+
+    Drawing nodes as ``Circle`` patches turns them into flat ovals whenever the
+    host axes is wider than tall (every schema band in the metric grids).
+    """
+    bbox = ax.get_position()
+    w_in = float(bbox.width) * float(ax.figure.get_size_inches()[0])
+    return max(1.5, node_r * w_in * 72.0)
+
+
+def square_axes_box(
+    ax,
+    *,
+    height_frac: float = 0.92,
+    center_x: float = 0.45,
+    max_width: float = 0.55,
+    aspect: float = 1.0,
+) -> tuple[float, float, float, float]:
+    """Sub-box of ``ax`` (axes coords) with a controlled *physical* aspect.
+
+    ``aspect`` is the drawn width/height in inches. Without this, a wide short
+    schema band flattens triangles and collapses the two arcs of a mutual dyad
+    onto each other.
+    """
+    pos = ax.get_position()
+    fw, fh = ax.figure.get_size_inches()
+    w_in = max(1e-6, float(pos.width) * float(fw))
+    h_in = max(1e-6, float(pos.height) * float(fh))
+    span_y = float(height_frac)
+    span_x = span_y * (h_in / w_in) * float(aspect)
+    if span_x > max_width:
+        shrink = max_width / span_x
+        span_x *= shrink
+        span_y *= shrink
+    x0 = center_x - 0.5 * span_x
+    y0 = 0.5 - 0.5 * span_y
+    return (x0, x0 + span_x, y0, y0 + span_y)
+
+
+_DYAD_SCHEMA_KEYS: frozenset[str] = frozenset({
+    "motif_reciprocal_frac",
+    "dyad_mutual_frac",
+    "dyad_asym_frac",
+})
+
+
+def motif_schema_box(
+    ax,
+    key: str,
+    *,
+    height_frac: float = 0.94,
+    center_x: float = 0.45,
+    max_width: float = 0.62,
+) -> tuple[float, float, float, float]:
+    """Drawing box for motif ``key``: wide for dyads, square for triangles."""
+    signed = _SIGNED_MOTIF_SCHEMAS.get(key)
+    two_node = key in _DYAD_SCHEMA_KEYS or (
+        signed is not None and max(i for e in signed for i in e[:2]) <= 1
+    )
+    if two_node:
+        aspect = 2.0
+    elif key == "triad_ff_over_cycle":
+        aspect = 2.2
+    else:
+        aspect = 1.0
+    return square_axes_box(
+        ax,
+        height_frac=height_frac,
+        center_x=center_x,
+        max_width=max_width,
+        aspect=aspect,
+    )
+
+
+def _draw_motif_nodes(ax, pos, *, color: str, node_r: float) -> float:
+    r_pt = _motif_node_pt(ax, node_r)
+    for x, y in pos.values():
+        ax.plot(
+            [x], [y],
+            marker="o",
+            markersize=2.0 * r_pt,
+            markerfacecolor="white",
+            markeredgecolor=color,
+            markeredgewidth=1.0,
+            linestyle="none",
+            zorder=3,
+        )
+    return r_pt
+
+
 def _draw_motif_nodes_edges(
     ax,
     pos: dict[int, tuple[float, float]],
@@ -828,8 +919,14 @@ def _draw_motif_nodes_edges(
     color: str,
     node_r: float,
     rad: float = 0.0,
+    mutual_rad: float = 0.28,
 ) -> None:
-    from matplotlib.patches import Circle, FancyArrowPatch
+    from matplotlib.patches import FancyArrowPatch
+
+    r_pt = _motif_node_pt(ax, node_r)
+    shrink = r_pt + 1.2
+    head = max(4.0, 2.6 * r_pt)
+    lw = max(0.7, 0.38 * r_pt)
 
     edge_set = set(edges)
     drawn_pairs: set[tuple[int, int]] = set()
@@ -840,19 +937,20 @@ def _draw_motif_nodes_edges(
         x1, y1 = pos[j]
         mutual = (j, i) in edge_set
         if mutual:
-            # Two curved arrows for reciprocity.
-            for (a, b), sign in (((i, j), 1.0), ((j, i), -1.0)):
+            # Two curved arrows for reciprocity. Both use the same sign: the
+            # reversed direction already puts the second arc on the other side.
+            for a, b in ((i, j), (j, i)):
                 xa, ya = pos[a]
                 xb, yb = pos[b]
                 arr = FancyArrowPatch(
                     (xa, ya), (xb, yb),
                     arrowstyle="-|>",
-                    mutation_scale=7,
-                    lw=1.0,
+                    mutation_scale=head,
+                    lw=lw,
                     color=color,
-                    connectionstyle=f"arc3,rad={0.22 * sign}",
-                    shrinkA=6,
-                    shrinkB=6,
+                    connectionstyle=f"arc3,rad={mutual_rad}",
+                    shrinkA=shrink,
+                    shrinkB=shrink,
                 )
                 ax.add_patch(arr)
             drawn_pairs.add((i, j))
@@ -862,19 +960,17 @@ def _draw_motif_nodes_edges(
             arr = FancyArrowPatch(
                 (x0, y0), (x1, y1),
                 arrowstyle="-|>",
-                mutation_scale=7,
-                lw=1.0,
+                mutation_scale=head,
+                lw=lw,
                 color=color,
                 connectionstyle=f"arc3,rad={use_rad}",
-                shrinkA=6,
-                shrinkB=6,
+                shrinkA=shrink,
+                shrinkB=shrink,
             )
             ax.add_patch(arr)
             drawn_pairs.add((i, j))
 
-    for idx, (x, y) in pos.items():
-        circ = Circle((x, y), node_r, facecolor="white", edgecolor=color, lw=1.0, zorder=3)
-        ax.add_patch(circ)
+    _draw_motif_nodes(ax, pos, color=color, node_r=node_r)
 
 
 def _signed_threshold_adj(
@@ -1044,25 +1140,69 @@ _SIGNED_POS_COLOR = "#2166ac"
 _SIGNED_NEG_COLOR = "#b2182b"
 
 
-def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
-    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown."""
-    from matplotlib.patches import Circle, FancyArrowPatch
+def draw_digraph_motif_schema(
+    ax,
+    key: str,
+    *,
+    color: str = "#1a1a1a",
+    box: tuple[float, float, float, float] | None = None,
+) -> bool:
+    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown.
 
+    ``box`` restricts the drawing to ``(x0, x1, y0, y1)`` in axes coords, which
+    keeps the glyph compact inside a wide, short schema band.
+    """
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
-    ax.set_aspect("equal")
+    # Do NOT set equal aspect — it resizes the axes box into neighboring
+    # title bands in multipanel figures. Nodes are placed in unit box coords.
+    ax.set_aspect("auto")
     ax.axis("off")
+    ax.set_clip_on(True)
+
+    bx0, bx1, by0, by1 = box if box is not None else (0.0, 1.0, 0.0, 1.0)
+    sx = float(bx1 - bx0)
+    sy = float(by1 - by0)
+
+    # Node radii are given in units of the box *height* so glyphs keep the same
+    # physical node size whatever the box aspect; `sn` converts that to x units.
+    ax_pos = ax.get_position()
+    fw, fh = ax.figure.get_size_inches()
+    w_in = max(1e-6, float(ax_pos.width) * float(fw))
+    h_in = max(1e-6, float(ax_pos.height) * float(fh))
+    sn = sy * h_in / w_in
+
+    def fit(p: dict[int, tuple[float, float]]) -> dict[int, tuple[float, float]]:
+        return {k: (bx0 + sx * x, by0 + sy * y) for k, (x, y) in p.items()}
+
+    def arc_rad(dx_unit: float, bulge: float) -> float:
+        """Curvature giving a bulge of ``bulge`` * box height.
+
+        ``arc3`` curvature is applied in *display* space, so the value depends
+        on the physical length of the segment, not on data units.
+        """
+        d_in = max(1e-6, dx_unit * sx * w_in)
+        return float(2.0 * bulge * sy * h_in / d_in)
 
     signed = _SIGNED_MOTIF_SCHEMAS.get(key)
     if signed is not None:
         # Dyad-only schemas use two nodes; triangles use three.
         nodes = {i for e in signed for i in e[:2]}
         if nodes <= {0, 1} and max(nodes) <= 1:
-            pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
-            _draw_signed_motif_edges(ax, pos, signed, node_r=0.07, rad=0.28)
+            pos = {0: (0.20, 0.50), 1: (0.80, 0.50)}
+            _draw_signed_motif_edges(
+                ax, fit(pos), signed,
+                node_r=0.10 * sn,
+                rad=arc_rad(0.60, 0.24),
+                mutual_rad=arc_rad(0.60, 0.24),
+            )
         else:
             pos = _triangle_node_xy()
-            _draw_signed_motif_edges(ax, pos, signed, node_r=0.065)
+            _draw_signed_motif_edges(
+                ax, fit(pos), signed,
+                node_r=0.095 * sn,
+                mutual_rad=arc_rad(0.64, 0.14),
+            )
         return True
 
     if key == "triad_ff_over_cycle":
@@ -1076,8 +1216,14 @@ def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
                 1: (x0 + 0.08, 0.22),
                 2: (x0 + 0.40, 0.22),
             }
-            _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.055)
-        ax.text(0.50, 0.48, "/", fontsize=9, ha="center", va="center", color=color)
+            _draw_motif_nodes_edges(
+                ax, fit(pos), edges, color=color, node_r=0.075 * sn,
+                mutual_rad=arc_rad(0.32, 0.12),
+            )
+        ax.text(
+            bx0 + sx * 0.50, by0 + sy * 0.48,
+            "/", fontsize=9, ha="center", va="center", color=color,
+        )
         return True
 
     edges = _MOTIF_SCHEMA_EDGES.get(key)
@@ -1085,12 +1231,26 @@ def draw_digraph_motif_schema(ax, key: str, *, color: str = "#1a1a1a") -> bool:
         return False
 
     if key in ("motif_reciprocal_frac", "dyad_mutual_frac", "dyad_asym_frac"):
-        pos = {0: (0.32, 0.50), 1: (0.68, 0.50)}
-        _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.07, rad=0.25)
+        pos = {0: (0.18, 0.50), 1: (0.82, 0.50)}
+        bulge = arc_rad(0.64, 0.22)
+        _draw_motif_nodes_edges(
+            ax, fit(pos), edges,
+            color=color,
+            node_r=0.105 * sn,
+            rad=0.0 if len(edges) == 1 else bulge,
+            mutual_rad=bulge,
+        )
         return True
 
-    pos = _triangle_node_xy()
-    _draw_motif_nodes_edges(ax, pos, edges, color=color, node_r=0.065)
+    pos = {
+        0: (0.50, 0.92),
+        1: (0.08, 0.10),
+        2: (0.92, 0.10),
+    }
+    _draw_motif_nodes_edges(
+        ax, fit(pos), edges, color=color, node_r=0.115 * sn,
+        mutual_rad=arc_rad(0.64, 0.13),
+    )
     return True
 
 
@@ -1101,8 +1261,14 @@ def _draw_signed_motif_edges(
     *,
     node_r: float,
     rad: float = 0.0,
+    mutual_rad: float = 0.22,
 ) -> None:
-    from matplotlib.patches import Circle, FancyArrowPatch
+    from matplotlib.patches import FancyArrowPatch
+
+    r_pt = _motif_node_pt(ax, node_r)
+    shrink = r_pt + 1.2
+    head = max(4.0, 2.6 * r_pt)
+    lw_e = max(0.7, 0.38 * r_pt)
 
     # Group by unordered pair to curve mutuals.
     by_pair: dict[tuple[int, int], list[tuple[int, int, int]]] = {}
@@ -1112,28 +1278,26 @@ def _draw_signed_motif_edges(
 
     for pair_edges in by_pair.values():
         mutual = len(pair_edges) == 2
-        for idx, (i, j, sg) in enumerate(pair_edges):
+        for _idx, (i, j, sg) in enumerate(pair_edges):
             col = _SIGNED_POS_COLOR if sg > 0 else _SIGNED_NEG_COLOR
             curve = rad
             if mutual:
-                curve = 0.22 if idx == 0 else -0.22
+                curve = mutual_rad
             elif i > j and rad == 0.0:
                 curve = 0.0
             arr = FancyArrowPatch(
                 pos[i], pos[j],
                 arrowstyle="-|>",
-                mutation_scale=7,
-                lw=1.15,
+                mutation_scale=head,
+                lw=lw_e,
                 color=col,
                 connectionstyle=f"arc3,rad={curve}",
-                shrinkA=6,
-                shrinkB=6,
+                shrinkA=shrink,
+                shrinkB=shrink,
             )
             ax.add_patch(arr)
 
-    for idx, (x, y) in pos.items():
-        circ = Circle((x, y), node_r, facecolor="white", edgecolor="#333333", lw=1.0, zorder=3)
-        ax.add_patch(circ)
+    _draw_motif_nodes(ax, pos, color="#333333", node_r=node_r)
 
 
 def compute_weight_graph_metrics(

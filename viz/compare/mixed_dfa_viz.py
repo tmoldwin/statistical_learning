@@ -1317,6 +1317,58 @@ _MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
     "signed_ff_mixed_rate",
 })
 
+# Paper Fig 19 categories — one outside letter per category, not per panel.
+# Motif panels (C, D) get schema glyphs in a reserved band below the title.
+_PAPER_WEIGHT_CATEGORIES: tuple[tuple[str, str, tuple[tuple[str, str, str], ...]], ...] = (
+    (
+        "A",
+        "Norms",
+        (
+            ("structure", "input_frobenius", r"$||W_{xh}||_F$"),
+            ("structure", "recurrent_frobenius", r"$||W_{hh}||_F$"),
+            ("structure", "readout_frobenius", r"$||W_{\mathrm{out}}||_F$"),
+            ("structure", "input_over_recurrent_norm", r"$||W_{xh}||_F / ||W_{hh}||_F$"),
+        ),
+    ),
+    (
+        "B",
+        "Structure",
+        (
+            ("structure", "mean_input_drive_fraction", "input-drive frac"),
+            ("direction", "hh_mean_path_q75", "mean path"),
+            ("motif", "xh_top1_mass", r"$W_{xh}$ top-1 mass"),
+            ("graph", "density", "density"),
+        ),
+    ),
+    (
+        "C",
+        "Dyads",
+        (
+            ("layeredness", "dyad_asym_frac", "asymmetric dyad"),
+            ("layeredness", "dyad_mutual_frac", "mutual dyad"),
+        ),
+    ),
+    (
+        "D",
+        "Triples",
+        (
+            ("layeredness", "motif_feedforward_rate", "feedforward triple"),
+            ("layeredness", "motif_cycle_rate", "cycle triple"),
+        ),
+    ),
+)
+
+_PAPER_WEIGHT_METRICS: tuple[tuple[str, str, str], ...] = tuple(
+    m for _let, _name, mets in _PAPER_WEIGHT_CATEGORIES for m in mets
+)
+
+_PAPER_MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
+    "dyad_asym_frac",
+    "dyad_mutual_frac",
+    "motif_feedforward_rate",
+    "motif_cycle_rate",
+})
+
 _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...] = (
     (
         "A. Norms / drive balance",
@@ -1478,6 +1530,8 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     recompute: bool = False,
     linear_only: bool = False,
     min_r2: float | None = None,
+    lettered: bool = False,
+    metric_specs: tuple[tuple[str, str, str], ...] | None = None,
 ) -> Path:
     """Graph + rank + letter-block + directionality metrics vs DFA size.
 
@@ -1485,7 +1539,10 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
 
     ``linear_only`` fits a straight line (least squares) instead of the
     best-of-several curve family. ``min_r2`` drops any panel whose fit
-    R^2 is at or below the threshold (and any section left empty).
+    R^2 is at or below the threshold.
+
+    ``lettered`` draws a uniform grid with panel letters (A, B, …) and no
+    section banners — used for the paper figure.
     """
     from viz.compare.pow2_sweep_metric_board import _fit_line, _fit_trend
 
@@ -1521,7 +1578,6 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         )
 
     def _fit(x: np.ndarray, y: np.ndarray):
-        """Return (x_grid, y_hat, r2) for either a straight line or best curve."""
         if x.size == 0:
             return None, None, float("nan")
         if linear_only:
@@ -1533,7 +1589,6 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         xg, yg, r2, _ = _fit_trend(x, y)
         return xg, yg, r2
 
-    # Precompute fits so we can filter weak panels (and empty sections) up front.
     fit_cache: dict[tuple[str, str], tuple[Any, Any, float]] = {}
 
     def _keep(bag: str, key: str) -> bool:
@@ -1544,19 +1599,292 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             return True
         return bool(np.isfinite(r2) and r2 > min_r2)
 
+    if metric_specs is not None:
+        candidate_metrics = list(metric_specs)
+    else:
+        candidate_metrics = [
+            (bag, key, title)
+            for _section, metrics in _WEIGHT_METRIC_SECTIONS
+            for bag, key, title in metrics
+        ]
+    kept_metrics = [
+        (bag, key, title) for bag, key, title in candidate_metrics if _keep(bag, key)
+    ]
+    if not kept_metrics:
+        raise ValueError(f"no weight-graph panels passed min_r2={min_r2}")
+
+    words_cmap = plt.get_cmap("YlOrRd")
+    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
+    from viz.weight_structure import draw_digraph_motif_schema
+
+    if lettered:
+        scatter_axes = _draw_lettered_weight_metric_grid(
+            kept_metrics,
+            fit_cache=fit_cache,
+            series_fn=_series,
+            words_cmap=words_cmap,
+            words_norm=words_norm,
+            schema_keys=_PAPER_MOTIF_SCHEMA_KEYS,
+            draw_schema=draw_digraph_motif_schema,
+            seed=seed,
+            linear_only=linear_only,
+            min_r2=min_r2,
+            categories=_PAPER_WEIGHT_CATEGORIES,
+        )
+    else:
+        scatter_axes = _draw_sectioned_weight_metric_grid(
+            kept_metrics,
+            fit_cache=fit_cache,
+            series_fn=_series,
+            words_cmap=words_cmap,
+            words_norm=words_norm,
+            draw_schema=draw_digraph_motif_schema,
+            seed=seed,
+            linear_only=linear_only,
+            min_r2=min_r2,
+        )
+
+    fig = scatter_axes[0].figure
+    # Short stub next to panel D only (never full-row height).
+    sm = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
+    sm.set_array([])
+    pos_d = scatter_axes[min(3, len(scatter_axes) - 1)].get_position()
+    cbar_h = pos_d.height * 0.55
+    cax = fig.add_axes([
+        min(pos_d.x1 + 0.012, 0.94),
+        pos_d.y0 + (pos_d.height - cbar_h) * 0.5,
+        0.012,
+        cbar_h,
+    ])
+    cbar = fig.colorbar(sm, cax=cax)
+    cbar.set_label("# words", fontsize=6.5)
+    cbar.ax.tick_params(labelsize=5.5)
+
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
+def _weight_metric_subtitle(
+    *,
+    seed: int,
+    linear_only: bool,
+    min_r2: float | None,
+) -> str:
+    if linear_only and min_r2 is not None:
+        return f"seed {seed}; linear fit; $R^2>{min_r2:g}$ only"
+    if linear_only:
+        return f"seed {seed}; linear fit"
+    if min_r2 is not None:
+        return f"seed {seed}; $R^2>{min_r2:g}$ only"
+    return f"seed {seed}; pairwise + 3-node; exploratory"
+
+
+def _draw_lettered_weight_metric_grid(
+    kept_metrics: list[tuple[str, str, str]],
+    *,
+    fit_cache: dict[tuple[str, str], tuple[Any, Any, float]],
+    series_fn,
+    words_cmap,
+    words_norm,
+    schema_keys: frozenset[str],
+    draw_schema,
+    seed: int,
+    linear_only: bool,
+    min_r2: float | None,
+    categories: tuple[tuple[str, str, tuple[tuple[str, str, str], ...]], ...] | None = None,
+) -> list[Any]:
+    """Dense uniform grid; one bold category label above the panel it starts.
+
+    Layout decisions that keep this collision-free:
+    * the metric name is a per-panel title; category labels are lifted above the
+      *measured* title box, so the two can never touch;
+    * the motif glyph is an **inset in the panel corner the trend vacates**
+      (top-left for rising fits, top-right for falling ones) and $R^2$ goes to
+      the opposite bottom corner, so neither can collide with data or titles;
+    * category labels are figure-level text in the gutter above the first panel
+      of that category.
+    """
+    kept_map = {(b, k): (b, k, t) for b, k, t in kept_metrics}
+    if categories is None:
+        categories = (("A", "", tuple(kept_metrics)),)
+
+    cats: list[tuple[str, str, list[tuple[str, str, str]]]] = []
+    for letter, name, mets in categories:
+        present = [kept_map[(b, k)] for b, k, _t in mets if (b, k) in kept_map]
+        if present:
+            cats.append((letter, name, present))
+    if not cats:
+        raise ValueError("no category panels to draw")
+
+    n_wrap = 4
+    # Pack categories left-to-right, sharing a row when they fit, so no row
+    # is left half empty.
+    rows: list[list[tuple[str, str, str]]] = []
+    anchors: list[tuple[str, str, int, int]] = []
+    cur: list[tuple[str, str, str]] = []
+    for letter, name, mets in cats:
+        if cur and len(cur) + len(mets) > n_wrap:
+            rows.append(cur)
+            cur = []
+        anchors.append((letter, name, len(rows), len(cur)))
+        for m in mets:
+            if len(cur) == n_wrap:
+                rows.append(cur)
+                cur = []
+            cur.append(m)
+    if cur:
+        rows.append(cur)
+
+    n_rows = len(rows)
+    fig = plt.figure(figsize=(2.45 * n_wrap + 1.05, 2.05 * n_rows + 0.95))
+    outer = fig.add_gridspec(n_rows, n_wrap, hspace=0.52, wspace=0.32)
+    scatter_axes: list[Any] = []
+    anchor_axes: dict[tuple[int, int], Any] = {}
+    schema_insets: list[tuple[Any, str]] = []
+
+    for ri, row_mets in enumerate(rows):
+        for ci, (bag, key, title) in enumerate(row_mets):
+            ax = fig.add_subplot(outer[ri, ci])
+            anchor_axes[(ri, ci)] = ax
+            has_schema = key in schema_keys
+
+            x, y, ns = series_fn(bag, key)
+            rising = True
+            if x.size:
+                ax.scatter(
+                    x, y, c=ns, cmap=words_cmap, norm=words_norm,
+                    s=18, alpha=0.85, linewidths=0.55, edgecolors="black", zorder=2,
+                )
+                x_fit, y_fit, r2 = fit_cache[(bag, key)]
+                if x_fit is not None and y_fit is not None and np.isfinite(r2):
+                    ax.plot(x_fit, y_fit, color="0.15", lw=1.2, zorder=3)
+                    rising = bool(y_fit[-1] >= y_fit[0])
+                    # R^2 in the bottom corner the trend leaves empty.
+                    ax.text(
+                        0.97 if rising else 0.03,
+                        0.035,
+                        rf"$R^2$={r2:.2f}",
+                        transform=ax.transAxes,
+                        ha="right" if rising else "left",
+                        va="bottom",
+                        fontsize=6.4,
+                        color="0.20",
+                        bbox=dict(
+                            facecolor="white", edgecolor="none",
+                            alpha=0.80, pad=0.8,
+                        ),
+                        zorder=6,
+                    )
+
+            # Headroom so the corner inset never sits on data.
+            if has_schema:
+                lo, hi = ax.get_ylim()
+                ax.set_ylim(lo, hi + 0.34 * (hi - lo))
+                inset = ax.inset_axes(
+                    [0.035, 0.63, 0.34, 0.33] if rising
+                    else [0.625, 0.63, 0.34, 0.33],
+                )
+                inset.set_axis_off()
+                inset.patch.set_visible(False)
+                schema_insets.append((inset, key))
+
+            ax.set_title(title, fontsize=7.4, pad=3.5)
+            if ri == n_rows - 1:
+                ax.set_xlabel("DFA states", fontsize=7.0)
+            ax.grid(True, alpha=0.25)
+            ax.tick_params(labelsize=6.0)
+            scatter_axes.append(ax)
+
+    subtitle = _weight_metric_subtitle(
+        seed=seed, linear_only=linear_only, min_r2=min_r2,
+    )
+    finalize_grid_figure(
+        fig,
+        suptitle=f"Weight structure + motifs vs DFA ({subtitle})",
+        top=0.885,
+        bottom=0.075,
+        left=0.045,
+        right=0.905,
+        wspace=0.32,
+        hspace=0.52,
+    )
+    # Glyphs need final axes geometry to pick an aspect-correct drawing box.
+    from viz.weight_structure import motif_schema_box
+
+    for inset, key in schema_insets:
+        draw_schema(
+            inset, key,
+            box=motif_schema_box(inset, key, center_x=0.5, max_width=0.98),
+        )
+    _place_category_labels(fig, anchors, anchor_axes)
+    return scatter_axes
+
+
+def _place_category_labels(
+    fig,
+    anchors: list[tuple[str, str, int, int]],
+    anchor_axes: dict[tuple[int, int], Any],
+) -> None:
+    """Bold letter + category name in the gutter above each category's first panel.
+
+    Both the vertical offset (clear of the panel title) and the gap between the
+    letter and the name come from *measured* text extents, so nothing collides
+    whatever the font metrics are.
+    """
+    renderer = fig.canvas.get_renderer()
+    inv = fig.transFigure.inverted()
+    for letter, name, ri, ci in anchors:
+        ax_anchor = anchor_axes.get((ri, ci))
+        if ax_anchor is None:
+            continue
+        pos = ax_anchor.get_position()
+        y = pos.y1 + 0.012
+        title_obj = ax_anchor.title
+        if title_obj is not None and title_obj.get_text():
+            tb = inv.transform_bbox(title_obj.get_window_extent(renderer=renderer))
+            y = max(y, tb.y1 + 0.008)
+        t_letter = fig.text(
+            pos.x0, y, letter,
+            ha="left", va="bottom", fontsize=12.5, fontweight="bold",
+        )
+        if not name:
+            continue
+        bb = inv.transform_bbox(t_letter.get_window_extent(renderer=renderer))
+        fig.text(
+            bb.x1 + 0.006, y + 0.001, name,
+            ha="left", va="bottom", fontsize=8.0, color="0.30",
+        )
+
+
+def _draw_sectioned_weight_metric_grid(
+    kept_metrics: list[tuple[str, str, str]],
+    *,
+    fit_cache: dict[tuple[str, str], tuple[Any, Any, float]],
+    series_fn,
+    words_cmap,
+    words_norm,
+    draw_schema,
+    seed: int,
+    linear_only: bool,
+    min_r2: float | None,
+) -> list[Any]:
+    """Exploratory board: section banners (full metric dump)."""
     n_wrap = 4
     sections_kept: list[tuple[str, list[tuple[str, str, str]]]] = []
+    kept_set = {(b, k) for b, k, _ in kept_metrics}
+    title_of = {(b, k): t for b, k, t in kept_metrics}
     for section_title, metrics in _WEIGHT_METRIC_SECTIONS:
-        kept = [(bag, key, title) for bag, key, title in metrics if _keep(bag, key)]
+        kept = [
+            (bag, key, title_of[(bag, key)])
+            for bag, key, _title in metrics
+            if (bag, key) in kept_set
+        ]
         if kept:
             sections_kept.append((section_title, kept))
 
-    if not sections_kept:
-        raise ValueError(f"no weight-graph panels passed min_r2={min_r2}")
-
-    # Pack rows without empty cells: full n_wrap chunks stay alone; short
-    # leftovers from consecutive sections share a row when they fit.
-    # Each row_plan entry: ("banner", title) or ("metrics", (panels, has_schema)).
     row_plan: list[tuple[str, Any]] = []
     pending: list[tuple[str, list[tuple[str, str, str]]]] = []
 
@@ -1567,11 +1895,11 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         if not pending:
             return
         titles = "   ·   ".join(t for t, _ in pending if t)
-        panels = [p for _, mets in pending for p in mets]
-        has_schema = any(key in _MOTIF_SCHEMA_KEYS for _, key, _ in panels)
+        mets = [p for _, chunk in pending for p in chunk]
+        has_schema = any(key in _MOTIF_SCHEMA_KEYS for _, key, _ in mets)
         if titles:
             row_plan.append(("banner", titles))
-        row_plan.append(("metrics", (panels, has_schema)))
+        row_plan.append(("metrics", (mets, has_schema)))
         pending.clear()
 
     for section_title, kept in sections_kept:
@@ -1607,13 +1935,8 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         len(height_ratios), 1,
         height_ratios=height_ratios, hspace=0.50,
     )
-
-    words_cmap = plt.get_cmap("YlOrRd")
-    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
-
-    from viz.weight_structure import draw_digraph_motif_schema
-
     scatter_axes: list[Any] = []
+    schema_bands: list[tuple[Any, str]] = []
     for gs_i, (kind, payload) in enumerate(row_plan):
         if kind == "banner":
             axb = fig.add_subplot(gs[gs_i, 0])
@@ -1623,10 +1946,8 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
                 fontsize=8.5, fontweight="bold", va="center",
             )
             continue
-
         metrics, _has_schema = payload
         n_here = len(metrics)
-        # Panels fill the row (no spacer columns / blank axes).
         inner = gs[gs_i, 0].subgridspec(1, n_here, wspace=0.30)
         for c, (bag, key, title) in enumerate(metrics):
             cell = inner[0, c]
@@ -1634,11 +1955,12 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
                 nested = cell.subgridspec(2, 1, height_ratios=[0.48, 1.0], hspace=0.42)
                 ax_schem = fig.add_subplot(nested[0])
                 ax = fig.add_subplot(nested[1])
-                draw_digraph_motif_schema(ax_schem, key)
+                ax_schem.set_axis_off()
+                schema_bands.append((ax_schem, key))
             else:
                 ax = fig.add_subplot(cell)
             scatter_axes.append(ax)
-            x, y, ns = _series(bag, key)
+            x, y, ns = series_fn(bag, key)
             if x.size:
                 ax.scatter(
                     x, y, c=ns, cmap=words_cmap, norm=words_norm,
@@ -1656,14 +1978,9 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             ax.grid(True, alpha=0.25)
             ax.tick_params(labelsize=5.5)
 
-    if linear_only and min_r2 is not None:
-        subtitle = f"seed {seed}; linear fit; $R^2>{min_r2:g}$ only"
-    elif linear_only:
-        subtitle = f"seed {seed}; linear fit"
-    elif min_r2 is not None:
-        subtitle = f"seed {seed}; $R^2>{min_r2:g}$ only"
-    else:
-        subtitle = f"seed {seed}; pairwise + 3-node; exploratory"
+    subtitle = _weight_metric_subtitle(
+        seed=seed, linear_only=linear_only, min_r2=min_r2,
+    )
     finalize_grid_figure(
         fig,
         suptitle=f"$|W_{{hh}}|$ structure + motifs vs DFA ({subtitle})",
@@ -1674,21 +1991,14 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         wspace=0.30,
         hspace=0.50,
     )
-    if scatter_axes:
-        sm = plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm)
-        sm.set_array([])
-        x1 = max(ax.get_position().x1 for ax in scatter_axes)
-        y0 = min(ax.get_position().y0 for ax in scatter_axes)
-        y1 = max(ax.get_position().y1 for ax in scatter_axes)
-        cax = fig.add_axes([min(x1 + 0.012, 0.93), y0, 0.018, y1 - y0])
-        cbar = fig.colorbar(sm, cax=cax)
-        cbar.set_label("# words", fontsize=7)
-        cbar.ax.tick_params(labelsize=6)
-    out = sweep_figures_dir(COMPARISON_NAME) / outfile
-    save_figure(fig, out, dpi=150)
-    plt.close(fig)
-    print(f"wrote {out}", flush=True)
-    return out
+    from viz.weight_structure import motif_schema_box
+
+    for ax_schem, key in schema_bands:
+        draw_schema(
+            ax_schem, key,
+            box=motif_schema_box(ax_schem, key, center_x=0.5, max_width=0.9),
+        )
+    return scatter_axes
 
 
 def plot_mixed_dfa_weight_layeredness_vs_dfa(
@@ -1720,15 +2030,22 @@ def plot_mixed_dfa_weight_graph_metrics_paper(
     outfile: str = "weight_graph_metrics_vs_dfa_paper.png",
     seed: int = 1,
     recompute: bool = False,
-    min_r2: float = 0.5,
+    min_r2: float | None = None,
 ) -> Path:
-    """Paper board: linear fits only, keep panels with R^2 > min_r2."""
+    """Paper board: curated lettered grid; always show the curated panel set.
+
+    ``min_r2`` is ignored for inclusion (panels always kept); fits still report
+    R^2 on each panel. Pass a float only if a future caller wants filtering.
+    """
+    del min_r2  # curated set is fixed for the paper figure
     return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         outfile=outfile,
         seed=seed,
         recompute=recompute,
         linear_only=True,
-        min_r2=min_r2,
+        min_r2=None,
+        lettered=True,
+        metric_specs=_PAPER_WEIGHT_METRICS,
     )
 
 

@@ -138,7 +138,7 @@ Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer
 
 ![Weight graph structure and motifs vs DFA](figures/main/fig_weight_graph_motifs_vs_dfa.jpg)
 
-**Figure 19.** Structural analysis of thresholded \(W_{hh}\) vs minimized DFA size (same mixed-vocab runs, seed 1; color = \# words). Panels are restricted to metrics with a linear \(R^2 > 0.5\) against DFA size (least-squares line shown). Surviving blocks typically include norms / drive, spectral–walk layeredness, letter-block cluster metrics, pairwise motifs (asymmetric vs mutual dyads, reciprocal-edge fraction, signed reciprocals), unsigned 3-node motifs (feedforward vs cycle), digraph topology, and rank / signed feedforward where they clear the threshold. Schematics above motif panels show the counted pattern. Larger DFAs shift toward more feedforward / less cyclic local structure, with reciprocal and opposing-sign (\({+}{-}\)) dyads declining.
+**Figure 19.** Weight-matrix metrics vs minimized DFA size (same mixed-vocab runs, seed 1; color = \# words; linear fit, \(R^2\) inset per panel). Category letters sit outside the panels; the metric is the \(y\)-axis label. **A** norms: \(||W_{xh}||_F\), \(||W_{hh}||_F\), \(||W_{\mathrm{out}}||_F\), and the input/recurrent ratio. **B** structure: input-drive fraction, mean path on the strong-\(|W|\) digraph, \(W_{xh}\) top-1 mass, and digraph density. **C** pairwise motifs: asymmetric vs mutual dyads. **D** 3-node motifs: feedforward (\(i\to j\to k\), \(i\to k\)) vs cycle (\(i\to j\to k\to i\)). Motif schematics are drawn as insets in the corner each trend leaves empty. Larger DFAs shift toward stronger input drive / readout scale, more feedforward local structure, and less mutual / cyclic connectivity.
 
 ---
 

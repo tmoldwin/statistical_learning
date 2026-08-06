@@ -23,6 +23,7 @@ PAPER_ROOT = ROOT / "paper" / "figures"
 
 ANCHOR = "sixteen_word_four_letter_ns"
 DEMO = "eight_word_ate_at_demo_ns"
+MODEL_DIR = "rnn_dale"  # Dale's-law paper figures live under */rnn_dale/
 COMPARE = "comparisons"
 
 
@@ -36,11 +37,11 @@ class FigureRef:
 
 
 def _anchor(subpath: str) -> Path:
-    return ROOT / "experiments" / ANCHOR / "rnn" / "plots" / subpath
+    return ROOT / "experiments" / ANCHOR / MODEL_DIR / "plots" / subpath
 
 
 def _demo(subpath: str) -> Path:
-    return ROOT / "experiments" / DEMO / "rnn" / "plots" / subpath
+    return ROOT / "experiments" / DEMO / MODEL_DIR / "plots" / subpath
 
 
 def _demo_shared(name: str) -> Path:

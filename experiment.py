@@ -366,6 +366,7 @@ TASKS: dict[str, dict] = {
         "demo_snippet_len": 96,
         "sequence_length": 16,
         "chars": 30_000,
+        "hidden_size": 100,  # Dale branch: 2× vs unconstrained H=50
     },
     "three_word_permutation_ns": {
         **dict(_MICRO_CURRICULUM_NS_DEFAULTS),

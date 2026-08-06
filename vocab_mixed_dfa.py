@@ -18,9 +18,9 @@ N_RUNS = 50
 N_WORDS_MIN = 1
 N_WORDS_MAX = 25
 RUNS_PER_COUNT = 2  # 2 × 25 sizes = 50 runs
-HIDDEN_SIZE = 100
+HIDDEN_SIZE = 200  # Dale branch: 2× default capacity vs unconstrained H=100
 # Extra capacity ablation (separate comparison dirs / task names).
-HIDDEN_SIZE_ABLATION: tuple[int, ...] = (50, 150)
+HIDDEN_SIZE_ABLATION: tuple[int, ...] = (50, 100, 150)
 DEFAULT_SEEDS: tuple[int, ...] = (1,)
 # Fixed RNG so regimes are reproducible across machines.
 BANK_SAMPLE_SEED = 20260714

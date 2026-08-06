@@ -144,7 +144,12 @@ def cmd_plot_h_ablation(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     seeds = tuple(args.seeds) if args.seeds else DEFAULT_SEEDS
-    run_all_mixed_dfa_plots(seeds=seeds, recompute=not args.replot_only)
+    model_type = getattr(args, "model_type", None) or "rnn"
+    run_all_mixed_dfa_plots(
+        seeds=seeds,
+        recompute=not args.replot_only,
+        model_type=model_type,
+    )
 
 
 def cmd_learning_decode(args: argparse.Namespace) -> None:
@@ -272,6 +277,10 @@ def main() -> None:
     parser.add_argument(
         "--hidden-sizes", type=int, nargs="+", default=None,
         help="with train-h-ablation / plot-h-ablation (default: 50 150 or 50 100 150)",
+    )
+    parser.add_argument(
+        "--model-type", default="rnn", choices=("rnn", "rnn_dale", "lstm", "gru"),
+        help="checkpoint family under checkpoints/rXX/<model_type>/ (default: rnn)",
     )
     args = parser.parse_args()
 

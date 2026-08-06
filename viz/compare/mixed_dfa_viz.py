@@ -2166,11 +2166,12 @@ def plot_metrics_vs_dfa(
     min_r2: float = 0.1,
     wrap: int = 4,
     recompute: bool = False,
+    model_type: str = "rnn",
 ) -> Path:
     """Paper-style grid: geometry / training / weight metrics vs DFA size."""
     from viz.compare.pow2_sweep_metric_board import _fit_line, _fit_trend
 
-    path = collect_mixed_dfa_metric_board(recompute=recompute)
+    path = collect_mixed_dfa_metric_board(recompute=recompute, model_type=model_type)
     payload = json.loads(path.read_text(encoding="utf-8"))
     panels = [p for p in payload["panels"] if "error" not in p]
 
@@ -3706,13 +3707,16 @@ def plot_mixed_dfa_within_corr_vs_dfa(
     seed: int = 1,
     recompute: bool = False,
     outfile: str = "cosine_within_vs_dfa.png",
+    model_type: str = "rnn",
 ) -> Path:
     """Within-feature cosine similarity vs DFA size (obs + shuffle; all features)."""
     from matplotlib.lines import Line2D
     from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
-    path = collect_mixed_dfa_within_corr(seed=seed, recompute=recompute)
+    path = collect_mixed_dfa_within_corr(
+        seed=seed, recompute=recompute, model_type=model_type,
+    )
     payload = json.loads(path.read_text(encoding="utf-8"))
     panels = payload["panels"]
     features = tuple(payload.get("features", _WITHIN_CORR_FEATURES))
@@ -3868,14 +3872,18 @@ def run_all_mixed_dfa_plots(
     *,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
     recompute: bool = True,
+    model_type: str = "rnn",
 ) -> list[Path]:
-    path = collect_mixed_dfa_panels(seeds=seeds, recompute=recompute)
+    path = collect_mixed_dfa_panels(seeds=seeds, recompute=recompute, model_type=model_type)
     payload = json.loads(path.read_text(encoding="utf-8"))
     pos_path = collect_mixed_position_word_length_decode(
         seed=seeds[0] if seeds else 1,
         recompute=recompute,
+        model_type=model_type,
     )
     pos_payload = json.loads(pos_path.read_text(encoding="utf-8"))
+    # Refresh learning-decode JSON from this model_type's snaps before plotting.
+    collect_learning_decode_by_dfa(recompute=recompute, model_type=model_type)
     outs = [
         plot_nwords_vs_dfa_sanity(payload),
         plot_decoding_vs_dfa(payload),
@@ -3883,16 +3891,26 @@ def run_all_mixed_dfa_plots(
         plot_decoding_vs_dfa_pc_scatters(payload),
         plot_spectra_vs_dfa(payload),
         plot_training_vs_dfa(payload),
-        plot_metrics_vs_dfa(recompute=recompute),
+        plot_metrics_vs_dfa(recompute=recompute, model_type=model_type),
         plot_mixed_dfa_scaling_overview(payload, recompute=False),
-        plot_mixed_dfa_weight_matrices_by_dfa(),
-        plot_mixed_dfa_trajectory_vocab_grid(),
-        plot_mixed_dfa_within_corr_vs_dfa(recompute=False),
+        plot_mixed_dfa_weight_matrices_by_dfa(model_type=model_type),
+        plot_mixed_dfa_trajectory_vocab_grid(model_type=model_type),
+        plot_mixed_dfa_within_corr_vs_dfa(
+            recompute=recompute,
+            seed=seeds[0] if seeds else 1,
+            model_type=model_type,
+        ),
         plot_mixed_position_word_length_decode(pos_payload),
         plot_learning_decode_by_dfa_bins(),
         plot_decoding_and_learning_combined(payload),
     ]
-    from viz.compare.mixed_dfa_unit_selectivity import plot_mixed_fig15_geometry_and_selectivity
+    from viz.compare.mixed_dfa_unit_selectivity import (
+        plot_mixed_fig15_geometry_and_selectivity,
+        run_mixed_dfa_unit_selectivity_analysis,
+    )
+    run_mixed_dfa_unit_selectivity_analysis(
+        model_type=model_type, recompute=recompute,
+    )
     outs.append(plot_mixed_fig15_geometry_and_selectivity())
     for p in outs:
         print(f"wrote {p}", flush=True)

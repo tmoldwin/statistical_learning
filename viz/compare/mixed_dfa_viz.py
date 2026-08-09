@@ -934,13 +934,55 @@ _METRICS_BOARD_SKIP_TITLES: frozenset[str] = frozenset({
 })
 
 
+def _overview_learning_curves_from_checkpoint(
+    task: str,
+    *,
+    model_type: str,
+    seed: int,
+) -> dict[str, np.ndarray] | None:
+    """Return CE + word-error series for one mixed-dfa run checkpoint."""
+    ckpt = checkpoint_path(task, model_type, seed=seed)
+    if not ckpt.is_file():
+        return None
+    data = np.load(ckpt, allow_pickle=True)
+    metric_iters = np.asarray(data["metric_iterations"], dtype=float).ravel()
+    word_err = np.asarray(data["metric_word_error_frac"], dtype=float).ravel()
+    if metric_iters.size < 2 or word_err.size != metric_iters.size:
+        return None
+
+    if "metric_val_ce" in data.files:
+        ce_iters = metric_iters
+        ce = np.asarray(data["metric_val_ce"], dtype=float).ravel()
+        if ce.size != ce_iters.size:
+            return None
+    elif "loss_smooth" in data.files and "loss_iterations" in data.files:
+        ce_iters = np.asarray(data["loss_iterations"], dtype=float).ravel()
+        ce = np.asarray(data["loss_smooth"], dtype=float).ravel()
+        seq_len = float(np.asarray(data["sequence_length"]).reshape(-1)[0]) if "sequence_length" in data.files else 0.0
+        if seq_len > 0:
+            ce = ce / seq_len
+        if ce_iters.size < 2 or ce.size != ce_iters.size:
+            return None
+    else:
+        return None
+
+    return {
+        "ce_iters": ce_iters,
+        "ce": ce,
+        "we_iters": metric_iters,
+        "word_err": word_err,
+    }
+
+
 def plot_mixed_dfa_scaling_overview(
     payload: dict[str, Any] | None = None,
     *,
     outfile: str = "scaling_overview.png",
     recompute: bool = False,
+    model_type: str | None = None,
+    seed: int | None = None,
 ) -> Path:
-    """Paper overview: vocab–DFA + PC spectra + training iters (equal panels)."""
+    """Paper overview: vocab–DFA, training cost, PC spectra, CE + word-error curves."""
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     decode_payload = payload or _load_panels()
@@ -948,13 +990,20 @@ def plot_mixed_dfa_scaling_overview(
         p for p in decode_payload["panels"]
         if "error" not in p and p.get("spectrum_pct")
     ]
-    metric_path = collect_mixed_dfa_metric_board(recompute=recompute)
+    mt = model_type or str(decode_payload.get("model_type") or "rnn_dale")
+    metric_path = collect_mixed_dfa_metric_board(recompute=recompute, model_type=mt)
     metric_panels = [
         p for p in json.loads(metric_path.read_text(encoding="utf-8"))["panels"]
         if "error" not in p
     ]
 
-    fig, (ax_nw, ax_it, ax_sp) = plt.subplots(1, 3, figsize=(10.2, 3.5))
+    fig = plt.figure(figsize=(10.2, 6.4))
+    gs = fig.add_gridspec(2, 6, height_ratios=[1.0, 1.0])
+    ax_nw = fig.add_subplot(gs[0, 0:2])
+    ax_it = fig.add_subplot(gs[0, 2:4])
+    ax_sp = fig.add_subplot(gs[0, 4:6])
+    ax_ce = fig.add_subplot(gs[1, 0:3])
+    ax_we = fig.add_subplot(gs[1, 3:6])
 
     xs, ys = _nwords_dfa_xy(decode_payload)
     ax_nw.scatter(xs, ys, s=28, alpha=0.8, color="#E45756", edgecolors="white", linewidths=0.4)
@@ -979,11 +1028,6 @@ def plot_mixed_dfa_scaling_overview(
             color=cmap(norm(float(panel["n_dfa_states"]))),
             lw=1.0, alpha=0.75,
         )
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
-    cbar_sp = fig.colorbar(sm, ax=ax_sp, pad=0.02, fraction=0.055)
-    cbar_sp.set_label("DFA states", fontsize=7)
-    cbar_sp.ax.tick_params(labelsize=6)
     ax_sp.set_xlabel("PC index", fontsize=8)
     ax_sp.set_ylabel("% variance", fontsize=8)
     ax_sp.set_title("closed-loop PC spectra", fontsize=9, pad=4)
@@ -1035,15 +1079,52 @@ def plot_mixed_dfa_scaling_overview(
     else:
         ax_it.set_axis_off()
 
+    # Learning curves: one curve per run, colored by DFA size (same as spectra).
+    run_seed = int(seed if seed is not None else (decode_payload.get("seeds") or [1])[0])
+    n_curves = 0
+    for panel in sorted(decode_panels, key=lambda p: float(p["n_dfa_states"])):
+        curves = _overview_learning_curves_from_checkpoint(
+            str(panel["task"]),
+            model_type=mt,
+            seed=int(panel.get("seed", run_seed)),
+        )
+        if curves is None:
+            continue
+        color = cmap(norm(float(panel["n_dfa_states"])))
+        ax_ce.plot(curves["ce_iters"], curves["ce"], color=color, lw=1.0, alpha=0.75)
+        ax_we.plot(curves["we_iters"], curves["word_err"], color=color, lw=1.0, alpha=0.75)
+        n_curves += 1
+    ax_ce.set_xlabel("iteration", fontsize=8)
+    ax_ce.set_ylabel("val CE / char", fontsize=8)
+    ax_ce.set_title("cross-entropy learning", fontsize=9, pad=4)
+    ax_ce.grid(True, alpha=0.25)
+    ax_ce.tick_params(labelsize=7)
+    ax_we.axhline(0.03, color="0.45", ls="--", lw=0.9, zorder=1)
+    ax_we.set_xlabel("iteration", fontsize=8)
+    ax_we.set_ylabel("word error frac", fontsize=8)
+    ax_we.set_title("word-error learning", fontsize=9, pad=4)
+    ax_we.set_ylim(0.0, 1.05)
+    ax_we.grid(True, alpha=0.25)
+    ax_we.tick_params(labelsize=7)
+    if n_curves == 0:
+        ax_ce.set_axis_off()
+        ax_we.set_axis_off()
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar_dfa = fig.colorbar(sm, ax=[ax_sp, ax_ce, ax_we], pad=0.02, fraction=0.035)
+    cbar_dfa.set_label("DFA states", fontsize=7)
+    cbar_dfa.ax.tick_params(labelsize=6)
+
     finalize_grid_figure(
         fig,
-        # Equal panels: vocab–DFA, scree, training cost (no spectrum-summary scrapes).
         suptitle="Mixed-vocab scaling with DFA size",
-        bottom=0.16,
+        bottom=0.08,
         left=0.06,
-        right=0.98,
-        top=0.84,
-        wspace=0.32,
+        right=0.92,
+        top=0.90,
+        wspace=0.55,
+        hspace=0.38,
     )
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -1342,18 +1423,34 @@ _PAPER_WEIGHT_CATEGORIES: tuple[tuple[str, str, tuple[tuple[str, str, str], ...]
     ),
     (
         "C",
-        "Dyads",
-        (
-            ("layeredness", "dyad_asym_frac", "asymmetric dyad"),
-            ("layeredness", "dyad_mutual_frac", "mutual dyad"),
+        "Asym. dyads",
+        tuple(
+            ("ei_motif", f"asym_{c}", f"asymmetric ({c.upper()})")
+            for c in ("ee", "ei", "ie", "ii")
         ),
     ),
     (
         "D",
-        "Triples",
-        (
-            ("layeredness", "motif_feedforward_rate", "feedforward triple"),
-            ("layeredness", "motif_cycle_rate", "cycle triple"),
+        "Mutual dyads",
+        tuple(
+            ("ei_motif", f"mutual_{c}", f"mutual ({c.upper()})")
+            for c in ("ee", "ei", "ii")
+        ),
+    ),
+    (
+        "E",
+        "Feedforward",
+        tuple(
+            ("ei_motif", f"ff_{c}", f"feedforward ({c.upper()})")
+            for c in ("eee", "eei", "eie", "eii", "iee", "iei", "iie", "iii")
+        ),
+    ),
+    (
+        "F",
+        "Cycles",
+        tuple(
+            ("ei_motif", f"cycle_{c}", f"cycle ({c.upper()})")
+            for c in ("eee", "eei", "eie", "eii", "iee", "iei", "iie", "iii")
         ),
     ),
 )
@@ -1362,12 +1459,12 @@ _PAPER_WEIGHT_METRICS: tuple[tuple[str, str, str], ...] = tuple(
     m for _let, _name, mets in _PAPER_WEIGHT_CATEGORIES for m in mets
 )
 
-_PAPER_MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
-    "dyad_asym_frac",
-    "dyad_mutual_frac",
-    "motif_feedforward_rate",
-    "motif_cycle_rate",
-})
+_PAPER_MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset(
+    [f"asym_{c}" for c in ("ee", "ei", "ie", "ii")]
+    + [f"mutual_{c}" for c in ("ee", "ei", "ii")]
+    + [f"ff_{c}" for c in ("eee", "eei", "eie", "eii", "iee", "iei", "iie", "iii")]
+    + [f"cycle_{c}" for c in ("eee", "eei", "eie", "eii", "iee", "iei", "iie", "iii")]
+)
 
 _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...] = (
     (
@@ -1467,6 +1564,7 @@ def collect_mixed_dfa_weight_layeredness(
     from visualize import load_model_for_viz, weights_for_plot
     from viz.weight_structure import (
         compute_weight_directionality_metrics,
+        compute_weight_digraph_motifs_by_ei,
         compute_weight_graph_metrics,
         compute_weight_layeredness_metrics,
         compute_weight_motif_metrics,
@@ -1496,8 +1594,8 @@ def collect_mixed_dfa_weight_layeredness(
         print(f"weight-graph {task} seed {seed} dfa={n_dfa}", flush=True)
         try:
             model = load_model_for_viz(str(ckpt), model_type)
-            w_in, w_rec, w_out, _dale = weights_for_plot(model)
-            panels.append({
+            w_in, w_rec, w_out, dale = weights_for_plot(model)
+            panel: dict[str, Any] = {
                 "task": task,
                 "seed": seed,
                 "run_id": int(entry["run_id"]),
@@ -1510,7 +1608,12 @@ def collect_mixed_dfa_weight_layeredness(
                 "motif": compute_weight_motif_metrics(w_in, w_rec),
                 "direction": compute_weight_directionality_metrics(w_in, w_rec),
                 "structure": compute_weight_structure_metrics(w_in, w_rec, w_out),
-            })
+            }
+            if dale is not None and len(dale) == w_rec.shape[0]:
+                panel["ei_motif"] = compute_weight_digraph_motifs_by_ei(
+                    w_rec, dale, mode="quantile", q=0.75,
+                )
+            panels.append(panel)
         except Exception as exc:  # noqa: BLE001
             panels.append({
                 "task": task, "seed": seed, "n_dfa_states": n_dfa,
@@ -1526,6 +1629,59 @@ def collect_mixed_dfa_weight_layeredness(
     }
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"wrote {out}", flush=True)
+    return out
+
+
+def refresh_mixed_dfa_ei_motifs(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn_dale",
+) -> Path:
+    """Recompute only the Dale-typed ``ei_motif`` bag; leave other metrics intact.
+
+    Use after changing ``compute_weight_digraph_motifs_by_ei`` without redoing the
+    full weight-graph census.
+    """
+    from visualize import load_model_for_viz, weights_for_plot
+    from viz.weight_structure import compute_weight_digraph_motifs_by_ei
+
+    out = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_weight_graph_metrics.json"
+    if not out.is_file():
+        return collect_mixed_dfa_weight_layeredness(
+            seed=seed, model_type=model_type, recompute=True,
+        )
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    if payload.get("model_type", "rnn") != model_type or int(payload.get("seed", seed)) != int(seed):
+        return collect_mixed_dfa_weight_layeredness(
+            seed=seed, model_type=model_type, recompute=True,
+        )
+
+    by_task = {
+        p["task"]: p for p in payload.get("panels", []) if "error" not in p and "task" in p
+    }
+    n_ok = 0
+    for entry in iter_runs():
+        task = entry["task"]
+        panel = by_task.get(task)
+        if panel is None:
+            continue
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        print(f"ei-motif {task} seed {seed}", flush=True)
+        model = load_model_for_viz(str(ckpt), model_type)
+        _w_in, w_rec, _w_out, dale = weights_for_plot(model)
+        if dale is None or len(dale) != w_rec.shape[0]:
+            panel.pop("ei_motif", None)
+            continue
+        panel["ei_motif"] = compute_weight_digraph_motifs_by_ei(
+            w_rec, dale, mode="quantile", q=0.75,
+        )
+        n_ok += 1
+
+    payload["ei_motif_version"] = "typed_colorings_v2"
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out} (ei_motif refreshed on {n_ok} panels)", flush=True)
     return out
 
 

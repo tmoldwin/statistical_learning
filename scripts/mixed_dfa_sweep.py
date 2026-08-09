@@ -267,6 +267,11 @@ def main() -> None:
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
     parser.add_argument("--replot-only", action="store_true")
     parser.add_argument(
+        "--ei-motifs-only",
+        action="store_true",
+        help="weight-layeredness: refresh Dale typed ei_motif bag only, then replot",
+    )
+    parser.add_argument(
         "--skip-learning-decode",
         action="store_true",
         help="with plot: skip per-snap PCA learning-decode collect + related figures",
@@ -331,13 +336,19 @@ def main() -> None:
         from viz.compare.mixed_dfa_viz import (
             plot_mixed_dfa_weight_graph_metrics_paper,
             plot_mixed_dfa_weight_graph_metrics_vs_dfa,
+            refresh_mixed_dfa_ei_motifs,
         )
 
         seed = args.seeds[0] if args.seeds else 1
         model_type = getattr(args, "model_type", None) or "rnn"
+        if args.ei_motifs_only:
+            refresh_mixed_dfa_ei_motifs(seed=seed, model_type=model_type)
+            recompute = False
+        else:
+            recompute = not args.replot_only
         out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             seed=seed,
-            recompute=not args.replot_only,
+            recompute=recompute,
             model_type=model_type,
         )
         print(f"wrote {out}", flush=True)

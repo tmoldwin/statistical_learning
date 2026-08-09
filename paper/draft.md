@@ -106,7 +106,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Mixed-vocab scaling overview](figures/compare/fig_mixed_scaling_overview.jpg)
 
-**Figure 12.** Mixed-vocab scaling with minimized DFA size. Left: sampled vocabulary size vs DFA state count. Middle: iterations to 3\% word error (color = \# words). Right: closed-loop PC spectra colored by DFA size (larger automata flatten the scree).
+**Figure 12.** Mixed-vocab scaling with minimized DFA size. Top: sampled vocabulary size vs DFA state count; iterations to 3\% word error (color = \# words); closed-loop PC spectra colored by DFA size (larger automata flatten the scree). Bottom: validation cross-entropy and word-error learning curves (one curve per run; same DFA-size color scale as the spectra; dashed = 3\% word-error threshold).
 
 ![Activation heatmaps across DFA size](figures/compare/fig_activation_heatmaps_by_dfa.jpg)
 
@@ -138,7 +138,7 @@ Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer
 
 ![Weight graph structure and motifs vs DFA](figures/main/fig_weight_graph_motifs_vs_dfa.jpg)
 
-**Figure 19.** Weight-matrix metrics vs minimized DFA size (same mixed-vocab runs, seed 1; color = \# words; linear fit, \(R^2\) inset per panel). Category letters sit outside the panels; the metric is the \(y\)-axis label. **A** norms: \(||W_{xh}||_F\), \(||W_{hh}||_F\), \(||W_{\mathrm{out}}||_F\), and the input/recurrent ratio. **B** structure: input-drive fraction, mean path on the strong-\(|W|\) digraph, \(W_{xh}\) top-1 mass, and digraph density. **C** pairwise motifs: asymmetric vs mutual dyads. **D** 3-node motifs: feedforward (\(i\to j\to k\), \(i\to k\)) vs cycle (\(i\to j\to k\to i\)). Motif schematics are drawn as insets in the corner each trend leaves empty. Larger DFAs shift toward stronger input drive / readout scale, more feedforward local structure, and less mutual / cyclic connectivity.
+**Figure 19.** Weight-matrix metrics vs minimized DFA size (same mixed-vocab runs, seed 1; color = \# words; linear fit, \(R^2\) inset per panel). Category letters sit outside the panels; the metric is the \(y\)-axis label. **A** norms: \(||W_{xh}||_F\), \(||W_{hh}||_F\), \(||W_{\mathrm{out}}||_F\), and the input/recurrent ratio. **B** structure: input-drive fraction, mean path on the strong-\(|W|\) digraph, \(W_{xh}\) top-1 mass, and digraph density. **C–F** Dale-typed digraph motifs on the full thresholded recurrent graph: every E/I coloring of motif roles (red = excitatory, blue = inhibitory in the inset). **C** asymmetric dyads (\(i\to j\)): EE, EI, IE, II. **D** mutual dyads (\(i\leftrightarrow j\)): EE, EI (mixed), II. **E** feedforward triples (\(a\to b\to c\), \(a\to c\)): all 8 colorings of \((a,b,c)\). **F** directed 3-cycles: all 8 rotational colorings (each cycle counted under all three starts so I-leading labels are not dropped). Dyad/FF rates are fractions of connected dyads / ≥2-edge triples; cycle rates are fractions of directed-cycle starts.
 
 ---
 

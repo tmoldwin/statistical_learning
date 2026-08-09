@@ -149,6 +149,7 @@ def cmd_plot(args: argparse.Namespace) -> None:
         seeds=seeds,
         recompute=not args.replot_only,
         model_type=model_type,
+        skip_learning_decode=bool(getattr(args, "skip_learning_decode", False)),
     )
 
 
@@ -265,6 +266,11 @@ def main() -> None:
     parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
     parser.add_argument("--replot-only", action="store_true")
+    parser.add_argument(
+        "--skip-learning-decode",
+        action="store_true",
+        help="with plot: skip per-snap PCA learning-decode collect + related figures",
+    )
     parser.add_argument("--run-id", type=int, default=HARD_RUN_ID, help="run id for learning-decode")
     parser.add_argument(
         "--retrain", action="store_true",
@@ -328,14 +334,17 @@ def main() -> None:
         )
 
         seed = args.seeds[0] if args.seeds else 1
+        model_type = getattr(args, "model_type", None) or "rnn"
         out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             seed=seed,
             recompute=not args.replot_only,
+            model_type=model_type,
         )
         print(f"wrote {out}", flush=True)
         out_paper = plot_mixed_dfa_weight_graph_metrics_paper(
             seed=seed,
             recompute=False,
+            model_type=model_type,
         )
         print(f"wrote {out_paper}", flush=True)
     elif args.command == "weight-spikiness":

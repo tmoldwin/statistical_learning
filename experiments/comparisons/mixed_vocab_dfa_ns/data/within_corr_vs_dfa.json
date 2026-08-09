@@ -1,6 +1,6 @@
 {
   "seed": 1,
-  "hidden_size": 100,
+  "hidden_size": 200,
   "comparison": "mixed_vocab_dfa_ns",
   "n_shuffle": 49,
   "features": [
@@ -16,7 +16,7 @@
       "run_id": 0,
       "n_words": 1,
       "n_dfa_states": 4,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
         "dfa": NaN,
         "char": NaN,
@@ -30,16 +30,16 @@
         "position_from_end": NaN
       },
       "between_cosine": {
-        "dfa": -0.3875833980304977,
-        "char": -0.3875833980304977,
-        "position": -0.3875833980304977,
-        "position_from_end": -0.3875833980304977
+        "dfa": 0.22310533800279556,
+        "char": 0.22310533800279556,
+        "position": 0.22310533800279556,
+        "position_from_end": 0.22310533800279556
       },
       "shuffle_between_cosine": {
-        "dfa": -0.3875833980304977,
-        "char": -0.3875833980304977,
-        "position": -0.3875833980304977,
-        "position_from_end": -0.3875833980304977
+        "dfa": 0.22310533800279558,
+        "char": 0.22310533800279558,
+        "position": 0.22310533800279558,
+        "position_from_end": 0.22310533800279558
       },
       "pairwise_within_median": {
         "dfa": NaN,
@@ -54,16 +54,16 @@
         "position_from_end": NaN
       },
       "pairwise_between_median": {
-        "dfa": 8.513864139174697,
-        "char": 8.513864139174697,
-        "position": 8.513864139174697,
-        "position_from_end": 8.513864139174697
+        "dfa": 201.59818129153305,
+        "char": 201.59818129153305,
+        "position": 201.59818129153305,
+        "position_from_end": 201.59818129153305
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.513864139174698,
-        "char": 8.513864139174698,
-        "position": 8.513864139174698,
-        "position_from_end": 8.513864139174698
+        "dfa": 201.59818129153305,
+        "char": 201.59818129153305,
+        "position": 201.59818129153305,
+        "position_from_end": 201.59818129153305
       }
     },
     {
@@ -72,7 +72,7 @@
       "run_id": 1,
       "n_words": 1,
       "n_dfa_states": 4,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
         "dfa": NaN,
         "char": NaN,
@@ -86,16 +86,16 @@
         "position_from_end": NaN
       },
       "between_cosine": {
-        "dfa": -0.388018053322928,
-        "char": -0.388018053322928,
-        "position": -0.388018053322928,
-        "position_from_end": -0.388018053322928
+        "dfa": 0.4044011710586701,
+        "char": 0.4044011710586701,
+        "position": 0.4044011710586701,
+        "position_from_end": 0.4044011710586701
       },
       "shuffle_between_cosine": {
-        "dfa": -0.38801805332292794,
-        "char": -0.38801805332292794,
-        "position": -0.38801805332292794,
-        "position_from_end": -0.38801805332292794
+        "dfa": 0.40440117105867,
+        "char": 0.40440117105867,
+        "position": 0.40440117105867,
+        "position_from_end": 0.40440117105867
       },
       "pairwise_within_median": {
         "dfa": NaN,
@@ -110,16 +110,16 @@
         "position_from_end": NaN
       },
       "pairwise_between_median": {
-        "dfa": 13.731969442372515,
-        "char": 13.731969442372515,
-        "position": 13.731969442372515,
-        "position_from_end": 13.731969442372515
+        "dfa": 269.6305428412491,
+        "char": 269.6305428412491,
+        "position": 269.6305428412491,
+        "position_from_end": 269.6305428412491
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 13.731969442372513,
-        "char": 13.731969442372513,
-        "position": 13.731969442372513,
-        "position_from_end": 13.731969442372513
+        "dfa": 269.6305428412491,
+        "char": 269.6305428412491,
+        "position": 269.6305428412491,
+        "position_from_end": 269.6305428412491
       }
     },
     {
@@ -128,54 +128,54 @@
       "run_id": 2,
       "n_words": 2,
       "n_dfa_states": 7,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.5822356315748076,
-        "char": -0.21615659314650346,
-        "position": 0.09592276836114634,
-        "position_from_end": 0.2410131487878846
+        "dfa": 0.9485941576706075,
+        "char": 0.45258538556059785,
+        "position": 0.5219917632846602,
+        "position_from_end": 0.7294418814435684
       },
       "shuffle_within_cosine": {
-        "dfa": -0.12014721167432439,
-        "char": -0.1777561544542162,
-        "position": -0.10947425203258176,
-        "position_from_end": -0.11083838297250363
+        "dfa": 0.4982333891809544,
+        "char": 0.46792206710271816,
+        "position": 0.48809855549573405,
+        "position_from_end": 0.49615456120551726
       },
       "between_cosine": {
-        "dfa": -0.14970591253263948,
-        "char": -0.10978630129657393,
-        "position": -0.14998060689785675,
-        "position_from_end": -0.1741623369689798
+        "dfa": 0.4687935019366553,
+        "char": 0.4935939405421558,
+        "position": 0.4865827170305408,
+        "position_from_end": 0.45200769733738944
       },
       "shuffle_between_cosine": {
-        "dfa": -0.11458677037018289,
-        "char": -0.1117063232311883,
-        "position": -0.11574777016556873,
-        "position_from_end": -0.11552041500891508
+        "dfa": 0.491311540361138,
+        "char": 0.4928271064650498,
+        "position": 0.4922315849953618,
+        "position_from_end": 0.49088891737706464
       },
       "pairwise_within_median": {
-        "dfa": 5.636026701634013,
-        "char": 9.518353878786616,
-        "position": 8.37440246233611,
-        "position_from_end": 7.6018643017910925
+        "dfa": 2.0093873427670363,
+        "char": 7.98826278121646,
+        "position": 7.428524360494571,
+        "position_from_end": 4.142466942028272
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.771581209575112,
-        "char": 8.91468815574377,
-        "position": 8.957970869711769,
-        "position_from_end": 8.808341693433931
+        "dfa": 6.194013974412103,
+        "char": 6.352329165106218,
+        "position": 6.5754547258965435,
+        "position_from_end": 6.496266622606417
       },
       "pairwise_between_median": {
-        "dfa": 9.037877035885568,
-        "char": 8.925844397452188,
-        "position": 9.037877035885568,
-        "position_from_end": 9.122811416308139
+        "dfa": 6.89847473364043,
+        "char": 6.41971339341154,
+        "position": 6.41971339341154,
+        "position_from_end": 7.170893302609394
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.987576667609357,
-        "char": 8.985479971515055,
-        "position": 8.98205845914752,
-        "position_from_end": 9.003042518872906
+        "dfa": 6.6468104061204585,
+        "char": 6.6468104061204585,
+        "position": 6.6331424662307565,
+        "position_from_end": 6.696757912613763
       }
     },
     {
@@ -184,54 +184,54 @@
       "run_id": 3,
       "n_words": 2,
       "n_dfa_states": 9,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8266561142098888,
-        "char": 0.32998666606207533,
-        "position": 0.3210257571217226,
-        "position_from_end": 0.18976615321506898
+        "dfa": 0.9459772263905153,
+        "char": 0.7126559259618862,
+        "position": 0.5855389264017486,
+        "position_from_end": 0.6192976906770105
       },
       "shuffle_within_cosine": {
-        "dfa": -0.06220492770844351,
-        "char": -0.056777051192079736,
-        "position": -0.03624446886690828,
-        "position_from_end": -0.06018621006980994
+        "dfa": 0.336308314493242,
+        "char": 0.3343979961791037,
+        "position": 0.35917546861399036,
+        "position_from_end": 0.35475696856726596
       },
       "between_cosine": {
-        "dfa": -0.08495855353900347,
-        "char": -0.07076799787763739,
-        "position": -0.10721863400444137,
-        "position_from_end": -0.09081118351610967
+        "dfa": 0.32880883292227475,
+        "char": 0.3354751557916642,
+        "position": 0.316004083533223,
+        "position_from_end": 0.3117842379988153
       },
       "shuffle_between_cosine": {
-        "dfa": -0.05956252376990828,
-        "char": -0.0597176059560901,
-        "position": -0.06255985575586252,
-        "position_from_end": -0.0595671381054998
+        "dfa": 0.34622794469076823,
+        "char": 0.34628252521402936,
+        "position": 0.3442995157566928,
+        "position_from_end": 0.34485182826253336
       },
       "pairwise_within_median": {
-        "dfa": 4.6317461772976625,
-        "char": 8.800371419700962,
-        "position": 9.270383283296724,
-        "position_from_end": 10.423634089374417
+        "dfa": 2.3936207073680427,
+        "char": 16.41468062731384,
+        "position": 14.9583605962623,
+        "position_from_end": 16.859212156315742
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 10.60327541731083,
-        "char": 10.745224679333228,
-        "position": 10.778581787665491,
-        "position_from_end": 11.016157092806536
+        "dfa": 18.52181658467689,
+        "char": 16.793552012336157,
+        "position": 15.6570299021437,
+        "position_from_end": 16.24556297095776
       },
       "pairwise_between_median": {
-        "dfa": 10.914052811389325,
-        "char": 10.914052811389325,
-        "position": 11.127671453215626,
-        "position_from_end": 10.898061792135703
+        "dfa": 14.907646162050161,
+        "char": 14.334129538431307,
+        "position": 14.620887850240734,
+        "position_from_end": 14.620887850240734
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 10.900998918121061,
-        "char": 10.89643005547717,
-        "position": 10.92712010511464,
-        "position_from_end": 10.926158307926183
+        "dfa": 14.603331218905463,
+        "char": 14.650148902466185,
+        "position": 14.61878043332572,
+        "position_from_end": 14.568986878958658
       }
     },
     {
@@ -240,54 +240,54 @@
       "run_id": 4,
       "n_words": 3,
       "n_dfa_states": 8,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8717508886268894,
-        "char": 0.6727010581323012,
-        "position": 0.7778405957204987,
-        "position_from_end": 0.7778405957204987
+        "dfa": 0.8840972792798961,
+        "char": 0.43921745922246785,
+        "position": 0.6990304799183101,
+        "position_from_end": 0.6990304799183101
       },
       "shuffle_within_cosine": {
-        "dfa": -0.04162168803553032,
-        "char": -0.027229604429213575,
-        "position": 0.03631176227374301,
-        "position_from_end": -0.004388636442885129
+        "dfa": 0.2742547970007427,
+        "char": 0.25800036468034954,
+        "position": 0.3002387419840806,
+        "position_from_end": 0.2855209729388026
       },
       "between_cosine": {
-        "dfa": -0.07837439697593922,
-        "char": -0.060278957840067565,
-        "position": -0.25820991836332646,
-        "position_from_end": -0.25820991836332646
+        "dfa": 0.23343073180400256,
+        "char": 0.27387435180922337,
+        "position": 0.15052709881877713,
+        "position_from_end": 0.15052709881877713
       },
       "shuffle_between_cosine": {
-        "dfa": 0.004659473629735312,
-        "char": 0.003351102392797424,
-        "position": -0.011033640547741209,
-        "position_from_end": 0.002533159024468171
+        "dfa": 0.2888709574657438,
+        "char": 0.2903486331312341,
+        "position": 0.2834576781301869,
+        "position_from_end": 0.28836360114527965
       },
       "pairwise_within_median": {
-        "dfa": 4.826181826507207,
-        "char": 7.398207094508533,
-        "position": 5.811356397230334,
-        "position_from_end": 5.811356397230334
+        "dfa": 2.385160358526832,
+        "char": 20.633878547915145,
+        "position": 6.109316065591068,
+        "position_from_end": 6.109316065591068
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 13.941482646790343,
-        "char": 13.795380927957984,
-        "position": 13.135218648340702,
-        "position_from_end": 13.75161957662477
+        "dfa": 16.983639562081912,
+        "char": 15.027765089535238,
+        "position": 9.926983274808286,
+        "position_from_end": 10.082532580704582
       },
       "pairwise_between_median": {
-        "dfa": 14.368915653050529,
-        "char": 14.368915653050529,
-        "position": 14.57405670405067,
-        "position_from_end": 14.57405670405067
+        "dfa": 10.522612558362045,
+        "char": 10.25485361009469,
+        "position": 10.522612558362045,
+        "position_from_end": 10.522612558362045
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 14.271682348056666,
-        "char": 14.258355154668394,
-        "position": 14.290936660296476,
-        "position_from_end": 14.215261326883677
+        "dfa": 10.363394386939332,
+        "char": 10.372369909325506,
+        "position": 10.430152797670758,
+        "position_from_end": 10.378690816851101
       }
     },
     {
@@ -296,54 +296,54 @@
       "run_id": 5,
       "n_words": 3,
       "n_dfa_states": 14,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8517856758322705,
-        "char": 0.29286008740090397,
-        "position": 0.4019426635704743,
-        "position_from_end": 0.521844605550904
+        "dfa": 0.9261693151768208,
+        "char": 0.6438781410703657,
+        "position": 0.6630520688537902,
+        "position_from_end": 0.7709636595026871
       },
       "shuffle_within_cosine": {
-        "dfa": -0.0006172551712342384,
-        "char": -0.013057822737375263,
-        "position": -0.02493631794936187,
-        "position_from_end": -0.0043811535720318295
+        "dfa": 0.4578765334530748,
+        "char": 0.45037928936300775,
+        "position": 0.4367612120872648,
+        "position_from_end": 0.45059444801545556
       },
       "between_cosine": {
-        "dfa": -0.049536811789847764,
-        "char": -0.042975336358313986,
-        "position": -0.07871730900982099,
-        "position_from_end": -0.09418852732987644
+        "dfa": 0.42966686526324616,
+        "char": 0.43172989248443816,
+        "position": 0.41556885350683964,
+        "position_from_end": 0.4016447772940789
       },
       "shuffle_between_cosine": {
-        "dfa": -0.02446613734856823,
-        "char": -0.02443485695599404,
-        "position": -0.023636150104035695,
-        "position_from_end": -0.02628842937852989
+        "dfa": 0.44344018237276805,
+        "char": 0.44345709561821733,
+        "position": 0.44476767373477843,
+        "position_from_end": 0.4429827400666248
       },
       "pairwise_within_median": {
-        "dfa": 4.125267912124744,
-        "char": 9.315590003664642,
-        "position": 8.866373072381643,
-        "position_from_end": 8.27799781312299
+        "dfa": 2.789948376428839,
+        "char": 17.330731994954775,
+        "position": 12.751782300841999,
+        "position_from_end": 14.373030738796214
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 11.070023756098088,
-        "char": 11.190720657921734,
-        "position": 11.340040026284777,
-        "position_from_end": 11.2311351325481
+        "dfa": 16.42801257089216,
+        "char": 16.09944183883367,
+        "position": 16.723657388746176,
+        "position_from_end": 16.52415295020882
       },
       "pairwise_between_median": {
-        "dfa": 11.510740692285014,
-        "char": 11.518058911084184,
-        "position": 11.55695327130702,
-        "position_from_end": 11.55695327130702
+        "dfa": 16.975878361518994,
+        "char": 16.704461505463794,
+        "position": 17.614986479700544,
+        "position_from_end": 17.396413295613804
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 11.470172954893108,
-        "char": 11.459177328081688,
-        "position": 11.461555827457756,
-        "position_from_end": 11.480821403088719
+        "dfa": 16.84910128089167,
+        "char": 16.84899120138999,
+        "position": 16.85059936272043,
+        "position_from_end": 16.859788742415123
       }
     },
     {
@@ -352,54 +352,54 @@
       "run_id": 6,
       "n_words": 4,
       "n_dfa_states": 15,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8387448729949912,
-        "char": 0.1618937450340575,
-        "position": 0.15037926366405652,
-        "position_from_end": 0.33358871142430313
+        "dfa": 0.8043628409140096,
+        "char": 0.5334823836874583,
+        "position": 0.5099029371316851,
+        "position_from_end": 0.5286419104836226
       },
       "shuffle_within_cosine": {
-        "dfa": 0.014897719245104371,
-        "char": 0.007232949538609238,
-        "position": 0.029659376228616027,
-        "position_from_end": 0.0070223256536151085
+        "dfa": 0.3700519413942325,
+        "char": 0.36256647150070814,
+        "position": 0.38079752663900956,
+        "position_from_end": 0.37320956158425816
       },
       "between_cosine": {
-        "dfa": -0.028841604460752263,
-        "char": -0.003173420183911706,
-        "position": -0.01258018275506973,
-        "position_from_end": -0.04334818161556916
+        "dfa": 0.3518878231240337,
+        "char": 0.35764922196121457,
+        "position": 0.3495289881344269,
+        "position_from_end": 0.3463819849760862
       },
       "shuffle_between_cosine": {
-        "dfa": 0.010657916609447798,
-        "char": 0.011187939397808494,
-        "position": 0.007693386127217986,
-        "position_from_end": 0.011495028208515851
+        "dfa": 0.37271094844347513,
+        "char": 0.37351998523569846,
+        "position": 0.371210812797319,
+        "position_from_end": 0.3724851275393382
       },
       "pairwise_within_median": {
-        "dfa": 4.0662583403776225,
-        "char": 9.479595791245421,
-        "position": 9.330282030401412,
-        "position_from_end": 9.055633542850357
+        "dfa": 4.102547238331078,
+        "char": 18.159041841684836,
+        "position": 10.786015777375807,
+        "position_from_end": 11.66262753634137
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.92327572919713,
-        "char": 9.991426370746044,
-        "position": 9.801559883473246,
-        "position_from_end": 9.894192108033277
+        "dfa": 16.15375073271458,
+        "char": 13.924685144203771,
+        "position": 12.563930298726596,
+        "position_from_end": 12.1339134445871
       },
       "pairwise_between_median": {
-        "dfa": 9.910784420979203,
-        "char": 9.910784420979203,
-        "position": 9.900981239978455,
-        "position_from_end": 10.063290988445198
+        "dfa": 12.268662627986487,
+        "char": 11.19207813061335,
+        "position": 12.05306419347603,
+        "position_from_end": 11.458548719792631
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.87149482738751,
-        "char": 9.86981073187007,
-        "position": 9.881499898703629,
-        "position_from_end": 9.866752009287907
+        "dfa": 11.59685663220005,
+        "char": 11.786291974680502,
+        "position": 11.609784975637973,
+        "position_from_end": 11.645843720136897
       }
     },
     {
@@ -408,54 +408,54 @@
       "run_id": 7,
       "n_words": 4,
       "n_dfa_states": 18,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7005928012191281,
-        "char": 0.240063145089977,
-        "position": 0.3309856816508243,
-        "position_from_end": 0.3747066075218617
+        "dfa": 0.7952902342532617,
+        "char": 0.5772055775342223,
+        "position": 0.60206775790258,
+        "position_from_end": 0.5988647014091247
       },
       "shuffle_within_cosine": {
-        "dfa": -0.01382611523786086,
-        "char": -0.032492393040052574,
-        "position": -0.03529115809439126,
-        "position_from_end": -0.036863447670767296
+        "dfa": 0.3616304595853865,
+        "char": 0.35271984760204683,
+        "position": 0.3555270058625335,
+        "position_from_end": 0.3480979240994405
       },
       "between_cosine": {
-        "dfa": -0.0510579804630589,
-        "char": -0.0509466512348263,
-        "position": -0.07867340890731868,
-        "position_from_end": -0.08512403731452091
+        "dfa": 0.3412725917807306,
+        "char": 0.3357066009148186,
+        "position": 0.3201614115185328,
+        "position_from_end": 0.32063399362412454
       },
       "shuffle_between_cosine": {
-        "dfa": -0.02642284541281791,
-        "char": -0.02539456953513601,
-        "position": -0.024632563699008174,
-        "position_from_end": -0.024400586548395328
+        "dfa": 0.3562263771141057,
+        "char": 0.35675213809595996,
+        "position": 0.35653627657362164,
+        "position_from_end": 0.35763237060424186
       },
       "pairwise_within_median": {
-        "dfa": 5.891158303848137,
-        "char": 9.029826744425325,
-        "position": 8.480161426031684,
-        "position_from_end": 7.570004092722183
+        "dfa": 3.018470606501906,
+        "char": 24.535280976032695,
+        "position": 13.602651434437186,
+        "position_from_end": 11.048492143252547
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 10.367808063078463,
-        "char": 10.301806209706575,
-        "position": 10.342350542567956,
-        "position_from_end": 10.33849654020281
+        "dfa": 19.9414305418897,
+        "char": 16.931700456604684,
+        "position": 16.230574676019362,
+        "position_from_end": 16.35014858416148
       },
       "pairwise_between_median": {
-        "dfa": 10.294346454965336,
-        "char": 10.311394161871888,
-        "position": 10.385458155874288,
-        "position_from_end": 10.39684247255784
+        "dfa": 16.435110095568092,
+        "char": 15.389877411841622,
+        "position": 16.435110095568092,
+        "position_from_end": 17.168164807015614
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 10.251795107763899,
-        "char": 10.251647816956405,
-        "position": 10.252549094571386,
-        "position_from_end": 10.253134032958927
+        "dfa": 15.62445707026552,
+        "char": 15.797895326708947,
+        "position": 15.668775558190017,
+        "position_from_end": 15.653248286492081
       }
     },
     {
@@ -464,54 +464,54 @@
       "run_id": 8,
       "n_words": 5,
       "n_dfa_states": 13,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.813866394752668,
-        "char": 0.5233998852821538,
-        "position": 0.6045967082928344,
-        "position_from_end": 0.5284768649112742
+        "dfa": 0.9795294212783558,
+        "char": 0.7257817917009564,
+        "position": 0.6981562903460244,
+        "position_from_end": 0.7280029829323679
       },
       "shuffle_within_cosine": {
-        "dfa": 0.13814344878640264,
-        "char": 0.11643881028023194,
-        "position": 0.13873079408250874,
-        "position_from_end": 0.1302994470431608
+        "dfa": 0.4280089138740365,
+        "char": 0.43313164876253146,
+        "position": 0.4350202371189369,
+        "position_from_end": 0.4280964251117679
       },
       "between_cosine": {
-        "dfa": 0.07171582461144568,
-        "char": 0.0916790010317711,
-        "position": 0.03424791495520452,
-        "position_from_end": 0.03722790968498143
+        "dfa": 0.3826247812411852,
+        "char": 0.4006588877310201,
+        "position": 0.37538782750196176,
+        "position_from_end": 0.3600270821481656
       },
       "shuffle_between_cosine": {
-        "dfa": 0.12963493426569697,
-        "char": 0.1316693956851391,
-        "position": 0.12860050517501728,
-        "position_from_end": 0.13030834503077418
+        "dfa": 0.4298979675901269,
+        "char": 0.42941641622785953,
+        "position": 0.42868120537073895,
+        "position_from_end": 0.4301351086516825
       },
       "pairwise_within_median": {
-        "dfa": 4.922045984211019,
-        "char": 8.500363537754021,
-        "position": 6.257064333006327,
-        "position_from_end": 6.600710401518624
+        "dfa": 3.1383955183028656,
+        "char": 10.587355057535119,
+        "position": 7.181766747170804,
+        "position_from_end": 7.510735992836997
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.93559407928239,
-        "char": 10.107225410892594,
-        "position": 10.011276035856275,
-        "position_from_end": 10.099863798769839
+        "dfa": 11.649341890261063,
+        "char": 11.668806576084702,
+        "position": 11.415397909899216,
+        "position_from_end": 11.395353950638894
       },
       "pairwise_between_median": {
-        "dfa": 10.21623717865819,
-        "char": 10.217505387476935,
-        "position": 10.350332308354425,
-        "position_from_end": 10.350332308354425
+        "dfa": 11.657762399691439,
+        "char": 11.536659007337507,
+        "position": 11.699615043066462,
+        "position_from_end": 11.699615043066462
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 10.131676474414483,
-        "char": 10.1291404326268,
-        "position": 10.136264827973793,
-        "position_from_end": 10.126076312288006
+        "dfa": 11.451896803551781,
+        "char": 11.45587666046228,
+        "position": 11.448601405602925,
+        "position_from_end": 11.462372695585987
       }
     },
     {
@@ -520,54 +520,54 @@
       "run_id": 9,
       "n_words": 5,
       "n_dfa_states": 13,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.765406959054988,
-        "char": 0.34822216690691704,
-        "position": 0.31279211105374993,
-        "position_from_end": 0.36346370260484306
+        "dfa": 0.9472690244264469,
+        "char": 0.7876347078863398,
+        "position": 0.621967801176748,
+        "position_from_end": 0.7138893499923162
       },
       "shuffle_within_cosine": {
-        "dfa": -0.012352916579840095,
-        "char": -0.042074201765908696,
-        "position": -0.017630362649615004,
-        "position_from_end": -0.009337404618569153
+        "dfa": 0.46313338717710417,
+        "char": 0.44357057638673936,
+        "position": 0.4501252541741807,
+        "position_from_end": 0.4600568871816509
       },
       "between_cosine": {
-        "dfa": -0.0773720537617426,
-        "char": -0.028601436736134685,
-        "position": -0.0889671299914147,
-        "position_from_end": -0.11467869102602121
+        "dfa": 0.4157172459700429,
+        "char": 0.440861798912728,
+        "position": 0.4182704989282026,
+        "position_from_end": 0.3864899482563848
       },
       "shuffle_between_cosine": {
-        "dfa": -0.008929184705877715,
-        "char": -0.007422564017454222,
-        "position": -0.007119361275902299,
-        "position_from_end": -0.009168943698640387
+        "dfa": 0.45832118204798505,
+        "char": 0.4595319455832489,
+        "position": 0.4608370013967284,
+        "position_from_end": 0.4583293245235543
       },
       "pairwise_within_median": {
-        "dfa": 4.625682382127305,
-        "char": 8.058874885999534,
-        "position": 7.366229656685943,
-        "position_from_end": 7.3964643054497845
+        "dfa": 2.5338226583360663,
+        "char": 6.90966280845414,
+        "position": 6.02258907176305,
+        "position_from_end": 5.556285743517947
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.458562076071763,
-        "char": 9.519935350875535,
-        "position": 9.523976969256562,
-        "position_from_end": 9.496282086514135
+        "dfa": 8.246767334383286,
+        "char": 8.315956184962527,
+        "position": 8.050787000365021,
+        "position_from_end": 8.00683459529577
       },
       "pairwise_between_median": {
-        "dfa": 9.621514505429714,
-        "char": 9.583945843935815,
-        "position": 9.672337447715377,
-        "position_from_end": 9.754783690482043
+        "dfa": 8.269887896463427,
+        "char": 8.146124017194436,
+        "position": 8.269525867181228,
+        "position_from_end": 8.24888059702867
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.540501592486063,
-        "char": 9.533364247428617,
-        "position": 9.514680320273085,
-        "position_from_end": 9.527637029432208
+        "dfa": 8.077054226097772,
+        "char": 8.05883048912102,
+        "position": 8.05341295260516,
+        "position_from_end": 8.063926277516117
       }
     },
     {
@@ -576,54 +576,54 @@
       "run_id": 10,
       "n_words": 6,
       "n_dfa_states": 18,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8698922815888821,
-        "char": 0.4272834316909703,
-        "position": 0.2667823121871453,
-        "position_from_end": 0.35553457484497747
+        "dfa": 0.8578302913328848,
+        "char": 0.6679396810107584,
+        "position": 0.5995158448446163,
+        "position_from_end": 0.6274131574555536
       },
       "shuffle_within_cosine": {
-        "dfa": -0.004501930588614411,
-        "char": -0.024852591225066865,
-        "position": -0.009100928505240614,
-        "position_from_end": -0.0017667662122970457
+        "dfa": 0.3979525208578066,
+        "char": 0.3801347022255973,
+        "position": 0.38858042723886543,
+        "position_from_end": 0.3884676948309388
       },
       "between_cosine": {
-        "dfa": -0.056007658761637165,
-        "char": -0.019759855265560337,
-        "position": -0.054227399914672486,
-        "position_from_end": -0.0715210393296177
+        "dfa": 0.3633388189246343,
+        "char": 0.3807603790805226,
+        "position": 0.3518607145202142,
+        "position_from_end": 0.3464248411070536
       },
       "shuffle_between_cosine": {
-        "dfa": -0.0017152076787207067,
-        "char": -0.0009208543107254512,
-        "position": -0.0004707390444649175,
-        "position_from_end": -0.0018998221383105384
+        "dfa": 0.39189332101295615,
+        "char": 0.3927522531965711,
+        "position": 0.39296210103898177,
+        "position_from_end": 0.39298406728023216
       },
       "pairwise_within_median": {
-        "dfa": 3.9106958018659372,
-        "char": 7.823074665816218,
-        "position": 8.578022972221154,
-        "position_from_end": 8.241343647893604
+        "dfa": 4.082067437480015,
+        "char": 7.725650388297412,
+        "position": 7.725650388297412,
+        "position_from_end": 7.418071449148055
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 10.039995829621798,
-        "char": 10.12151842535016,
-        "position": 10.100985483546289,
-        "position_from_end": 10.09603890225104
+        "dfa": 9.346873844592029,
+        "char": 9.458826601524482,
+        "position": 9.15830265812567,
+        "position_from_end": 9.07698327352195
       },
       "pairwise_between_median": {
-        "dfa": 10.173822622269842,
-        "char": 10.16278291294466,
-        "position": 10.228943003317891,
-        "position_from_end": 10.259419353255659
+        "dfa": 9.307355956939492,
+        "char": 9.164042768110951,
+        "position": 9.33257467671608,
+        "position_from_end": 9.1918139733304
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 10.132113134942157,
-        "char": 10.127468610473,
-        "position": 10.125600341375426,
-        "position_from_end": 10.122401346826209
+        "dfa": 9.158300155172428,
+        "char": 9.157798691158092,
+        "position": 9.15888657261091,
+        "position_from_end": 9.164741838346009
       }
     },
     {
@@ -632,54 +632,54 @@
       "run_id": 11,
       "n_words": 6,
       "n_dfa_states": 23,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7916021612427668,
-        "char": 0.24937485626177178,
-        "position": 0.31715840423998914,
-        "position_from_end": 0.310744534247229
+        "dfa": 0.99642769064939,
+        "char": 0.45960409773799477,
+        "position": 0.5206753376937255,
+        "position_from_end": 0.6182046005311673
       },
       "shuffle_within_cosine": {
-        "dfa": 0.08281936187846842,
-        "char": 0.0900834564675073,
-        "position": 0.0921335689463461,
-        "position_from_end": 0.09413795840389058
+        "dfa": 0.300900728074399,
+        "char": 0.3159701372888574,
+        "position": 0.31690984708912423,
+        "position_from_end": 0.3196574114956803
       },
       "between_cosine": {
-        "dfa": 0.060352160277633515,
-        "char": 0.07517491729220288,
-        "position": 0.04953219670917945,
-        "position_from_end": 0.05071846106520719
+        "dfa": 0.2850274515616317,
+        "char": 0.3003983588771752,
+        "position": 0.2771251899428562,
+        "position_from_end": 0.2590868623334233
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09167957682412185,
-        "char": 0.0914291417610054,
-        "position": 0.09115121013339557,
-        "position_from_end": 0.09078049233403782
+        "dfa": 0.3157689747693661,
+        "char": 0.3150548854536178,
+        "position": 0.3148122242553059,
+        "position_from_end": 0.3143040540359115
       },
       "pairwise_within_median": {
-        "dfa": 4.572694282151371,
-        "char": 8.196047356898617,
-        "position": 7.846330981902933,
-        "position_from_end": 7.96153989088722
+        "dfa": 1.5340996107524418,
+        "char": 16.85326050528193,
+        "position": 13.890232088839504,
+        "position_from_end": 15.536594963088715
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.140300928539528,
-        "char": 9.172155280442873,
-        "position": 9.162049460498416,
-        "position_from_end": 9.159978245839808
+        "dfa": 16.75128520557164,
+        "char": 16.000740103138956,
+        "position": 16.24987441334673,
+        "position_from_end": 16.26226065245607
       },
       "pairwise_between_median": {
-        "dfa": 9.19215847240277,
-        "char": 9.225802186577111,
-        "position": 9.247209891983706,
-        "position_from_end": 9.235732832191978
+        "dfa": 16.613777663633584,
+        "char": 16.315240201018952,
+        "position": 16.70628855224387,
+        "position_from_end": 16.486464445527353
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.152374186704682,
-        "char": 9.14998698975037,
-        "position": 9.151368113424528,
-        "position_from_end": 9.156450669303284
+        "dfa": 16.390331141618134,
+        "char": 16.395420277924167,
+        "position": 16.373690920517912,
+        "position_from_end": 16.361333817538604
       }
     },
     {
@@ -688,54 +688,54 @@
       "run_id": 12,
       "n_words": 7,
       "n_dfa_states": 22,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7977036942429049,
-        "char": 0.5587694932472324,
-        "position": 0.08491331161665734,
-        "position_from_end": 0.3592037133348178
+        "dfa": 0.9025898518986798,
+        "char": 0.6794974864298476,
+        "position": 0.5050851047802393,
+        "position_from_end": 0.6721412960665932
       },
       "shuffle_within_cosine": {
-        "dfa": 0.030855344783120055,
-        "char": 0.030427037768990056,
-        "position": 0.02079726218881436,
-        "position_from_end": 0.03795438202820898
+        "dfa": 0.415584030538341,
+        "char": 0.4229358034116361,
+        "position": 0.41681724991596053,
+        "position_from_end": 0.4196696807716693
       },
       "between_cosine": {
-        "dfa": -0.01700404157379017,
-        "char": 0.0024415591435813584,
-        "position": 0.018276486554581785,
-        "position_from_end": -0.03494566798605061
+        "dfa": 0.3872012609049511,
+        "char": 0.402983684308221,
+        "position": 0.4002646909839161,
+        "position_from_end": 0.36690863383345557
       },
       "shuffle_between_cosine": {
-        "dfa": 0.027957750902679296,
-        "char": 0.02800651666672211,
-        "position": 0.02938684891030909,
-        "position_from_end": 0.02624468083425582
+        "dfa": 0.41575534815083415,
+        "char": 0.4153979592929732,
+        "position": 0.4155602037401809,
+        "position_from_end": 0.41499846531820295
       },
       "pairwise_within_median": {
-        "dfa": 4.003751221179391,
-        "char": 6.377850264966504,
-        "position": 8.473207918753904,
-        "position_from_end": 7.930991196634663
+        "dfa": 2.6356498940118973,
+        "char": 9.064030522655818,
+        "position": 10.026947792632964,
+        "position_from_end": 7.58664645430931
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.664568209407365,
-        "char": 8.714815742594983,
-        "position": 8.73284643818048,
-        "position_from_end": 8.649349542162916
+        "dfa": 10.339360718045015,
+        "char": 9.928028274345575,
+        "position": 9.83261184954707,
+        "position_from_end": 9.573457697708802
       },
       "pairwise_between_median": {
-        "dfa": 8.81278164004402,
-        "char": 8.808442006851303,
-        "position": 8.748834691531275,
-        "position_from_end": 8.910542281830933
+        "dfa": 10.233080026378264,
+        "char": 9.809904338618766,
+        "position": 9.683978616889279,
+        "position_from_end": 9.835416278811579
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.716348741549739,
-        "char": 8.715573550146264,
-        "position": 8.71983359737475,
-        "position_from_end": 8.73075528591966
+        "dfa": 9.712854884603866,
+        "char": 9.724937674075917,
+        "position": 9.704888604165145,
+        "position_from_end": 9.756268992511709
       }
     },
     {
@@ -744,54 +744,54 @@
       "run_id": 13,
       "n_words": 7,
       "n_dfa_states": 23,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8577989685541155,
-        "char": 0.43275985568576847,
-        "position": 0.4213930767909098,
-        "position_from_end": 0.40905564312655285
+        "dfa": 0.8759612621184881,
+        "char": 0.5190454480275203,
+        "position": 0.5525084643479352,
+        "position_from_end": 0.5337325222360789
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07751974825766925,
-        "char": 0.07302694173156073,
-        "position": 0.06325136939295489,
-        "position_from_end": 0.0711218825350964
+        "dfa": 0.32254636049119334,
+        "char": 0.31390951019576274,
+        "position": 0.3141501686429737,
+        "position_from_end": 0.3160590898339042
       },
       "between_cosine": {
-        "dfa": 0.029870458858245515,
-        "char": 0.04760342579600509,
-        "position": -0.00105698099834545,
-        "position_from_end": 0.0012947292309307967
+        "dfa": 0.2887179407632249,
+        "char": 0.3041682766158384,
+        "position": 0.2694334708259479,
+        "position_from_end": 0.2730124627241023
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06606897938746209,
-        "char": 0.06624243688171536,
-        "position": 0.06721049988396267,
-        "position_from_end": 0.06571025544337851
+        "dfa": 0.3143918279521199,
+        "char": 0.31479708168484133,
+        "position": 0.31486833657616053,
+        "position_from_end": 0.3145044659679186
       },
       "pairwise_within_median": {
-        "dfa": 3.794530385973374,
-        "char": 8.178484867152246,
-        "position": 8.063691965743233,
-        "position_from_end": 8.063691965743233
+        "dfa": 2.433185495838424,
+        "char": 9.73978563967233,
+        "position": 9.742773842981174,
+        "position_from_end": 10.110869453193446
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.803275559113848,
-        "char": 9.787495381194972,
-        "position": 9.802238602408316,
-        "position_from_end": 9.75494226668256
+        "dfa": 10.655605044236564,
+        "char": 10.902475173848838,
+        "position": 11.055862656982768,
+        "position_from_end": 11.00392497805826
       },
       "pairwise_between_median": {
-        "dfa": 9.850982335096926,
-        "char": 9.8435276454805,
-        "position": 10.070845619079645,
-        "position_from_end": 10.008503682288726
+        "dfa": 11.170247241046386,
+        "char": 11.156584920693648,
+        "position": 11.22842141122019,
+        "position_from_end": 11.154726514906269
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.794530235129915,
-        "char": 9.795372685840807,
-        "position": 9.788269557187823,
-        "position_from_end": 9.796116615900887
+        "dfa": 11.035064248088597,
+        "char": 11.023829964018836,
+        "position": 11.024482572917806,
+        "position_from_end": 11.03257251219859
       }
     },
     {
@@ -800,54 +800,54 @@
       "run_id": 14,
       "n_words": 8,
       "n_dfa_states": 24,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7679076325906156,
-        "char": 0.31132908691088035,
-        "position": 0.27033181478865664,
-        "position_from_end": 0.3468582148927814
+        "dfa": 0.8764171882055303,
+        "char": 0.5449213208518511,
+        "position": 0.49106302728966855,
+        "position_from_end": 0.6218746764148749
       },
       "shuffle_within_cosine": {
-        "dfa": 0.038906893069085596,
-        "char": 0.060290323296227556,
-        "position": 0.0458401515958579,
-        "position_from_end": 0.056046159255711304
+        "dfa": 0.34126793129873845,
+        "char": 0.34198492278768267,
+        "position": 0.3294326238907869,
+        "position_from_end": 0.3439636052487153
       },
       "between_cosine": {
-        "dfa": 0.013858419925173409,
-        "char": 0.03376659555224717,
-        "position": 0.013549546487435218,
-        "position_from_end": -0.0013773062801275707
+        "dfa": 0.30647359584616723,
+        "char": 0.32036742020135794,
+        "position": 0.30804721283555214,
+        "position_from_end": 0.28253175380288836
       },
       "shuffle_between_cosine": {
-        "dfa": 0.05642780617460581,
-        "char": 0.055051677753988296,
-        "position": 0.057337755516799815,
-        "position_from_end": 0.05534702325347677
+        "dfa": 0.3377231874903595,
+        "char": 0.3375739975933323,
+        "position": 0.3395740222897296,
+        "position_from_end": 0.3367396825193646
       },
       "pairwise_within_median": {
-        "dfa": 5.034557512459372,
-        "char": 8.361156004553909,
-        "position": 8.598382382485276,
-        "position_from_end": 8.058563938162722
+        "dfa": 3.13802097035325,
+        "char": 13.291901569815767,
+        "position": 10.567446121380085,
+        "position_from_end": 8.304775690509075
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.68824033272803,
-        "char": 9.53194920473057,
-        "position": 9.628406850516319,
-        "position_from_end": 9.608186845142638
+        "dfa": 12.083326851206682,
+        "char": 11.29028639968273,
+        "position": 11.281965058437512,
+        "position_from_end": 11.017610128642415
       },
       "pairwise_between_median": {
-        "dfa": 9.68091345251367,
-        "char": 9.69562630321974,
-        "position": 9.746165463814076,
-        "position_from_end": 9.746165463814076
+        "dfa": 11.355587679967714,
+        "char": 11.027574151118587,
+        "position": 11.139530240205033,
+        "position_from_end": 11.179456377469773
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.574817530300807,
-        "char": 9.588069820983785,
-        "position": 9.569576601936665,
-        "position_from_end": 9.57602138038772
+        "dfa": 11.062748733578603,
+        "char": 11.090984601903589,
+        "position": 11.051854124848251,
+        "position_from_end": 11.064017458014428
       }
     },
     {
@@ -856,54 +856,54 @@
       "run_id": 15,
       "n_words": 8,
       "n_dfa_states": 22,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8900327132973848,
-        "char": 0.5606599800169383,
-        "position": 0.2683450362734649,
-        "position_from_end": 0.4030152529998443
+        "dfa": 0.9926365047282705,
+        "char": 0.7218350426815423,
+        "position": 0.6207526909956791,
+        "position_from_end": 0.7683548836273226
       },
       "shuffle_within_cosine": {
-        "dfa": 0.004571854560162714,
-        "char": -0.006355564831513573,
-        "position": 0.010792319600774826,
-        "position_from_end": 0.008638869147423412
+        "dfa": 0.419695997499676,
+        "char": 0.43638477929413927,
+        "position": 0.43268363863237524,
+        "position_from_end": 0.43141468907561575
       },
       "between_cosine": {
-        "dfa": -0.05043208723136167,
-        "char": -0.022206523257031156,
-        "position": -0.043150240156493665,
-        "position_from_end": -0.06982405119891663
+        "dfa": 0.3944090324217399,
+        "char": 0.4157536608786496,
+        "position": 0.3943724904856032,
+        "position_from_end": 0.36513727358754827
       },
       "shuffle_between_cosine": {
-        "dfa": 0.00859863668445313,
-        "char": 0.009160294117564045,
-        "position": 0.007862616769015009,
-        "position_from_end": 0.008289145602770602
+        "dfa": 0.43260506623697953,
+        "char": 0.4315445265128464,
+        "position": 0.431622882499591,
+        "position_from_end": 0.4318742203345047
       },
       "pairwise_within_median": {
-        "dfa": 3.6763168837937736,
-        "char": 7.296387731156328,
-        "position": 8.162139020667787,
-        "position_from_end": 7.727641466361454
+        "dfa": 1.7486200355889203,
+        "char": 9.061352197484885,
+        "position": 12.859040978672624,
+        "position_from_end": 8.527260973368495
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.725822366422413,
-        "char": 9.844868238083064,
-        "position": 9.742875505952904,
-        "position_from_end": 9.768068467289044
+        "dfa": 16.558152319806457,
+        "char": 16.83729811252985,
+        "position": 16.374500822090674,
+        "position_from_end": 16.234798064378875
       },
       "pairwise_between_median": {
-        "dfa": 9.866488017813845,
-        "char": 9.863742330400326,
-        "position": 9.882738890613352,
-        "position_from_end": 9.918861324994786
+        "dfa": 17.52668111164383,
+        "char": 17.21483411888099,
+        "position": 17.529830636169706,
+        "position_from_end": 17.726514994336725
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.770505041444585,
-        "char": 9.76673123283124,
-        "position": 9.775028850678545,
-        "position_from_end": 9.767128099723404
+        "dfa": 17.077013245287155,
+        "char": 17.061261854556225,
+        "position": 17.07651181858975,
+        "position_from_end": 17.053681315993142
       }
     },
     {
@@ -912,54 +912,54 @@
       "run_id": 16,
       "n_words": 9,
       "n_dfa_states": 24,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7444767227642335,
-        "char": 0.4070067075722034,
-        "position": 0.2716575130835494,
-        "position_from_end": 0.3591962114396533
+        "dfa": 0.7369304680754581,
+        "char": 0.5515246144533146,
+        "position": 0.4809998411822502,
+        "position_from_end": 0.49241424449772125
       },
       "shuffle_within_cosine": {
-        "dfa": 0.040953756444328325,
-        "char": 0.03659372549618237,
-        "position": 0.031486790056392544,
-        "position_from_end": 0.03862992129608544
+        "dfa": 0.2995842930539921,
+        "char": 0.2861226270145599,
+        "position": 0.2853979108089453,
+        "position_from_end": 0.28844272185909475
       },
       "between_cosine": {
-        "dfa": -0.008809684863108675,
-        "char": 0.017231051907458945,
-        "position": -0.0033201109972916653,
-        "position_from_end": -0.033240568303647
+        "dfa": 0.2598508739403103,
+        "char": 0.2745408197413264,
+        "position": 0.2550660891930553,
+        "position_from_end": 0.24449525361862356
       },
       "shuffle_between_cosine": {
-        "dfa": 0.04052271826298224,
-        "char": 0.040802787130478475,
-        "position": 0.04227161947566015,
-        "position_from_end": 0.040995835729600305
+        "dfa": 0.2905184410912057,
+        "char": 0.29143003712379256,
+        "position": 0.29219730309442843,
+        "position_from_end": 0.29173076412441074
       },
       "pairwise_within_median": {
-        "dfa": 5.163474369344794,
-        "char": 8.417647326544904,
-        "position": 8.578760237954977,
-        "position_from_end": 8.082875035600708
+        "dfa": 2.4660718397188752,
+        "char": 13.708877453380408,
+        "position": 9.412864377804517,
+        "position_from_end": 9.517877225364947
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.870486397622878,
-        "char": 9.846328254190128,
-        "position": 9.903505507542944,
-        "position_from_end": 9.901372271216266
+        "dfa": 12.314525836541875,
+        "char": 11.683187522108966,
+        "position": 12.168068814729205,
+        "position_from_end": 11.877892553456345
       },
       "pairwise_between_median": {
-        "dfa": 9.961985347550005,
-        "char": 9.949904000894648,
-        "position": 9.998050177752756,
-        "position_from_end": 9.995147072482153
+        "dfa": 12.938549532056829,
+        "char": 11.305716303289936,
+        "position": 12.891518275672434,
+        "position_from_end": 11.682693796186395
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.873786757569453,
-        "char": 9.880233059889742,
-        "position": 9.873135981157326,
-        "position_from_end": 9.871715253978191
+        "dfa": 11.455060341717916,
+        "char": 11.427468884903867,
+        "position": 11.398269320596363,
+        "position_from_end": 11.4870318549058
       }
     },
     {
@@ -968,54 +968,54 @@
       "run_id": 17,
       "n_words": 9,
       "n_dfa_states": 25,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7128152651254258,
-        "char": 0.3522917694516679,
-        "position": 0.2722913289897649,
-        "position_from_end": 0.32573693248726954
+        "dfa": 0.9129615495526842,
+        "char": 0.5681782511078625,
+        "position": 0.4696878637819151,
+        "position_from_end": 0.6291423748164361
       },
       "shuffle_within_cosine": {
-        "dfa": 0.06746043336167852,
-        "char": 0.05795521201112026,
-        "position": 0.06921655776626111,
-        "position_from_end": 0.06386849626165701
+        "dfa": 0.3623985984887921,
+        "char": 0.3718151044175709,
+        "position": 0.3761481450744076,
+        "position_from_end": 0.37113455779044413
       },
       "between_cosine": {
-        "dfa": 0.019256888329961867,
-        "char": 0.04547292262059452,
-        "position": 0.02529727473452696,
-        "position_from_end": 0.015151668646865067
+        "dfa": 0.33502971066438064,
+        "char": 0.3598417605266128,
+        "position": 0.3545265775113266,
+        "position_from_end": 0.32425724660307853
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06451042836217587,
-        "char": 0.06515500244944573,
-        "position": 0.06384706181424295,
-        "position_from_end": 0.06486228704901525
+        "dfa": 0.3736362590621536,
+        "char": 0.3729724268706444,
+        "position": 0.3722832698761417,
+        "position_from_end": 0.3732350016995381
       },
       "pairwise_within_median": {
-        "dfa": 4.935183044846402,
-        "char": 7.356735169023967,
-        "position": 7.587643454489916,
-        "position_from_end": 7.396426692071095
+        "dfa": 2.41705421231383,
+        "char": 9.60555609002131,
+        "position": 9.899216342923335,
+        "position_from_end": 8.546291064013554
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.877282875430742,
-        "char": 8.912098805917166,
-        "position": 8.884063692652791,
-        "position_from_end": 8.903778443998528
+        "dfa": 10.054775354887322,
+        "char": 9.806267246103463,
+        "position": 9.977391677501663,
+        "position_from_end": 10.106333155693742
       },
       "pairwise_between_median": {
-        "dfa": 8.998815197706548,
-        "char": 8.998246933795004,
-        "position": 9.013299419827739,
-        "position_from_end": 8.985581066644286
+        "dfa": 10.570576409839676,
+        "char": 10.089833161766679,
+        "position": 10.010499304507501,
+        "position_from_end": 10.218828876759753
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.90458103461261,
-        "char": 8.899858444230077,
-        "position": 8.907494523669481,
-        "position_from_end": 8.9055368296874
+        "dfa": 9.97198490590216,
+        "char": 10.008025145460957,
+        "position": 10.01512967238797,
+        "position_from_end": 9.995418654764132
       }
     },
     {
@@ -1024,54 +1024,54 @@
       "run_id": 18,
       "n_words": 10,
       "n_dfa_states": 27,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7898501763103906,
-        "char": 0.3494789906099573,
-        "position": 0.21203287612175897,
-        "position_from_end": 0.4011040685695333
+        "dfa": 0.8892254037368009,
+        "char": 0.5695418859033513,
+        "position": 0.5082808697988912,
+        "position_from_end": 0.6452510746589736
       },
       "shuffle_within_cosine": {
-        "dfa": 0.037463192785516866,
-        "char": 0.03386392070296593,
-        "position": 0.041091876658516074,
-        "position_from_end": 0.04558382105864954
+        "dfa": 0.3673712039936991,
+        "char": 0.3654337709246603,
+        "position": 0.37190331638813967,
+        "position_from_end": 0.3736747095257667
       },
       "between_cosine": {
-        "dfa": -0.014349653734990033,
-        "char": 0.02070579112787233,
-        "position": 0.007210822164942459,
-        "position_from_end": -0.030290901956930145
+        "dfa": 0.33023178828121774,
+        "char": 0.35549756236913416,
+        "position": 0.34111408743933075,
+        "position_from_end": 0.31394644350014084
       },
       "shuffle_between_cosine": {
-        "dfa": 0.04138271541500061,
-        "char": 0.04159208251877616,
-        "position": 0.04111647495104022,
-        "position_from_end": 0.040225510772501354
+        "dfa": 0.36888765492885495,
+        "char": 0.3690047170368416,
+        "position": 0.3681641806778269,
+        "position_from_end": 0.3678128299728431
       },
       "pairwise_within_median": {
-        "dfa": 4.1442930361509,
-        "char": 7.071602025838381,
-        "position": 7.676321087772692,
-        "position_from_end": 6.872020677195476
+        "dfa": 2.6183153076353864,
+        "char": 8.833763250406806,
+        "position": 8.403586352635315,
+        "position_from_end": 7.906980822869452
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.59353170511248,
-        "char": 8.5539552084075,
-        "position": 8.500640308493265,
-        "position_from_end": 8.496427816611641
+        "dfa": 9.53988660664427,
+        "char": 9.55816897588871,
+        "position": 9.954152762818335,
+        "position_from_end": 9.590050658216416
       },
       "pairwise_between_median": {
-        "dfa": 8.691233004108984,
-        "char": 8.679125498698566,
-        "position": 8.679483184687111,
-        "position_from_end": 8.764078577567755
+        "dfa": 10.165865884281624,
+        "char": 9.451911935254522,
+        "position": 9.909139245247903,
+        "position_from_end": 10.060827125421428
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.469614752254989,
-        "char": 8.468344045854161,
-        "position": 8.475102962342692,
-        "position_from_end": 8.471009752627264
+        "dfa": 9.522785627204357,
+        "char": 9.423974536602465,
+        "position": 9.367589859516517,
+        "position_from_end": 9.470479548916018
       }
     },
     {
@@ -1080,54 +1080,54 @@
       "run_id": 19,
       "n_words": 10,
       "n_dfa_states": 33,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.681228963629533,
-        "char": 0.3270327448820067,
-        "position": 0.2534837567925667,
-        "position_from_end": 0.2830368580030256
+        "dfa": 0.9701411909507158,
+        "char": 0.49832229934039163,
+        "position": 0.4119887696425568,
+        "position_from_end": 0.5637771230229649
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07944905267335531,
-        "char": 0.08205202977111097,
-        "position": 0.07719690774437607,
-        "position_from_end": 0.07703498283473903
+        "dfa": 0.32583737972257915,
+        "char": 0.3376350582058729,
+        "position": 0.33457953744260077,
+        "position_from_end": 0.33292600038977577
       },
       "between_cosine": {
-        "dfa": 0.044907126838733165,
-        "char": 0.057822998091349824,
-        "position": 0.037871998515836565,
-        "position_from_end": 0.031539191113595384
+        "dfa": 0.3001584540677766,
+        "char": 0.32088448210147147,
+        "position": 0.3158468545458446,
+        "position_from_end": 0.2833207788214715
       },
       "shuffle_between_cosine": {
-        "dfa": 0.0757403731598094,
-        "char": 0.07547926584709005,
-        "position": 0.07564775188330598,
-        "position_from_end": 0.07568245007822821
+        "dfa": 0.3331704867985468,
+        "char": 0.3324655445255809,
+        "position": 0.33243454716012094,
+        "position_from_end": 0.3327888765285834
       },
       "pairwise_within_median": {
-        "dfa": 6.194157637814367,
-        "char": 8.50571141590606,
-        "position": 9.090844593112648,
-        "position_from_end": 9.391570176684407
+        "dfa": 0.8470555474110675,
+        "char": 8.490357528062564,
+        "position": 8.365974437177911,
+        "position_from_end": 8.61733554322834
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 10.13463577680148,
-        "char": 10.130388457395048,
-        "position": 10.123545630078715,
-        "position_from_end": 10.127571871607778
+        "dfa": 8.996450467628497,
+        "char": 9.221212778644897,
+        "position": 9.138426378181867,
+        "position_from_end": 9.343546700614816
       },
       "pairwise_between_median": {
-        "dfa": 10.196041156513651,
-        "char": 10.19962469790869,
-        "position": 10.243695741593196,
-        "position_from_end": 10.240728056316787
+        "dfa": 9.688532318077263,
+        "char": 9.150419308938815,
+        "position": 9.344621559199219,
+        "position_from_end": 9.582082592151295
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 10.132820718673605,
-        "char": 10.13312811966576,
-        "position": 10.130844221296,
-        "position_from_end": 10.13033239187816
+        "dfa": 9.140357600146684,
+        "char": 9.105707075328562,
+        "position": 9.126391765125494,
+        "position_from_end": 9.121985282170929
       }
     },
     {
@@ -1136,54 +1136,54 @@
       "run_id": 20,
       "n_words": 11,
       "n_dfa_states": 27,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7022876890736468,
-        "char": 0.3604608550684393,
-        "position": 0.22127415834566627,
-        "position_from_end": 0.3497298993925639
+        "dfa": 0.8891461202503055,
+        "char": 0.624228819567936,
+        "position": 0.5440137279963758,
+        "position_from_end": 0.6669097419564779
       },
       "shuffle_within_cosine": {
-        "dfa": 0.055016903249669034,
-        "char": 0.07351953366476185,
-        "position": 0.06586135914910735,
-        "position_from_end": 0.06256890162039865
+        "dfa": 0.4288685377434734,
+        "char": 0.4375760393010846,
+        "position": 0.4356054694573315,
+        "position_from_end": 0.4335544311443045
       },
       "between_cosine": {
-        "dfa": 0.012994498075247288,
-        "char": 0.04251094517042022,
-        "position": 0.02889142153638826,
-        "position_from_end": -0.004016877168248657
+        "dfa": 0.39810531174705943,
+        "char": 0.4206085808329405,
+        "position": 0.40996199918866977,
+        "position_from_end": 0.3792243482307199
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06365047261799339,
-        "char": 0.0623000018189497,
-        "position": 0.06241182920623431,
-        "position_from_end": 0.06313022181330241
+        "dfa": 0.43412703559542026,
+        "char": 0.4334811863685855,
+        "position": 0.4333441725990519,
+        "position_from_end": 0.43379001792311866
       },
       "pairwise_within_median": {
-        "dfa": 4.75068843954446,
-        "char": 7.449044973294605,
-        "position": 8.04349760896762,
-        "position_from_end": 6.939427535500461
+        "dfa": 2.049228527611063,
+        "char": 6.214746297013939,
+        "position": 6.12330576833279,
+        "position_from_end": 5.864048085459882
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.647383060154821,
-        "char": 8.587627337960239,
-        "position": 8.597233828454385,
-        "position_from_end": 8.626476233036113
+        "dfa": 6.953821727253862,
+        "char": 6.744424911009258,
+        "position": 6.8153332082411255,
+        "position_from_end": 6.7295539316919415
       },
       "pairwise_between_median": {
-        "dfa": 8.770163474877059,
-        "char": 8.757173710015454,
-        "position": 8.692704561911086,
-        "position_from_end": 8.814645103428118
+        "dfa": 6.904453025650442,
+        "char": 6.763318856652292,
+        "position": 6.816299903764312,
+        "position_from_end": 6.840346100725933
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.600725219601033,
-        "char": 8.604140174995672,
-        "position": 8.605875235771565,
-        "position_from_end": 8.60393027579226
+        "dfa": 6.740688082348951,
+        "char": 6.747084903796138,
+        "position": 6.7292144746450475,
+        "position_from_end": 6.742929393261886
       }
     },
     {
@@ -1192,54 +1192,54 @@
       "run_id": 21,
       "n_words": 11,
       "n_dfa_states": 24,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8706834209074544,
-        "char": 0.45491206840749926,
-        "position": 0.3619398382398713,
-        "position_from_end": 0.34508820390924877
+        "dfa": 0.974123945888121,
+        "char": 0.6813860046022973,
+        "position": 0.6300854180299871,
+        "position_from_end": 0.6635886914795929
       },
       "shuffle_within_cosine": {
-        "dfa": 0.06677278323263287,
-        "char": 0.06999746728518262,
-        "position": 0.07108538659019638,
-        "position_from_end": 0.07232361267792442
+        "dfa": 0.4379535063491869,
+        "char": 0.43561226674082726,
+        "position": 0.4356223716571329,
+        "position_from_end": 0.4345443839145912
       },
       "between_cosine": {
-        "dfa": 0.01876701818609157,
-        "char": 0.03983549258999445,
-        "position": 0.008676683938049962,
-        "position_from_end": 0.009285887257128244
+        "dfa": 0.399496815826176,
+        "char": 0.4146959146242707,
+        "position": 0.3928793569293543,
+        "position_from_end": 0.3832543906845115
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07096900764549557,
-        "char": 0.07077065816108973,
-        "position": 0.07063384523620556,
-        "position_from_end": 0.07035258678652921
+        "dfa": 0.434313078133899,
+        "char": 0.434448481171767,
+        "position": 0.4343034378135125,
+        "position_from_end": 0.4345329670050342
       },
       "pairwise_within_median": {
-        "dfa": 3.549760331084927,
-        "char": 7.187390188417784,
-        "position": 8.023411875328893,
-        "position_from_end": 8.182680238357008
+        "dfa": 1.3095579912209203,
+        "char": 9.665794915485053,
+        "position": 9.204322511389218,
+        "position_from_end": 9.551309649554389
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.077289279814691,
-        "char": 9.115745937449558,
-        "position": 9.105364198152284,
-        "position_from_end": 9.085979064655557
+        "dfa": 11.170887171238771,
+        "char": 11.335327877044886,
+        "position": 11.040659168091127,
+        "position_from_end": 10.888760592394345
       },
       "pairwise_between_median": {
-        "dfa": 9.151372526252093,
-        "char": 9.147669659905153,
-        "position": 9.26806585059609,
-        "position_from_end": 9.242513910776587
+        "dfa": 11.653268788389191,
+        "char": 11.307487514208196,
+        "position": 11.739749536941902,
+        "position_from_end": 11.330769211483908
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.103569397394446,
-        "char": 9.103991396919122,
-        "position": 9.102959760990933,
-        "position_from_end": 9.105334055221187
+        "dfa": 11.066675161319083,
+        "char": 11.043465791544335,
+        "position": 11.089892286348459,
+        "position_from_end": 11.09806644354824
       }
     },
     {
@@ -1248,54 +1248,54 @@
       "run_id": 22,
       "n_words": 12,
       "n_dfa_states": 27,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7421108268146734,
-        "char": 0.2776739017498364,
-        "position": 0.23018278263322864,
-        "position_from_end": 0.3252833836512052
+        "dfa": 0.950701223696586,
+        "char": 0.47453697097070807,
+        "position": 0.5018298715730978,
+        "position_from_end": 0.6274354130840937
       },
       "shuffle_within_cosine": {
-        "dfa": 0.0679449482005538,
-        "char": 0.07425873264991101,
-        "position": 0.06796399289338438,
-        "position_from_end": 0.0718290176114787
+        "dfa": 0.35737843302650246,
+        "char": 0.3596137766598028,
+        "position": 0.3605124915950765,
+        "position_from_end": 0.35902037208793464
       },
       "between_cosine": {
-        "dfa": 0.0272017840838454,
-        "char": 0.055974274679747596,
-        "position": 0.03639096786654424,
-        "position_from_end": 0.01295925267281773
+        "dfa": 0.320529762520345,
+        "char": 0.35090582022351463,
+        "position": 0.3281043256092201,
+        "position_from_end": 0.297798942636265
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07168988774873654,
-        "char": 0.07124776860533927,
-        "position": 0.07223000280906798,
-        "position_from_end": 0.07137256359603596
+        "dfa": 0.3596830431229393,
+        "char": 0.35953486553013553,
+        "position": 0.3593256072322714,
+        "position_from_end": 0.3596602216158485
       },
       "pairwise_within_median": {
-        "dfa": 4.47543400085646,
-        "char": 7.697727444937607,
-        "position": 8.00219451820735,
-        "position_from_end": 7.896748690313771
+        "dfa": 1.3006874420331567,
+        "char": 10.861033706545886,
+        "position": 8.69132876044986,
+        "position_from_end": 9.126121031429768
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.867385280301011,
-        "char": 8.873657703077592,
-        "position": 8.884636424066317,
-        "position_from_end": 8.863725144363096
+        "dfa": 10.75025043953568,
+        "char": 10.163608384297568,
+        "position": 10.430071411523429,
+        "position_from_end": 10.453640308661623
       },
       "pairwise_between_median": {
-        "dfa": 8.938389767566413,
-        "char": 8.932784626522757,
-        "position": 8.984133082665615,
-        "position_from_end": 8.990438037603422
+        "dfa": 10.962975834959199,
+        "char": 10.1229778568639,
+        "position": 10.445913026792427,
+        "position_from_end": 10.286910057515456
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.87758122799475,
-        "char": 8.877962227509578,
-        "position": 8.876138144048989,
-        "position_from_end": 8.879228429774308
+        "dfa": 10.194877860187988,
+        "char": 10.133519395535,
+        "position": 10.09334213060657,
+        "position_from_end": 10.11328318042726
       }
     },
     {
@@ -1304,54 +1304,54 @@
       "run_id": 23,
       "n_words": 12,
       "n_dfa_states": 25,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6951706988782244,
-        "char": 0.5704460592720264,
-        "position": 0.3738884734868049,
-        "position_from_end": 0.36164764364491087
+        "dfa": 0.838602120981267,
+        "char": 0.6570986842694047,
+        "position": 0.569834066280479,
+        "position_from_end": 0.6069268544680171
       },
       "shuffle_within_cosine": {
-        "dfa": 0.0817524857946495,
-        "char": 0.0776912031460994,
-        "position": 0.07498049511780817,
-        "position_from_end": 0.06731727451764313
+        "dfa": 0.3573624393861709,
+        "char": 0.36012075217241235,
+        "position": 0.3560367552815956,
+        "position_from_end": 0.3512294902651859
       },
       "between_cosine": {
-        "dfa": 0.026759665624661044,
-        "char": 0.03659372374745744,
-        "position": 0.014029529729242311,
-        "position_from_end": 0.013562387015921601
+        "dfa": 0.31728930920129195,
+        "char": 0.33160015709588103,
+        "position": 0.31111625243436075,
+        "position_from_end": 0.3008252544427376
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07512533242548138,
-        "char": 0.07544554894200167,
-        "position": 0.07573956397316421,
-        "position_from_end": 0.07740845407172806
+        "dfa": 0.35523320717321294,
+        "char": 0.3550157248189132,
+        "position": 0.35525505212445274,
+        "position_from_end": 0.35629106012664896
       },
       "pairwise_within_median": {
-        "dfa": 5.880876580734335,
-        "char": 6.831109364641743,
-        "position": 7.749206794325421,
-        "position_from_end": 7.443006811247718
+        "dfa": 2.6201386263318884,
+        "char": 6.539613778124245,
+        "position": 6.793752901313942,
+        "position_from_end": 6.351508774242983
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.590173008263593,
-        "char": 9.638818179503472,
-        "position": 9.610500311060353,
-        "position_from_end": 9.653658815336977
+        "dfa": 7.861730192338249,
+        "char": 7.863129969664295,
+        "position": 7.854179072706464,
+        "position_from_end": 7.933528279332897
       },
       "pairwise_between_median": {
-        "dfa": 9.716667935860368,
-        "char": 9.716667935860368,
-        "position": 9.801125143816208,
-        "position_from_end": 9.748886007370325
+        "dfa": 8.181005324399717,
+        "char": 8.010517284672868,
+        "position": 8.074602857445761,
+        "position_from_end": 8.061797816506285
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.6286093589299,
-        "char": 9.625062068506018,
-        "position": 9.626835023586601,
-        "position_from_end": 9.622304995214714
+        "dfa": 7.9221246051792615,
+        "char": 7.924117893892419,
+        "position": 7.923650471485186,
+        "position_from_end": 7.917037189793476
       }
     },
     {
@@ -1360,54 +1360,54 @@
       "run_id": 24,
       "n_words": 13,
       "n_dfa_states": 25,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8365763320245078,
-        "char": 0.3055357879361732,
-        "position": 0.2871692253290316,
-        "position_from_end": 0.3266914507027809
+        "dfa": 0.9403087443950006,
+        "char": 0.5556817893762274,
+        "position": 0.5919856754606403,
+        "position_from_end": 0.6310770907697411
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07125933861774912,
-        "char": 0.0715914139738148,
-        "position": 0.07209553036349971,
-        "position_from_end": 0.06923174584811015
+        "dfa": 0.4062654643805143,
+        "char": 0.4117989410009304,
+        "position": 0.40825360455066934,
+        "position_from_end": 0.41061479477079477
       },
       "between_cosine": {
-        "dfa": 0.024834895177421018,
-        "char": 0.051966575004877794,
-        "position": 0.025013430074790368,
-        "position_from_end": 0.011017425458032694
+        "dfa": 0.3778249871657354,
+        "char": 0.39819010756078804,
+        "position": 0.3705548088775689,
+        "position_from_end": 0.3573172440155828
       },
       "shuffle_between_cosine": {
-        "dfa": 0.0739070625582091,
-        "char": 0.07395012767735748,
-        "position": 0.07412474624802207,
-        "position_from_end": 0.07486743226199102
+        "dfa": 0.4120678714231445,
+        "char": 0.4117106557250866,
+        "position": 0.41250937625071193,
+        "position_from_end": 0.41199189342332143
       },
       "pairwise_within_median": {
-        "dfa": 4.00669649692741,
-        "char": 8.590285931824313,
-        "position": 8.517735505991501,
-        "position_from_end": 8.449317631130183
+        "dfa": 1.6873993502810014,
+        "char": 9.845789988557963,
+        "position": 9.22950213261815,
+        "position_from_end": 9.566968095541004
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.481754530159952,
-        "char": 9.496045196227103,
-        "position": 9.502214846165682,
-        "position_from_end": 9.512579681525413
+        "dfa": 10.215411399303223,
+        "char": 10.607041263650261,
+        "position": 10.066225842738108,
+        "position_from_end": 10.252875172650702
       },
       "pairwise_between_median": {
-        "dfa": 9.598863895227842,
-        "char": 9.587539745036658,
-        "position": 9.658592043857672,
-        "position_from_end": 9.648132663920435
+        "dfa": 10.34757409212987,
+        "char": 10.08740286465359,
+        "position": 10.242721530724042,
+        "position_from_end": 10.249403871371294
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.488910140758165,
-        "char": 9.487647000664245,
-        "position": 9.48565379669106,
-        "position_from_end": 9.480907100664572
+        "dfa": 10.061795148427171,
+        "char": 10.035576602521836,
+        "position": 10.080892043757155,
+        "position_from_end": 10.047182319028828
       }
     },
     {
@@ -1416,54 +1416,54 @@
       "run_id": 25,
       "n_words": 13,
       "n_dfa_states": 28,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.82715528820834,
-        "char": 0.3615947516160892,
-        "position": 0.29695685245285636,
-        "position_from_end": 0.44186897301615363
+        "dfa": 0.9768343918880052,
+        "char": 0.5312145896248317,
+        "position": 0.47859981679952524,
+        "position_from_end": 0.7138876465396201
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07974383131365052,
-        "char": 0.0706473121753731,
-        "position": 0.07127798192131225,
-        "position_from_end": 0.07351195250283407
+        "dfa": 0.3301800090754538,
+        "char": 0.32703298980099477,
+        "position": 0.3317429667245456,
+        "position_from_end": 0.3310937506968787
       },
       "between_cosine": {
-        "dfa": 0.021319958695818084,
-        "char": 0.05501580989238848,
-        "position": 0.030237860760414022,
-        "position_from_end": -0.0015359033794892967
+        "dfa": 0.2854507121458417,
+        "char": 0.3181393304415078,
+        "position": 0.3026047292590112,
+        "position_from_end": 0.2510149797053429
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07808538580174386,
-        "char": 0.07882060039208343,
-        "position": 0.07972072786466652,
-        "position_from_end": 0.07923090234781645
+        "dfa": 0.33456370324552914,
+        "char": 0.3348450976998216,
+        "position": 0.3348048992549596,
+        "position_from_end": 0.33494724785118996
       },
       "pairwise_within_median": {
-        "dfa": 3.71858292197645,
-        "char": 8.09674827381607,
-        "position": 8.061626743415642,
-        "position_from_end": 7.493367020487435
+        "dfa": 1.0723125780879905,
+        "char": 9.099258152833853,
+        "position": 9.085154702496673,
+        "position_from_end": 8.080759235204672
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.444297013233601,
-        "char": 9.42655143261477,
-        "position": 9.437261239125847,
-        "position_from_end": 9.410438317890845
+        "dfa": 9.52696876410272,
+        "char": 10.122129102663536,
+        "position": 10.144712971669561,
+        "position_from_end": 9.966277121834779
       },
       "pairwise_between_median": {
-        "dfa": 9.539610312458306,
-        "char": 9.537220955584363,
-        "position": 9.579857148965516,
-        "position_from_end": 9.635674583529022
+        "dfa": 10.522614542481648,
+        "char": 10.042180724925275,
+        "position": 10.231855338757338,
+        "position_from_end": 10.55730195796759
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.441651356504403,
-        "char": 9.442710567625241,
-        "position": 9.43929484374738,
-        "position_from_end": 9.448827982227346
+        "dfa": 10.008543423275881,
+        "char": 9.925122994148447,
+        "position": 9.88010914371452,
+        "position_from_end": 9.938752728698356
       }
     },
     {
@@ -1472,54 +1472,54 @@
       "run_id": 26,
       "n_words": 14,
       "n_dfa_states": 30,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.743796213413893,
-        "char": 0.42863719759362495,
-        "position": 0.2790587014649763,
-        "position_from_end": 0.29806538483786044
+        "dfa": 0.7126091929408084,
+        "char": 0.5307353375618694,
+        "position": 0.510848100733001,
+        "position_from_end": 0.46973245062903063
       },
       "shuffle_within_cosine": {
-        "dfa": 0.1079904070080834,
-        "char": 0.09764771113844219,
-        "position": 0.09875035474307114,
-        "position_from_end": 0.09468567929811933
+        "dfa": 0.3240887191941841,
+        "char": 0.310302988123553,
+        "position": 0.3077097259592486,
+        "position_from_end": 0.3075904690046229
       },
       "between_cosine": {
-        "dfa": 0.05968346840996039,
-        "char": 0.07155694636074816,
-        "position": 0.06502246277007956,
-        "position_from_end": 0.059372720647251444
+        "dfa": 0.2866652403675078,
+        "char": 0.29287568251964075,
+        "position": 0.2736134552288625,
+        "position_from_end": 0.2796304158588504
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09817395444798026,
-        "char": 0.09882381481014536,
-        "position": 0.09873130048847839,
-        "position_from_end": 0.09953377642471932
+        "dfa": 0.3101855381055321,
+        "char": 0.31103486920105805,
+        "position": 0.31159039103976477,
+        "position_from_end": 0.31164832615430305
       },
       "pairwise_within_median": {
-        "dfa": 4.1526236464976405,
-        "char": 6.552692949531172,
-        "position": 7.571797034699859,
-        "position_from_end": 7.79329574898461
+        "dfa": 3.114024079984977,
+        "char": 7.230522683489217,
+        "position": 8.822757994836902,
+        "position_from_end": 8.891723615320906
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.115213359682487,
-        "char": 8.168989566232959,
-        "position": 8.166167045149257,
-        "position_from_end": 8.190258407954286
+        "dfa": 10.648113079685938,
+        "char": 10.54109713982173,
+        "position": 10.623541896703316,
+        "position_from_end": 10.702722616702573
       },
       "pairwise_between_median": {
-        "dfa": 8.264479501957055,
-        "char": 8.289749366781525,
-        "position": 8.285186895419177,
-        "position_from_end": 8.212250146497013
+        "dfa": 11.076059049932967,
+        "char": 10.840671747871216,
+        "position": 11.062007697080809,
+        "position_from_end": 10.801730601922555
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.159255570230965,
-        "char": 8.154586802536897,
-        "position": 8.152575201937431,
-        "position_from_end": 8.149532305029753
+        "dfa": 10.626550705319067,
+        "char": 10.637394533377329,
+        "position": 10.61931363404058,
+        "position_from_end": 10.600928626418774
       }
     },
     {
@@ -1528,54 +1528,54 @@
       "run_id": 27,
       "n_words": 14,
       "n_dfa_states": 34,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7499026201986515,
-        "char": 0.43924027810132704,
-        "position": 0.2627236234914953,
-        "position_from_end": 0.32942296768416746
+        "dfa": 0.8559293847203253,
+        "char": 0.6225443469997225,
+        "position": 0.5472741993282151,
+        "position_from_end": 0.6284020681204598
       },
       "shuffle_within_cosine": {
-        "dfa": 0.06920747080508154,
-        "char": 0.06226775316331098,
-        "position": 0.059237656848866276,
-        "position_from_end": 0.06225207890309537
+        "dfa": 0.401854488890047,
+        "char": 0.40008632599683985,
+        "position": 0.396424196899269,
+        "position_from_end": 0.3978636869341715
       },
       "between_cosine": {
-        "dfa": 0.014932984857721664,
-        "char": 0.04077425114536675,
-        "position": 0.01611935432054445,
-        "position_from_end": 0.0009942242248084019
+        "dfa": 0.36682786441391574,
+        "char": 0.3855017862527664,
+        "position": 0.36409145362083895,
+        "position_from_end": 0.3456944276121886
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06119382025340117,
-        "char": 0.06167251478798598,
-        "position": 0.06226301218374287,
-        "position_from_end": 0.06157944435731917
+        "dfa": 0.39768732335383755,
+        "char": 0.39783421385633766,
+        "position": 0.39829907498948475,
+        "position_from_end": 0.39797264788119835
       },
       "pairwise_within_median": {
-        "dfa": 4.863496336297155,
-        "char": 7.362158524578474,
-        "position": 8.04354926228914,
-        "position_from_end": 7.904272685427683
+        "dfa": 2.1326525530916762,
+        "char": 7.0804642812705385,
+        "position": 7.216398226108772,
+        "position_from_end": 6.315870424374207
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.199631014043554,
-        "char": 9.26607963662296,
-        "position": 9.248970019023533,
-        "position_from_end": 9.22485901861347
+        "dfa": 8.193287838145315,
+        "char": 8.10224089916338,
+        "position": 8.132826820256323,
+        "position_from_end": 8.015194091662345
       },
       "pairwise_between_median": {
-        "dfa": 9.344663245907865,
-        "char": 9.31845076207592,
-        "position": 9.354982643660575,
-        "position_from_end": 9.400876100712779
+        "dfa": 8.663784732857934,
+        "char": 8.059008667267896,
+        "position": 8.321884952180207,
+        "position_from_end": 8.207738642646223
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.243488979860834,
-        "char": 9.239121917660139,
-        "position": 9.238983572078826,
-        "position_from_end": 9.24496756187034
+        "dfa": 8.021295400859422,
+        "char": 8.043369799960473,
+        "position": 8.033406358575427,
+        "position_from_end": 8.046425894639665
       }
     },
     {
@@ -1584,54 +1584,54 @@
       "run_id": 28,
       "n_words": 15,
       "n_dfa_states": 40,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8143137791374437,
-        "char": 0.4497572797681846,
-        "position": 0.3196985973565482,
-        "position_from_end": 0.3917625108836009
+        "dfa": 0.9216044458877931,
+        "char": 0.5701361108794033,
+        "position": 0.49250944868611407,
+        "position_from_end": 0.5802501863417827
       },
       "shuffle_within_cosine": {
-        "dfa": 0.08985007697986629,
-        "char": 0.10152020459215017,
-        "position": 0.0947062297567434,
-        "position_from_end": 0.08878219891773391
+        "dfa": 0.30877552136859904,
+        "char": 0.31735103256892533,
+        "position": 0.3122712848468199,
+        "position_from_end": 0.3089919703273742
       },
       "between_cosine": {
-        "dfa": 0.055115699602868023,
-        "char": 0.06611410674449024,
-        "position": 0.052993255053709575,
-        "position_from_end": 0.037930965119903785
+        "dfa": 0.27944501541816147,
+        "char": 0.29219212281349616,
+        "position": 0.2796272248548304,
+        "position_from_end": 0.26185427971472697
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09475003667157857,
-        "char": 0.09393469952714864,
-        "position": 0.09445710527603009,
-        "position_from_end": 0.09558308925915786
+        "dfa": 0.3129719790017228,
+        "char": 0.31238707397328647,
+        "position": 0.31284332151403565,
+        "position_from_end": 0.31347021555552546
       },
       "pairwise_within_median": {
-        "dfa": 4.210198325297773,
-        "char": 7.510745366747609,
-        "position": 8.182450242664109,
-        "position_from_end": 7.802572900874825
+        "dfa": 2.074391047761825,
+        "char": 8.547915364580202,
+        "position": 9.345417263794477,
+        "position_from_end": 9.085545677985802
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.185934103769071,
-        "char": 9.140446827941004,
-        "position": 9.16649401864002,
-        "position_from_end": 9.19630989860327
+        "dfa": 11.05414750682344,
+        "char": 11.02209943164885,
+        "position": 10.979017031524473,
+        "position_from_end": 11.1183028582538
       },
       "pairwise_between_median": {
-        "dfa": 9.247149384925706,
-        "char": 9.271937227877215,
-        "position": 9.281538981724264,
-        "position_from_end": 9.306410571405205
+        "dfa": 11.494978356337514,
+        "char": 11.232825107306311,
+        "position": 11.42908175232761,
+        "position_from_end": 11.427588110502843
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.168453895555142,
-        "char": 9.171686775689407,
-        "position": 9.172521681028535,
-        "position_from_end": 9.166282842980172
+        "dfa": 11.092133870442233,
+        "char": 11.10082413893808,
+        "position": 11.102170462264482,
+        "position_from_end": 11.0853579980753
       }
     },
     {
@@ -1640,54 +1640,54 @@
       "run_id": 29,
       "n_words": 15,
       "n_dfa_states": 38,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6684703245239207,
-        "char": 0.38354986981175265,
-        "position": 0.2853812038073738,
-        "position_from_end": 0.29339854464989834
+        "dfa": 0.8032627853945,
+        "char": 0.6061450934629434,
+        "position": 0.548132950130173,
+        "position_from_end": 0.5485001398465317
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07270032165800297,
-        "char": 0.07473633589141666,
-        "position": 0.0714231582104934,
-        "position_from_end": 0.07303615079274871
+        "dfa": 0.3622574477648618,
+        "char": 0.3594572131506738,
+        "position": 0.35470099951458683,
+        "position_from_end": 0.35916035850353106
       },
       "between_cosine": {
-        "dfa": 0.030331539389787377,
-        "char": 0.04430841181685318,
-        "position": 0.02020276989165719,
-        "position_from_end": 0.016048014027499523
+        "dfa": 0.3266738427923712,
+        "char": 0.33583107099988346,
+        "position": 0.31195669236005136,
+        "position_from_end": 0.30989009837679143
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06976379857227978,
-        "char": 0.06955448174318722,
-        "position": 0.06960504287831229,
-        "position_from_end": 0.06920075224429943
+        "dfa": 0.35586268528296594,
+        "char": 0.35599825537577706,
+        "position": 0.35661955138923157,
+        "position_from_end": 0.35555999538414834
       },
       "pairwise_within_median": {
-        "dfa": 4.689412854620933,
-        "char": 6.898848442367308,
-        "position": 7.425011782010297,
-        "position_from_end": 7.538701775135818
+        "dfa": 2.1495038010146037,
+        "char": 10.43593319175984,
+        "position": 8.574554346235022,
+        "position_from_end": 9.31113178550778
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.514024237925806,
-        "char": 8.51617208675587,
-        "position": 8.50685192948263,
-        "position_from_end": 8.505922609299377
+        "dfa": 10.32625158274347,
+        "char": 9.55088527709653,
+        "position": 9.519227565329034,
+        "position_from_end": 9.491782658149939
       },
       "pairwise_between_median": {
-        "dfa": 8.60608175618569,
-        "char": 8.60608175618569,
-        "position": 8.656085313255339,
-        "position_from_end": 8.623217747730655
+        "dfa": 9.773026723644966,
+        "char": 9.572170354065582,
+        "position": 9.693004504191284,
+        "position_from_end": 9.637009700768184
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.527991972481395,
-        "char": 8.527962704934563,
-        "position": 8.531188368078224,
-        "position_from_end": 8.5328677514317
+        "dfa": 9.552747728195044,
+        "char": 9.580429168089283,
+        "position": 9.578948640327315,
+        "position_from_end": 9.592457470832064
       }
     },
     {
@@ -1696,54 +1696,54 @@
       "run_id": 30,
       "n_words": 16,
       "n_dfa_states": 34,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.755137429901609,
-        "char": 0.49509866310212364,
-        "position": 0.2696038568190188,
-        "position_from_end": 0.33329829577001396
+        "dfa": 0.8558642083505447,
+        "char": 0.5902809217172325,
+        "position": 0.4830913116487232,
+        "position_from_end": 0.5416670089133104
       },
       "shuffle_within_cosine": {
-        "dfa": 0.06778746852105054,
-        "char": 0.060390927073608845,
-        "position": 0.06650552241100169,
-        "position_from_end": 0.06714279512816936
+        "dfa": 0.3267677459197456,
+        "char": 0.3224785444692391,
+        "position": 0.32697084890444605,
+        "position_from_end": 0.3263462880809276
       },
       "between_cosine": {
-        "dfa": 0.021698646205835004,
-        "char": 0.03652824138281704,
-        "position": 0.027812765508586322,
-        "position_from_end": 0.013232705724976679
+        "dfa": 0.2916399184113315,
+        "char": 0.30807452303403127,
+        "position": 0.29619035652163006,
+        "position_from_end": 0.28294101728002086
       },
       "shuffle_between_cosine": {
-        "dfa": 0.06928964254276784,
-        "char": 0.06986738050054177,
-        "position": 0.0697471314298845,
-        "position_from_end": 0.06962664027801325
+        "dfa": 0.3282736991928904,
+        "char": 0.3286131515679909,
+        "position": 0.32842505028021407,
+        "position_from_end": 0.3285639054384518
       },
       "pairwise_within_median": {
-        "dfa": 4.044523308198288,
-        "char": 5.6865192020266235,
-        "position": 7.38492271031656,
-        "position_from_end": 7.173648577920879
+        "dfa": 2.327422155661166,
+        "char": 8.409122007927877,
+        "position": 8.872043882405325,
+        "position_from_end": 8.11255112880921
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.167165316785859,
-        "char": 8.282100300398858,
-        "position": 8.256088639514044,
-        "position_from_end": 8.24442416756551
+        "dfa": 10.11680930215151,
+        "char": 10.386023065544858,
+        "position": 10.214653365931781,
+        "position_from_end": 10.371385778316023
       },
       "pairwise_between_median": {
-        "dfa": 8.32125123299924,
-        "char": 8.310105950663765,
-        "position": 8.330527621360199,
-        "position_from_end": 8.347430455793544
+        "dfa": 10.694468111973483,
+        "char": 10.494641630000858,
+        "position": 10.689726915334528,
+        "position_from_end": 10.653730880813686
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.235839711605514,
-        "char": 8.228772634266008,
-        "position": 8.229204428279196,
-        "position_from_end": 8.230558574662902
+        "dfa": 10.27335525007197,
+        "char": 10.24644293346964,
+        "position": 10.279099027645572,
+        "position_from_end": 10.250114096531522
       }
     },
     {
@@ -1752,54 +1752,54 @@
       "run_id": 31,
       "n_words": 16,
       "n_dfa_states": 32,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7921621507837608,
-        "char": 0.590844875435793,
-        "position": 0.3062880448435407,
-        "position_from_end": 0.4423510118754489
+        "dfa": 0.8564680428727622,
+        "char": 0.7091503499405488,
+        "position": 0.5096721433928233,
+        "position_from_end": 0.5912204003557029
       },
       "shuffle_within_cosine": {
-        "dfa": 0.08776853952942455,
-        "char": 0.0817919541537431,
-        "position": 0.08648895574960568,
-        "position_from_end": 0.0844257861833185
+        "dfa": 0.3402684353879377,
+        "char": 0.33502829377329235,
+        "position": 0.3421866712079329,
+        "position_from_end": 0.3398889646006727
       },
       "between_cosine": {
-        "dfa": 0.020850192031440437,
-        "char": 0.04850713886486759,
-        "position": 0.04301404782432629,
-        "position_from_end": 0.01018652970470736
+        "dfa": 0.2928476025599135,
+        "char": 0.31307324030661676,
+        "position": 0.3073987082396159,
+        "position_from_end": 0.28713013420171724
       },
       "shuffle_between_cosine": {
-        "dfa": 0.0866983083493844,
-        "char": 0.08716938605084608,
-        "position": 0.08684980218736883,
-        "position_from_end": 0.0872991140768918
+        "dfa": 0.34110296895429254,
+        "char": 0.34148757368640836,
+        "position": 0.3408012671325573,
+        "position_from_end": 0.34127780291538434
       },
       "pairwise_within_median": {
-        "dfa": 3.9549884154593773,
-        "char": 4.8913201060875755,
-        "position": 7.656721423960587,
-        "position_from_end": 5.932665140090594
+        "dfa": 3.623505706487136,
+        "char": 6.273163933560551,
+        "position": 9.029882483187436,
+        "position_from_end": 9.013926811910373
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.578823579460177,
-        "char": 8.571141365881171,
-        "position": 8.561974688652953,
-        "position_from_end": 8.572941959286052
+        "dfa": 12.609251041366253,
+        "char": 12.118648602101386,
+        "position": 12.130306520926174,
+        "position_from_end": 12.166740559769446
       },
       "pairwise_between_median": {
-        "dfa": 8.697764143070652,
-        "char": 8.666729995446628,
-        "position": 8.676738869160449,
-        "position_from_end": 8.71406159376955
+        "dfa": 12.922701944712564,
+        "char": 12.685785218327872,
+        "position": 12.928599660529308,
+        "position_from_end": 12.600684571109712
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.57340739379308,
-        "char": 8.574782532107127,
-        "position": 8.574762317605138,
-        "position_from_end": 8.574875821336772
+        "dfa": 12.040975508487062,
+        "char": 12.0715852662536,
+        "position": 12.07129088104493,
+        "position_from_end": 12.072703138589443
       }
     },
     {
@@ -1808,54 +1808,54 @@
       "run_id": 32,
       "n_words": 17,
       "n_dfa_states": 41,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7563474551535087,
-        "char": 0.32208458123069444,
-        "position": 0.27442203579983854,
-        "position_from_end": 0.35830555788583857
+        "dfa": 0.8452258485787323,
+        "char": 0.5190151474817144,
+        "position": 0.49013781605940926,
+        "position_from_end": 0.603194279978453
       },
       "shuffle_within_cosine": {
-        "dfa": 0.08105760778189942,
-        "char": 0.08699804033536605,
-        "position": 0.08457987269337164,
-        "position_from_end": 0.08231319484892007
+        "dfa": 0.35694279112952637,
+        "char": 0.3565462013634627,
+        "position": 0.3591815123703177,
+        "position_from_end": 0.3553176090770343
       },
       "between_cosine": {
-        "dfa": 0.04420957891196405,
-        "char": 0.06499588252313655,
-        "position": 0.046860802315841395,
-        "position_from_end": 0.025424093818509935
+        "dfa": 0.3297055645552865,
+        "char": 0.34566703519354874,
+        "position": 0.33281509839475937,
+        "position_from_end": 0.3063787037981724
       },
       "shuffle_between_cosine": {
-        "dfa": 0.08355208398628763,
-        "char": 0.083138223209616,
-        "position": 0.08319178231734854,
-        "position_from_end": 0.0836471402673941
+        "dfa": 0.3581530212143383,
+        "char": 0.35820525605563963,
+        "position": 0.3578768168905155,
+        "position_from_end": 0.35867049464586886
       },
       "pairwise_within_median": {
-        "dfa": 4.257321563899606,
-        "char": 7.479621215552748,
-        "position": 7.702002309103182,
-        "position_from_end": 7.50531262483612
+        "dfa": 1.5401424605746399,
+        "char": 9.633342492073835,
+        "position": 9.311897969592254,
+        "position_from_end": 8.801971428538769
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.802909282072818,
-        "char": 8.756023006114331,
-        "position": 8.763845838614635,
-        "position_from_end": 8.790606557788706
+        "dfa": 10.001813515852485,
+        "char": 10.23833029773235,
+        "position": 10.29032956199769,
+        "position_from_end": 10.343604651258273
       },
       "pairwise_between_median": {
-        "dfa": 8.85812925851036,
-        "char": 8.867980036787396,
-        "position": 8.885027418859323,
-        "position_from_end": 8.9223896975438
+        "dfa": 10.489342503607352,
+        "char": 10.326117382236518,
+        "position": 10.441444742656797,
+        "position_from_end": 10.534305041273555
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.792552456186963,
-        "char": 8.797358744785951,
-        "position": 8.796461127663006,
-        "position_from_end": 8.789783533261428
+        "dfa": 10.307715103543531,
+        "char": 10.30643719647841,
+        "position": 10.30593856820633,
+        "position_from_end": 10.297444311227274
       }
     },
     {
@@ -1864,54 +1864,54 @@
       "run_id": 33,
       "n_words": 17,
       "n_dfa_states": 38,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7099622568538789,
-        "char": 0.49820012471730085,
-        "position": 0.21707317274525478,
-        "position_from_end": 0.3186610413025101
+        "dfa": 0.8257989529269301,
+        "char": 0.6930434906575813,
+        "position": 0.462755721972933,
+        "position_from_end": 0.6043548877352302
       },
       "shuffle_within_cosine": {
-        "dfa": 0.04390385008268272,
-        "char": 0.037086380490219804,
-        "position": 0.04500190971868983,
-        "position_from_end": 0.04517396314751354
+        "dfa": 0.3082003069871232,
+        "char": 0.305547209163679,
+        "position": 0.3078801220745473,
+        "position_from_end": 0.3081261149842584
       },
       "between_cosine": {
-        "dfa": -0.01583492458783062,
-        "char": 0.015062368009908567,
-        "position": 0.002421304451286009,
-        "position_from_end": -0.027499591531712057
+        "dfa": 0.26290489143034645,
+        "char": 0.2849303121606838,
+        "position": 0.2725739479015813,
+        "position_from_end": 0.23285289136406315
       },
       "shuffle_between_cosine": {
-        "dfa": 0.04299673279259049,
-        "char": 0.04343859842388278,
-        "position": 0.04261912036690786,
-        "position_from_end": 0.04253168697642422
+        "dfa": 0.30862338381619686,
+        "char": 0.3087762371756932,
+        "position": 0.3087546601543627,
+        "position_from_end": 0.308707589240829
       },
       "pairwise_within_median": {
-        "dfa": 4.308712841705392,
-        "char": 6.402865226561176,
-        "position": 7.730598553015704,
-        "position_from_end": 7.548313308926358
+        "dfa": 1.0514539749991851,
+        "char": 7.762840042051218,
+        "position": 8.664199446173981,
+        "position_from_end": 8.713889777603955
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.530164623347975,
-        "char": 8.522299623791115,
-        "position": 8.503844400641094,
-        "position_from_end": 8.488298329942845
+        "dfa": 10.388435842555563,
+        "char": 10.507145566383626,
+        "position": 10.35822216492426,
+        "position_from_end": 10.207931723583892
       },
       "pairwise_between_median": {
-        "dfa": 8.629543584278226,
-        "char": 8.574431473797084,
-        "position": 8.627415018861758,
-        "position_from_end": 8.647962442343005
+        "dfa": 10.765607677414343,
+        "char": 10.445629991287205,
+        "position": 10.713323841238719,
+        "position_from_end": 10.438325502419087
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.506643874763384,
-        "char": 8.506254781379583,
-        "position": 8.506386558490211,
-        "position_from_end": 8.511572857438003
+        "dfa": 10.285756517354816,
+        "char": 10.275139925132313,
+        "position": 10.276809107638961,
+        "position_from_end": 10.299331701574404
       }
     },
     {
@@ -1920,54 +1920,54 @@
       "run_id": 34,
       "n_words": 18,
       "n_dfa_states": 36,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.8495671435437392,
-        "char": 0.47892968813658715,
-        "position": 0.3945476575927826,
-        "position_from_end": 0.4661529505916167
+        "dfa": 0.9559538391337987,
+        "char": 0.6335102201450922,
+        "position": 0.5814723790364144,
+        "position_from_end": 0.6858251320616534
       },
       "shuffle_within_cosine": {
-        "dfa": 0.14389760095430887,
-        "char": 0.1476398327707531,
-        "position": 0.15343549474623425,
-        "position_from_end": 0.15208181379508917
+        "dfa": 0.35766493433020036,
+        "char": 0.360030178402662,
+        "position": 0.36511889963161026,
+        "position_from_end": 0.36160762209035446
       },
       "between_cosine": {
-        "dfa": 0.09352163491984111,
-        "char": 0.11995254564353998,
-        "position": 0.10049563260431624,
-        "position_from_end": 0.08024317573520404
+        "dfa": 0.3130353105944213,
+        "char": 0.33624246912386874,
+        "position": 0.3162728386738251,
+        "position_from_end": 0.2888017425177811
       },
       "shuffle_between_cosine": {
-        "dfa": 0.15353132830539895,
-        "char": 0.15329321798866385,
-        "position": 0.1526337437229432,
-        "position_from_end": 0.15293703134762637
+        "dfa": 0.36391342218401856,
+        "char": 0.3637652209286181,
+        "position": 0.3630571303368233,
+        "position_from_end": 0.3638440437533186
       },
       "pairwise_within_median": {
-        "dfa": 3.627682182215648,
-        "char": 6.973105617269404,
-        "position": 6.8488520333361915,
-        "position_from_end": 6.458680053455472
+        "dfa": 0.9327000840794015,
+        "char": 6.061623130809403,
+        "position": 6.293982462426369,
+        "position_from_end": 6.40196769810298
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.374059496680898,
-        "char": 8.351628645461288,
-        "position": 8.333845860833838,
-        "position_from_end": 8.342498668142047
+        "dfa": 8.264513481755877,
+        "char": 7.965221023939454,
+        "position": 7.697106058437412,
+        "position_from_end": 7.753099754335919
       },
       "pairwise_between_median": {
-        "dfa": 8.440668268069036,
-        "char": 8.433058530997915,
-        "position": 8.470386044679225,
-        "position_from_end": 8.469348606496474
+        "dfa": 8.07966202966995,
+        "char": 7.773303544037054,
+        "position": 7.921233278789103,
+        "position_from_end": 7.8049985069414864
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.333086710970147,
-        "char": 8.335915180402015,
-        "position": 8.339604338092512,
-        "position_from_end": 8.336805955298695
+        "dfa": 7.723448492752515,
+        "char": 7.736386268697326,
+        "position": 7.739663198187759,
+        "position_from_end": 7.7321419827446185
       }
     },
     {
@@ -1976,54 +1976,54 @@
       "run_id": 35,
       "n_words": 18,
       "n_dfa_states": 48,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.670069493733167,
-        "char": 0.39518809316061204,
-        "position": 0.22406473359213358,
-        "position_from_end": 0.2811182907237937
+        "dfa": 0.7735130026888308,
+        "char": 0.4989931602308328,
+        "position": 0.43399646242790924,
+        "position_from_end": 0.5179542048318848
       },
       "shuffle_within_cosine": {
-        "dfa": 0.10825417644208077,
-        "char": 0.10345278821128141,
-        "position": 0.09931906757859606,
-        "position_from_end": 0.1031575617724537
+        "dfa": 0.31411226756868615,
+        "char": 0.31061910394042025,
+        "position": 0.308857752455299,
+        "position_from_end": 0.3110863471703924
       },
       "between_cosine": {
-        "dfa": 0.06752656763932038,
-        "char": 0.08253250017677995,
-        "position": 0.07385953766389773,
-        "position_from_end": 0.061720541845954435
+        "dfa": 0.28385800113600973,
+        "char": 0.2988441960096473,
+        "position": 0.28445763907764066,
+        "position_from_end": 0.266864176898154
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09819638644925557,
-        "char": 0.09845849697302131,
-        "position": 0.09859763496545451,
-        "position_from_end": 0.09781635007665077
+        "dfa": 0.30893694945522354,
+        "char": 0.30912764325130754,
+        "position": 0.30927368024702107,
+        "position_from_end": 0.3088232234993058
       },
       "pairwise_within_median": {
-        "dfa": 4.693878954206459,
-        "char": 7.013443237486573,
-        "position": 8.126805857656391,
-        "position_from_end": 7.965349950157521
+        "dfa": 1.7608030088577924,
+        "char": 11.658016485610233,
+        "position": 10.526014821500189,
+        "position_from_end": 10.066281172685356
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.65961921645746,
-        "char": 8.641682324223616,
-        "position": 8.663429160856884,
-        "position_from_end": 8.637421227608609
+        "dfa": 10.78409314183564,
+        "char": 10.601826625304252,
+        "position": 10.925804083238733,
+        "position_from_end": 10.76963415611659
       },
       "pairwise_between_median": {
-        "dfa": 8.736720222504092,
-        "char": 8.73601958951126,
-        "position": 8.749901198385942,
-        "position_from_end": 8.760508507382124
+        "dfa": 11.242025072792302,
+        "char": 10.66712110831823,
+        "position": 10.864545073425022,
+        "position_from_end": 10.855382917938396
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.661425946352121,
-        "char": 8.662756690317691,
-        "position": 8.661577972355143,
-        "position_from_end": 8.664897039736024
+        "dfa": 10.747301386652826,
+        "char": 10.742241318601064,
+        "position": 10.705890594441758,
+        "position_from_end": 10.775952226028169
       }
     },
     {
@@ -2032,54 +2032,54 @@
       "run_id": 36,
       "n_words": 19,
       "n_dfa_states": 32,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7567445991595376,
-        "char": 0.5387369450605065,
-        "position": 0.32341304497727014,
-        "position_from_end": 0.32642299996753854
+        "dfa": 0.8790111177634792,
+        "char": 0.6688329240072084,
+        "position": 0.5508263608322053,
+        "position_from_end": 0.5759848111579579
       },
       "shuffle_within_cosine": {
-        "dfa": 0.04618018391558436,
-        "char": 0.04767608749093431,
-        "position": 0.0420216556463218,
-        "position_from_end": 0.04099360770235772
+        "dfa": 0.3349395535207283,
+        "char": 0.3333457490631302,
+        "position": 0.3346290702116456,
+        "position_from_end": 0.33194641855932994
       },
       "between_cosine": {
-        "dfa": -0.004450431114676348,
-        "char": 0.007842534121412021,
-        "position": -0.02565452446809299,
-        "position_from_end": -0.03070608055522122
+        "dfa": 0.2965514238369639,
+        "char": 0.3088904975083172,
+        "position": 0.27951749907537177,
+        "position_from_end": 0.2698109963436699
       },
       "shuffle_between_cosine": {
-        "dfa": 0.0411716822236192,
-        "char": 0.0410543795609,
-        "position": 0.04134342537260899,
-        "position_from_end": 0.04159550463104387
+        "dfa": 0.33148378751226093,
+        "char": 0.3315804513692693,
+        "position": 0.33099304446121924,
+        "position_from_end": 0.3316279048658176
       },
       "pairwise_within_median": {
-        "dfa": 4.512090214609434,
-        "char": 6.579223947041235,
-        "position": 7.24865095595381,
-        "position_from_end": 7.499208843277676
+        "dfa": 1.8992902358421313,
+        "char": 5.85815544377828,
+        "position": 7.388488875181645,
+        "position_from_end": 6.684036996028368
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.991446704083282,
-        "char": 8.988583831807397,
-        "position": 9.008657344375504,
-        "position_from_end": 9.007913940455465
+        "dfa": 8.947966756006075,
+        "char": 7.93667633613303,
+        "position": 8.075395101128635,
+        "position_from_end": 8.01950883012339
       },
       "pairwise_between_median": {
-        "dfa": 9.092424673247027,
-        "char": 9.093637058751634,
-        "position": 9.154984220196502,
-        "position_from_end": 9.124465636919872
+        "dfa": 8.29567744292456,
+        "char": 8.092871599186068,
+        "position": 8.17008475034701,
+        "position_from_end": 8.20715528972607
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.993520485081923,
-        "char": 8.992643289671001,
-        "position": 8.991307708430996,
-        "position_from_end": 8.988906565092906
+        "dfa": 8.03313982979473,
+        "char": 8.054605112980605,
+        "position": 8.035615520345738,
+        "position_from_end": 8.050919321077496
       }
     },
     {
@@ -2088,54 +2088,54 @@
       "run_id": 37,
       "n_words": 19,
       "n_dfa_states": 45,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7379251326697094,
-        "char": 0.4460482688076818,
-        "position": 0.3524312351720352,
-        "position_from_end": 0.31894799339075625
+        "dfa": 0.958639457631364,
+        "char": 0.5746034439552823,
+        "position": 0.5248702788270713,
+        "position_from_end": 0.6102548693072081
       },
       "shuffle_within_cosine": {
-        "dfa": 0.1094951302968337,
-        "char": 0.10858548398818949,
-        "position": 0.10745380973819585,
-        "position_from_end": 0.1055411150263889
+        "dfa": 0.3740098937952944,
+        "char": 0.3703251084295954,
+        "position": 0.37008081976643864,
+        "position_from_end": 0.36953553867694217
       },
       "between_cosine": {
-        "dfa": 0.057553138452091326,
-        "char": 0.08138327565559195,
-        "position": 0.052059046364279715,
-        "position_from_end": 0.04903573786633158
+        "dfa": 0.3229690773281371,
+        "char": 0.35363993625443446,
+        "position": 0.334306534582109,
+        "position_from_end": 0.3032377889253217
       },
       "shuffle_between_cosine": {
-        "dfa": 0.10678753124362822,
-        "char": 0.10686334544881085,
-        "position": 0.10687916953828573,
-        "position_from_end": 0.10737878257509313
+        "dfa": 0.36877192167797,
+        "char": 0.3690639370052765,
+        "position": 0.36894473521106186,
+        "position_from_end": 0.3690477514572966
       },
       "pairwise_within_median": {
-        "dfa": 4.555330545341599,
-        "char": 6.682577442547627,
-        "position": 7.22196303450682,
-        "position_from_end": 7.639707026873207
+        "dfa": 0.9252228523101457,
+        "char": 7.227247715963575,
+        "position": 7.206314309404086,
+        "position_from_end": 7.128844628790073
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.424957005735266,
-        "char": 8.457521890736983,
-        "position": 8.438583393708074,
-        "position_from_end": 8.452239512164224
+        "dfa": 7.917540455464387,
+        "char": 7.945119377863481,
+        "position": 8.050149593057823,
+        "position_from_end": 8.058246043721255
       },
       "pairwise_between_median": {
-        "dfa": 8.56345522959425,
-        "char": 8.557869561803862,
-        "position": 8.636871579009208,
-        "position_from_end": 8.580522494921635
+        "dfa": 8.50887023472869,
+        "char": 8.026378849828289,
+        "position": 8.233757906901758,
+        "position_from_end": 8.454164954249112
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.454889054963036,
-        "char": 8.45337368372876,
-        "position": 8.45746060794255,
-        "position_from_end": 8.453705213525167
+        "dfa": 8.007360703821155,
+        "char": 7.997007899824176,
+        "position": 7.9942936696638345,
+        "position_from_end": 7.996113222278814
       }
     },
     {
@@ -2144,54 +2144,54 @@
       "run_id": 38,
       "n_words": 20,
       "n_dfa_states": 36,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6688397005766222,
-        "char": 0.40637786284241456,
-        "position": 0.22163033571838237,
-        "position_from_end": 0.32661384631207624
+        "dfa": 0.8311456502233745,
+        "char": 0.5198012546059338,
+        "position": 0.457474066947474,
+        "position_from_end": 0.5322411383714987
       },
       "shuffle_within_cosine": {
-        "dfa": 0.05369900948898134,
-        "char": 0.0468671918494136,
-        "position": 0.04751909738050093,
-        "position_from_end": 0.04267503060795331
+        "dfa": 0.289230853627436,
+        "char": 0.2884680874560666,
+        "position": 0.2840732992837076,
+        "position_from_end": 0.2818879377922783
       },
       "between_cosine": {
-        "dfa": -0.001480957886345538,
-        "char": 0.022486203253250514,
-        "position": 0.009876082821673345,
-        "position_from_end": -0.014176033240246815
+        "dfa": 0.24445330344739383,
+        "char": 0.27099077223855444,
+        "position": 0.250625027359705,
+        "position_from_end": 0.23320523744425622
       },
       "shuffle_between_cosine": {
-        "dfa": 0.046444760484368915,
-        "char": 0.04697603097756939,
-        "position": 0.046852283953223425,
-        "position_from_end": 0.04790799796552514
+        "dfa": 0.2866739796258124,
+        "char": 0.28674916237137915,
+        "position": 0.2874503450285048,
+        "position_from_end": 0.28794567819266603
       },
       "pairwise_within_median": {
-        "dfa": 4.972217878178887,
-        "char": 7.338808752624377,
-        "position": 8.064503370558555,
-        "position_from_end": 7.442839638536077
+        "dfa": 2.4876236186706495,
+        "char": 8.41363339318553,
+        "position": 9.669035638245733,
+        "position_from_end": 8.165935748969167
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.934448628213532,
-        "char": 8.981223491791164,
-        "position": 8.979172498797928,
-        "position_from_end": 9.027290666376892
+        "dfa": 10.748918689576213,
+        "char": 10.809749693388211,
+        "position": 10.790956998090339,
+        "position_from_end": 10.864155441094963
       },
       "pairwise_between_median": {
-        "dfa": 9.12366767651138,
-        "char": 9.111970690103318,
-        "position": 9.111979462316818,
-        "position_from_end": 9.148652810244535
+        "dfa": 11.150367289983928,
+        "char": 10.867535095476999,
+        "position": 10.928328901681702,
+        "position_from_end": 10.98652543546183
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.002021888705517,
-        "char": 8.997699297365562,
-        "position": 8.997172181369159,
-        "position_from_end": 8.986814423396707
+        "dfa": 10.782496450223757,
+        "char": 10.772907016217522,
+        "position": 10.768870531740877,
+        "position_from_end": 10.76019941166685
       }
     },
     {
@@ -2200,54 +2200,54 @@
       "run_id": 39,
       "n_words": 20,
       "n_dfa_states": 38,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7444953249574955,
-        "char": 0.45234411152972825,
-        "position": 0.269141900059288,
-        "position_from_end": 0.35162327972379626
+        "dfa": 0.9287313497264726,
+        "char": 0.6106504540535486,
+        "position": 0.5098189444176519,
+        "position_from_end": 0.6136659758538742
       },
       "shuffle_within_cosine": {
-        "dfa": 0.05755564621954018,
-        "char": 0.06820205022224338,
-        "position": 0.06395782481180814,
-        "position_from_end": 0.07060439106115927
+        "dfa": 0.36640811420843,
+        "char": 0.37560377861626987,
+        "position": 0.3745592273360456,
+        "position_from_end": 0.37794768299569076
       },
       "between_cosine": {
-        "dfa": 0.019101192775047425,
-        "char": 0.03861991608595428,
-        "position": 0.02271140855553325,
-        "position_from_end": 0.004446044523532138
+        "dfa": 0.33781825885722594,
+        "char": 0.35906935318020156,
+        "position": 0.34723492121700916,
+        "position_from_end": 0.32483947561838344
       },
       "shuffle_between_cosine": {
-        "dfa": 0.0649958695872815,
-        "char": 0.0642845796646871,
-        "position": 0.0646468399929744,
-        "position_from_end": 0.06325862952866054
+        "dfa": 0.37538726812675044,
+        "char": 0.37477290261674384,
+        "position": 0.37487924295631553,
+        "position_from_end": 0.3741713984722541
       },
       "pairwise_within_median": {
-        "dfa": 4.3176470196563,
-        "char": 6.610685974022817,
-        "position": 7.575496180482703,
-        "position_from_end": 7.1751336479393295
+        "dfa": 1.786791593094466,
+        "char": 8.604859060859738,
+        "position": 9.615086959147991,
+        "position_from_end": 8.741063472471916
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.680846600109003,
-        "char": 8.625380065399586,
-        "position": 8.661922824893528,
-        "position_from_end": 8.636127768507668
+        "dfa": 11.021479412669652,
+        "char": 10.388185861544192,
+        "position": 10.633161180322531,
+        "position_from_end": 10.63079086786918
       },
       "pairwise_between_median": {
-        "dfa": 8.734257246749793,
-        "char": 8.724584550071821,
-        "position": 8.745998935447293,
-        "position_from_end": 8.800536613832534
+        "dfa": 11.122270313982982,
+        "char": 10.865575174821853,
+        "position": 11.066485272511345,
+        "position_from_end": 11.115079592273549
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.64003519977055,
-        "char": 8.642728923039163,
-        "position": 8.640169030483323,
-        "position_from_end": 8.645012205425587
+        "dfa": 10.661296463630514,
+        "char": 10.692813314496114,
+        "position": 10.692272365041907,
+        "position_from_end": 10.691441911013637
       }
     },
     {
@@ -2256,54 +2256,54 @@
       "run_id": 40,
       "n_words": 21,
       "n_dfa_states": 45,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6264041642071397,
-        "char": 0.43995410316852906,
-        "position": 0.2606476485829207,
-        "position_from_end": 0.2895925800236328
+        "dfa": 0.7841798474207626,
+        "char": 0.5539828987296449,
+        "position": 0.44835796265349714,
+        "position_from_end": 0.5248430004331709
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07343552204359409,
-        "char": 0.06944220963064421,
-        "position": 0.07196197282456995,
-        "position_from_end": 0.07219936681137838
+        "dfa": 0.2938263968288897,
+        "char": 0.29697990587618545,
+        "position": 0.29707755397192337,
+        "position_from_end": 0.30021320096118104
       },
       "between_cosine": {
-        "dfa": 0.030960241589610735,
-        "char": 0.043958705396537415,
-        "position": 0.03299270052300726,
-        "position_from_end": 0.02165376290237523
+        "dfa": 0.2631712370118396,
+        "char": 0.27936335581609795,
+        "position": 0.2680645632380886,
+        "position_from_end": 0.24714091482619857
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07029895036097708,
-        "char": 0.07058380452921281,
-        "position": 0.07022025695545006,
-        "position_from_end": 0.07012995067614232
+        "dfa": 0.29805544222173125,
+        "char": 0.2978316702790396,
+        "position": 0.2979120857311523,
+        "position_from_end": 0.2972307781567342
       },
       "pairwise_within_median": {
-        "dfa": 5.118719394231757,
-        "char": 6.8429211284791185,
-        "position": 7.806395027696193,
-        "position_from_end": 7.522222263804295
+        "dfa": 2.6932792723248626,
+        "char": 7.029724391902082,
+        "position": 7.04029411234632,
+        "position_from_end": 7.100377133842217
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.619775963360926,
-        "char": 8.640597125338916,
-        "position": 8.608448839306655,
-        "position_from_end": 8.643604287286413
+        "dfa": 8.068558974295462,
+        "char": 8.12008578670714,
+        "position": 8.158537390531057,
+        "position_from_end": 8.059803802588538
       },
       "pairwise_between_median": {
-        "dfa": 8.731874183575616,
-        "char": 8.73074550637151,
-        "position": 8.745497609413965,
-        "position_from_end": 8.730459223782827
+        "dfa": 8.417245537951839,
+        "char": 8.21110423380854,
+        "position": 8.316163362253995,
+        "position_from_end": 8.220886509022174
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.637389154755953,
-        "char": 8.635017893187605,
-        "position": 8.640397324868292,
-        "position_from_end": 8.635376401627797
+        "dfa": 8.126473390391812,
+        "char": 8.110272235363567,
+        "position": 8.099302026394266,
+        "position_from_end": 8.119302799555243
       }
     },
     {
@@ -2312,54 +2312,54 @@
       "run_id": 41,
       "n_words": 21,
       "n_dfa_states": 49,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7034488241929853,
-        "char": 0.4129809055421624,
-        "position": 0.33914823505919667,
-        "position_from_end": 0.29871308204990143
+        "dfa": 0.9016542353176256,
+        "char": 0.54137475906232,
+        "position": 0.496038349233275,
+        "position_from_end": 0.566230826832654
       },
       "shuffle_within_cosine": {
-        "dfa": 0.0653940889257305,
-        "char": 0.07214568606938822,
-        "position": 0.07317381339112906,
-        "position_from_end": 0.074437125761664
+        "dfa": 0.31168038640439466,
+        "char": 0.3198382677735197,
+        "position": 0.3177834164539609,
+        "position_from_end": 0.31850667358656387
       },
       "between_cosine": {
-        "dfa": 0.026874885971132707,
-        "char": 0.04215653235614008,
-        "position": 0.01881198825264035,
-        "position_from_end": 0.020379933495414077
+        "dfa": 0.27491115368004054,
+        "char": 0.29726674691322863,
+        "position": 0.2812381003659416,
+        "position_from_end": 0.2597404637960391
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07327886671784214,
-        "char": 0.07279812228411114,
-        "position": 0.07265735350881163,
-        "position_from_end": 0.0723520235747342
+        "dfa": 0.3178183426919119,
+        "char": 0.31718320487392127,
+        "position": 0.3173250364856669,
+        "position_from_end": 0.3171462696630872
       },
       "pairwise_within_median": {
-        "dfa": 4.96702731991941,
-        "char": 7.612304071930332,
-        "position": 8.040518418224163,
-        "position_from_end": 8.341869540703758
+        "dfa": 1.7185556146442256,
+        "char": 8.679213512050556,
+        "position": 8.488970570722456,
+        "position_from_end": 8.387161648145593
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.219368598879596,
-        "char": 9.186300725843743,
-        "position": 9.16340935681352,
-        "position_from_end": 9.17662936026546
+        "dfa": 9.826459389043745,
+        "char": 10.055037666041487,
+        "position": 10.155977543975116,
+        "position_from_end": 10.196737617235735
       },
       "pairwise_between_median": {
-        "dfa": 9.25646784043144,
-        "char": 9.263539135824164,
-        "position": 9.336780628550402,
-        "position_from_end": 9.256786574900893
+        "dfa": 10.64871979838787,
+        "char": 10.386200646538235,
+        "position": 10.552898457273674,
+        "position_from_end": 10.561031324444315
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.182819566892524,
-        "char": 9.184510847103507,
-        "position": 9.187266268702617,
-        "position_from_end": 9.185842432749869
+        "dfa": 10.283290707419969,
+        "char": 10.276331721211964,
+        "position": 10.270606107682232,
+        "position_from_end": 10.267008574619544
       }
     },
     {
@@ -2368,54 +2368,54 @@
       "run_id": 42,
       "n_words": 22,
       "n_dfa_states": 43,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6958447191684416,
-        "char": 0.4674910658193794,
-        "position": 0.2966220418850992,
-        "position_from_end": 0.3989740421734506
+        "dfa": 0.8838773910079512,
+        "char": 0.5467159513898916,
+        "position": 0.43069797794708015,
+        "position_from_end": 0.5700983521327165
       },
       "shuffle_within_cosine": {
-        "dfa": 0.1708317753346673,
-        "char": 0.16704771075614555,
-        "position": 0.16786612829093697,
-        "position_from_end": 0.1688588326630388
+        "dfa": 0.32181955167164594,
+        "char": 0.3206247678381001,
+        "position": 0.32087231268703953,
+        "position_from_end": 0.32294356114151845
       },
       "between_cosine": {
-        "dfa": 0.12824799391414632,
-        "char": 0.14309171293720144,
-        "position": 0.14007268575435067,
-        "position_from_end": 0.11379989233941917
+        "dfa": 0.27988813032370996,
+        "char": 0.30328298099733714,
+        "position": 0.2984461668563093,
+        "position_from_end": 0.26402250884467454
       },
       "shuffle_between_cosine": {
-        "dfa": 0.1670564820915383,
-        "char": 0.1673380187844098,
-        "position": 0.16720050402733452,
-        "position_from_end": 0.1669600006915447
+        "dfa": 0.3214349441100756,
+        "char": 0.3215289361611659,
+        "position": 0.32158553658090905,
+        "position_from_end": 0.32111901931346454
       },
       "pairwise_within_median": {
-        "dfa": 5.103305098634593,
-        "char": 7.463707930343613,
-        "position": 8.541650306885284,
-        "position_from_end": 7.641844768653387
+        "dfa": 1.4740311733440636,
+        "char": 7.529752519086129,
+        "position": 8.688561292444074,
+        "position_from_end": 8.081503615526533
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.08342147965327,
-        "char": 9.130205832224144,
-        "position": 9.101656911297127,
-        "position_from_end": 9.09610207364036
+        "dfa": 9.013882245755235,
+        "char": 9.047414340117571,
+        "position": 9.001456392315031,
+        "position_from_end": 9.044964442649652
       },
       "pairwise_between_median": {
-        "dfa": 9.210457261592861,
-        "char": 9.20957013767361,
-        "position": 9.19805959262986,
-        "position_from_end": 9.269112101901566
+        "dfa": 9.271468380347045,
+        "char": 9.09623104332649,
+        "position": 9.149856396780635,
+        "position_from_end": 9.153137672217614
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.120227544437324,
-        "char": 9.11829687110068,
-        "position": 9.119756250526324,
-        "position_from_end": 9.122721516107687
+        "dfa": 9.036884529149763,
+        "char": 9.015448439930001,
+        "position": 9.029262588039213,
+        "position_from_end": 9.022885723383654
       }
     },
     {
@@ -2424,54 +2424,54 @@
       "run_id": 43,
       "n_words": 22,
       "n_dfa_states": 46,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7414703453721222,
-        "char": 0.3748477993535098,
-        "position": 0.3359076194319227,
-        "position_from_end": 0.38191188065938875
+        "dfa": 0.9090098949057076,
+        "char": 0.5306780525129607,
+        "position": 0.5481083522954925,
+        "position_from_end": 0.6030437793593271
       },
       "shuffle_within_cosine": {
-        "dfa": 0.10058472684294723,
-        "char": 0.10059821390104802,
-        "position": 0.09646240722662207,
-        "position_from_end": 0.1012405563905334
+        "dfa": 0.3353653667775845,
+        "char": 0.3351043179246885,
+        "position": 0.3320516515514866,
+        "position_from_end": 0.33726882299226324
       },
       "between_cosine": {
-        "dfa": 0.04403529296111944,
-        "char": 0.07229371815925094,
-        "position": 0.044533197778793554,
-        "position_from_end": 0.028389360973358414
+        "dfa": 0.28515003043845477,
+        "char": 0.31548213975574785,
+        "position": 0.2851553311805012,
+        "position_from_end": 0.2671848760834305
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09981758631467533,
-        "char": 0.09980685985094487,
-        "position": 0.10068016312274934,
-        "position_from_end": 0.09953388712502431
+        "dfa": 0.3350797002945875,
+        "char": 0.33510239865978025,
+        "position": 0.33581797745885755,
+        "position_from_end": 0.3345534730819682
       },
       "pairwise_within_median": {
-        "dfa": 4.86781443823825,
-        "char": 8.1113116623624,
-        "position": 8.294775964764737,
-        "position_from_end": 7.557394936560042
+        "dfa": 2.000507433555822,
+        "char": 8.645574540242324,
+        "position": 8.950248439955937,
+        "position_from_end": 8.232071703222198
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.480553093333224,
-        "char": 9.480865893880386,
-        "position": 9.484894213992213,
-        "position_from_end": 9.475234784927045
+        "dfa": 10.47013892866336,
+        "char": 10.15482839316913,
+        "position": 10.048111699401591,
+        "position_from_end": 9.995138838907504
       },
       "pairwise_between_median": {
-        "dfa": 9.612219466385644,
-        "char": 9.60941501898722,
-        "position": 9.658174851180986,
-        "position_from_end": 9.661178217969066
+        "dfa": 11.015534021581589,
+        "char": 9.913341057521546,
+        "position": 10.199580681883788,
+        "position_from_end": 10.206494279849593
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.475632507472382,
-        "char": 9.474565753761057,
-        "position": 9.472626044155353,
-        "position_from_end": 9.476790505099483
+        "dfa": 9.910033085691584,
+        "char": 9.897737064068746,
+        "position": 9.895341016884343,
+        "position_from_end": 9.911719819111177
       }
     },
     {
@@ -2480,54 +2480,54 @@
       "run_id": 44,
       "n_words": 23,
       "n_dfa_states": 38,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7329171091230301,
-        "char": 0.39389480594540444,
-        "position": 0.30026696636081135,
-        "position_from_end": 0.3973833462343742
+        "dfa": 0.852183024810207,
+        "char": 0.4790247999835714,
+        "position": 0.4596530966286626,
+        "position_from_end": 0.5962473977661267
       },
       "shuffle_within_cosine": {
-        "dfa": 0.10675873005858294,
-        "char": 0.10508854983926358,
-        "position": 0.1098386549659943,
-        "position_from_end": 0.10991187251078893
+        "dfa": 0.30827111085227826,
+        "char": 0.3074396649300699,
+        "position": 0.310393042962551,
+        "position_from_end": 0.3137095863746153
       },
       "between_cosine": {
-        "dfa": 0.05676792924297626,
-        "char": 0.08270058452172399,
-        "position": 0.06549573092771452,
-        "position_from_end": 0.038469471254326794
+        "dfa": 0.2656068629139243,
+        "char": 0.29572969268052685,
+        "position": 0.2772093722514132,
+        "position_from_end": 0.24097182903243863
       },
       "shuffle_between_cosine": {
-        "dfa": 0.11036394916289761,
-        "char": 0.1105611774934814,
-        "position": 0.11013619561670722,
-        "position_from_end": 0.11012152026050571
+        "dfa": 0.31216299751157583,
+        "char": 0.3122821859408277,
+        "position": 0.3121991177695818,
+        "position_from_end": 0.31139416640629886
       },
       "pairwise_within_median": {
-        "dfa": 4.982883462384156,
-        "char": 7.632220966379348,
-        "position": 8.040972251173374,
-        "position_from_end": 7.545993894606134
+        "dfa": 2.0765996023576596,
+        "char": 8.549891253494838,
+        "position": 9.33926446934314,
+        "position_from_end": 8.866651976599755
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.202849323503184,
-        "char": 9.214259157547309,
-        "position": 9.21572991637882,
-        "position_from_end": 9.214519272781473
+        "dfa": 10.679289859451691,
+        "char": 10.561151647124504,
+        "position": 10.348617992687661,
+        "position_from_end": 10.443616277393483
       },
       "pairwise_between_median": {
-        "dfa": 9.342407225203733,
-        "char": 9.345588755008002,
-        "position": 9.377003934639209,
-        "position_from_end": 9.415146510750064
+        "dfa": 10.839685208692512,
+        "char": 10.461211900723889,
+        "position": 10.53185768463571,
+        "position_from_end": 10.606750359442994
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.202358371578738,
-        "char": 9.20142687566681,
-        "position": 9.198975230912968,
-        "position_from_end": 9.200016531709494
+        "dfa": 10.380622096031393,
+        "char": 10.382951336848002,
+        "position": 10.402329574529844,
+        "position_from_end": 10.387860859891742
       }
     },
     {
@@ -2536,54 +2536,54 @@
       "run_id": 45,
       "n_words": 23,
       "n_dfa_states": 41,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6869349242854297,
-        "char": 0.47237509061508504,
-        "position": 0.3192744109201814,
-        "position_from_end": 0.27977013260686695
+        "dfa": 0.9113174301810372,
+        "char": 0.5099217904828108,
+        "position": 0.45881023253113884,
+        "position_from_end": 0.5444334901643666
       },
       "shuffle_within_cosine": {
-        "dfa": 0.11278838921659098,
-        "char": 0.11621322466197719,
-        "position": 0.10918411376875684,
-        "position_from_end": 0.11250783411378419
+        "dfa": 0.2900376021197406,
+        "char": 0.29299279099555825,
+        "position": 0.2887175011508838,
+        "position_from_end": 0.2887593411841546
       },
       "between_cosine": {
-        "dfa": 0.07430976496772357,
-        "char": 0.0764190723617081,
-        "position": 0.06838145235331697,
-        "position_from_end": 0.07289237086386413
+        "dfa": 0.24979643812459107,
+        "char": 0.26839731744338763,
+        "position": 0.254804121577284,
+        "position_from_end": 0.23174745791329204
       },
       "shuffle_between_cosine": {
-        "dfa": 0.11105735359339994,
-        "char": 0.11067559293429258,
-        "position": 0.11156795291279736,
-        "position_from_end": 0.11085590032206102
+        "dfa": 0.28956073895815815,
+        "char": 0.28926207991266234,
+        "position": 0.2897686579624291,
+        "position_from_end": 0.28977782802034346
       },
       "pairwise_within_median": {
-        "dfa": 4.902207766590007,
-        "char": 6.964658226934407,
-        "position": 7.841601030143583,
-        "position_from_end": 8.176776553087779
+        "dfa": 1.4263087449921212,
+        "char": 7.36949331068165,
+        "position": 7.688939014751638,
+        "position_from_end": 7.53736308895724
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.831141744301885,
-        "char": 8.828915570516006,
-        "position": 8.890577215302201,
-        "position_from_end": 8.844761283126173
+        "dfa": 8.457651248019566,
+        "char": 8.45566305515442,
+        "position": 8.613194988480203,
+        "position_from_end": 8.629588234312033
       },
       "pairwise_between_median": {
-        "dfa": 8.99236514422785,
-        "char": 9.037071044313139,
-        "position": 9.050125348302764,
-        "position_from_end": 8.944332985953519
+        "dfa": 8.987388874092442,
+        "char": 8.853208859583638,
+        "position": 8.886073757100633,
+        "position_from_end": 8.907295951896893
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.878397938651032,
-        "char": 8.878520377117155,
-        "position": 8.871162511652997,
-        "position_from_end": 8.88204866727476
+        "dfa": 8.645261492743877,
+        "char": 8.646073841666684,
+        "position": 8.615842045253691,
+        "position_from_end": 8.612156077694364
       }
     },
     {
@@ -2592,54 +2592,54 @@
       "run_id": 46,
       "n_words": 24,
       "n_dfa_states": 45,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7839759801707783,
-        "char": 0.43954773998090857,
-        "position": 0.3110690827127217,
-        "position_from_end": 0.3292812042327519
+        "dfa": 0.9129004543250212,
+        "char": 0.5502456128282716,
+        "position": 0.5035965631177084,
+        "position_from_end": 0.5738458356373278
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07987565436089973,
-        "char": 0.08406690020952005,
-        "position": 0.08719326340724348,
-        "position_from_end": 0.08588879653367078
+        "dfa": 0.32468993629379245,
+        "char": 0.32561114020507326,
+        "position": 0.3274402493600749,
+        "position_from_end": 0.32548626114784057
       },
       "between_cosine": {
-        "dfa": 0.0392606365379927,
-        "char": 0.058522462042311055,
-        "position": 0.04254675682058767,
-        "position_from_end": 0.033311981072136954
+        "dfa": 0.28711322086697655,
+        "char": 0.30902013644393905,
+        "position": 0.2921840015507807,
+        "position_from_end": 0.2727674056046788
       },
       "shuffle_between_cosine": {
-        "dfa": 0.08655327883719799,
-        "char": 0.0862944026494508,
-        "position": 0.08592753841611288,
-        "position_from_end": 0.08618603738176596
+        "dfa": 0.326621837190771,
+        "char": 0.32656970461762647,
+        "position": 0.3263180969501837,
+        "position_from_end": 0.3267205188128285
       },
       "pairwise_within_median": {
-        "dfa": 3.5278225067316002,
-        "char": 6.24648782943217,
-        "position": 6.977290277763218,
-        "position_from_end": 7.18490602677393
+        "dfa": 1.487238085001893,
+        "char": 8.410598958983673,
+        "position": 8.328740193756424,
+        "position_from_end": 8.600189779637251
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.062245072710775,
-        "char": 8.0383129306802,
-        "position": 8.028134211757505,
-        "position_from_end": 8.021519545739364
+        "dfa": 10.173843421252323,
+        "char": 9.992454799441688,
+        "position": 9.850673169920332,
+        "position_from_end": 9.88032784467935
       },
       "pairwise_between_median": {
-        "dfa": 8.119806868479598,
-        "char": 8.135598587135078,
-        "position": 8.17308010843286,
-        "position_from_end": 8.135706891362863
+        "dfa": 10.284833992717036,
+        "char": 9.994434116880626,
+        "position": 10.076023270250873,
+        "position_from_end": 10.077759362301066
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.035780561312933,
-        "char": 8.036343354363098,
-        "position": 8.037721496022462,
-        "position_from_end": 8.038914660844872
+        "dfa": 9.863912361072211,
+        "char": 9.868151952909809,
+        "position": 9.870307857952705,
+        "position_from_end": 9.869267990831343
       }
     },
     {
@@ -2648,54 +2648,54 @@
       "run_id": 47,
       "n_words": 24,
       "n_dfa_states": 47,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.707953265726299,
-        "char": 0.4819231406922013,
-        "position": 0.2714984151639024,
-        "position_from_end": 0.282916613480078
+        "dfa": 0.8708411507926971,
+        "char": 0.5135818389228912,
+        "position": 0.4422639848275805,
+        "position_from_end": 0.5239150760376685
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07605528886733674,
-        "char": 0.07723591732406716,
-        "position": 0.07786862999309323,
-        "position_from_end": 0.07781560857963785
+        "dfa": 0.2888073918894236,
+        "char": 0.287722834158177,
+        "position": 0.29072099849169075,
+        "position_from_end": 0.2905526928994011
       },
       "between_cosine": {
-        "dfa": 0.03870717621216772,
-        "char": 0.05112886339340009,
-        "position": 0.038014338621691485,
-        "position_from_end": 0.0336598401665675
+        "dfa": 0.25330770005538594,
+        "char": 0.27452002472965537,
+        "position": 0.257951579044749,
+        "position_from_end": 0.23895197358353362
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07773711761080704,
-        "char": 0.07766573049950726,
-        "position": 0.077592401253594,
-        "position_from_end": 0.07760150321295485
+        "dfa": 0.2892577178334851,
+        "char": 0.28933045127160384,
+        "position": 0.28892707075092683,
+        "position_from_end": 0.288948467811055
       },
       "pairwise_within_median": {
-        "dfa": 4.901221581094169,
-        "char": 6.582356598781628,
-        "position": 7.884833483197289,
-        "position_from_end": 8.108898701985522
+        "dfa": 2.1892097722432236,
+        "char": 6.088280668136559,
+        "position": 7.277210170189152,
+        "position_from_end": 7.983624444828919
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.90887353002133,
-        "char": 8.910098133431548,
-        "position": 8.925872092410772,
-        "position_from_end": 8.914964387967599
+        "dfa": 9.670368617603387,
+        "char": 8.731935947336938,
+        "position": 8.413236972293802,
+        "position_from_end": 8.401961832321867
       },
       "pairwise_between_median": {
-        "dfa": 9.010713947197782,
-        "char": 9.012485053720944,
-        "position": 9.050130444054922,
-        "position_from_end": 9.010713947197782
+        "dfa": 8.77688510267863,
+        "char": 8.56209659229252,
+        "position": 8.566849063010656,
+        "position_from_end": 8.412560057624068
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.912637937287837,
-        "char": 8.912871491872933,
-        "position": 8.909980493605971,
-        "position_from_end": 8.913242772621384
+        "dfa": 8.344827967539143,
+        "char": 8.355369814728425,
+        "position": 8.357746237761901,
+        "position_from_end": 8.357906511362037
       }
     },
     {
@@ -2704,54 +2704,54 @@
       "run_id": 48,
       "n_words": 25,
       "n_dfa_states": 46,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.6797671681256053,
-        "char": 0.3706085486603766,
-        "position": 0.2591568082511273,
-        "position_from_end": 0.33186674369497954
+        "dfa": 0.8399378789656854,
+        "char": 0.45239297069791456,
+        "position": 0.4134482298202472,
+        "position_from_end": 0.5305588288407246
       },
       "shuffle_within_cosine": {
-        "dfa": 0.09820223924618758,
-        "char": 0.08936849656564139,
-        "position": 0.09151456591624729,
-        "position_from_end": 0.09346448796556804
+        "dfa": 0.2920731041489893,
+        "char": 0.29272607610794504,
+        "position": 0.29384153005822844,
+        "position_from_end": 0.2959024299850249
       },
       "between_cosine": {
-        "dfa": 0.052674356193027176,
-        "char": 0.07064789175944088,
-        "position": 0.05715777459067825,
-        "position_from_end": 0.03811285644457707
+        "dfa": 0.2578289169003889,
+        "char": 0.2828814732166809,
+        "position": 0.2699506095181528,
+        "position_from_end": 0.24114653644637937
       },
       "shuffle_between_cosine": {
-        "dfa": 0.09337570631187794,
-        "char": 0.09405112957046259,
-        "position": 0.09417203174071606,
-        "position_from_end": 0.09374435196129412
+        "dfa": 0.29617173110785133,
+        "char": 0.2961680669177007,
+        "position": 0.2963589483723606,
+        "position_from_end": 0.2959039310900212
       },
       "pairwise_within_median": {
-        "dfa": 4.907785784012078,
-        "char": 7.275513057026971,
-        "position": 8.033137685651232,
-        "position_from_end": 7.615414769589253
+        "dfa": 1.7258227458023745,
+        "char": 8.453886892523379,
+        "position": 8.068122875102642,
+        "position_from_end": 7.7988130518061975
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 8.701332605376344,
-        "char": 8.764050390813946,
-        "position": 8.749333746356022,
-        "position_from_end": 8.752648933599746
+        "dfa": 8.702333930608189,
+        "char": 8.676520538954824,
+        "position": 8.782840425468136,
+        "position_from_end": 8.769365002169609
       },
       "pairwise_between_median": {
-        "dfa": 8.835482817852055,
-        "char": 8.831025709518604,
-        "position": 8.83832494148156,
-        "position_from_end": 8.852958769869348
+        "dfa": 9.36648210082509,
+        "char": 8.73329146789981,
+        "position": 8.839185696313688,
+        "position_from_end": 8.893366193851715
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 8.752125692407501,
-        "char": 8.747939689178931,
-        "position": 8.748393025624063,
-        "position_from_end": 8.748822145132593
+        "dfa": 8.754871352630833,
+        "char": 8.741184890468377,
+        "position": 8.732368990944885,
+        "position_from_end": 8.733274553386037
       }
     },
     {
@@ -2760,54 +2760,54 @@
       "run_id": 49,
       "n_words": 25,
       "n_dfa_states": 44,
-      "hidden_size": 100,
+      "hidden_size": 200,
       "within_cosine": {
-        "dfa": 0.7021959466361698,
-        "char": 0.4550907516455438,
-        "position": 0.2750329372632047,
-        "position_from_end": 0.3034268725219689
+        "dfa": 0.8387996471976419,
+        "char": 0.5447827775223656,
+        "position": 0.47533250325143184,
+        "position_from_end": 0.5632829642714784
       },
       "shuffle_within_cosine": {
-        "dfa": 0.07306699652462896,
-        "char": 0.0765392882782336,
-        "position": 0.073558252178009,
-        "position_from_end": 0.07319905037460638
+        "dfa": 0.31049205094453325,
+        "char": 0.3180280320034466,
+        "position": 0.3149214762301962,
+        "position_from_end": 0.3157653742070754
       },
       "between_cosine": {
-        "dfa": 0.03451646613060828,
-        "char": 0.04661273468135408,
-        "position": 0.032333487327331184,
-        "position_from_end": 0.022273909377470293
+        "dfa": 0.28333594794273004,
+        "char": 0.29991601294621806,
+        "position": 0.28322948974638706,
+        "position_from_end": 0.2602786066432432
       },
       "shuffle_between_cosine": {
-        "dfa": 0.07474648062753675,
-        "char": 0.07450600040315589,
-        "position": 0.07487512191682268,
-        "position_from_end": 0.07497666384493884
+        "dfa": 0.31711888266911936,
+        "char": 0.31662425735287525,
+        "position": 0.3171004809966118,
+        "position_from_end": 0.31693925979051624
       },
       "pairwise_within_median": {
-        "dfa": 5.458940103946496,
-        "char": 7.522424801665134,
-        "position": 8.53627528822714,
-        "position_from_end": 8.499768998296684
+        "dfa": 2.227009533476626,
+        "char": 9.297378899244958,
+        "position": 9.759925425252483,
+        "position_from_end": 8.8804139467348
       },
       "shuffle_pairwise_within_median": {
-        "dfa": 9.619297445745334,
-        "char": 9.578100269176064,
-        "position": 9.611776785484306,
-        "position_from_end": 9.614111983272998
+        "dfa": 10.62153336966798,
+        "char": 10.835321594859293,
+        "position": 10.915283578061134,
+        "position_from_end": 10.935012631318218
       },
       "pairwise_between_median": {
-        "dfa": 9.694005343271842,
-        "char": 9.707196470248002,
-        "position": 9.744311255338818,
-        "position_from_end": 9.736857621949047
+        "dfa": 11.280098339522313,
+        "char": 10.985544402628468,
+        "position": 11.107344518601051,
+        "position_from_end": 11.130100749086342
       },
       "shuffle_pairwise_between_median": {
-        "dfa": 9.609198153403689,
-        "char": 9.610948642230792,
-        "position": 9.608078188484038,
-        "position_from_end": 9.60722897667118
+        "dfa": 10.954473350808644,
+        "char": 10.94788759182279,
+        "position": 10.94930277090453,
+        "position_from_end": 10.944602839961757
       }
     }
   ]

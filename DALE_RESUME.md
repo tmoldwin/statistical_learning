@@ -29,34 +29,31 @@ python -c "import json; d=json.load(open(r'experiments/comparisons/mixed_vocab_d
 
 ### 1. Finish mixed analysis plots
 
-Panels are already Dale. Prefer avoiding a full panel recompute:
+Panels are already Dale. Prefer avoiding a full panel recompute.
+**Skip learning-decode** (per-snap PCA probes) — slow and not needed for the main Dale paper refresh:
 
 ```powershell
-python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1 --replot-only
+python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1 --replot-only --skip-learning-decode
 ```
 
-Note: `--replot-only` sets `recompute=False`. If learning-decode / metrics / within-corr JSONs are still from old `rnn`, delete those stale JSONs first or run without `--replot-only`:
-
-```powershell
-# nuclear: recomputes everything including panels (~45-90+ min)
-python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1
-```
-
-Recommended middle path (keep Dale panels, redo downstream that still needs Dale):
+Note: `--replot-only` sets `recompute=False`. If metrics / within-corr JSONs are still from old `rnn`, delete those stale JSONs first:
 
 ```powershell
 # optional: remove stale non-panel analysis caches if they predate Dale
 Remove-Item -ErrorAction SilentlyContinue `
   experiments\comparisons\mixed_vocab_dfa_ns\data\mixed_dfa_metric_board.json, `
-  experiments\comparisons\mixed_vocab_dfa_ns\data\within_corr_vs_dfa.json, `
-  experiments\comparisons\mixed_vocab_dfa_ns\decoding\learning_decode_by_dfa.json
+  experiments\comparisons\mixed_vocab_dfa_ns\data\within_corr_vs_dfa.json
 
-python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1 --replot-only
+python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1 --replot-only --skip-learning-decode
 ```
 
-If that still skips needed work, drop `--replot-only` (will redo panels too — slow).
+Learning-decode (optional later; ~1–2h): drop `--skip-learning-decode`, and also clear
+`decoding/learning_decode_by_dfa.json` if it still says `model_type=rnn`.
 
-Expect learning-decode over snaps to be the slow remaining step.
+```powershell
+# nuclear: recomputes everything including panels + learning-decode (~45-90+ min)
+python scripts/mixed_dfa_sweep.py plot --model-type rnn_dale --seeds 1
+```
 
 ### 2. Sync paper figures
 
@@ -73,7 +70,12 @@ After plots finish, commit regenerated JSON/PNGs under
 
 ### 4. Sanity
 
-Spot-check decoding-vs-DFA, learning-decode, trajectory grid.
+Spot-check decoding-vs-DFA, trajectory grid, weight matrices / motifs.
+
+Still open (not blocking this refresh):
+- learning-decode collect (optional; `--skip-learning-decode` is the default path now)
+- `sixteen_word_four_letter_ns` Dale train + viz (paper collect still misses those two figs)
+- condensed-named demo plot aliases (collect now points at non-condensed Dale outputs)
 
 ## Retrain only if ckpts missing
 

@@ -1477,7 +1477,13 @@ def collect_mixed_dfa_weight_layeredness(
 
     out = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_weight_graph_metrics.json"
     if out.is_file() and not recompute:
-        return out
+        try:
+            cached = json.loads(out.read_text(encoding="utf-8"))
+        except Exception:
+            cached = {}
+        if cached.get("model_type", "rnn") == model_type and int(cached.get("seed", seed)) == int(seed):
+            return out
+        # Stale cache from another model family — fall through and recompute.
 
     panels: list[dict[str, Any]] = []
     for entry in iter_runs():
@@ -1532,6 +1538,7 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     min_r2: float | None = None,
     lettered: bool = False,
     metric_specs: tuple[tuple[str, str, str], ...] | None = None,
+    model_type: str = "rnn",
 ) -> Path:
     """Graph + rank + letter-block + directionality metrics vs DFA size.
 
@@ -1546,7 +1553,9 @@ def plot_mixed_dfa_weight_graph_metrics_vs_dfa(
     """
     from viz.compare.pow2_sweep_metric_board import _fit_line, _fit_trend
 
-    path = collect_mixed_dfa_weight_layeredness(seed=seed, recompute=recompute)
+    path = collect_mixed_dfa_weight_layeredness(
+        seed=seed, recompute=recompute, model_type=model_type,
+    )
     payload = json.loads(path.read_text(encoding="utf-8"))
     panels = [p for p in payload.get("panels", []) if "error" not in p]
     if not panels:
@@ -2031,6 +2040,7 @@ def plot_mixed_dfa_weight_graph_metrics_paper(
     seed: int = 1,
     recompute: bool = False,
     min_r2: float | None = None,
+    model_type: str = "rnn",
 ) -> Path:
     """Paper board: curated lettered grid; always show the curated panel set.
 
@@ -2046,6 +2056,7 @@ def plot_mixed_dfa_weight_graph_metrics_paper(
         min_r2=None,
         lettered=True,
         metric_specs=_PAPER_WEIGHT_METRICS,
+        model_type=model_type,
     )
 
 
@@ -3873,6 +3884,7 @@ def run_all_mixed_dfa_plots(
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
     recompute: bool = True,
     model_type: str = "rnn",
+    skip_learning_decode: bool = False,
 ) -> list[Path]:
     path = collect_mixed_dfa_panels(seeds=seeds, recompute=recompute, model_type=model_type)
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -3882,8 +3894,6 @@ def run_all_mixed_dfa_plots(
         model_type=model_type,
     )
     pos_payload = json.loads(pos_path.read_text(encoding="utf-8"))
-    # Refresh learning-decode JSON from this model_type's snaps before plotting.
-    collect_learning_decode_by_dfa(recompute=recompute, model_type=model_type)
     outs = [
         plot_nwords_vs_dfa_sanity(payload),
         plot_decoding_vs_dfa(payload),
@@ -3901,9 +3911,16 @@ def run_all_mixed_dfa_plots(
             model_type=model_type,
         ),
         plot_mixed_position_word_length_decode(pos_payload),
-        plot_learning_decode_by_dfa_bins(),
-        plot_decoding_and_learning_combined(payload),
     ]
+    if skip_learning_decode:
+        print("skipping learning-decode collect + plots", flush=True)
+    else:
+        # Refresh learning-decode JSON from this model_type's snaps before plotting.
+        collect_learning_decode_by_dfa(recompute=recompute, model_type=model_type)
+        outs.extend([
+            plot_learning_decode_by_dfa_bins(),
+            plot_decoding_and_learning_combined(payload),
+        ])
     from viz.compare.mixed_dfa_unit_selectivity import (
         plot_mixed_fig15_geometry_and_selectivity,
         run_mixed_dfa_unit_selectivity_analysis,

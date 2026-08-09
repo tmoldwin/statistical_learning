@@ -82,13 +82,13 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.jpg", as_jpg=False),
         # Demo narrative figs (eight-word -ate/-at demo through trajectories).
         FigureRef("demo", "fig_next_char_probs.jpg",
-                  _demo("activations/8_next_char_prob_sequence_condensed.png"),
+                  _demo("activations/8_next_char_prob_sequence.png"),
                   max_w=2800),
         FigureRef("demo", "fig_activation_heatmap.jpg", _demo("activations/7_activation_heatmap.png")),
         FigureRef("demo", "fig_activation_clustered.jpg",
                   _demo("activations/10_activation_clustered_heatmap.png")),
         FigureRef("demo", "fig_state_correlation.jpg",
-                  _demo("correlation/17_state_correlation_clustered_condensed.png")),
+                  _demo("correlation/17_state_correlation_clustered.png")),
         FigureRef("demo", "fig_dfa_pca_geometry.jpg",
                   _demo("separation/dfa_pca_geometry_and_separation.png"),
                   max_w=1200),
@@ -107,11 +107,11 @@ def paper_manifest() -> list[FigureRef]:
                   max_w=1600),
         # Leftovers / alt copies still useful for supplements.
         FigureRef("main", "fig11_embedding_panels.jpg",
-                  _demo("embeddings/11_embedding_panels_context_condensed.png")),
+                  _demo("embeddings/11_embedding_panels_context.png")),
         FigureRef("main", "fig20_feature_separation.jpg",
                   _demo("separation/feature_separation_summary_seed_mean.png")),
         FigureRef("main", "fig19_dfa_distance.jpg",
-                  _demo("separation/19_dfa_state_distance_comparison_condensed.png")),
+                  _demo("separation/19_dfa_state_distance_comparison.png")),
         FigureRef("main", "fig_word_trajectories_by_start.jpg",
                   _anchor("trajectories/closed_loop_run_seed_row.png")),
         FigureRef("compare", "fig_traj_by_length.jpg", traj_by_length,
@@ -131,9 +131,8 @@ def paper_manifest() -> list[FigureRef]:
                   / "trajectories" / "scaling_overview.png",
                   max_w=1400),
         FigureRef("compare", "fig_mixed_decoding_curves.jpg",
-                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "decoding_and_learning_combined.png",
-                  max_w=1400),
+                  ROOT / "paper" / "figures" / "compare" / "fig_mixed_decoding_curves.jpg",
+                  as_jpg=False),
         FigureRef("compare", "fig_mixed_cosine_within.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "fig15_geometry_and_selectivity.png",
@@ -146,11 +145,10 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_by_position_word_length.png",
                   max_w=1100),
-        # Standalone leftovers (also produced by sweep; not required by draft order).
+        # Learning-decode skipped on Dale refresh; keep prior paper JPG until regenerated.
         FigureRef("compare", "fig_mixed_learning_decode.jpg",
-                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
-                  / "decoding" / "learning_decode_by_dfa.png",
-                  max_w=1400),
+                  ROOT / "paper" / "figures" / "compare" / "fig_mixed_learning_decode.jpg",
+                  as_jpg=False),
         # Leftover metrics board (not in draft; weight scatters live on fig_weight_matrices).
         FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"

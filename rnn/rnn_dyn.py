@@ -86,6 +86,22 @@ def permute_hidden_by_dale(
     )
 
 
+def dale_input_row_signs(dale_sign: np.ndarray) -> np.ndarray:
+    """Row signs for W_xh: +1 on excitatory targets, 0 on inhibitory (no direct input)."""
+    signs = np.zeros(len(dale_sign), dtype=float)
+    signs[np.asarray(dale_sign) > 0] = 1.0
+    return signs
+
+
+def enforce_dale_input_exc_only(
+    weights_input_to_hidden: np.ndarray,
+    dale_sign: np.ndarray,
+) -> None:
+    """Feedforward input only onto excitatory units (I rows hard-zeroed; E rows ≥ 0)."""
+    mask = (np.asarray(dale_sign).ravel() > 0).reshape(-1, 1)
+    weights_input_to_hidden[:] = np.abs(weights_input_to_hidden) * mask
+
+
 def init_dale_weights(
     hidden_size: int,
     vocab_size: int,
@@ -94,12 +110,13 @@ def init_dale_weights(
     scale: float = 0.01,
     rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Init W_xh rows, W_hh/W_ho columns with magnitudes × neuron Dale sign."""
+    """Init Dale weights: W_xh → E only; W_hh/W_ho columns signed by source type."""
     rng = rng or np.random.default_rng()
-    row_sign = dale_sign.reshape(-1, 1)
     col_sign = dale_sign.reshape(1, -1)
+    # Sensory/feedforward drive targets excitatory cells only (I rows stay 0).
     weights_input_to_hidden = (
-        np.abs(rng.standard_normal((hidden_size, vocab_size))) * scale * row_sign
+        np.abs(rng.standard_normal((hidden_size, vocab_size))) * scale
+        * (np.asarray(dale_sign).ravel() > 0).reshape(-1, 1)
     )
     weights_hidden_to_hidden = (
         np.abs(rng.standard_normal((hidden_size, hidden_size))) * scale * col_sign
@@ -159,9 +176,8 @@ def enforce_dale_weights(
     dale_sign: np.ndarray,
 ) -> None:
     """Hard projection (init / diagnostics). Training uses soft Dale in adagrad_step."""
-    row_sign = dale_sign.reshape(-1, 1)
     col_sign = dale_sign.reshape(1, -1)
-    weights_input_to_hidden[:] = np.abs(weights_input_to_hidden) * row_sign
+    enforce_dale_input_exc_only(weights_input_to_hidden, dale_sign)
     weights_hidden_to_hidden[:] = np.abs(weights_hidden_to_hidden) * col_sign
     weights_hidden_to_output[:] = np.abs(weights_hidden_to_output) * col_sign
 
@@ -185,13 +201,17 @@ def soft_dale_step_scale(
     axis: str = "col",
     soft_eps: float = DEFAULT_DALE_SOFT_EPS,
 ) -> np.ndarray:
-    """Scale Adagrad updates on Dale-constrained rows (W_xh) or columns (W_hh, W_ho)."""
+    """Scale Adagrad updates on Dale-constrained rows (W_xh) or columns (W_hh, W_ho).
+
+    Rows/columns with ``dale_sign == 0`` get scale 0 (hard-off, used for I←input).
+    """
     if axis == "col":
         signs = dale_sign.reshape(1, -1)
     elif axis == "row":
         signs = dale_sign.reshape(-1, 1)
     else:
         raise ValueError(f"dale axis must be 'row' or 'col', got {axis!r}")
+    active = signs != 0
     margin = weights * signs
     base = np.tanh(margin / soft_eps)
     opposed = delta * signs < 0
@@ -200,7 +220,7 @@ def soft_dale_step_scale(
         np.tanh(margin / (np.abs(delta) + soft_eps)),
         1.0,
     )
-    return base * step
+    return np.where(active, base * step, 0.0)
 
 
 def adagrad_step(
@@ -231,14 +251,20 @@ def dale_violation_fraction(
     weights_hidden_to_output: np.ndarray,
     dale_sign: np.ndarray,
 ) -> float:
-    """Fraction of Dale-scoped synapses with weight × neuron_sign <= 0."""
-    row_sign = dale_sign.reshape(-1, 1)
-    col_sign = dale_sign.reshape(1, -1)
-    margins = np.concatenate([
-        (weights_input_to_hidden * row_sign).ravel(),
+    """Fraction of Dale-scoped synapses violating sign / E-only-input constraints."""
+    sign = np.asarray(dale_sign, dtype=float).ravel()
+    exc = sign > 0
+    inh = ~exc
+    col_sign = sign.reshape(1, -1)
+    parts: list[np.ndarray] = [
+        weights_input_to_hidden[exc].ravel(),  # E←x should be > 0
         (weights_hidden_to_hidden * col_sign).ravel(),
         (weights_hidden_to_output * col_sign).ravel(),
-    ])
+    ]
+    # I←x must stay off; any nonzero counts as a violation.
+    if np.any(inh):
+        parts.append(-np.abs(weights_input_to_hidden[inh]).ravel())
+    margins = np.concatenate(parts) if parts else np.zeros(0)
     if margins.size == 0:
         return 0.0
     return float(np.mean(margins <= 0))

@@ -982,7 +982,7 @@ def plot_mixed_dfa_scaling_overview(
     model_type: str | None = None,
     seed: int | None = None,
 ) -> Path:
-    """Paper overview: vocab–DFA, training cost, PC spectra, CE + word-error curves."""
+    """Paper overview: training cost, PC spectra, CE + word-error curves."""
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     decode_payload = payload or _load_panels()
@@ -997,21 +997,18 @@ def plot_mixed_dfa_scaling_overview(
         if "error" not in p
     ]
 
-    fig = plt.figure(figsize=(10.2, 6.4))
-    gs = fig.add_gridspec(2, 6, height_ratios=[1.0, 1.0])
-    ax_nw = fig.add_subplot(gs[0, 0:2])
-    ax_it = fig.add_subplot(gs[0, 2:4])
-    ax_sp = fig.add_subplot(gs[0, 4:6])
-    ax_ce = fig.add_subplot(gs[1, 0:3])
-    ax_we = fig.add_subplot(gs[1, 3:6])
-
-    xs, ys = _nwords_dfa_xy(decode_payload)
-    ax_nw.scatter(xs, ys, s=28, alpha=0.8, color="#E45756", edgecolors="white", linewidths=0.4)
-    ax_nw.set_xlabel("# words", fontsize=8)
-    ax_nw.set_ylabel("DFA states", fontsize=8)
-    ax_nw.set_title("vocab size vs DFA", fontsize=9, pad=4)
-    ax_nw.grid(True, alpha=0.25)
-    ax_nw.tick_params(labelsize=7)
+    # Story: learning (CE → word-error) then summaries (iters → spectra).
+    # Colorbar columns sit with the panels that introduce each scale.
+    fig = plt.figure(figsize=(10.5, 6.4))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0])
+    ax_ce = fig.add_subplot(gs[0, 0])
+    gs_we = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
+    ax_we = fig.add_subplot(gs_we[0, 0])
+    cax_dfa = fig.add_subplot(gs_we[0, 1])
+    gs_it = gs[1, 0].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
+    ax_it = fig.add_subplot(gs_it[0, 0])
+    cax_w = fig.add_subplot(gs_it[0, 1])
+    ax_sp = fig.add_subplot(gs[1, 1])
 
     max_pcs = int(decode_payload.get("max_k", _DEFAULT_MAX_PCS))
     ks = np.arange(1, max_pcs + 1, dtype=float)
@@ -1048,6 +1045,7 @@ def plot_mixed_dfa_scaling_overview(
         mx.append(float(p["n_dfa_states"]))
         my.append(y)
         mn.append(float(p["n_words"]))
+    words_cbar_spec: tuple[Any, Any] | None
     if len(mx) >= 3:
         x = np.asarray(mx, dtype=float)
         y = np.asarray(my, dtype=float)
@@ -1067,17 +1065,13 @@ def plot_mixed_dfa_scaling_overview(
         ax_it.set_title(panel_title, fontsize=8, pad=4)
         ax_it.set_xlabel("DFA states", fontsize=8)
         if use_log:
-            ax_it.set_ylabel("log10", fontsize=8)
+            ax_it.set_ylabel("log10 iters", fontsize=8)
         ax_it.grid(True, alpha=0.25)
         ax_it.tick_params(labelsize=7)
-        cbar_w = fig.colorbar(
-            plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
-            ax=ax_it, pad=0.02, fraction=0.055,
-        )
-        cbar_w.set_label("# words", fontsize=7)
-        cbar_w.ax.tick_params(labelsize=6)
+        words_cbar_spec = (words_cmap, words_norm)
     else:
         ax_it.set_axis_off()
+        words_cbar_spec = None
 
     # Learning curves: one curve per run, colored by DFA size (same as spectra).
     run_seed = int(seed if seed is not None else (decode_payload.get("seeds") or [1])[0])
@@ -1110,22 +1104,235 @@ def plot_mixed_dfa_scaling_overview(
         ax_ce.set_axis_off()
         ax_we.set_axis_off()
 
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
-    cbar_dfa = fig.colorbar(sm, ax=[ax_sp, ax_ce, ax_we], pad=0.02, fraction=0.035)
-    cbar_dfa.set_label("DFA states", fontsize=7)
-    cbar_dfa.ax.tick_params(labelsize=6)
-
     finalize_grid_figure(
         fig,
         suptitle="Mixed-vocab scaling with DFA size",
         bottom=0.08,
-        left=0.06,
-        right=0.92,
+        left=0.08,
+        right=0.94,
         top=0.90,
-        wspace=0.55,
-        hspace=0.38,
+        wspace=0.28,
+        hspace=0.32,
     )
+
+    if words_cbar_spec is not None:
+        w_cmap, w_norm = words_cbar_spec
+        cbar_w = fig.colorbar(
+            plt.cm.ScalarMappable(cmap=w_cmap, norm=w_norm),
+            cax=cax_w,
+        )
+        cbar_w.set_label("# words", fontsize=7)
+        cbar_w.ax.tick_params(labelsize=6)
+    else:
+        cax_w.set_axis_off()
+
+    if decode_panels:
+        cbar_dfa = fig.colorbar(
+            plt.cm.ScalarMappable(cmap=cmap, norm=norm),
+            cax=cax_dfa,
+        )
+        cbar_dfa.set_label("DFA states", fontsize=7)
+        cbar_dfa.ax.tick_params(labelsize=6)
+    else:
+        cax_dfa.set_axis_off()
+
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out)
+    plt.close(fig)
+    return out
+
+
+def plot_mixed_dfa_dale_weight_distributions(
+    *,
+    outfile: str = "dale_weight_distributions_by_dfa.png",
+    seed: int = 1,
+    model_type: str = "rnn_dale",
+) -> Path:
+    """2×4 Dale weight figure: densities + mean-|W| vs DFA by E/I regime.
+
+    Top: ``W_hh`` signed densities (E→E, E→I, I→E, I→I), colored by DFA size.
+    Bottom: ``W_xh`` densities (x→E, x→I; equal panel size), then mean |W| vs DFA
+    for input regimes and for recurrent regimes (scatter + trend per regime).
+    """
+    from rnn.rnn_dyn import dale_ei_blocks
+    from visualize import load_model_for_viz, weights_for_plot
+
+    hh_specs: list[tuple[str, str, Any]] = [
+        ("EE", r"E$\rightarrow$E", lambda wi, wr, e, i: wr[np.ix_(e, e)].ravel()),
+        ("EI", r"E$\rightarrow$I", lambda wi, wr, e, i: wr[np.ix_(i, e)].ravel()),
+        ("IE", r"I$\rightarrow$E", lambda wi, wr, e, i: wr[np.ix_(e, i)].ravel()),
+        ("II", r"I$\rightarrow$I", lambda wi, wr, e, i: wr[np.ix_(i, i)].ravel()),
+    ]
+    xh_specs: list[tuple[str, str, Any]] = [
+        ("xE", r"x$\rightarrow$E", lambda wi, wr, e, i: wi[e, :].ravel()),
+        ("xI", r"x$\rightarrow$I", lambda wi, wr, e, i: wi[i, :].ravel()),
+    ]
+    dens_specs = hh_specs + xh_specs
+
+    # Source-typed palette: excitatory outgoing = reds; inhibitory = blues.
+    regime_colors = {
+        "EE": "#C62828",  # E→E dark red
+        "EI": "#EF9A9A",  # E→I light red
+        "IE": "#1565C0",  # I→E dark blue
+        "II": "#90CAF9",  # I→I light blue
+        "xE": "#C62828",  # input→E (excitatory targets)
+        "xI": "#1565C0",  # input→I (should be ~0)
+    }
+
+    runs: list[tuple[float, np.ndarray, np.ndarray, np.ndarray]] = []
+    for entry in iter_runs():
+        task = str(entry["task"])
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        model = load_model_for_viz(str(ckpt), model_type)
+        w_in, w_rec, _w_out, dale = weights_for_plot(model)
+        if dale is None or len(dale) != w_rec.shape[0]:
+            continue
+        exc, inh = dale_ei_blocks(np.asarray(dale))
+        if exc.size == 0 or inh.size == 0:
+            continue
+        runs.append((float(_dfa_states(list(entry["words"]))), w_in, w_rec, dale))
+
+    if len(runs) < 3:
+        raise FileNotFoundError(
+            f"need ≥3 Dale checkpoints for {model_type} seed={seed}; found {len(runs)}"
+        )
+
+    samples: list[list[np.ndarray]] = [[] for _ in dens_specs]
+    mean_abs: dict[str, list[float]] = {k: [] for k, _t, _f in dens_specs}
+    dfa_list: list[float] = []
+    for n_dfa, w_in, w_rec, dale in sorted(runs, key=lambda t: t[0]):
+        exc, inh = dale_ei_blocks(np.asarray(dale))
+        dfa_list.append(n_dfa)
+        for pi, (key, _title, fn) in enumerate(dens_specs):
+            arr = np.asarray(fn(w_in, w_rec, exc, inh), dtype=float).ravel()
+            samples[pi].append(arr)
+            mean_abs[key].append(float(np.mean(np.abs(arr))) if arr.size else 0.0)
+
+    dens: list[list[np.ndarray]] = [[] for _ in dens_specs]
+    bins_row: list[np.ndarray] = []
+    xlim_row: list[tuple[float, float]] = []
+    ymax_row = [1e-9, 1e-9]
+    # Density panels: top 0..3 (hh), bottom 4..5 (xh only — not the scatter cols).
+    dens_row_idxs = (range(4), range(4, 6))
+    for r, idxs in enumerate(dens_row_idxs):
+        row_arrs = [a for pi in idxs for a in samples[pi] if a.size]
+        cat = np.concatenate(row_arrs) if row_arrs else np.array([0.0])
+        lim = max(abs(float(np.percentile(cat, 0.5))), abs(float(np.percentile(cat, 99.5))), 1e-3)
+        w0, w1 = -lim, lim
+        xlim_row.append((w0, w1))
+        bins = np.linspace(w0, w1, 61)
+        bins_row.append(bins)
+        for pi in idxs:
+            for arr in samples[pi]:
+                counts, _ = np.histogram(arr, bins=bins, density=True)
+                dens[pi].append(counts)
+                if counts.size:
+                    ymax_row[r] = max(ymax_row[r], float(np.max(counts)))
+    ymax_row = [max(y * 1.05, 1e-9) for y in ymax_row]
+
+    dfa_arr = np.asarray(dfa_list, dtype=float)
+    cmap = plt.get_cmap("viridis")
+    norm = plt.Normalize(
+        vmin=float(dfa_arr.min()),
+        vmax=float(max(dfa_arr.max(), dfa_arr.min() + 1e-6)),
+    )
+
+    fig = plt.figure(figsize=(11.2, 5.8))
+    gs = fig.add_gridspec(2, 4, wspace=0.28, hspace=0.40)
+    axes = np.array([[fig.add_subplot(gs[r, c]) for c in range(4)] for r in range(2)])
+
+    # Density panels: top row all 4; bottom cols 0–1.
+    for pi, (_key, title, _fn) in enumerate(dens_specs):
+        r, c = (0, pi) if pi < 4 else (1, pi - 4)
+        ax = axes[r, c]
+        bins = bins_row[r]
+        x_centers = 0.5 * (bins[:-1] + bins[1:])
+        w_min, w_max = xlim_row[r]
+        for n_dfa, counts in zip(dfa_list, dens[pi]):
+            ax.plot(x_centers, counts, color=cmap(norm(n_dfa)), lw=1.0, alpha=0.75)
+        ax.axvline(0.0, color="0.55", lw=0.6, ls=":", zorder=0)
+        ax.set_xlim(w_min, w_max)
+        ax.set_ylim(0.0, ymax_row[r])
+        ax.set_title(title, fontsize=9, pad=3)
+        ax.tick_params(labelsize=6)
+        ax.grid(True, alpha=0.22)
+        if r == 1:
+            ax.set_xlabel(r"$W$", fontsize=8)
+        else:
+            hide_x_tick_labels(ax)
+        if c == 0:
+            ax.set_ylabel("density", fontsize=8)
+        else:
+            ax.tick_params(axis="y", labelleft=False)
+
+    def _trend(xs: np.ndarray, ys: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+        if xs.size < 3 or not np.all(np.isfinite(ys)):
+            return None
+        order = np.argsort(xs)
+        x_s, y_s = xs[order], ys[order]
+        # Simple linear fit in DFA space.
+        coef = np.polyfit(x_s, y_s, 1)
+        x_line = np.linspace(float(x_s.min()), float(x_s.max()), 50)
+        return x_line, np.polyval(coef, x_line)
+
+    # Bottom-right: mean |W| vs DFA — input regimes, then recurrent regimes.
+    ax_in = axes[1, 2]
+    ax_hh = axes[1, 3]
+    x = dfa_arr
+    for key, label in (("xE", r"x$\rightarrow$E"), ("xI", r"x$\rightarrow$I")):
+        y = np.asarray(mean_abs[key], dtype=float)
+        ax_in.scatter(x, y, s=18, alpha=0.8, color=regime_colors[key],
+                      edgecolors="white", linewidths=0.3, label=label, zorder=2)
+        fit = _trend(x, y)
+        if fit is not None:
+            ax_in.plot(fit[0], fit[1], color=regime_colors[key], lw=1.2, zorder=3)
+    ax_in.set_title(r"mean $|W_{xh}|$ vs DFA", fontsize=8, pad=3)
+    ax_in.set_xlabel("DFA states", fontsize=8)
+    ax_in.set_ylabel(r"mean $|W|$", fontsize=8)
+    ax_in.tick_params(labelsize=6)
+    ax_in.grid(True, alpha=0.22)
+    ax_in.legend(fontsize=5.5, frameon=False, loc="best", handlelength=1.0)
+
+    for key, label in (
+        ("EE", r"E$\rightarrow$E"),
+        ("EI", r"E$\rightarrow$I"),
+        ("IE", r"I$\rightarrow$E"),
+        ("II", r"I$\rightarrow$I"),
+    ):
+        y = np.asarray(mean_abs[key], dtype=float)
+        ax_hh.scatter(x, y, s=18, alpha=0.8, color=regime_colors[key],
+                      edgecolors="white", linewidths=0.3, label=label, zorder=2)
+        fit = _trend(x, y)
+        if fit is not None:
+            ax_hh.plot(fit[0], fit[1], color=regime_colors[key], lw=1.2, zorder=3)
+    ax_hh.set_title(r"mean $|W_{hh}|$ vs DFA", fontsize=8, pad=3)
+    ax_hh.set_xlabel("DFA states", fontsize=8)
+    ax_hh.tick_params(labelsize=6)
+    ax_hh.grid(True, alpha=0.22)
+    ax_hh.legend(fontsize=5.5, frameon=False, loc="best", handlelength=1.0)
+    ax_hh.tick_params(axis="y", labelleft=True)
+
+    fig.text(0.015, 0.72, r"$W_{hh}$", fontsize=10, rotation=90, va="center", ha="center")
+    fig.text(0.015, 0.30, r"$W_{xh}$", fontsize=10, rotation=90, va="center", ha="center")
+
+    finalize_grid_figure(
+        fig,
+        suptitle="Dale weight distributions vs DFA size",
+        bottom=0.10,
+        left=0.08,
+        right=0.90,
+        top=0.88,
+        wspace=0.28,
+        hspace=0.40,
+    )
+    # Colorbar only for density panels (DFA coloring).
+    cax = fig.add_axes([0.915, 0.52, 0.014, 0.32])
+    cbar = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cax)
+    cbar.set_label("DFA states", fontsize=7)
+    cbar.ax.tick_params(labelsize=5.5)
+
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
     plt.close(fig)
@@ -4060,6 +4267,7 @@ def run_all_mixed_dfa_plots(
         plot_metrics_vs_dfa(recompute=recompute, model_type=model_type),
         plot_mixed_dfa_scaling_overview(payload, recompute=False),
         plot_mixed_dfa_weight_matrices_by_dfa(model_type=model_type),
+        plot_mixed_dfa_dale_weight_distributions(model_type=model_type, seed=seeds[0] if seeds else 1),
         plot_mixed_dfa_trajectory_vocab_grid(model_type=model_type),
         plot_mixed_dfa_within_corr_vs_dfa(
             recompute=recompute,

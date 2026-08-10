@@ -559,15 +559,21 @@ def checkpoint_path(name: str, model_type: str = "rnn", *, seed: int | None = No
 
 def seeds_for_task(name: str, model_type: str = "rnn") -> set[int]:
     """RNG seeds with a saved checkpoint for this task."""
+    import re
+
     found: set[int] = set()
     if model_path(name, model_type).is_file():
         found.add(DEFAULT_SEED)
     if model_type in ("rnn", "rnn_dale"):
         pattern = "model_seed*.npz"
+        stem_re = re.compile(r"^model_seed(\d+)$")
     else:
         pattern = "model_seed*.pt"
+        stem_re = re.compile(r"^model_seed(\d+)$")
     for path in model_dir(name, model_type).glob(pattern):
-        found.add(int(path.stem.removeprefix("model_seed")))
+        m = stem_re.match(path.stem)
+        if m:
+            found.add(int(m.group(1)))
     return found
 
 

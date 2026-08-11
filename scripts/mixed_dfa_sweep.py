@@ -293,7 +293,28 @@ def main() -> None:
         "--model-type", default="rnn", choices=("rnn", "rnn_dale", "lstm", "gru"),
         help="checkpoint family under checkpoints/rXX/<model_type>/ (default: rnn)",
     )
+    parser.add_argument(
+        "--sweep", default="mixed", choices=("mixed", "fixed_grid"),
+        help="which sweep to operate on (fixed_grid = fixed_letters_grid_ns)",
+    )
     args = parser.parse_args()
+
+    if args.sweep == "fixed_grid":
+        import vocab_fixed_letters_grid as sweep_mod
+
+        import viz.compare.mixed_dfa_viz as mdv
+
+        mdv.set_active_sweep(sweep_mod)
+        globals().update(
+            COMPARISON_NAME=sweep_mod.COMPARISON_NAME,
+            DEFAULT_SEEDS=sweep_mod.DEFAULT_SEEDS,
+            N_RUNS=sweep_mod.N_RUNS,
+            iter_runs=sweep_mod.iter_runs,
+            task_name=sweep_mod.task_name,
+            write_run_manifest=sweep_mod.write_run_manifest,
+        )
+        if args.hidden_size is not None or args.command in ("train-h-ablation", "plot-h-ablation"):
+            raise SystemExit("--sweep fixed_grid does not support hidden-size ablations")
 
     (EXPERIMENTS_ROOT / "comparisons" / COMPARISON_NAME).mkdir(parents=True, exist_ok=True)
 

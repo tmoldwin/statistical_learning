@@ -11,12 +11,37 @@ import numpy as np
 
 from experiment import checkpoint_path, comparison_dir
 from vocab_diagrams import build_minimized_vocabulary_automaton
+import vocab_mixed_dfa as _DEFAULT_SWEEP
 from vocab_mixed_dfa import (
     COMPARISON_NAME,
     DEFAULT_SEEDS,
     iter_runs,
     write_run_manifest,
 )
+
+_ACTIVE_SWEEP = _DEFAULT_SWEEP
+
+
+def set_active_sweep(vocab_module) -> None:
+    """Point the whole mixed-DFA plot suite at another sweep module.
+
+    The module must expose ``COMPARISON_NAME``, ``DEFAULT_SEEDS``, ``iter_runs``,
+    ``write_run_manifest``, and ``task_name`` (same contract as
+    ``vocab_mixed_dfa``). Sibling analysis modules with their own hardcoded
+    imports are rebound too.
+    """
+    global _ACTIVE_SWEEP, COMPARISON_NAME, DEFAULT_SEEDS, iter_runs, write_run_manifest
+    _ACTIVE_SWEEP = vocab_module
+    COMPARISON_NAME = vocab_module.COMPARISON_NAME
+    DEFAULT_SEEDS = vocab_module.DEFAULT_SEEDS
+    iter_runs = vocab_module.iter_runs
+    write_run_manifest = vocab_module.write_run_manifest
+    import viz.compare.mixed_dfa_learning_decode as _ld
+    import viz.compare.mixed_dfa_unit_selectivity as _sel
+
+    for mod in (_sel, _ld):
+        mod.COMPARISON_NAME = vocab_module.COMPARISON_NAME
+        mod.iter_runs = vocab_module.iter_runs
 from viz.compare._data import load_task_decoding_context
 from viz.compare.decoding import (
     DECODING_FEATURES,
@@ -3959,14 +3984,18 @@ def collect_mixed_dfa_within_corr(
     hidden_size: int | None = None,
 ) -> Path:
     """Per-run separation metrics vs DFA (observed + label-shuffle means)."""
-    from vocab_mixed_dfa import (
-        HIDDEN_SIZE,
-        comparison_name_for_h,
-        iter_tasks_for_h,
-    )
+    sweep = _ACTIVE_SWEEP
+    h = int(getattr(sweep, "HIDDEN_SIZE", 0)) if hidden_size is None else int(hidden_size)
+    if hasattr(sweep, "comparison_name_for_h") and hasattr(sweep, "iter_tasks_for_h"):
+        comp = sweep.comparison_name_for_h(h)
 
-    h = HIDDEN_SIZE if hidden_size is None else int(hidden_size)
-    comp = comparison_name_for_h(h)
+        def iter_tasks_for_h(hh):  # noqa: ANN001
+            return sweep.iter_tasks_for_h(hh)
+    else:
+        comp = sweep.COMPARISON_NAME
+
+        def iter_tasks_for_h(hh):  # noqa: ANN001
+            return sweep.iter_runs()
     out = sweep_data_dir(comp) / "within_corr_vs_dfa.json"
     if out.is_file() and not recompute:
         # Recompute when older JSON lacked between-cosine fields.
@@ -4352,10 +4381,8 @@ def _load_hard_run_condensed(
         load_model_for_viz,
         run_forward_pass,
     )
-    from vocab_mixed_dfa import task_name
-
     entry = next(e for e in iter_runs() if int(e["run_id"]) == int(run_id))
-    task = task_name(int(run_id))
+    task = _ACTIVE_SWEEP.task_name(int(run_id))
     ckpt = checkpoint_path(task, model_type, seed=seed)
     if not ckpt.is_file():
         raise FileNotFoundError(ckpt)

@@ -402,12 +402,14 @@ from vocab_sweep_pow2 import register_pow2_sweep_tasks
 from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_tasks
 from vocab_mixed_dfa import register_mixed_dfa_tasks
 from vocab_fixed_letters_dfa import register_fixed_letters_dfa_tasks
+from vocab_fixed_letters_grid import register_fixed_grid_tasks
 
 register_sweep_tasks(TASKS)
 register_pow2_sweep_tasks(TASKS)
 register_pow2_h100_sweep_tasks(TASKS)
 register_mixed_dfa_tasks(TASKS)
 register_fixed_letters_dfa_tasks(TASKS)
+register_fixed_grid_tasks(TASKS)
 
 # Backward-compatible alias used by training / visualization entry points.
 EXPERIMENT_CONFIG: dict[str, dict] = TASKS
@@ -517,6 +519,14 @@ def experiment_subpath(name: str) -> Path:
         return (
             Path("comparisons")
             / "fixed_letters_dfa_ns"
+            / "checkpoints"
+            / f"r{run_s}"
+        )
+    if name.startswith("fixgrid_r") and name.endswith("_ns"):
+        run_s = name.removeprefix("fixgrid_r").removesuffix("_ns")
+        return (
+            Path("comparisons")
+            / "fixed_letters_grid_ns"
             / "checkpoints"
             / f"r{run_s}"
         )

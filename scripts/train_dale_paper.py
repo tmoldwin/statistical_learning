@@ -12,8 +12,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+import vocab_mixed_dfa
 from experiment import model_path
-from vocab_mixed_dfa import iter_runs
+
+iter_runs = vocab_mixed_dfa.iter_runs
 
 DEMO = "eight_word_ate_at_demo_ns"
 DEMO_SEEDS = (1, 2, 3, 5, 7, 8)
@@ -82,7 +84,16 @@ def main() -> None:
     p.add_argument("--run-ids", nargs="+", type=int, default=None)
     p.add_argument("--no-learning-snaps", action="store_true")
     p.add_argument("--force", action="store_true", help="retrain even if checkpoint exists")
+    p.add_argument(
+        "--sweep", default="mixed", choices=("mixed", "fixed_grid"),
+        help="which sweep --mixed trains (fixed_grid = fixed_letters_grid_ns)",
+    )
     args = p.parse_args()
+    if args.sweep == "fixed_grid":
+        import vocab_fixed_letters_grid
+
+        global iter_runs
+        iter_runs = vocab_fixed_letters_grid.iter_runs
     if not args.demo and not args.mixed:
         args.demo = True
         args.mixed = True

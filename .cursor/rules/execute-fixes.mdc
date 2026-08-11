@@ -1,0 +1,16 @@
+---
+description: When asked to fix something, implement and run it — don't just advise
+alwaysApply: true
+---
+
+# Execute fixes, don't just discuss them
+
+When the user asks you to fix, change, update, or improve something:
+
+1. **Implement the change** in code — do not stop at suggestions or a plan.
+2. **Run it** — execute scripts, regenerate outputs, run tests, or verify the fix works.
+3. **Show results** — report what ran and whether it succeeded.
+
+Only ask before acting when the request is genuinely ambiguous (e.g. conflicting goals, destructive ops, or missing credentials).
+
+If the user says "fix this", "yeah do it", "lfg", or similar after a discussion, treat that as approval to implement and run immediately.

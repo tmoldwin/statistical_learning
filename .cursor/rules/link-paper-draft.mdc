@@ -1,0 +1,15 @@
+﻿---
+description: Always link paper/draft.md with a verified absolute path
+alwaysApply: true
+---
+
+# Always link the paper draft
+
+Whenever you discuss the paper, figures, captions, layout, regenerating plots for the manuscript, or anything in `paper/`:
+
+1. **Link the draft with an absolute `file:///` URL** that resolves on this machine, e.g.
+   `[paper/draft.md](file:///C:/Users/toviah.moldwin/Code/statistical_learning-1/paper/draft.md)`.
+2. Before sending the link, **verify the file exists** (`Test-Path` / `Resolve-Path`). Do not use a relative `](paper/draft.md)` chat link alone — those break in chat.
+3. If you changed figures or collect into `paper/figures/`, include the same verified link so the user can reopen/refresh the preview.
+
+Do this even for short status replies about paper work.

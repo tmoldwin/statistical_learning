@@ -44,6 +44,7 @@ def train_task(
     l2_on: str | None = None,
     model_out: Path | None = None,
     log_weight_norms_every: int = 0,
+    e_fraction: float | None = None,
 ) -> None:
     cfg = TASKS[name]
     regime = experiment_regime(name)
@@ -87,7 +88,11 @@ def train_task(
             train_cmd.extend(["--hidden-size", str(cfg["hidden_size"])])
         if model_uses_dale(model_type) or cfg.get("dale"):
             train_cmd.append("--dale")
-            e_frac = cfg.get("e_fraction", DALE_RNN_DEFAULTS["e_fraction"])
+            e_frac = (
+                e_fraction
+                if e_fraction is not None
+                else cfg.get("e_fraction", DALE_RNN_DEFAULTS["e_fraction"])
+            )
             train_cmd.extend(["--e-fraction", str(e_frac)])
         if "sequence_length" in cfg:
             train_cmd.extend(["--sequence-length", str(cfg["sequence_length"])])
@@ -189,6 +194,10 @@ def main() -> None:
     parser.add_argument("--l2-lambda", type=float, default=None)
     parser.add_argument("--l2-on", default=None)
     parser.add_argument("--model-out", default=None, help="override model output path")
+    parser.add_argument(
+        "--e-fraction", type=float, default=None,
+        help="Dale excitatory fraction (default: task config / 0.8)",
+    )
     parser.add_argument("--log-weight-norms-every", type=int, default=0)
     args = parser.parse_args()
 
@@ -214,6 +223,7 @@ def main() -> None:
                     l2_on=args.l2_on,
                     model_out=Path(args.model_out) if args.model_out else None,
                     log_weight_norms_every=int(args.log_weight_norms_every or 0),
+                    e_fraction=args.e_fraction,
                 )
             if not args.skip_viz and not multi_seed:
                 visualize_task(

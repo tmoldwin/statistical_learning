@@ -101,7 +101,7 @@ def iter_runs() -> Iterable[dict]:
 
 
 def fixed_grid_task_config(run_id: int) -> dict[str, object]:
-    """Dale grid hyperparams: dropout off, LR=0.1, soft plateau, generous steps."""
+    """Dale grid hyperparams: dropout off, LR=0.1, full step budget (no plateau kill)."""
     entry = run_plan()[run_id]
     words: list[str] = list(entry["words"])
     n_words = int(entry["n_words"])
@@ -110,20 +110,19 @@ def fixed_grid_task_config(run_id: int) -> dict[str, object]:
     max_length = length
 
     chars = max(40_000, int(n_words * mean_length * 800))
-    # Hard cells were dying at the step cap / plateau; give them room.
-    steps = min(150_000, max(40_000, int(n_words * 1200 + mean_length * 4000)))
+    # Plateau-stop was killing unsolved nets at 50% budget. Train to the cap;
+    # only the 3% word-error success rule may stop early.
+    steps = min(150_000, max(80_000, int(n_words * 1500 + mean_length * 5000)))
     if n_words >= 18:
-        steps = max(steps, 100_000)
-    if n_words >= 25 or length >= 6:
         steps = max(steps, 120_000)
+    if n_words >= 25 or length >= 6:
+        steps = max(steps, 150_000)
 
     viz_length = min(int(sum(len(w) for w in words) + 20), 500)
     sequence_length = max(8, 2 * max_length + (8 if n_words >= 20 else 4))
     metric_rollout_len = min(1000, max(300, int(n_words * mean_length * 2)))
     if n_words >= 15:
         metric_rollout_len = min(5000, max(metric_rollout_len, int(n_words * mean_length * 20)))
-    stall_min_iter = max(int(steps * 0.50), 20_000)
-    stall_patience_evals = 120 if n_words >= 18 else 80
 
     return {
         "regime": regime_name(run_id),
@@ -142,11 +141,11 @@ def fixed_grid_task_config(run_id: int) -> dict[str, object]:
         "train_ratio": 0.9,
         "dropout": 0.0,
         "l2_lambda": 1e-4,
-        # Proven recipe on this alphabet: dropout=0 + LR=0.1 (H=400/LR=0.04 stalled).
-        "learning_rate": 0.1,
-        "stall_patience_evals": int(stall_patience_evals),
+        "learning_rate": 0.025,
+        "e_fraction": 0.8,
+        "stall_patience_evals": 0,
         "stall_min_delta": 0.001,
-        "stall_min_iter": int(stall_min_iter),
+        "stall_min_iter": int(steps),
         "sweep_n_words": int(n_words),
         "sweep_length": str(length),
         "fixed_grid_run_id": int(run_id),

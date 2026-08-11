@@ -1,0 +1,17 @@
+﻿---
+description: Always verify generated figures for overlapping text and layout issues before delivering
+alwaysApply: true
+---
+
+# Verify figure layout before delivery
+
+When generating or modifying SVG, PNG, PDF, matplotlib, or diagram outputs:
+
+1. **Only verify figures you changed** — do not re-run the full diagram suite after unrelated edits (e.g. deleting temp scripts). Regenerate and layout-check just the figure(s) you touched.
+2. **Run the generator and its layout check** for those figures if one exists (e.g. after editing figure 3, regenerate and confirm `03_rollout_evaluation.svg` passes `check_svg_layout`).
+3. **Open or inspect the output** — read the SVG/plot file or render to PNG and visually confirm no overlapping text, labels, or glyphs.
+4. **Bound all content** — text and cells must stay inside their panel/viewBox; compute `max_cols` from available width, never hardcode widths that exceed the container.
+5. **Use explicit spacing** — prefer boxed cells, generous gaps, and vertical stacking over tight tspan positioning.
+6. **Do not declare done** until layout verification passes for the changed figure(s). If overlaps remain, fix and re-check.
+
+For this repo's training diagrams: `plots/training_diagram/*.svg` are validated by `check_svg_layout` in `scripts/generate_training_diagram.py`.

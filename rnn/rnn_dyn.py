@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 
 PRE_ACTIVATION_CLIP = 50.0
-DEFAULT_DALE_SOFT_EPS = 0.02
 
 
 def hidden_activation(pre_activation: np.ndarray, *, use_relu: bool) -> np.ndarray:
@@ -175,7 +174,7 @@ def enforce_dale_weights(
     weights_hidden_to_output: np.ndarray,
     dale_sign: np.ndarray,
 ) -> None:
-    """Hard projection (init / diagnostics). Training uses soft Dale in adagrad_step."""
+    """Hard Dale projection: W_hh/W_ho columns signed by source; W_xh E-only."""
     col_sign = dale_sign.reshape(1, -1)
     enforce_dale_input_exc_only(weights_input_to_hidden, dale_sign)
     weights_hidden_to_hidden[:] = np.abs(weights_hidden_to_hidden) * col_sign
@@ -193,56 +192,15 @@ def enforce_dale_outgoing(
     weights_hidden_to_output[:] = np.abs(weights_hidden_to_output) * col_sign
 
 
-def soft_dale_step_scale(
-    weights: np.ndarray,
-    delta: np.ndarray,
-    dale_sign: np.ndarray,
-    *,
-    axis: str = "col",
-    soft_eps: float = DEFAULT_DALE_SOFT_EPS,
-) -> np.ndarray:
-    """Scale Adagrad updates on Dale-constrained rows (W_xh) or columns (W_hh, W_ho).
-
-    Rows/columns with ``dale_sign == 0`` get scale 0 (hard-off, used for I←input).
-    """
-    if axis == "col":
-        signs = dale_sign.reshape(1, -1)
-    elif axis == "row":
-        signs = dale_sign.reshape(-1, 1)
-    else:
-        raise ValueError(f"dale axis must be 'row' or 'col', got {axis!r}")
-    active = signs != 0
-    margin = weights * signs
-    base = np.tanh(margin / soft_eps)
-    opposed = delta * signs < 0
-    step = np.where(
-        opposed,
-        np.tanh(margin / (np.abs(delta) + soft_eps)),
-        1.0,
-    )
-    return np.where(active, base * step, 0.0)
-
-
 def adagrad_step(
     param: np.ndarray,
     grad: np.ndarray,
     mem: np.ndarray,
     learning_rate: float,
-    *,
-    dale_sign: np.ndarray | None = None,
-    dale_axis: str = "col",
-    soft_eps: float = DEFAULT_DALE_SOFT_EPS,
 ) -> None:
-    """In-place Adagrad; optional soft Dale on rows (W_xh) or columns (W_hh, W_ho)."""
+    """In-place Adagrad. Dale constraints are applied after the step via enforce_dale_weights."""
     mem += grad * grad
-    delta = -learning_rate * grad / np.sqrt(mem + 1e-8)
-    if dale_sign is not None:
-        scale = soft_dale_step_scale(
-            param, delta, dale_sign, axis=dale_axis, soft_eps=soft_eps,
-        )
-        param += delta * scale
-    else:
-        param += delta
+    param += -learning_rate * grad / np.sqrt(mem + 1e-8)
 
 
 def dale_violation_fraction(
@@ -251,23 +209,25 @@ def dale_violation_fraction(
     weights_hidden_to_output: np.ndarray,
     dale_sign: np.ndarray,
 ) -> float:
-    """Fraction of Dale-scoped synapses violating sign / E-only-input constraints."""
+    """Fraction of Dale-scoped synapses violating sign / E-only-input constraints.
+
+    Zeros are legal (hard projection lands on the boundary). I←input must be exactly 0.
+    """
     sign = np.asarray(dale_sign, dtype=float).ravel()
     exc = sign > 0
     inh = ~exc
     col_sign = sign.reshape(1, -1)
-    parts: list[np.ndarray] = [
-        weights_input_to_hidden[exc].ravel(),  # E←x should be > 0
-        (weights_hidden_to_hidden * col_sign).ravel(),
-        (weights_hidden_to_output * col_sign).ravel(),
+    flags: list[np.ndarray] = [
+        weights_input_to_hidden[exc].ravel() < 0,
+        (weights_hidden_to_hidden * col_sign).ravel() < 0,
+        (weights_hidden_to_output * col_sign).ravel() < 0,
     ]
-    # I←x must stay off; any nonzero counts as a violation.
     if np.any(inh):
-        parts.append(-np.abs(weights_input_to_hidden[inh]).ravel())
-    margins = np.concatenate(parts) if parts else np.zeros(0)
-    if margins.size == 0:
+        flags.append(weights_input_to_hidden[inh].ravel() != 0)
+    all_flags = np.concatenate(flags) if flags else np.zeros(0, dtype=bool)
+    if all_flags.size == 0:
         return 0.0
-    return float(np.mean(margins <= 0))
+    return float(np.mean(all_flags))
 
 
 def outgoing_dale_violation_fraction(
@@ -282,7 +242,7 @@ def outgoing_dale_violation_fraction(
     )
     if margins.size == 0:
         return 0.0
-    return float(np.mean(margins <= 0))
+    return float(np.mean(margins < 0))
 
 
 def flatten_outgoing_weights(

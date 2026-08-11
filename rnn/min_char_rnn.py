@@ -41,8 +41,7 @@ from rnn.rnn_dyn import (
     inject_timestep_noise,
     apply_dropout,
     dale_violation_fraction,
-    dale_input_row_signs,
-    enforce_dale_input_exc_only,
+    enforce_dale_weights,
     init_dale_weights,
     recurrent_pre_activation,
     rnn_hidden_step,
@@ -987,25 +986,24 @@ while iteration < max_iterations:
   adagrad_step(
       weights_input_to_hidden, grad_weights_input_to_hidden, mem_weights_input_to_hidden,
       effective_lr,
-      dale_sign=dale_input_row_signs(dale_sign) if dale_law else None,
-      dale_axis="row",
   )
   adagrad_step(
       weights_hidden_to_hidden, grad_weights_hidden_to_hidden, mem_weights_hidden_to_hidden,
       effective_lr,
-      dale_sign=dale_sign if dale_law else None,
-      dale_axis="col",
   )
   adagrad_step(
       weights_hidden_to_output, grad_weights_hidden_to_output, mem_weights_hidden_to_output,
       effective_lr,
-      dale_sign=dale_sign if dale_law else None,
-      dale_axis="col",
   )
   adagrad_step(bias_hidden, grad_bias_hidden, mem_bias_hidden, effective_lr)
   adagrad_step(bias_output, grad_bias_output, mem_bias_output, effective_lr)
   if dale_law:
-      enforce_dale_input_exc_only(weights_input_to_hidden, dale_sign)
+      enforce_dale_weights(
+          weights_input_to_hidden,
+          weights_hidden_to_hidden,
+          weights_hidden_to_output,
+          dale_sign,
+      )
 
   data_pointer += sequence_length
   iteration += 1

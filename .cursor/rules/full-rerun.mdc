@@ -1,0 +1,22 @@
+---
+description: A hyperparameter or recipe change means rerun the entire sweep -- never mix conditions
+alwaysApply: true
+---
+
+# Full rerun -- never mix experimental conditions
+
+If the user asks to run, rerun, or change anything that affects training
+(LR, E/I, hidden size, stall rule, steps, seed, Dale clip, init, dropout, ...):
+
+1. **Retrain every cell in that sweep.** Do not keep "already solved" or
+   "looks fine" checkpoints from the previous recipe.
+2. **One recipe per checkpoint tree.** Different LRs / E/I / H / ... go in
+   different output dirs (or a new comparison). Never write a new condition
+   on top of a subset of an old one.
+3. **Cancel in-flight jobs** for the old recipe before submitting the new
+   full array.
+4. **Do not plot, pool, or compare** curves/metrics across mixed conditions
+   as if they were one experiment.
+
+Bad: change LR 0.1 -> 0.025, resubmit only the 35 unsolved, leave 13 old ckpts.
+Good: scancel the old array, submit 0-N for the whole sweep at 0.025.

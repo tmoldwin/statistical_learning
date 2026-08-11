@@ -1,0 +1,19 @@
+---
+description: While training (local or cluster), post a progress update every 5 minutes
+alwaysApply: true
+---
+
+# Training progress every 5 minutes
+
+Whenever a train/sweep is running -- local process or SLURM -- you must:
+
+1. **Lead with still-going / total** (per recipe / array), then completed, then failed.
+2. **Update every 5 minutes** until the run is done or the user says stop.
+   Arm a 5-minute loop as soon as jobs are submitted; do not wait to be asked.
+3. Each update include at least:
+   - still-going / total
+   - n completed (and n failed / crashed)
+   - of completed: best-WE median, **worst** best-WE, n that hit the 3% target
+   - the current worst live cell (run id, last WE, iter) if any are still going
+4. Stop the loop when every job has exited. Then give a final tally.
+5. Never mix recipes in one tally (80/20 vs 50/50, different LRs, ...).

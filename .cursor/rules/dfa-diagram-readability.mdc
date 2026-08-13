@@ -1,0 +1,28 @@
+---
+description: DFA diagrams must be readable; always inspect after saving
+alwaysApply: true
+---
+
+# DFA diagram readability
+
+Whenever you generate or edit a figure that includes **minimal DFAs / automata** (standalone or as panels), readability is a hard requirement — same severity as the no-overlap plot rule.
+
+## Always inspect
+
+After saving, **open or `Read` the PNG** and check every DFA panel. If nodes, edge labels, or state labels are cramped, overlapping, or illegible, fix and regenerate. Do not ship unreadable automata.
+
+## Vocab and titles
+
+- Prefer **small vocabs** in multi-panel DFA comparisons (typically ≤3–4 words per panel so the graph stays sparse enough to read).
+- **Write the actual words in the panel title** (e.g. `cat, hat · DFA=4`), not vague labels like “Small vocab” / “Larger overlap” alone.
+- For cramped multipanel DFAs, use **shortest-prefix node labels** (`shortest_prefix_labels=True` on `draw_minimized_dfa_on_axes`) so edge letters stay readable; do not pack multi-hypothesis strings into tiny circles.
+- **Accept states name their words** (one word per line). Never substitute a checkmark or other placeholder for the words.
+- Pass `fit_labels=True`: circles grow until they nearly touch and the font is fitted to the drawn circle, so labels cannot overflow. Do not hand-tune `circle_scale` to chase overflow — scaling radii and spacing together is cancelled when Matplotlib refits the axes.
+- Make node circles physically large enough for their labels. In `draw_minimized_dfa_on_axes`, use `circle_scale` to enlarge circles independently of graph spacing; increasing `node_scale` alone may be cancelled by axes rescaling.
+- If the full demo lexicon (6+ words) makes a panel illegible at the allotted size, either enlarge that panel, drop it from a 3-up grid, or show a smaller illustrative subset and note the full demo elsewhere (chips / caption).
+
+## Layout
+
+- Edge and state labels must be individually readable at figure display size (not only when zoomed).
+- Prefer fewer, clearer panels over packing large automata into tiny axes.
+- Follow `plot-text-layout.mdc` for titles, banners, and spacing.

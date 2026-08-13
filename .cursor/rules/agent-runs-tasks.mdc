@@ -1,0 +1,21 @@
+---
+description: Agent executes workflows; do not give the user rerun commands
+alwaysApply: true
+---
+
+# Run it yourself
+
+When a task can be done in this environment (train, plot, regenerate figures, run scripts), **do it** — do not tell the user how to repeat it.
+
+## Do
+
+- Run commands and report outcomes (paths to outputs, brief results).
+- Link to generated artifacts with workspace-relative paths.
+- Ask before long or destructive runs only when scope or cost is unclear.
+
+## Don't
+
+- End responses with copy-paste commands for reruns the user did not ask for.
+- Say "you can run …" or "to regenerate, run …" unless they explicitly want the command for their own terminal.
+
+If something failed or was skipped, fix or run it — don't hand off instructions.

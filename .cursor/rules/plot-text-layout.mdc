@@ -1,0 +1,47 @@
+---
+description: Prevent overlapping text when generating matplotlib figures
+alwaysApply: true
+---
+
+# Plot text layout — NO OVERLAPS
+
+**Hard rule:** never ship a figure with overlapping or colliding text (titles, tick labels, legends, annotations, section banners, axis labels). Overlap is a failure; fix and re-save.
+
+**ALWAYS LOOK AT THE FIGURE** after generation — open or `Read` the saved PNG and confirm visually. If anything overlaps, clips, or runs into data, fix layout and regenerate. Do not finish the turn while overlaps remain.
+
+## Before saving
+
+1. **Inspect the output** — open or read the saved PNG; fix overlap before finishing.
+2. **Use shared helpers** — prefer `viz/plot_layout.py` (`apply_category_tick_labels`, `finalize_grid_figure`, `set_ylabel_multiline`, `save_figure`) for comparison grids and box plots.
+3. **Prefer reserved space over floating labels** — put section titles in their own gridspec row (blank axes + `text`), not `fig.text` at a guessed y that can land on tick labels.
+
+## Tick labels
+
+- **Rotate or hide** when labels are long or numerous (≥4 conditions, or any label >9 chars).
+- **Bottom row only** — in multi-row grids, show x tick labels on the bottom row only; hide on upper rows.
+- **Alignment** — use `ha="right"` with rotation ≥20° so rotated labels sit under their tick.
+- **Font size** — reduce tick fontsize (7–8) before accepting overlap.
+- With **4+ categories**, expect rotated labels and raise `bottom` / nested `hspace` so they never collide with the row below.
+
+## Axis and title spacing
+
+- Prefer **multiline y-labels** over long single-line strings.
+- Use plain ASCII in labels when unicode causes clipping (`full hidden` not `ℝᴴ`).
+- Set explicit `subplots_adjust` / nested `hspace` / `wspace` and `pad_inches` on save; do not rely on defaults alone.
+- Leave room for `suptitle` with `top` ≤ 0.84 (often 0.72–0.80 when panel titles are multi-line) and `fig.suptitle(..., y=0.98)`.
+- **Never** save with `bbox_inches="tight"` after setting explicit margins — it collapses the headroom reserved for the suptitle and reintroduces title overlap. Use `viz.plot_layout.save_figure` (no tight crop).
+- Put legends **outside** data when they would cover curves (e.g. `lower left` early in training, or `bbox_to_anchor` outside the axes).
+
+## Annotations
+
+- Keep panel annotations ≤3 lines when panels are small; shrink fontsize (5–6) or abbreviate.
+- Use `bbox` with background when text crosses data.
+- Do not place a mid-figure banner on top of PCA x-axis labels — use a dedicated gridspec band.
+- **Never** put motif/DFA/arrow schematics on the same axes as a title. Use separate gridspec bands: title | schematic | data.
+
+## Do not
+
+- Ship figures with overlapping x tick labels (common failure mode in condition comparisons).
+- Add new one-off layout logic when `viz/plot_layout.py` can be extended instead.
+- Claim a multi-panel figure is done without a visual check of **every** panel including mid-figure section titles.
+- End a turn after generating a figure without `Read`-ing the PNG/JPG for overlaps (see `figures-no-overlaps.mdc`).

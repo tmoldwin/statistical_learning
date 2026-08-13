@@ -1,0 +1,38 @@
+---
+description: NEVER ship figures with overlapping text/glyphs — inspect every saved PNG
+alwaysApply: true
+---
+
+# Figures — NO OVERLAPS (inviolable)
+
+**Shipping a figure with overlapping text, titles, tick labels, legends, panel letters, schematics, colorbars, or annotations is a hard failure.**
+
+This overrides speed and “good enough.” The existing `plot-text-layout.mdc` rules still apply; this rule is the enforcement gate.
+
+## Mandatory gate (every figure you generate or change)
+
+1. **Save** the figure via the canonical plot path (`save_figure` / experiment CLI).
+2. **Open or `Read` the saved PNG/JPG** yourself.
+3. **Scan every panel** for collisions: titles vs schematics, letters vs data, tick labels vs neighbors, colorbar vs panels, suptitle vs top row.
+4. If **anything** overlaps, clips, or sits on data — **fix layout and regenerate**. Do not end the turn.
+5. Only then update paper copies / captions.
+
+## Common failure modes (watch for these)
+
+- Motif / DFA / arrow diagrams drawn on the **same axes** as titles (or in a band that is too short for both).
+- `ax.set_title` + inset schematic fighting for the top of the panel.
+- Multi-line titles colliding with `suptitle` (`top` too high; prefer ≤0.84–0.90).
+- Colorbar spanning the full figure height (use a short stub).
+- Rotated ticks crashing into the row below.
+
+## Fix pattern (prefer this)
+
+- **Separate reserved bands** in a nested gridspec: title row | schematic row (optional but always reserved for equal sizing) | data row.
+- Never put a glyph and a title on one shared tiny axes.
+- Keep panel letters inside the data axes with a white `bbox`, clear of titles/schemas.
+
+## Do not
+
+- Claim “looks fine” without reading the image.
+- Ship with “minor” overlap to fix later.
+- Add ad-hoc regen scripts; fix the canonical plotter and replot.

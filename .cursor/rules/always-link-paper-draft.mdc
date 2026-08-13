@@ -1,0 +1,19 @@
+---
+description: End every response with a workspace link to the paper draft
+alwaysApply: true
+---
+
+# Always link the paper draft
+
+After **every** user-facing response — no exceptions (including short answers, clarifying questions, and refusals) — end with a workspace-relative Cursor link to the draft:
+
+```markdown
+[paper draft](paper/draft.md)
+```
+
+## Rules
+
+1. Put the link on its own final line (or as the last sentence).
+2. Use exactly `paper/draft.md` (forward slashes, no drive letter).
+3. Do not skip this because the turn was “just chatting”, fixing code, or answering a side question.
+4. If a figure or section was discussed, you may also link that asset, but the draft link is still required.

@@ -1,0 +1,34 @@
+---
+description: Cursor markdown preview must use VS Code renderer so paper figures stay visible
+alwaysApply: true
+---
+
+# Markdown preview (figures)
+
+Cursor’s built-in markdown renderer flashes local images then drops them. This is a known Cursor bug.
+
+## Permanent fix (already in settings)
+
+User and workspace settings must keep:
+
+```json
+"workbench.editorAssociations": {
+  "*.md": "vscode.markdown.preview.editor"
+}
+```
+
+Do **not** remove this. Do **not** “fix” missing figures by rewriting image paths, converting to HTML `<img>`, writing preview scripts, or compressing assets unless the files are actually missing or corrupt.
+
+## Paper figure paths
+
+- Draft: `paper/draft.md`
+- Assets: `paper/figures/{demo,main,compare}/`
+- In the draft, use **file-relative** links only: `figures/demo/...`, `figures/main/...`, `figures/compare/...`
+- Never use `paper/figures/...`, `/paper/figures/...`, or `../paper_figures/...` from `paper/draft.md`
+
+## If preview still fails
+
+1. Confirm the editor association above is present in `.vscode/settings.json` and user `settings.json`
+2. Reload the window
+3. Open the `.md` file (it should open in the VS Code markdown preview editor)
+4. Do not thrash link syntax

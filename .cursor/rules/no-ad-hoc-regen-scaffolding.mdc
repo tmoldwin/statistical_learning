@@ -1,0 +1,25 @@
+---
+description: Never create throwaway regen scripts that reimplement pipelines and stomp curated outputs
+alwaysApply: true
+---
+
+# No ad-hoc regen scaffolding
+
+Do **not** create parallel "regen", "refresh", "tmp", or one-off paper/figure scripts that re-call plot functions and write the same curated outputs as the real pipeline.
+
+## Forbidden
+
+- `scripts/regen_*.py`, `scripts/tmp_*.py`, `_regen_*.py`, notebook cells, or chat-only scripts whose job is "replot X into paper/figures"
+- Any second entrypoint that duplicates `visualize.py` / experiment plot code and can overwrite already-correct artifacts
+- Bundling unrelated figures into one regen so fixing trajectories silently clobbers activation heatmaps (or vice versa)
+
+## Required instead
+
+1. Change the **canonical** plot function / CLI (`visualize.py`, experiment runners, etc.).
+2. Replot via that entrypoint (add `--only` / flags if missing — do not invent a sibling pipeline).
+3. If curated copies exist (e.g. `paper/figures/`), update **one** collect/sync mapping that copies/converts from experiment outputs — never regenerates plots itself.
+4. Prefer editing existing collect manifests over adding new scripts.
+
+## Why
+
+Throwaway regen scripts caused correct paper figures to be overwritten with wrong parameters. That is unacceptable. Fix the real path once.

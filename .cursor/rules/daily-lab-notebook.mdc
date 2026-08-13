@@ -1,0 +1,33 @@
+---
+description: Write a dated lab notebook entry for experimental sessions
+alwaysApply: true
+---
+
+# Daily lab notebook
+
+At the **end of a day** (or when the user asks to summarize experiments / controls from a chat), write a dated lab notebook Markdown file. Do not wait to be asked twice if the session produced train/plot/control results.
+
+## Where
+
+- Directory: `paper/lab_notes/`
+- Filename: `YYYY-MM-DD.md` using the **user_info / timestamp date** for that session day
+- If the file already exists for today, **append** a new dated section (e.g. `## Session — HH:MM` or a clear experiment heading) rather than overwriting prior notes
+
+## What to include
+
+Keep it notebook-style, not paper prose:
+
+1. **Questions** tested
+2. **Experiments / controls** (setup, comparison name, seeds, alphabet constraints)
+3. **Results** (qualitative + any hard numbers)
+4. **Consequences** (what is ruled in / out / still open)
+5. **Artifacts** — embed figures inline with Markdown images (`![caption](relative/path.png)`), not bare links alone; verify paths exist before embedding. Prefer paths relative to the note file (e.g. `../../experiments/...` from `paper/lab_notes/`)
+6. **Canonical commands** used (real CLIs only — no ad-hoc regen scripts)
+
+## Do / don't
+
+- Prefer one entry per calendar day; multiple experiments that day go in the same file
+- Link figures/data under `experiments/...` when present
+- Do **not** invent results or paths
+- Do **not** auto-commit the note unless the user asks
+- Still end user-facing replies with `[paper draft](paper/draft.md)` per the always-link rule

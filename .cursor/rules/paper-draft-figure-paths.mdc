@@ -1,0 +1,36 @@
+---
+description: Keep paper/draft.md figure links preview-compatible
+globs: paper/draft.md
+alwaysApply: false
+---
+
+# Paper draft figure paths
+
+Cursor’s markdown preview often resolves image paths from the **workspace root**, not from `paper/`. Relative `figures/...` links then 404 and the draft looks broken (missing images everywhere).
+
+## Required link form
+
+In `paper/draft.md`, every figure must use a **workspace-root absolute** path:
+
+```markdown
+![Figure N. caption without underscores](/paper/figures/demo/fig01_trie.svg)
+```
+
+**Image alt/caption text must not contain `_` or `\( ... \)` LaTeX.** Markdown treats `_xh_` as emphasis and can break the `![...](url)` parse so the figure never renders. Write `Wxh` / `Whh` in alts; keep LaTeX in body prose only.
+
+## Do not
+
+- `](figures/...)` — breaks Cursor preview (looks for repo-root `figures/`)
+- `](paper/figures/...)` — breaks VS Code file-relative preview (`paper/paper/figures/`)
+- `](./figures/...)` — same class of breakage
+- Convert to HTML `<img>` tags as a workaround
+- Flip path styles back and forth while “debugging” preview
+
+## Preview settings (already in repo)
+
+`.vscode/settings.json` should keep:
+
+- `"workbench.editorAssociations": { "*.md": "vscode.markdown.preview.editor" }`
+- `"markdown.styles": ["paper/markdown-preview.css"]` (light paper CSS over Abyss)
+
+When editing the draft, if images vanish again, check paths match `/paper/figures/...` first — do not invent new preview scripts.

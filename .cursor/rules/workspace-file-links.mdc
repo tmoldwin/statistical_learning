@@ -1,0 +1,25 @@
+---
+description: Verify workspace file paths before sharing clickable links in chat
+alwaysApply: true
+---
+
+# Workspace file links
+
+When pointing the user to a file in this repo, links must open in Cursor.
+
+## Do
+
+1. **Verify first** — use Glob or Read on the path before sending the link.
+2. **Workspace-relative paths** — forward slashes, no drive letter:
+   - `[2D PCA](experiments/comparisons/fifty_word_lengths_ns/trajectories/closed_loop_2d.png)`
+3. **Short label** — filename or brief description, not the full path in the link text.
+
+## Don't
+
+- `c:\Code\...` or `C:/Code/...` in markdown links (often breaks in Cursor).
+- Backslashes in link targets.
+- Link to paths you have not confirmed exist in the workspace.
+
+## If the file is missing
+
+Say it is missing and give the command or step to generate it; do not invent a link.

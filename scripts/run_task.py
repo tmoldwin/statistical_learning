@@ -45,6 +45,7 @@ def train_task(
     model_out: Path | None = None,
     log_weight_norms_every: int = 0,
     e_fraction: float | None = None,
+    steps: int | None = None,
 ) -> None:
     cfg = TASKS[name]
     regime = experiment_regime(name)
@@ -112,11 +113,13 @@ def train_task(
             train_cmd.append("--save-snapshots")
         if save_learning_snaps:
             train_cmd.append("--save-learning-snaps")
-        if model_uses_dale(model_type) and "dale_steps" in cfg:
-            steps = 500 if smoke else int(cfg["dale_steps"])
+        if steps is not None:
+            n_steps = int(steps)
+        elif model_uses_dale(model_type) and "dale_steps" in cfg:
+            n_steps = 500 if smoke else int(cfg["dale_steps"])
         else:
-            steps = 500 if smoke else int(cfg["steps"])
-        train_cmd.extend(["--steps", str(steps)])
+            n_steps = 500 if smoke else int(cfg["steps"])
+        train_cmd.extend(["--steps", str(n_steps)])
         run(train_cmd)
         if multi_seed and seed == DEFAULT_SEED and model_out is None:
             shutil.copy2(out_path, model_path(name, model_type))
@@ -199,6 +202,10 @@ def main() -> None:
         help="Dale excitatory fraction (default: task config / 0.8)",
     )
     parser.add_argument("--log-weight-norms-every", type=int, default=0)
+    parser.add_argument(
+        "--steps", type=int, default=None,
+        help="override task-config training steps (for smoke / diagnostics)",
+    )
     args = parser.parse_args()
 
     write_vocabulary_diagrams_for_experiment(args.task)
@@ -224,6 +231,7 @@ def main() -> None:
                     model_out=Path(args.model_out) if args.model_out else None,
                     log_weight_norms_every=int(args.log_weight_norms_every or 0),
                     e_fraction=args.e_fraction,
+                    steps=args.steps,
                 )
             if not args.skip_viz and not multi_seed:
                 visualize_task(

@@ -23,7 +23,13 @@ WORD_LENS: tuple[int, ...] = (3, 4, 5, 6)
 N_WORDS_LEVELS: tuple[int, ...] = (3, 5, 8, 12, 18, 25)
 RUNS_PER_CELL = 2
 N_RUNS = len(WORD_LENS) * len(N_WORDS_LEVELS) * RUNS_PER_CELL  # 48
-HIDDEN_SIZE = 200  # H=400+LR=0.04 plateau-stalled; H=200+LR=0.1+dropout=0 solved mid cells
+HIDDEN_SIZE = 200
+HIDDEN_SIZE_HARD = 400  # unused in v5; kept for experiments
+DEFAULT_DALE_INIT = 0.01
+DEFAULT_DALE_INIT_HARD = 0.01
+DEFAULT_LR = 0.025
+DEFAULT_LR_HARD = 0.025
+DEFAULT_DROPOUT = 0.0
 DEFAULT_SEEDS: tuple[int, ...] = (1,)
 BANK_SAMPLE_SEED = 20260810
 
@@ -101,13 +107,17 @@ def iter_runs() -> Iterable[dict]:
 
 
 def fixed_grid_task_config(run_id: int) -> dict[str, object]:
-    """Dale grid hyperparams: dropout off, LR=0.1, full step budget (no plateau kill)."""
+    """Dale grid v5: input→I allowed, init=0.01, LR=0.025, H=200, no dropout."""
     entry = run_plan()[run_id]
     words: list[str] = list(entry["words"])
     n_words = int(entry["n_words"])
     length = int(entry["word_length"])
     mean_length = float(length)
     max_length = length
+    hard = length >= 6
+    hidden_size = HIDDEN_SIZE
+    dale_init_scale = DEFAULT_DALE_INIT_HARD if hard else DEFAULT_DALE_INIT
+    learning_rate = DEFAULT_LR_HARD if hard else DEFAULT_LR
 
     chars = max(40_000, int(n_words * mean_length * 800))
     # Plateau-stop was killing unsolved nets at 50% budget. Train to the cap;
@@ -133,15 +143,16 @@ def fixed_grid_task_config(run_id: int) -> dict[str, object]:
         "early_stop_patience": 3,
         "min_checkpoint_iter": max(2_000, int(steps * 0.05)),
         "viz_length": int(viz_length),
-        "hidden_size": int(HIDDEN_SIZE),
+        "hidden_size": int(hidden_size),
         "sequence_length": int(sequence_length),
         "eval_interval": 50,
         "eval_iterations": 20,
         "metric_rollout_len": int(metric_rollout_len),
         "train_ratio": 0.9,
-        "dropout": 0.0,
+        "dropout": float(DEFAULT_DROPOUT),
         "l2_lambda": 1e-4,
-        "learning_rate": 0.025,
+        "learning_rate": float(learning_rate),
+        "dale_init_scale": float(dale_init_scale),
         "e_fraction": 0.8,
         "stall_patience_evals": 0,
         "stall_min_delta": 0.001,

@@ -1401,6 +1401,205 @@ def _pick_mixed_dfa_span_examples(
     return out
 
 
+def plot_mixed_dfa_weight_matrix_grids(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    prefer_rep: int = 0,
+    xh_outfile: str = "weight_input_matrices_grid.png",
+    hh_outfile: str = "weight_hidden_matrices_grid.png",
+) -> list[Path]:
+    """Small-multiple heatmaps of final ``W_xh`` and ``W_hh`` across the sweep.
+
+    For the fixed-letters factorial grid (``WORD_LENS`` × ``N_WORDS_LEVELS``),
+    panels are laid out as length × n_words (one replicate per cell). Otherwise
+    panels span available DFA sizes in a rectangular grid.
+    """
+    from visualize import (
+        _draw_ei_guides,
+        ei_block_boundary,
+        load_model_for_viz,
+        weights_for_plot,
+    )
+
+    sweep = _ACTIVE_SWEEP
+    word_lens = getattr(sweep, "WORD_LENS", None)
+    n_words_levels = getattr(sweep, "N_WORDS_LEVELS", None)
+    use_factorial = (
+        isinstance(word_lens, (tuple, list))
+        and isinstance(n_words_levels, (tuple, list))
+        and len(word_lens) > 0
+        and len(n_words_levels) > 0
+    )
+
+    # Collect available checkpoints keyed for layout.
+    entries = list(iter_runs())
+    cells: list[dict[str, Any]] = []
+    for entry in entries:
+        task = entry["task"]
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        cells.append({
+            "task": task,
+            "run_id": int(entry["run_id"]),
+            "n_words": int(entry["n_words"]),
+            "word_length": int(entry.get("word_length") or entry.get("length") or 0),
+            "rep": int(entry.get("rep", 0)),
+            "words": list(entry["words"]),
+            "n_dfa": _dfa_states(list(entry["words"])),
+        })
+    if not cells:
+        raise FileNotFoundError(
+            f"no {model_type} checkpoints for seed {seed} under {COMPARISON_NAME}"
+        )
+
+    def _load_mats(task: str) -> tuple[np.ndarray, np.ndarray, object]:
+        model = load_model_for_viz(str(checkpoint_path(task, model_type, seed=seed)), model_type)
+        w_in, w_rec, _w_out, dale = weights_for_plot(model)
+        # Input matrix as char × hidden; recurrent as target × source.
+        return w_in.T, w_rec, dale
+
+    paths: list[Path] = []
+    cmap = plt.cm.RdBu_r
+
+    if use_factorial:
+        row_vals = list(word_lens)
+        col_vals = list(n_words_levels)
+        # Prefer requested replicate; fall back to any available.
+        by_lc: dict[tuple[int, int], list[dict[str, Any]]] = {}
+        for c in cells:
+            by_lc.setdefault((c["word_length"], c["n_words"]), []).append(c)
+        grid_tasks: list[list[dict[str, Any] | None]] = []
+        for L in row_vals:
+            row: list[dict[str, Any] | None] = []
+            for nw in col_vals:
+                cands = by_lc.get((int(L), int(nw)), [])
+                pick = None
+                if cands:
+                    pref = [c for c in cands if c["rep"] == prefer_rep]
+                    pick = sorted(pref or cands, key=lambda c: c["run_id"])[0]
+                row.append(pick)
+            grid_tasks.append(row)
+        n_rows, n_cols = len(row_vals), len(col_vals)
+        layout_note = "rows = word length · cols = #words"
+    else:
+        # DFA-sorted rectangular span (same spirit as activation heatmap grid).
+        cells_sorted = sorted(cells, key=lambda c: (c["n_dfa"], c["n_words"], c["run_id"]))
+        n_panels = len(cells_sorted)
+        n_cols = min(6, max(3, int(np.ceil(np.sqrt(n_panels)))))
+        n_rows = int(np.ceil(n_panels / n_cols))
+        flat: list[dict[str, Any] | None] = list(cells_sorted) + [None] * (
+            n_rows * n_cols - n_panels
+        )
+        grid_tasks = [flat[i * n_cols:(i + 1) * n_cols] for i in range(n_rows)]
+        row_vals = col_vals = None
+        layout_note = "panels ordered by DFA size"
+
+    def _draw_kind(kind: str, outfile: str, *, ylabel: str, title: str) -> Path:
+        fig, axes = plt.subplots(
+            n_rows,
+            n_cols,
+            figsize=(1.55 * n_cols + 0.6, 1.55 * n_rows + 0.7),
+            squeeze=False,
+        )
+        for r in range(n_rows):
+            for c in range(n_cols):
+                ax = axes[r, c]
+                cell = grid_tasks[r][c]
+                if cell is None:
+                    ax.set_axis_off()
+                    continue
+                xh, hh, dale = _load_mats(cell["task"])
+                data = xh if kind == "xh" else hh
+                vmax = max(float(np.max(np.abs(data))), 1e-9)
+                ax.imshow(
+                    data,
+                    aspect="auto" if kind == "xh" else "equal",
+                    cmap=cmap,
+                    vmin=-vmax,
+                    vmax=vmax,
+                    interpolation="nearest",
+                    origin="lower",
+                    rasterized=True,
+                )
+                boundary = ei_block_boundary(dale)
+                if kind == "xh":
+                    _draw_ei_guides(ax, boundary, horizontal=False, vertical=True)
+                else:
+                    _draw_ei_guides(ax, boundary, horizontal=True, vertical=True)
+                if use_factorial:
+                    ax.set_title(
+                        f"L={cell['word_length']} · {cell['n_words']}w · DFA={cell['n_dfa']}",
+                        fontsize=6.0,
+                        pad=2,
+                    )
+                else:
+                    ax.set_title(
+                        f"DFA={cell['n_dfa']} · {cell['n_words']}w",
+                        fontsize=6.0,
+                        pad=2,
+                    )
+                ax.text(
+                    0.97,
+                    0.03,
+                    f"±{vmax:.2g}",
+                    transform=ax.transAxes,
+                    ha="right",
+                    va="bottom",
+                    fontsize=5.0,
+                    color="0.2",
+                    bbox=dict(
+                        boxstyle="round,pad=0.12",
+                        facecolor="white",
+                        edgecolor="none",
+                        alpha=0.75,
+                    ),
+                )
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if c == 0 and r == 0:
+                    ax.set_ylabel(ylabel, fontsize=8)
+                if use_factorial and r == n_rows - 1:
+                    ax.set_xlabel(f"n={col_vals[c]}", fontsize=7)
+
+        finalize_grid_figure(
+            fig,
+            suptitle=f"{title} (seed {seed}; {layout_note}; E|I order)",
+            top=0.90,
+            bottom=0.06,
+            left=0.06,
+            right=0.995,
+            hspace=0.35,
+            wspace=0.12,
+        )
+        out_dir = comparison_dir(COMPARISON_NAME, "trajectories")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / outfile
+        save_figure(fig, path, dpi=160)
+        plt.close(fig)
+        print(f"wrote {path}", flush=True)
+        return path
+
+    paths.append(
+        _draw_kind(
+            "xh",
+            xh_outfile,
+            ylabel=r"$W_{xh}$",
+            title=r"Input weight matrices $W_{xh}$",
+        )
+    )
+    paths.append(
+        _draw_kind(
+            "hh",
+            hh_outfile,
+            ylabel=r"$W_{hh}$",
+            title=r"Recurrent weight matrices $W_{hh}$",
+        )
+    )
+    return paths
+
+
 def plot_mixed_dfa_weight_matrices_by_dfa(
     *,
     outfile: str = "weight_matrices_by_dfa.png",
@@ -4296,6 +4495,9 @@ def run_all_mixed_dfa_plots(
         plot_metrics_vs_dfa(recompute=recompute, model_type=model_type),
         plot_mixed_dfa_scaling_overview(payload, recompute=False),
         plot_mixed_dfa_weight_matrices_by_dfa(model_type=model_type),
+        *plot_mixed_dfa_weight_matrix_grids(
+            model_type=model_type, seed=seeds[0] if seeds else 1,
+        ),
         plot_mixed_dfa_dale_weight_distributions(model_type=model_type, seed=seeds[0] if seeds else 1),
         plot_mixed_dfa_trajectory_vocab_grid(model_type=model_type),
         plot_mixed_dfa_within_corr_vs_dfa(

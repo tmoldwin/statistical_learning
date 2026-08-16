@@ -93,9 +93,6 @@ from experiment import (
     plots_dir,
     shared_dir,
 )
-from transformer.adapter import forward_pass as transformer_forward_pass
-from transformer.adapter import load_model as load_transformer_model
-from transformer.viz_repr import run_transformer_visualization
 from viz_timing import VizTimer
 from readme_figures import (
     migrate_legacy_states_layout,
@@ -9439,12 +9436,14 @@ def resolve_paths(args):
 
 def load_model_for_viz(path: str, model_type: str) -> dict:
     if model_type == "transformer" or path.endswith(".pt"):
+        from transformer.adapter import load_model as load_transformer_model
         return load_transformer_model(path)
     return load_model(path)
 
 
 def run_forward_pass(model: dict, text: str, model_type: str):
     if model.get("model_type") == "transformer" or model_type == "transformer":
+        from transformer.adapter import forward_pass as transformer_forward_pass
         return transformer_forward_pass(model, text)
     return forward_pass(model, text)
 
@@ -9644,6 +9643,8 @@ def main() -> None:
             else "transformer mode: trajectories only (representations/block_output/)"
         )
         with timer.section("transformer_representations"):
+            from transformer.viz_repr import run_transformer_visualization
+
             acts = run_transformer_visualization(
                 model,
                 text,

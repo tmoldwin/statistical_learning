@@ -332,6 +332,7 @@ from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_regimes
 from vocab_mixed_dfa import register_mixed_dfa_regimes
 from vocab_fixed_letters_dfa import register_fixed_letters_dfa_regimes
 from vocab_fixed_letters_grid import register_fixed_grid_regimes
+from vocab_top100_english import register_top100_regimes
 
 register_sweep_regimes(REGIMES)
 register_pow2_sweep_regimes(REGIMES)
@@ -339,6 +340,7 @@ register_pow2_h100_sweep_regimes(REGIMES)
 register_mixed_dfa_regimes(REGIMES)
 register_fixed_letters_dfa_regimes(REGIMES)
 register_fixed_grid_regimes(REGIMES)
+register_top100_regimes(REGIMES)
 REGIMES["thirty_two_word_mixed_345"] = build_mixed_vocab(32, (3, 4, 5))
 REGIMES["sixteen_word_mixed_345"] = build_mixed_vocab(16, (3, 4, 5))
 

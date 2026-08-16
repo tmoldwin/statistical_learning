@@ -28,7 +28,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Comparisons.** Fifty mixed-English vocab runs at \(H{=}100\) (seed 1): sample \(n \in \{1,\ldots,25\}\) words from length-balanced banks (20 × lengths 3–6). Analyses score each run by minimized DFA size. Trajectory DFA/geometry grids use seeds \(\{1,2,3,5,7\}\); decoding aggregates seeds \(\{1,2,3,5,7,8\}\).
 
-**Model.** Elman RNN with Dale’s law (\(80\%\) excitatory / \(20\%\) inhibitory hidden units; nonnegative rates via ReLU; after each Adagrad step, hard-project signed outgoing \(W_{hh}\) / \(W_{ho}\) columns and E-only \(W_{xh}\) rows: \(w\leftarrow |w|\,s\)), \(H = 100\) (demo; 2× unconstrained baseline), \(H{=}200\) (mixed-vocab runs; 2× unconstrained baseline); next-character cross-entropy; early stop on word-error \(\leq 3\%\). Checkpoints under ``rnn_dale/``.
+**Model.** Elman RNN with Dale’s law (\(80\%\) excitatory / \(20\%\) inhibitory hidden units; nonnegative rates via ReLU; after each Adagrad step, hard-project signed outgoing \(W_{hh}\) / \(W_{ho}\) columns, \(w\leftarrow |w|\,s\), and nonnegative \(W_{xh}\); Dale's law constrains each unit's outgoing signs only, so afferent input reaches excitatory and inhibitory units alike), \(H = 100\) (demo; 2× unconstrained baseline), \(H{=}200\) (mixed-vocab runs; 2× unconstrained baseline); next-character cross-entropy; early stop on word-error \(\leq 3\%\). Checkpoints under ``rnn_dale/``.
 
 **Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected vs uniform label chance; mean ± std across seeds), with a **DFA-state oracle** baseline \(\mathbb{E}_s[\max_y P(y\mid s)]\) for each non-DFA feature (dashed on readout plots)—the expected accuracy if \(\mathbf{h}\) carried only automaton state; readout over learning; closed-loop word trajectories; weight-matrix structure and digraph motifs (pairwise + 3-node) vs DFA size.
 
@@ -138,7 +138,7 @@ Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer
 
 ![Dale weight distributions by DFA](figures/main/fig_dale_weight_distributions_by_dfa.jpg)
 
-**Figure 19.** Dale-constrained weight structure across all 50 mixed-vocab runs (seed 1). Top: recurrent signed-weight densities (E→E, E→I, I→E, I→I; color = DFA size). Bottom: input→E / input→I densities (equal panel size; feedforward input is E-only so I←x is hard-zeroed), then mean $|W|$ vs DFA for input regimes and for recurrent E/I blocks (one color per regime; line = linear trend).
+**Figure 19.** Dale-constrained weight structure across all 50 mixed-vocab runs (seed 1). Top: recurrent signed-weight densities (E→E, E→I, I→E, I→I; color = DFA size). Bottom: input→E / input→I densities (equal panel size; both are nonnegative and free to be nonzero), then mean $|W|$ vs DFA for input regimes and for recurrent E/I blocks (one color per regime; line = linear trend).
 
 ![Weight graph structure and motifs vs DFA](figures/main/fig_weight_graph_motifs_vs_dfa.jpg)
 

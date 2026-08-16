@@ -110,8 +110,15 @@ def init_weights_for_model(model: dict, seed: int) -> tuple[np.ndarray, np.ndarr
     vocab_size = int(model["vocab_size"])
     dale_law = bool(model.get("dale_law", False))
     e_fraction = float(model.get("e_fraction", 0.8))
+    raw_scale = model.get("dale_init_scale")
+    dale_init_scale = None
+    if raw_scale is not None:
+        scale = float(np.asarray(raw_scale).reshape(-1)[0])
+        if np.isfinite(scale):
+            dale_init_scale = scale
     return reconstruct_init_weights(
         hidden_size, vocab_size, seed, dale_law=dale_law, e_fraction=e_fraction,
+        dale_init_scale=dale_init_scale,
     )
 
 

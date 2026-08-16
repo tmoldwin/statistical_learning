@@ -208,10 +208,16 @@ init_rng = np.random.default_rng(args.seed)
 
 # ----- model parameters -------------------------------------------------------
 dale_sign = None
+dale_init_scale = None
 if dale_law:
     dale_sign = sample_dale_signs(hidden_size, e_fraction, init_rng)
     # Smaller hidden layers need slightly larger init to escape the uniform regime.
     dale_init_scale = 0.01 if hidden_size <= 32 else 0.005
+    if args.exp:
+        from experiment import EXPERIMENT_CONFIG
+        _init_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
+        if "dale_init_scale" in _init_cfg:
+            dale_init_scale = float(_init_cfg["dale_init_scale"])
     (weights_input_to_hidden,
      weights_hidden_to_hidden,
      weights_hidden_to_output) = init_dale_weights(
@@ -222,7 +228,8 @@ if dale_law:
     inh_range = f"h{n_exc}..h{hidden_size - 1}" if n_exc < hidden_size else "(none)"
     print(f"Dale's law: {n_exc} excitatory ({exc_range}), "
           f"{hidden_size - n_exc} inhibitory ({inh_range}), "
-          f"E fraction {n_exc / hidden_size:.2f}, activation={activation_label(use_relu=use_relu)}")
+          f"E fraction {n_exc / hidden_size:.2f}, init scale {dale_init_scale}, "
+          f"input->E+I, activation={activation_label(use_relu=use_relu)}")
 else:
     weights_input_to_hidden = init_rng.standard_normal((hidden_size, vocab_size)) * 0.01
     weights_hidden_to_hidden = init_rng.standard_normal((hidden_size, hidden_size)) * 0.01
@@ -767,12 +774,20 @@ target_met_streak = 0
 stall_patience_evals = 0
 stall_min_delta = 0.0
 stall_min_iter = MIN_CHECKPOINT_ITER
+# Hopeless guard: a net whose *best* word error is still above this floor well
+# into training is not on a trajectory to solve the vocabulary at all.
+hopeless_word_error_frac = 0.0
+hopeless_min_iter = 0
 if args.exp:
     from experiment import EXPERIMENT_CONFIG
     _stall_cfg = EXPERIMENT_CONFIG.get(args.exp, {})
     stall_patience_evals = int(_stall_cfg.get("stall_patience_evals", stall_patience_evals))
     stall_min_delta = float(_stall_cfg.get("stall_min_delta", stall_min_delta))
     stall_min_iter = int(_stall_cfg.get("stall_min_iter", stall_min_iter))
+    hopeless_word_error_frac = float(
+        _stall_cfg.get("hopeless_word_error_frac", hopeless_word_error_frac)
+    )
+    hopeless_min_iter = int(_stall_cfg.get("hopeless_min_iter", hopeless_min_iter))
 best_progress_word_err = float("inf")
 stall_evals_since_progress = 0
 _legacy_zero_stop = target_word_error is None
@@ -786,6 +801,11 @@ if stall_patience_evals > 0:
     print(
         f"plateau stop: <{100.0 * stall_min_delta:.2f}% word-error improvement "
         f"for {stall_patience_evals} evals after iter {stall_min_iter}",
+    )
+if hopeless_word_error_frac > 0.0 and hopeless_min_iter > 0:
+    print(
+        f"hopeless stop: best word error > {100.0 * hopeless_word_error_frac:.2f}% "
+        f"at iter {hopeless_min_iter}",
     )
 
 
@@ -955,6 +975,17 @@ while iteration < max_iterations:
             print(
                 f"plateau stop at iter {iteration}: no >= {100.0 * stall_min_delta:.2f}% "
                 f"word-error improvement for {stall_patience_evals} evals",
+            )
+            break
+        if (
+            hopeless_word_error_frac > 0.0
+            and iteration >= hopeless_min_iter > 0
+            and best_word_err > hopeless_word_error_frac
+        ):
+            print(
+                f"hopeless stop at iter {iteration}: best word error "
+                f"{100.0 * best_word_err:.2f}% still above "
+                f"{100.0 * hopeless_word_error_frac:.2f}% floor",
             )
             break
 
@@ -1167,6 +1198,9 @@ np.savez(
     dale_law=np.array(dale_law),
     use_relu=np.array(use_relu),
     e_fraction=np.array(e_fraction),
+    dale_init_scale=np.array(
+        dale_init_scale if dale_init_scale is not None else np.nan, dtype=np.float64
+    ),
     dale_sign=np.array(dale_sign if dale_sign is not None else []),
     timestep_noise_std=np.array(timestep_noise_std, dtype=np.float64),
     dropout_rate=np.array(dropout_rate, dtype=np.float64),

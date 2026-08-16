@@ -85,8 +85,8 @@ def main() -> None:
     p.add_argument("--no-learning-snaps", action="store_true")
     p.add_argument("--force", action="store_true", help="retrain even if checkpoint exists")
     p.add_argument(
-        "--sweep", default="mixed", choices=("mixed", "fixed_grid"),
-        help="which sweep --mixed trains (fixed_grid = fixed_letters_grid_ns)",
+        "--sweep", default="mixed", choices=("mixed", "fixed_grid", "top100"),
+        help="which sweep --mixed trains (fixed_grid / top100)",
     )
     args = p.parse_args()
     if args.sweep == "fixed_grid":
@@ -94,6 +94,11 @@ def main() -> None:
 
         global iter_runs
         iter_runs = vocab_fixed_letters_grid.iter_runs
+    elif args.sweep == "top100":
+        import vocab_top100_english
+
+        global iter_runs
+        iter_runs = vocab_top100_english.iter_runs
     if not args.demo and not args.mixed:
         args.demo = True
         args.mixed = True

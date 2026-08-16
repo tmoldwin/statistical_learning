@@ -85,20 +85,15 @@ def permute_hidden_by_dale(
     )
 
 
-def dale_input_row_signs(dale_sign: np.ndarray) -> np.ndarray:
-    """Row signs for W_xh: +1 on excitatory targets, 0 on inhibitory (no direct input)."""
-    signs = np.zeros(len(dale_sign), dtype=float)
-    signs[np.asarray(dale_sign) > 0] = 1.0
-    return signs
-
-
-def enforce_dale_input_exc_only(
+def enforce_dale_input_nonneg(
     weights_input_to_hidden: np.ndarray,
-    dale_sign: np.ndarray,
 ) -> None:
-    """Feedforward input only onto excitatory units (I rows hard-zeroed; E rows ≥ 0)."""
-    mask = (np.asarray(dale_sign).ravel() > 0).reshape(-1, 1)
-    weights_input_to_hidden[:] = np.abs(weights_input_to_hidden) * mask
+    """Afferent drive reaches E and I units alike; excitatory afferents stay >= 0.
+
+    Dale's law constrains a neuron's outgoing synapse signs, not which cells it
+    receives input from, so inhibitory units get feedforward drive too.
+    """
+    weights_input_to_hidden[:] = np.abs(weights_input_to_hidden)
 
 
 def init_dale_weights(
@@ -109,13 +104,11 @@ def init_dale_weights(
     scale: float = 0.01,
     rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Init Dale weights: W_xh → E only; W_hh/W_ho columns signed by source type."""
+    """Init Dale weights: W_xh >= 0 onto all units; W_hh/W_ho columns signed by source."""
     rng = rng or np.random.default_rng()
     col_sign = dale_sign.reshape(1, -1)
-    # Sensory/feedforward drive targets excitatory cells only (I rows stay 0).
     weights_input_to_hidden = (
         np.abs(rng.standard_normal((hidden_size, vocab_size))) * scale
-        * (np.asarray(dale_sign).ravel() > 0).reshape(-1, 1)
     )
     weights_hidden_to_hidden = (
         np.abs(rng.standard_normal((hidden_size, hidden_size))) * scale * col_sign
@@ -151,12 +144,14 @@ def reconstruct_init_weights(
     *,
     dale_law: bool = False,
     e_fraction: float = 0.8,
+    dale_init_scale: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reproduce min_char_rnn weight initialization for a given RNG seed."""
     init_rng = np.random.default_rng(seed)
     if dale_law:
         dale_sign = sample_dale_signs(hidden_size, e_fraction, init_rng)
-        dale_init_scale = 0.01 if hidden_size <= 32 else 0.005
+        if dale_init_scale is None:
+            dale_init_scale = 0.01 if hidden_size <= 32 else 0.005
         return init_dale_weights(
             hidden_size, vocab_size, dale_sign, scale=dale_init_scale, rng=init_rng,
         )
@@ -174,9 +169,9 @@ def enforce_dale_weights(
     weights_hidden_to_output: np.ndarray,
     dale_sign: np.ndarray,
 ) -> None:
-    """Hard Dale projection: W_hh/W_ho columns signed by source; W_xh E-only."""
+    """Hard Dale projection: W_hh/W_ho columns signed by source; W_xh nonnegative."""
     col_sign = dale_sign.reshape(1, -1)
-    enforce_dale_input_exc_only(weights_input_to_hidden, dale_sign)
+    enforce_dale_input_nonneg(weights_input_to_hidden)
     weights_hidden_to_hidden[:] = np.abs(weights_hidden_to_hidden) * col_sign
     weights_hidden_to_output[:] = np.abs(weights_hidden_to_output) * col_sign
 
@@ -209,21 +204,17 @@ def dale_violation_fraction(
     weights_hidden_to_output: np.ndarray,
     dale_sign: np.ndarray,
 ) -> float:
-    """Fraction of Dale-scoped synapses violating sign / E-only-input constraints.
+    """Fraction of Dale-scoped synapses violating sign constraints.
 
-    Zeros are legal (hard projection lands on the boundary). I←input must be exactly 0.
+    Zeros are legal (hard projection lands on the boundary). All W_xh must be >= 0.
     """
     sign = np.asarray(dale_sign, dtype=float).ravel()
-    exc = sign > 0
-    inh = ~exc
     col_sign = sign.reshape(1, -1)
     flags: list[np.ndarray] = [
-        weights_input_to_hidden[exc].ravel() < 0,
         (weights_hidden_to_hidden * col_sign).ravel() < 0,
         (weights_hidden_to_output * col_sign).ravel() < 0,
+        weights_input_to_hidden.ravel() < 0,
     ]
-    if np.any(inh):
-        flags.append(weights_input_to_hidden[inh].ravel() != 0)
     all_flags = np.concatenate(flags) if flags else np.zeros(0, dtype=bool)
     if all_flags.size == 0:
         return 0.0

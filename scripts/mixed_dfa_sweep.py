@@ -41,10 +41,11 @@ HARD_RUN_ID = 41  # DFA=49, 21 words — hardest in the 50-run manifest
 
 
 def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str,
-               save_learning_snaps: bool = False, force_retrain: bool = False) -> None:
+               save_learning_snaps: bool = False, force_retrain: bool = False,
+               model_type: str = "rnn") -> None:
     need: list[int] = []
     for s in seeds:
-        ckpt = checkpoint_path(task, "rnn", seed=s)
+        ckpt = checkpoint_path(task, model_type, seed=s)
         if force_retrain:
             need.append(s)
         elif save_learning_snaps:
@@ -56,7 +57,7 @@ def _train_one(task: str, seeds: tuple[int, ...], *, smoke: bool, device: str,
         return
     cmd = [
         sys.executable, "scripts/run_task.py", task,
-        "--models", "rnn",
+        "--models", model_type,
         "--seeds", *[str(s) for s in need],
         "--skip-viz",
         "--device", device,
@@ -195,23 +196,29 @@ def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
     """Train seed-1 learning snaps for all mixed runs, then binned learning curves."""
     seeds = tuple(args.seeds) if args.seeds else (1,)
     seed = int(seeds[0])
+    model_type = getattr(args, "model_type", None) or "rnn"
     tasks = [e["task"] for e in iter_runs()]
     if args.runs is not None:
         want = set(args.runs)
         tasks = [task_name(i) for i in sorted(want)]
     need = []
     for task in tasks:
-        ckpt = checkpoint_path(task, "rnn", seed=seed)
+        ckpt = checkpoint_path(task, model_type, seed=seed)
         if args.retrain or not list_learning_snaps(ckpt):
             need.append(task)
     if need:
         jobs = max(1, int(args.jobs))
-        print(f"training {len(need)} runs seed={seed} with learning snaps (jobs={jobs})", flush=True)
+        print(
+            f"training {len(need)} runs seed={seed} model={model_type} "
+            f"with learning snaps (jobs={jobs})",
+            flush=True,
+        )
         if jobs == 1:
             for task in need:
                 _train_one(
                     task, (seed,), smoke=False, device=args.device,
                     save_learning_snaps=True, force_retrain=args.retrain,
+                    model_type=model_type,
                 )
         else:
             with ProcessPoolExecutor(max_workers=jobs) as pool:
@@ -224,13 +231,16 @@ def cmd_learning_decode_bins(args: argparse.Namespace) -> None:
                         device=args.device,
                         save_learning_snaps=True,
                         force_retrain=args.retrain,
+                        model_type=model_type,
                     )
                     for task in need
                 ]
                 for fut in as_completed(futs):
                     fut.result()
-    # seeds=None → all snaps on disk (seed 1 × 50 vocabs + any multi-seed runs).
-    json_path = collect_learning_decode_by_dfa(seeds=None, recompute=True)
+    # seeds=None → all snaps on disk (seed 1 × N vocabs + any multi-seed runs).
+    json_path = collect_learning_decode_by_dfa(
+        seeds=None, recompute=True, model_type=model_type,
+    )
     out = plot_learning_decode_by_dfa_bins(json_path=json_path)
     print(f"wrote {out}", flush=True)
 
@@ -257,6 +267,7 @@ def main() -> None:
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
             "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness",
+            "weight-matrix-grids",
             "spectra-by-letters", "activation-grid",
         ),
     )
@@ -379,6 +390,13 @@ def main() -> None:
             model_type=model_type,
         )
         print(f"wrote {out_paper}", flush=True)
+    elif args.command == "weight-matrix-grids":
+        from viz.compare.mixed_dfa_viz import plot_mixed_dfa_weight_matrix_grids
+
+        seed = args.seeds[0] if args.seeds else 1
+        model_type = getattr(args, "model_type", None) or "rnn"
+        for p in plot_mixed_dfa_weight_matrix_grids(seed=seed, model_type=model_type):
+            print(f"wrote {p}", flush=True)
     elif args.command == "weight-spikiness":
         from viz.compare.mixed_dfa_viz import _dfa_states
         from viz.compare.weight_spikiness import (

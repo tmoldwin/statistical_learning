@@ -981,9 +981,19 @@ _MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
     # Transitive feedforward: i→j→k and i→k.
     "motif_feedforward_rate": ((0, 1), (1, 2), (0, 2)),
     "motif_cycle_rate": ((0, 1), (1, 2), (2, 0)),
-    # Holland–Leinhardt (A=0, B=1, C=2).
+    # Holland–Leinhardt (A=0, B=1, C=2). All 16 classes; each edge set is
+    # verified to yield exactly its own class under nx.triadic_census.
+    "triad_003_frac": (),  # empty
+    "triad_012_frac": ((0, 1),),  # A→B
+    "triad_102_frac": ((0, 1), (1, 0)),  # A↔B
+    "triad_021D_frac": ((1, 0), (1, 2)),  # A←B→C (out-star)
+    "triad_021U_frac": ((0, 1), (2, 1)),  # A→B←C (in-star)
+    "triad_021C_frac": ((0, 1), (1, 2)),  # A→B→C (2-path)
+    "triad_111D_frac": ((0, 1), (1, 0), (2, 1)),  # A↔B←C
+    "triad_111U_frac": ((0, 1), (1, 0), (1, 2)),  # A↔B→C
     "triad_030T_frac": ((0, 1), (2, 1), (0, 2)),  # A→B←C, A→C
     "triad_030C_frac": ((1, 0), (2, 1), (0, 2)),  # A←B←C, A→C
+    "triad_201_frac": ((0, 1), (1, 0), (1, 2), (2, 1)),  # A↔B↔C
     "triad_120D_frac": ((1, 0), (1, 2), (0, 2), (2, 0)),  # A←B→C, A↔C
     "triad_120U_frac": ((0, 1), (2, 1), (0, 2), (2, 0)),  # A→B←C, A↔C
     "triad_120C_frac": ((0, 1), (1, 2), (0, 2), (2, 0)),  # A→B→C, A↔C

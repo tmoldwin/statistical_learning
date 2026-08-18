@@ -818,6 +818,115 @@ def compute_weight_digraph_motifs(
     return out
 
 
+# 6-bit local triad edge pattern -> Holland-Leinhardt class (nodes 0,1,2).
+_HL_TRIAD_PATTERN_CLASS: dict[int, str] = {}
+
+
+def _hl_triad_pattern_classes() -> dict[int, str]:
+    if _HL_TRIAD_PATTERN_CLASS:
+        return _HL_TRIAD_PATTERN_CLASS
+    import networkx as nx
+
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+    for bits in range(64):
+        h = nx.DiGraph()
+        h.add_nodes_from([0, 1, 2])
+        for bi, (a, b) in enumerate(edges):
+            if (bits >> bi) & 1:
+                h.add_edge(a, b)
+        census = nx.triadic_census(h)
+        _HL_TRIAD_PATTERN_CLASS[bits] = max(census, key=census.get)
+    return _HL_TRIAD_PATTERN_CLASS
+
+
+def compute_weight_colored_hl_motif_counts(
+    w_rec: np.ndarray,
+    dale_sign: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, int | float]:
+    """Signed Holland-Leinhardt motif census with D|/T| keys (r43 board format).
+
+    Dyads use local nodes 0,1 and edge codes ``01`` / ``10``. Triads use local
+    0,1,2 on each connected triple. Skips HL classes ``003``, ``012``, and ``102``
+    (same connected-triple pool as the r43 census boards).
+    """
+    from collections import Counter
+
+    from rnn.rnn_dyn import dale_ei_blocks
+
+    w = np.asarray(w_rec, dtype=float)
+    g, thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    exc, inh = dale_ei_blocks(dale_sign)
+    types = np.full(n, "i", dtype=object)
+    types[exc] = "e"
+    types[inh] = "i"
+
+    pat_to_hl = _hl_triad_pattern_classes()
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+
+    def _tri_pat(i: int, j: int, k: int) -> int:
+        nodes = (i, j, k)
+        bits = 0
+        for bi, (a, b) in enumerate(edges):
+            if E[nodes[a], nodes[b]]:
+                bits |= 1 << bi
+        return bits
+
+    def _tri_edge_key(bits: int) -> str:
+        parts = [f"{a}{b}" for bi, (a, b) in enumerate(edges) if (bits >> bi) & 1]
+        return ",".join(sorted(parts))
+
+    cnt: Counter[str] = Counter()
+    dyads_conn = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            fwd, back = bool(E[i, j]), bool(E[j, i])
+            if not (fwd or back):
+                continue
+            dyads_conn += 1
+            parts: list[str] = []
+            if fwd:
+                parts.append("01")
+            if back:
+                parts.append("10")
+            ek = ",".join(parts)
+            if fwd and back:
+                col = "ee" if types[i] == types[j] else "ei"
+            else:
+                src, dst = (i, j) if fwd else (j, i)
+                col = f"{types[src]}{types[dst]}"
+            cnt[f"D|{ek}|{col}"] += 1
+
+    triples_conn = 0
+    skip_hl = {"003", "012", "102"}
+    if n >= 3:
+        for i in range(n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    bits = _tri_pat(i, j, k)
+                    if pat_to_hl[bits] in skip_hl:
+                        continue
+                    triples_conn += 1
+                    ek = _tri_edge_key(bits)
+                    col = f"{types[i]}{types[j]}{types[k]}"
+                    cnt[f"T|{ek}|{col}"] += 1
+
+    return {
+        "cnt": dict(cnt),
+        "edges": float(int(E.sum())),
+        "dyads_conn": float(dyads_conn),
+        "triples_conn": float(triples_conn),
+        "thr": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+
+
 _DYAD_COLORINGS: tuple[str, ...] = ("ee", "ei", "ie", "ii")
 # Mutual dyads are unordered for type; mixed E–I is stored as ``ei`` only.
 _MUTUAL_COLORINGS: tuple[str, ...] = ("ee", "ei", "ii")

@@ -1,4 +1,4 @@
-"""Canonical r43 motif census figures (mixed_vocab_dfa_ns run 43)."""
+"""Canonical mixed-DFA motif census figures (mixed_vocab_dfa_ns)."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from viz.plot_layout import finalize_grid_figure, save_figure
+from viz.compare import mixed_dfa_motif_all_runs as mar
 
 DEFAULT_JSON = (
     REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/r43_motif_colored_all.json"
@@ -30,6 +31,11 @@ DEFAULT_OUT = (
 )
 MIN_START = 20
 EPS = 0.5
+ALL_RUNS_CACHE = REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/mixed_dfa_motif_fold_all_runs.json"
+ALL_RUNS_OUT = REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/mixed_dfa_motif_counts_raw_over_learning.png"
+MODEL = "rnn_dale"
+SEED = 1
+MAX_SNAPS_PER_RUN = 8
 
 
 def _ols(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
@@ -197,21 +203,34 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--only",
-        choices=("raw-over-learning",),
+        choices=("raw-over-learning", "all-runs-over-learning"),
         default="raw-over-learning",
         help="figure to generate",
     )
     p.add_argument("--json", type=Path, default=DEFAULT_JSON)
     p.add_argument("--edges-json", type=Path, default=DEFAULT_EDGES_JSON)
-    p.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    p.add_argument("--cache", type=Path, default=ALL_RUNS_CACHE)
+    p.add_argument("--out", type=Path, default=None)
     p.add_argument("--min-start", type=int, default=MIN_START)
+    p.add_argument("--rebuild-cache", action="store_true")
     args = p.parse_args()
     if args.only == "raw-over-learning":
         plot_raw_counts_over_learning(
             args.json,
-            args.out,
+            args.out or DEFAULT_OUT,
             edges_json_path=args.edges_json,
             min_start=args.min_start,
+        )
+    elif args.only == "all-runs-over-learning":
+        mar.plot_all_runs_over_learning(
+            args.cache,
+            args.out or ALL_RUNS_OUT,
+            min_start=args.min_start,
+            rebuild_cache=args.rebuild_cache,
+            model=MODEL,
+            seed=SEED,
+            max_snaps_per_run=MAX_SNAPS_PER_RUN,
+            ols_fn=_ols,
         )
 
 

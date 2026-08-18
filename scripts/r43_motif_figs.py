@@ -33,6 +33,7 @@ MIN_START = 20
 EPS = 0.5
 ALL_RUNS_CACHE = REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/mixed_dfa_motif_fold_all_runs.json"
 ALL_RUNS_OUT = REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/mixed_dfa_motif_counts_raw_over_learning.png"
+ALL_RUNS_BETA_OUT = REPO / "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/mixed_dfa_motif_fold_beta_vs_dfa.png"
 MODEL = "rnn_dale"
 SEED = 1
 MAX_SNAPS_PER_RUN = 8
@@ -231,6 +232,7 @@ def main() -> None:
             seed=SEED,
             max_snaps_per_run=MAX_SNAPS_PER_RUN,
             ols_fn=_ols,
+            beta_out_path=ALL_RUNS_BETA_OUT,
         )
 
 

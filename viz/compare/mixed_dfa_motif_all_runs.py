@@ -11,12 +11,54 @@ from viz.plot_layout import finalize_grid_figure, save_figure
 from viz.weight_structure import compute_weight_colored_hl_motif_counts
 
 EPS = 0.5
+TARGET_WE = 0.03
+_SESSION_GAP_S = 3600.0
 
 
-def _snap_census(snap_path: Path) -> dict:
+def _dominant_session(snaps: list[Path], *, gap_s: float = _SESSION_GAP_S) -> list[Path]:
+    """Keep the largest mtime-contiguous snap group (drops stale overwrite sessions)."""
+    if not snaps:
+        return []
+    ts = sorted((f.stat().st_mtime, f) for f in snaps)
+    groups: list[list[tuple[float, Path]]] = [[ts[0]]]
+    for t in ts[1:]:
+        if t[0] - groups[-1][-1][0] > gap_s:
+            groups.append([t])
+        else:
+            groups[-1].append(t)
+    kept = [f for _, f in max(groups, key=len)]
+    return sorted(kept, key=lambda p: int(p.stem.split("_")[1]))
+
+
+def _snap_iteration(snap_path: Path) -> int:
+    return int(snap_path.stem.split("_")[1])
+
+
+def _dale_sign_from_ckpt(ckpt: Path) -> np.ndarray:
+    d = np.load(ckpt, allow_pickle=True)
+    if "dale_sign" in d.files:
+        return np.asarray(d["dale_sign"], dtype=float).ravel()
+    W = np.asarray(d["weights_hidden_to_hidden"], dtype=float)
+    sign = np.ones(W.shape[1], dtype=float)
+    for j in range(W.shape[1]):
+        col = np.delete(W[:, j], j)
+        nz = col[col != 0]
+        if nz.size:
+            sign[j] = float(np.sign(nz[np.argmax(np.abs(nz))]))
+    return sign
+
+
+def _best_word_err(ckpt: Path) -> float:
+    d = np.load(ckpt, allow_pickle=True)
+    if "best_metric_word_error_frac" in d.files:
+        return float(np.asarray(d["best_metric_word_error_frac"]).reshape(-1)[0])
+    return float("nan")
+
+
+def _snap_census(snap_path: Path, dale_sign: np.ndarray) -> dict:
     d = np.load(snap_path, allow_pickle=True)
     out = compute_weight_colored_hl_motif_counts(
-        d["weights_hidden_to_hidden"], d["dale_law"], mode="mean",
+        d["weights_hidden_to_hidden"], dale_sign, mode="mean",
     )
     it = int(d["learning_snap_iteration"]) if "learning_snap_iteration" in d.files else -1
     we = float(d["learning_snap_word_err"]) if "learning_snap_word_err" in d.files else float("nan")
@@ -48,15 +90,27 @@ def collect_all_runs_motif_cache(
 
     fold_rows: list[dict] = []
     run_series: list[dict] = []
+    n_solved = 0
     for entry in vocab.iter_runs():
         run_id = int(entry["run_id"])
         n_dfa = int(dfa_by_run[run_id])
         ckpt = checkpoint_path(entry["task"], model, seed=seed)
-        snaps = list_learning_snaps(ckpt)
-        if len(snaps) < 2:
-            print(f"skip r{run_id:02d}: need >=2 learning snaps", flush=True)
+        if not ckpt.is_file():
+            print(f"skip r{run_id:02d}: missing checkpoint", flush=True)
             continue
-        series = [_snap_census(p) for p in _subsample_snaps(snaps, max_snaps_per_run)]
+        best_we = _best_word_err(ckpt)
+        solved = bool(np.isfinite(best_we) and best_we <= TARGET_WE)
+        if solved:
+            n_solved += 1
+        snaps = [
+            p for p in _dominant_session(list_learning_snaps(ckpt))
+            if _snap_iteration(p) > 0
+        ]
+        if len(snaps) < 2:
+            print(f"skip r{run_id:02d}: need >=2 post-init learning snaps", flush=True)
+            continue
+        dale_sign = _dale_sign_from_ckpt(ckpt)
+        series = [_snap_census(p, dale_sign) for p in _subsample_snaps(snaps, max_snaps_per_run)]
         c0, c1 = series[0]["cnt"], series[-1]["cnt"]
         for key, v0 in c0.items():
             if not key.startswith("T|") or float(v0) < min_start:
@@ -82,23 +136,107 @@ def collect_all_runs_motif_cache(
                 "triples_conn": float(row["triples_conn"]),
                 "sd_log_count": float(slog.std()) if len(slog) else float("nan"),
             })
-        run_series.append({"run_id": run_id, "n_dfa_states": n_dfa, "progress": prog_rows})
-        print(f"r{run_id:02d} DFA={n_dfa:3d}  pts={sum(1 for r in fold_rows if r['run_id']==run_id)}", flush=True)
+        run_series.append({
+            "run_id": run_id,
+            "n_dfa_states": n_dfa,
+            "best_we": best_we,
+            "solved": solved,
+            "progress": prog_rows,
+        })
+        tag = "solved" if solved else f"WE={100.0 * best_we:.1f}%"
+        print(
+            f"r{run_id:02d} DFA={n_dfa:3d}  {tag}  "
+            f"pts={sum(1 for r in fold_rows if r['run_id']==run_id)}",
+            flush=True,
+        )
 
     payload = {
         "comparison": vocab.COMPARISON_NAME,
         "model": model,
         "seed": seed,
         "min_start": min_start,
+        "target_we": TARGET_WE,
+        "skip_iter0": True,
         "n_runs": len(run_series),
+        "n_solved": n_solved,
         "n_fold_points": len(fold_rows),
         "fold_rows": fold_rows,
         "run_series": run_series,
     }
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(f"wrote {cache_path}  runs={len(run_series)}  points={len(fold_rows)}", flush=True)
+    print(
+        f"wrote {cache_path}  runs={len(run_series)}  solved={n_solved}  "
+        f"points={len(fold_rows)}",
+        flush=True,
+    )
     return cache_path
+
+
+def _run_sort_key(run: dict) -> tuple[int, int]:
+    return (int(run["n_dfa_states"]), int(run["run_id"]))
+
+
+def _plot_beta_vs_dfa(
+    per_run: list[dict],
+    *,
+    ax: plt.Axes,
+    dfa_cmap,
+    dfa_norm,
+    target_we: float,
+) -> None:
+    xs, ys, cs, solved_flags = [], [], [], []
+    for row in per_run:
+        beta = row.get("beta")
+        if beta is None or not np.isfinite(beta):
+            continue
+        xs.append(float(row["n_dfa_states"]))
+        ys.append(float(beta))
+        cs.append(dfa_cmap(dfa_norm(float(row["n_dfa_states"]))))
+        solved_flags.append(bool(row.get("solved", False)))
+
+    if not xs:
+        ax.text(0.5, 0.5, "no per-run slopes", ha="center", va="center", transform=ax.transAxes)
+        return
+
+    x_arr = np.array(xs, dtype=float)
+    y_arr = np.array(ys, dtype=float)
+    for x, y, c, solved in zip(xs, ys, cs, solved_flags):
+        if solved:
+            ax.scatter(x, y, s=28, c=[c], alpha=0.9, edgecolors="0.15", linewidths=0.4, zorder=3)
+        else:
+            ax.scatter(
+                x, y, s=34, facecolors="none", edgecolors=c, linewidths=1.2, alpha=0.95, zorder=3,
+            )
+
+    if len(x_arr) >= 3 and np.std(x_arr) > 1e-12:
+        X = np.column_stack([np.ones(len(x_arr)), x_arr])
+        b, *_ = np.linalg.lstsq(X, y_arr, rcond=None)
+        x_line = np.linspace(x_arr.min(), x_arr.max(), 100)
+        ax.plot(x_line, b[0] + b[1] * x_line, color="#c0392b", lw=1.2, zorder=2)
+        ss_res = float(np.sum((y_arr - (b[0] + b[1] * x_arr)) ** 2))
+        ss_tot = float(np.sum((y_arr - y_arr.mean()) ** 2))
+        meta_r2 = 1.0 - ss_res / ss_tot if ss_tot else float("nan")
+        ax.text(
+            0.03, 0.97,
+            f"meta: $\\beta$ = {b[0]:+.2f} + {b[1]:+.3f}·DFA  ($R^2$={meta_r2:.2f})",
+            transform=ax.transAxes, fontsize=7, va="top", ha="left",
+            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.8", alpha=0.92),
+        )
+
+    ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
+    ax.set_xlabel("DFA states", fontsize=8)
+    ax.set_ylabel(r"$\beta$ (log fold ~ log start)", fontsize=8)
+    ax.tick_params(labelsize=7)
+    ax.grid(True, alpha=0.22)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.text(
+        0.97, 0.03,
+        f"filled: best WE $\\leq$ {100 * target_we:.0f}%\nopen: unsolved",
+        transform=ax.transAxes, fontsize=6.5, va="bottom", ha="right",
+        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.8", alpha=0.92),
+    )
 
 
 def plot_all_runs_over_learning(
@@ -111,6 +249,8 @@ def plot_all_runs_over_learning(
     seed: int,
     max_snaps_per_run: int,
     ols_fn,
+    ncol: int = 6,
+    beta_out_path: Path | None = None,
 ) -> Path:
     if rebuild_cache or not cache_path.is_file():
         collect_all_runs_motif_cache(
@@ -119,108 +259,149 @@ def plot_all_runs_over_learning(
             max_snaps_per_run=max_snaps_per_run,
             model=model,
             seed=seed,
-            )
+        )
     payload = json.loads(cache_path.read_text(encoding="utf-8"))
     rows = payload["fold_rows"]
-    series = payload["run_series"]
-    log_c0 = np.array([r["log_c0"] for r in rows], dtype=float)
-    log_fold = np.array([r["log_fold"] for r in rows], dtype=float)
-    beta, _, r2 = ols_fn(log_fold, log_c0)
-    x_line = np.linspace(float(log_c0.min()), float(log_c0.max()), 100)
-    y_line = beta[0] + beta[1] * x_line
+    series = sorted(payload["run_series"], key=_run_sort_key)
+    target_we = float(payload.get("target_we", TARGET_WE))
+    n_solved = int(payload.get("n_solved", sum(1 for r in series if r.get("solved"))))
 
-    dfa_vals = [float(r["n_dfa_states"]) for r in series]
+    by_run: dict[int, list[dict]] = {}
+    for r in rows:
+        by_run.setdefault(int(r["run_id"]), []).append(r)
+
     dfa_cmap = plt.get_cmap("viridis")
+    dfa_vals = [float(r["n_dfa_states"]) for r in series]
     dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals))
-    sc_colors = [dfa_cmap(dfa_norm(r["n_dfa_states"])) for r in rows]
 
-    grid = np.linspace(0.0, 1.0, 25)
-    edge_mat, tri_mat, sd_mat = [], [], []
-    for run in series:
-        pr = np.array([p["progress"] for p in run["progress"]], dtype=float)
-        if len(pr) < 2:
+    all_log_c0 = np.array([r["log_c0"] for r in rows], dtype=float)
+    all_log_fold = np.array([r["log_fold"] for r in rows], dtype=float)
+    x_lo, x_hi = float(all_log_c0.min()), float(all_log_c0.max())
+    y_lo, y_hi = float(all_log_fold.min()), float(all_log_fold.max())
+    x_pad = 0.04 * max(x_hi - x_lo, 0.1)
+    y_pad = 0.06 * max(y_hi - y_lo, 0.1)
+    x_lim = (x_lo - x_pad, x_hi + x_pad)
+    y_lim = (y_lo - y_pad, y_hi + y_pad)
+
+    nrow = int(np.ceil(len(series) / ncol))
+    fig_w = 2.05 * ncol + 0.55
+    fig_h = 1.85 * nrow + 2.35
+    fig = plt.figure(figsize=(fig_w, fig_h))
+    grid_h = nrow + 1
+    height_ratios = [1.0] * nrow + [0.55]
+    gs = fig.add_gridspec(grid_h, ncol, height_ratios=height_ratios, hspace=0.42, wspace=0.28)
+
+    per_run: list[dict] = []
+    for idx, run in enumerate(series):
+        rid = int(run["run_id"])
+        n_dfa = int(run["n_dfa_states"])
+        solved = bool(run.get("solved", False))
+        ax = fig.add_subplot(gs[idx // ncol, idx % ncol])
+        pts = by_run.get(rid, [])
+        beta_val = float("nan")
+        r2 = float("nan")
+        if not pts:
+            ax.axis("off")
+            per_run.append({
+                "run_id": rid, "n_dfa_states": n_dfa, "solved": solved,
+                "beta": beta_val, "r2": r2, "n": 0,
+            })
             continue
-        edge_mat.append(np.interp(grid, pr, [p["edges"] for p in run["progress"]]))
-        tri_mat.append(np.interp(grid, pr, [p["triples_conn"] for p in run["progress"]]))
-        sd_mat.append(np.interp(grid, pr, [p["sd_log_count"] for p in run["progress"]]))
-    edge_mat = np.asarray(edge_mat)
-    tri_mat = np.asarray(tri_mat)
-    sd_mat = np.asarray(sd_mat)
-    edge_med = np.median(edge_mat, axis=0)
-    tri_med = np.median(tri_mat, axis=0)
-    sd_med = np.median(sd_mat, axis=0)
-    edge_q25, edge_q75 = np.percentile(edge_mat, [25, 75], axis=0)
-    tri_q25, tri_q75 = np.percentile(tri_mat, [25, 75], axis=0)
+        x = np.array([p["log_c0"] for p in pts], dtype=float)
+        y = np.array([p["log_fold"] for p in pts], dtype=float)
+        c = [dfa_cmap(dfa_norm(n_dfa))] * len(x)
+        ax.scatter(x, y, s=10, c=c, alpha=0.75, edgecolors="none", zorder=3)
+        if len(x) >= 3 and np.std(x) > 1e-12:
+            beta, _, r2 = ols_fn(y, x)
+            beta_val = float(beta[1])
+            x_line = np.linspace(x_lim[0], x_lim[1], 50)
+            ax.plot(x_line, beta[0] + beta[1] * x_line, color="#c0392b", lw=1.0, zorder=2)
+        per_run.append({
+            "run_id": rid, "n_dfa_states": n_dfa, "solved": solved,
+            "beta": beta_val, "r2": r2, "n": len(x),
+        })
+        ax.axhline(0.0, color="0.55", lw=0.6, ls="--", zorder=1)
+        ax.set_xlim(*x_lim)
+        ax.set_ylim(*y_lim)
+        solve_tag = "" if solved else "  (unsolved)"
+        ax.set_title(
+            f"r{rid:02d}  DFA={n_dfa}  $\\beta$={beta_val:+.2f}  R$^2$={r2:.2f}{solve_tag}",
+            fontsize=7.0, pad=2,
+        )
+        ax.tick_params(labelsize=6)
+        ax.grid(True, alpha=0.22)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        if idx // ncol == nrow - 1:
+            ax.set_xlabel("log start", fontsize=6.5)
+        else:
+            ax.tick_params(labelbottom=False)
+        if idx % ncol == 0:
+            ax.set_ylabel("log fold", fontsize=6.5)
+        else:
+            ax.tick_params(labelleft=False)
 
-    fig = plt.figure(figsize=(12.0, 6.6))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.15, 0.85])
-    ax_sc, ax_log, ax_spr = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[0, 2])
-    ax_edge, ax_sd, ax_tri = fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1]), fig.add_subplot(gs[1, 2])
+    for j in range(len(series), nrow * ncol):
+        fig.add_subplot(gs[j // ncol, j % ncol]).axis("off")
 
-    ax_sc.scatter(log_c0, log_fold, c=sc_colors, s=14, alpha=0.55, edgecolors="none")
-    ax_sc.plot(x_line, y_line, color="#c0392b", lw=1.4, label=f"pooled OLS  R2={r2:.2f}")
-    ax_sc.axhline(0.0, color="0.55", lw=0.7, ls="--")
-    ax_sc.set_xlabel("log start count", fontsize=8)
-    ax_sc.set_ylabel("log fold (end / start)", fontsize=8)
-    ax_sc.set_title(f"all runs: start vs fold  (start>={min_start}, n={len(rows)}, {payload['n_runs']} runs)", fontsize=8, pad=4)
-    ax_sc.legend(fontsize=7, loc="upper right", frameon=True)
-    ax_sc.tick_params(labelsize=7)
-    ax_sc.grid(True, alpha=0.25)
-
-    ax_log.plot(grid, tri_med, color="0.1", lw=1.6, label="median run")
-    ax_log.fill_between(grid, tri_q25, tri_q75, color="0.75", label="middle 50% runs")
-    ax_log.set_yscale("log")
-    ax_log.set_xlabel("normalized training progress", fontsize=8)
-    ax_log.set_ylabel("connected triad instances", fontsize=8)
-    ax_log.set_title("triad mass (median across runs)", fontsize=8, pad=4)
-    ax_log.legend(fontsize=6, loc="lower right", frameon=True)
-    ax_log.tick_params(labelsize=7)
-    ax_log.grid(True, alpha=0.25)
-
-    ax_spr.plot(grid, sd_med, color="0.1", lw=1.5, label="median sd")
-    ax_spr.set_xlabel("normalized training progress", fontsize=8)
-    ax_spr.set_ylabel("sd log triad count", fontsize=8)
-    ax_spr.set_title(f"spread  (sd {sd_med[0]:.2f} -> {sd_med[-1]:.2f})", fontsize=8, pad=4)
-    ax_spr.legend(fontsize=6, loc="upper right", frameon=True)
-    ax_spr.tick_params(labelsize=7)
-    ax_spr.grid(True, alpha=0.25)
-
-    ax_edge.plot(grid, edge_med, color="#4c78a8", lw=1.6)
-    ax_edge.fill_between(grid, edge_q25, edge_q75, color="#4c78a8", alpha=0.2)
-    ax_edge.set_xlabel("normalized training progress", fontsize=8)
-    ax_edge.set_ylabel("count", fontsize=8)
-    ax_edge.set_title(f"strong |W_hh| edges  (median x{edge_med[-1]/max(edge_med[0],1):.2f})", fontsize=8, pad=4)
-    ax_edge.tick_params(labelsize=7)
-    ax_edge.grid(True, alpha=0.25)
-
-    ax_sd.plot(grid, sd_med, color="#c0392b", lw=1.6)
-    ax_sd.set_xlabel("normalized training progress", fontsize=8)
-    ax_sd.set_ylabel("sd log count", fontsize=8)
-    ax_sd.set_title(f"triad spread  (sd {sd_med[0]:.2f} -> {sd_med[-1]:.2f})", fontsize=8, pad=4)
-    ax_sd.tick_params(labelsize=7)
-    ax_sd.grid(True, alpha=0.25)
-
-    ax_tri.plot(grid, tri_med, color="#2ca02c", lw=1.6)
-    ax_tri.fill_between(grid, tri_q25, tri_q75, color="#2ca02c", alpha=0.2)
-    ax_tri.set_xlabel("normalized training progress", fontsize=8)
-    ax_tri.set_ylabel("count", fontsize=8)
-    ax_tri.set_title(f"connected triads  (median x{tri_med[-1]/max(tri_med[0],1):.2f})", fontsize=8, pad=4)
-    ax_tri.tick_params(labelsize=7)
-    ax_tri.grid(True, alpha=0.25)
+    ax_beta = fig.add_subplot(gs[nrow, :])
+    _plot_beta_vs_dfa(per_run, ax=ax_beta, dfa_cmap=dfa_cmap, dfa_norm=dfa_norm, target_we=target_we)
 
     sm = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
-    cax = fig.add_axes([0.935, 0.34, 0.012, 0.52])
+    cax = fig.add_axes([0.935, 0.30, 0.012, 0.52])
     cbar = fig.colorbar(sm, cax=cax)
     cbar.set_label("DFA states", fontsize=7)
     cbar.ax.tick_params(labelsize=6)
 
+    r2_vals = [r["r2"] for r in per_run if np.isfinite(r["r2"])]
+    med_r2 = float(np.median(r2_vals)) if r2_vals else float("nan")
     finalize_grid_figure(
         fig,
-        suptitle="mixed DFA (all runs): motif homogenization vs DFA size",
-        top=0.92, bottom=0.08, left=0.06, right=0.92, hspace=0.42, wspace=0.32,
+        suptitle=(
+            f"mixed DFA all runs: start vs fold (DFA order, post-init, start>={min_start}, "
+            f"n={len(series)} runs, {n_solved} solved, median per-run R$^2$={med_r2:.2f})"
+        ),
+        suptitle_fontsize=11,
+        top=0.93,
+        bottom=0.05,
+        left=0.05,
+        right=0.92,
+        hspace=0.42,
+        wspace=0.28,
     )
-    save_figure(fig, out_path, dpi=160)
+    save_figure(fig, out_path, dpi=150)
     plt.close(fig)
     print(f"wrote {out_path}")
-    print(f"pooled R2={r2:.3f}  n={len(rows)}  runs={payload['n_runs']}")
+
+    beta_path = beta_out_path or out_path.with_name(
+        out_path.stem.replace("_counts_raw_over_learning", "_fold_beta_vs_dfa") + out_path.suffix
+    )
+    fig_b, ax_b = plt.subplots(figsize=(5.2, 3.6))
+    _plot_beta_vs_dfa(per_run, ax=ax_b, dfa_cmap=dfa_cmap, dfa_norm=dfa_norm, target_we=target_we)
+    sm_b = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
+    cbar_b = fig_b.colorbar(sm_b, ax=ax_b, pad=0.02)
+    cbar_b.set_label("DFA states", fontsize=8)
+    cbar_b.ax.tick_params(labelsize=7)
+    finalize_grid_figure(
+        fig_b,
+        suptitle=(
+            f"motif census compression slope vs DFA size "
+            f"(n={len(series)} runs, {n_solved} solved, start>={min_start})"
+        ),
+        suptitle_fontsize=10,
+        top=0.88,
+        bottom=0.14,
+        left=0.12,
+        right=0.88,
+    )
+    save_figure(fig_b, beta_path, dpi=150)
+    plt.close(fig_b)
+    print(f"wrote {beta_path}")
+
+    for row in sorted(per_run, key=lambda r: (r["n_dfa_states"], r["run_id"])):
+        rid, n_dfa = row["run_id"], row["n_dfa_states"]
+        beta_val, r2, n = row["beta"], row["r2"], row["n"]
+        tag = "ok" if row["solved"] else "unsolved"
+        print(f"  r{rid:02d} DFA={n_dfa:3d}  n={n:3d}  beta={beta_val:+.3f}  R2={r2:.3f}  {tag}")
+    print(f"median per-run R2={med_r2:.3f}  runs={len(series)}  points={len(rows)}")
     return out_path

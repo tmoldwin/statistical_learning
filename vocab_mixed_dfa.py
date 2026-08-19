@@ -18,9 +18,10 @@ N_RUNS = 50
 N_WORDS_MIN = 1
 N_WORDS_MAX = 25
 RUNS_PER_COUNT = 2  # 2 × 25 sizes = 50 runs
-HIDDEN_SIZE = 200  # Dale branch: 2× default capacity vs unconstrained H=100
+HIDDEN_SIZE = 200  # Legacy Dale comparison (mixed_vocab_dfa_ns).
+DALE_HIDDEN_SIZE = 300  # Current Dale recipe (mixed_vocab_dfa_h300_ns).
 # Extra capacity ablation (separate comparison dirs / task names).
-HIDDEN_SIZE_ABLATION: tuple[int, ...] = (50, 100, 150)
+HIDDEN_SIZE_ABLATION: tuple[int, ...] = (50, 100, 150, 300)
 DEFAULT_SEEDS: tuple[int, ...] = (1,)
 # Fixed RNG so regimes are reproducible across machines.
 BANK_SAMPLE_SEED = 20260714
@@ -157,7 +158,7 @@ def mixed_dfa_task_config(run_id: int, *, hidden_size: int = HIDDEN_SIZE) -> dic
 
     chars = max(30_000, int(n_words * mean_length * 600))
     steps = min(120_000, max(15_000, int(n_words * 600 + mean_length * 2500)))
-    if n_words >= 20:
+    if n_words >= 15:
         steps = max(steps, 80_000)
 
     viz_length = min(int(sum(len(w) for w in words) + 20), 500)
@@ -169,8 +170,13 @@ def mixed_dfa_task_config(run_id: int, *, hidden_size: int = HIDDEN_SIZE) -> dic
         int(max(1_000, steps * 0.30)),
         max(1_000, int(steps * 0.08)),
     )
-    stall_patience_evals = 60 if n_words >= 20 else 36
-    stall_min_delta = 0.0015
+    if n_words >= 20:
+        stall_patience_evals = 120
+    elif n_words >= 10:
+        stall_patience_evals = 90
+    else:
+        stall_patience_evals = 36
+    stall_min_delta = 0.001
 
     return {
         "regime": regime_name(run_id),

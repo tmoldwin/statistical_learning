@@ -108,14 +108,27 @@ def cmd_train(args: argparse.Namespace) -> None:
             f"({len(tasks)} tasks)",
             flush=True,
         )
+    model_type = str(getattr(args, "model_type", None) or "rnn")
+    force_retrain = bool(getattr(args, "force", False))
+    save_learning_snaps = bool(getattr(args, "save_learning_snaps", False))
     jobs = max(1, int(args.jobs))
     if jobs == 1:
         for task in tasks:
-            _train_one(task, seeds, smoke=args.smoke, device=args.device)
+            _train_one(
+                task, seeds, smoke=args.smoke, device=args.device,
+                save_learning_snaps=save_learning_snaps,
+                force_retrain=force_retrain,
+                model_type=model_type,
+            )
         return
     with ProcessPoolExecutor(max_workers=jobs) as pool:
         futs = [
-            pool.submit(_train_one, task, seeds, smoke=args.smoke, device=args.device)
+            pool.submit(
+                _train_one, task, seeds, smoke=args.smoke, device=args.device,
+                save_learning_snaps=save_learning_snaps,
+                force_retrain=force_retrain,
+                model_type=model_type,
+            )
             for task in tasks
         ]
         for fut in as_completed(futs):
@@ -274,6 +287,14 @@ def main() -> None:
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument(
+        "--force", action="store_true",
+        help="with train: retrain even if checkpoint exists",
+    )
+    parser.add_argument(
+        "--save-learning-snaps", action="store_true",
+        help="with train: save learning trajectory snapshots",
+    )
     parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
     parser.add_argument("--replot-only", action="store_true")

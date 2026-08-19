@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import vocab_mixed_dfa
 from experiment import model_path
+from vocab_mixed_dfa import DALE_HIDDEN_SIZE, iter_tasks_for_h
 
 iter_runs = vocab_mixed_dfa.iter_runs
 
@@ -54,8 +55,15 @@ def train_mixed(
     save_learning_snaps: bool = True,
     skip_existing: bool = True,
     run_ids: list[int] | None = None,
+    hidden_size: int = DALE_HIDDEN_SIZE,
 ) -> None:
-    for entry in iter_runs():
+    entries = list(iter_tasks_for_h(hidden_size))
+    print(
+        f"Dale mixed sweep H={hidden_size} -> "
+        f"{vocab_mixed_dfa.comparison_name_for_h(hidden_size)} ({len(entries)} runs)",
+        flush=True,
+    )
+    for entry in entries:
         rid = int(entry["run_id"])
         if run_ids is not None and rid not in run_ids:
             continue
@@ -79,7 +87,11 @@ def train_mixed(
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--demo", action="store_true", help="train eight_word Dale demo seeds")
-    p.add_argument("--mixed", action="store_true", help="train mixeddfa_rXX_ns Dale runs")
+    p.add_argument("--mixed", action="store_true", help="train mixeddfa Dale runs")
+    p.add_argument(
+        "--hidden-size", type=int, default=DALE_HIDDEN_SIZE,
+        help=f"hidden size for --mixed (default: {DALE_HIDDEN_SIZE})",
+    )
     p.add_argument("--seeds", nargs="+", type=int, default=None)
     p.add_argument("--run-ids", nargs="+", type=int, default=None)
     p.add_argument("--no-learning-snaps", action="store_true")
@@ -114,6 +126,7 @@ def main() -> None:
             save_learning_snaps=snaps,
             skip_existing=skip,
             run_ids=args.run_ids,
+            hidden_size=int(args.hidden_size),
         )
 
 

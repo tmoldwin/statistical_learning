@@ -1,0 +1,1501 @@
+{
+  "comparison": "mixed_vocab_dfa_ns",
+  "bank_sample_seed": 20260714,
+  "n_runs": 50,
+  "n_words_range": [
+    1,
+    25
+  ],
+  "word_banks": {
+    "3": [
+      "cat",
+      "hat",
+      "mat",
+      "rat",
+      "bat",
+      "met",
+      "pet",
+      "net",
+      "bet",
+      "wet",
+      "can",
+      "ban",
+      "pan",
+      "man",
+      "tan",
+      "car",
+      "bar",
+      "tar",
+      "far",
+      "jar"
+    ],
+    "4": [
+      "bake",
+      "cake",
+      "lake",
+      "rake",
+      "sake",
+      "bank",
+      "tank",
+      "rank",
+      "sank",
+      "yank",
+      "late",
+      "mate",
+      "rate",
+      "gate",
+      "hate",
+      "line",
+      "mine",
+      "pine",
+      "wine",
+      "fine"
+    ],
+    "5": [
+      "light",
+      "night",
+      "right",
+      "sight",
+      "fight",
+      "bound",
+      "found",
+      "hound",
+      "pound",
+      "round",
+      "batch",
+      "catch",
+      "hatch",
+      "match",
+      "patch",
+      "cream",
+      "dream",
+      "gleam",
+      "steam",
+      "paint"
+    ],
+    "6": [
+      "nation",
+      "ration",
+      "action",
+      "motion",
+      "bought",
+      "fought",
+      "sought",
+      "taught",
+      "master",
+      "faster",
+      "sister",
+      "mister",
+      "moment",
+      "cement",
+      "talent",
+      "patent",
+      "garden",
+      "bottle",
+      "window",
+      "forest"
+    ]
+  },
+  "runs": [
+    {
+      "run_id": 0,
+      "n_words": 1,
+      "words": [
+        "bet"
+      ],
+      "regime": "mixeddfa_r00",
+      "task": "mixeddfa_r00_ns",
+      "n_dfa_states": 4,
+      "length_counts": {
+        "3": 1,
+        "4": 0,
+        "5": 0,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 1,
+      "n_words": 1,
+      "words": [
+        "can"
+      ],
+      "regime": "mixeddfa_r01",
+      "task": "mixeddfa_r01_ns",
+      "n_dfa_states": 4,
+      "length_counts": {
+        "3": 1,
+        "4": 0,
+        "5": 0,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 2,
+      "n_words": 2,
+      "words": [
+        "mine",
+        "pet"
+      ],
+      "regime": "mixeddfa_r02",
+      "task": "mixeddfa_r02_ns",
+      "n_dfa_states": 7,
+      "length_counts": {
+        "3": 1,
+        "4": 1,
+        "5": 0,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 3,
+      "n_words": 2,
+      "words": [
+        "paint",
+        "rake"
+      ],
+      "regime": "mixeddfa_r03",
+      "task": "mixeddfa_r03_ns",
+      "n_dfa_states": 9,
+      "length_counts": {
+        "3": 0,
+        "4": 1,
+        "5": 1,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 4,
+      "n_words": 3,
+      "words": [
+        "bat",
+        "jar",
+        "pan"
+      ],
+      "regime": "mixeddfa_r04",
+      "task": "mixeddfa_r04_ns",
+      "n_dfa_states": 8,
+      "length_counts": {
+        "3": 3,
+        "4": 0,
+        "5": 0,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 5,
+      "n_words": 3,
+      "words": [
+        "garden",
+        "wet",
+        "faster"
+      ],
+      "regime": "mixeddfa_r05",
+      "task": "mixeddfa_r05_ns",
+      "n_dfa_states": 14,
+      "length_counts": {
+        "3": 1,
+        "4": 0,
+        "5": 0,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 6,
+      "n_words": 4,
+      "words": [
+        "sake",
+        "cement",
+        "gleam",
+        "bet"
+      ],
+      "regime": "mixeddfa_r06",
+      "task": "mixeddfa_r06_ns",
+      "n_dfa_states": 15,
+      "length_counts": {
+        "3": 1,
+        "4": 1,
+        "5": 1,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 7,
+      "n_words": 4,
+      "words": [
+        "sister",
+        "bottle",
+        "motion",
+        "mate"
+      ],
+      "regime": "mixeddfa_r07",
+      "task": "mixeddfa_r07_ns",
+      "n_dfa_states": 18,
+      "length_counts": {
+        "3": 0,
+        "4": 1,
+        "5": 0,
+        "6": 3
+      }
+    },
+    {
+      "run_id": 8,
+      "n_words": 5,
+      "words": [
+        "hate",
+        "mine",
+        "motion",
+        "tan",
+        "line"
+      ],
+      "regime": "mixeddfa_r08",
+      "task": "mixeddfa_r08_ns",
+      "n_dfa_states": 13,
+      "length_counts": {
+        "3": 1,
+        "4": 3,
+        "5": 0,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 9,
+      "n_words": 5,
+      "words": [
+        "man",
+        "wet",
+        "round",
+        "wine",
+        "bet"
+      ],
+      "regime": "mixeddfa_r09",
+      "task": "mixeddfa_r09_ns",
+      "n_dfa_states": 13,
+      "length_counts": {
+        "3": 3,
+        "4": 1,
+        "5": 1,
+        "6": 0
+      }
+    },
+    {
+      "run_id": 10,
+      "n_words": 6,
+      "words": [
+        "wine",
+        "jar",
+        "faster",
+        "sought",
+        "pan",
+        "line"
+      ],
+      "regime": "mixeddfa_r10",
+      "task": "mixeddfa_r10_ns",
+      "n_dfa_states": 18,
+      "length_counts": {
+        "3": 2,
+        "4": 2,
+        "5": 0,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 11,
+      "n_words": 6,
+      "words": [
+        "talent",
+        "ban",
+        "faster",
+        "mine",
+        "hate",
+        "steam"
+      ],
+      "regime": "mixeddfa_r11",
+      "task": "mixeddfa_r11_ns",
+      "n_dfa_states": 23,
+      "length_counts": {
+        "3": 1,
+        "4": 2,
+        "5": 1,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 12,
+      "n_words": 7,
+      "words": [
+        "rake",
+        "action",
+        "dream",
+        "sought",
+        "rat",
+        "bank",
+        "sight"
+      ],
+      "regime": "mixeddfa_r12",
+      "task": "mixeddfa_r12_ns",
+      "n_dfa_states": 22,
+      "length_counts": {
+        "3": 1,
+        "4": 2,
+        "5": 2,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 13,
+      "n_words": 7,
+      "words": [
+        "light",
+        "round",
+        "batch",
+        "found",
+        "rank",
+        "motion",
+        "action"
+      ],
+      "regime": "mixeddfa_r13",
+      "task": "mixeddfa_r13_ns",
+      "n_dfa_states": 23,
+      "length_counts": {
+        "3": 0,
+        "4": 1,
+        "5": 4,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 14,
+      "n_words": 8,
+      "words": [
+        "net",
+        "yank",
+        "late",
+        "nation",
+        "wet",
+        "car",
+        "cement",
+        "round"
+      ],
+      "regime": "mixeddfa_r14",
+      "task": "mixeddfa_r14_ns",
+      "n_dfa_states": 24,
+      "length_counts": {
+        "3": 3,
+        "4": 2,
+        "5": 1,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 15,
+      "n_words": 8,
+      "words": [
+        "wine",
+        "faster",
+        "hound",
+        "taught",
+        "mine",
+        "rate",
+        "cat",
+        "line"
+      ],
+      "regime": "mixeddfa_r15",
+      "task": "mixeddfa_r15_ns",
+      "n_dfa_states": 22,
+      "length_counts": {
+        "3": 1,
+        "4": 4,
+        "5": 1,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 16,
+      "n_words": 9,
+      "words": [
+        "mate",
+        "found",
+        "tan",
+        "can",
+        "hound",
+        "gleam",
+        "fought",
+        "cream",
+        "bought"
+      ],
+      "regime": "mixeddfa_r16",
+      "task": "mixeddfa_r16_ns",
+      "n_dfa_states": 24,
+      "length_counts": {
+        "3": 2,
+        "4": 1,
+        "5": 4,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 17,
+      "n_words": 9,
+      "words": [
+        "jar",
+        "cement",
+        "master",
+        "rake",
+        "bound",
+        "gate",
+        "bat",
+        "man",
+        "cream"
+      ],
+      "regime": "mixeddfa_r17",
+      "task": "mixeddfa_r17_ns",
+      "n_dfa_states": 25,
+      "length_counts": {
+        "3": 3,
+        "4": 2,
+        "5": 2,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 18,
+      "n_words": 10,
+      "words": [
+        "can",
+        "cake",
+        "dream",
+        "garden",
+        "motion",
+        "lake",
+        "car",
+        "wet",
+        "bound",
+        "line"
+      ],
+      "regime": "mixeddfa_r18",
+      "task": "mixeddfa_r18_ns",
+      "n_dfa_states": 27,
+      "length_counts": {
+        "3": 3,
+        "4": 3,
+        "5": 2,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 19,
+      "n_words": 10,
+      "words": [
+        "dream",
+        "tank",
+        "action",
+        "pound",
+        "met",
+        "mister",
+        "rake",
+        "hatch",
+        "mate",
+        "cat"
+      ],
+      "regime": "mixeddfa_r19",
+      "task": "mixeddfa_r19_ns",
+      "n_dfa_states": 33,
+      "length_counts": {
+        "3": 2,
+        "4": 3,
+        "5": 3,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 20,
+      "n_words": 11,
+      "words": [
+        "batch",
+        "tan",
+        "can",
+        "bet",
+        "dream",
+        "car",
+        "bake",
+        "found",
+        "line",
+        "master",
+        "man"
+      ],
+      "regime": "mixeddfa_r20",
+      "task": "mixeddfa_r20_ns",
+      "n_dfa_states": 27,
+      "length_counts": {
+        "3": 5,
+        "4": 2,
+        "5": 3,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 21,
+      "n_words": 11,
+      "words": [
+        "dream",
+        "cake",
+        "patch",
+        "right",
+        "moment",
+        "met",
+        "light",
+        "batch",
+        "fine",
+        "late",
+        "rate"
+      ],
+      "regime": "mixeddfa_r21",
+      "task": "mixeddfa_r21_ns",
+      "n_dfa_states": 24,
+      "length_counts": {
+        "3": 1,
+        "4": 4,
+        "5": 5,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 22,
+      "n_words": 12,
+      "words": [
+        "man",
+        "hound",
+        "sake",
+        "light",
+        "nation",
+        "right",
+        "mine",
+        "steam",
+        "rank",
+        "bet",
+        "bank",
+        "round"
+      ],
+      "regime": "mixeddfa_r22",
+      "task": "mixeddfa_r22_ns",
+      "n_dfa_states": 27,
+      "length_counts": {
+        "3": 2,
+        "4": 4,
+        "5": 5,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 23,
+      "n_words": 12,
+      "words": [
+        "match",
+        "master",
+        "sake",
+        "mate",
+        "night",
+        "tan",
+        "batch",
+        "cake",
+        "right",
+        "patch",
+        "car",
+        "bar"
+      ],
+      "regime": "mixeddfa_r23",
+      "task": "mixeddfa_r23_ns",
+      "n_dfa_states": 25,
+      "length_counts": {
+        "3": 3,
+        "4": 3,
+        "5": 5,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 24,
+      "n_words": 13,
+      "words": [
+        "steam",
+        "net",
+        "pine",
+        "dream",
+        "hate",
+        "mine",
+        "batch",
+        "sank",
+        "bought",
+        "gate",
+        "night",
+        "line",
+        "bottle"
+      ],
+      "regime": "mixeddfa_r24",
+      "task": "mixeddfa_r24_ns",
+      "n_dfa_states": 25,
+      "length_counts": {
+        "3": 1,
+        "4": 6,
+        "5": 4,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 25,
+      "n_words": 13,
+      "words": [
+        "sight",
+        "pine",
+        "line",
+        "far",
+        "action",
+        "batch",
+        "pet",
+        "sister",
+        "wine",
+        "met",
+        "mat",
+        "talent",
+        "catch"
+      ],
+      "regime": "mixeddfa_r25",
+      "task": "mixeddfa_r25_ns",
+      "n_dfa_states": 28,
+      "length_counts": {
+        "3": 4,
+        "4": 3,
+        "5": 3,
+        "6": 3
+      }
+    },
+    {
+      "run_id": 26,
+      "n_words": 14,
+      "words": [
+        "cat",
+        "ration",
+        "man",
+        "tar",
+        "hate",
+        "mate",
+        "sister",
+        "tank",
+        "sake",
+        "hound",
+        "nation",
+        "jar",
+        "mister",
+        "sought"
+      ],
+      "regime": "mixeddfa_r26",
+      "task": "mixeddfa_r26_ns",
+      "n_dfa_states": 30,
+      "length_counts": {
+        "3": 4,
+        "4": 4,
+        "5": 1,
+        "6": 5
+      }
+    },
+    {
+      "run_id": 27,
+      "n_words": 14,
+      "words": [
+        "found",
+        "pet",
+        "batch",
+        "tar",
+        "mine",
+        "sister",
+        "sight",
+        "ban",
+        "sake",
+        "round",
+        "cake",
+        "bottle",
+        "late",
+        "garden"
+      ],
+      "regime": "mixeddfa_r27",
+      "task": "mixeddfa_r27_ns",
+      "n_dfa_states": 34,
+      "length_counts": {
+        "3": 3,
+        "4": 4,
+        "5": 4,
+        "6": 3
+      }
+    },
+    {
+      "run_id": 28,
+      "n_words": 15,
+      "words": [
+        "paint",
+        "action",
+        "tar",
+        "mister",
+        "dream",
+        "sank",
+        "sister",
+        "patent",
+        "light",
+        "found",
+        "cream",
+        "window",
+        "faster",
+        "tank",
+        "forest"
+      ],
+      "regime": "mixeddfa_r28",
+      "task": "mixeddfa_r28_ns",
+      "n_dfa_states": 40,
+      "length_counts": {
+        "3": 1,
+        "4": 2,
+        "5": 5,
+        "6": 7
+      }
+    },
+    {
+      "run_id": 29,
+      "n_words": 15,
+      "words": [
+        "sight",
+        "late",
+        "bet",
+        "gleam",
+        "far",
+        "cake",
+        "bound",
+        "patch",
+        "bat",
+        "ban",
+        "rate",
+        "rat",
+        "moment",
+        "cat",
+        "window"
+      ],
+      "regime": "mixeddfa_r29",
+      "task": "mixeddfa_r29_ns",
+      "n_dfa_states": 38,
+      "length_counts": {
+        "3": 6,
+        "4": 3,
+        "5": 4,
+        "6": 2
+      }
+    },
+    {
+      "run_id": 30,
+      "n_words": 16,
+      "words": [
+        "net",
+        "window",
+        "sister",
+        "batch",
+        "pine",
+        "bet",
+        "fought",
+        "wine",
+        "mine",
+        "tan",
+        "bottle",
+        "faster",
+        "dream",
+        "fine",
+        "bake",
+        "bat"
+      ],
+      "regime": "mixeddfa_r30",
+      "task": "mixeddfa_r30_ns",
+      "n_dfa_states": 34,
+      "length_counts": {
+        "3": 4,
+        "4": 5,
+        "5": 2,
+        "6": 5
+      }
+    },
+    {
+      "run_id": 31,
+      "n_words": 16,
+      "words": [
+        "paint",
+        "sister",
+        "fought",
+        "bake",
+        "bet",
+        "sank",
+        "wine",
+        "gleam",
+        "bought",
+        "hatch",
+        "sought",
+        "faster",
+        "steam",
+        "rat",
+        "bar",
+        "taught"
+      ],
+      "regime": "mixeddfa_r31",
+      "task": "mixeddfa_r31_ns",
+      "n_dfa_states": 32,
+      "length_counts": {
+        "3": 3,
+        "4": 3,
+        "5": 4,
+        "6": 6
+      }
+    },
+    {
+      "run_id": 32,
+      "n_words": 17,
+      "words": [
+        "garden",
+        "ban",
+        "fought",
+        "found",
+        "cake",
+        "lake",
+        "cream",
+        "jar",
+        "faster",
+        "sister",
+        "tank",
+        "rake",
+        "hat",
+        "action",
+        "mat",
+        "bottle",
+        "pound"
+      ],
+      "regime": "mixeddfa_r32",
+      "task": "mixeddfa_r32_ns",
+      "n_dfa_states": 41,
+      "length_counts": {
+        "3": 4,
+        "4": 4,
+        "5": 3,
+        "6": 6
+      }
+    },
+    {
+      "run_id": 33,
+      "n_words": 17,
+      "words": [
+        "bank",
+        "rate",
+        "can",
+        "hat",
+        "wine",
+        "cake",
+        "hound",
+        "right",
+        "mat",
+        "steam",
+        "jar",
+        "sister",
+        "met",
+        "cement",
+        "lake",
+        "fought",
+        "batch"
+      ],
+      "regime": "mixeddfa_r33",
+      "task": "mixeddfa_r33_ns",
+      "n_dfa_states": 38,
+      "length_counts": {
+        "3": 5,
+        "4": 5,
+        "5": 4,
+        "6": 3
+      }
+    },
+    {
+      "run_id": 34,
+      "n_words": 18,
+      "words": [
+        "net",
+        "line",
+        "pan",
+        "gate",
+        "forest",
+        "bound",
+        "jar",
+        "rake",
+        "nation",
+        "mister",
+        "motion",
+        "ration",
+        "man",
+        "action",
+        "gleam",
+        "tan",
+        "dream",
+        "hate"
+      ],
+      "regime": "mixeddfa_r34",
+      "task": "mixeddfa_r34_ns",
+      "n_dfa_states": 36,
+      "length_counts": {
+        "3": 5,
+        "4": 4,
+        "5": 3,
+        "6": 6
+      }
+    },
+    {
+      "run_id": 35,
+      "n_words": 18,
+      "words": [
+        "batch",
+        "far",
+        "cake",
+        "mate",
+        "man",
+        "rank",
+        "sank",
+        "pound",
+        "action",
+        "rake",
+        "fought",
+        "hat",
+        "cream",
+        "window",
+        "sister",
+        "can",
+        "mat",
+        "talent"
+      ],
+      "regime": "mixeddfa_r35",
+      "task": "mixeddfa_r35_ns",
+      "n_dfa_states": 48,
+      "length_counts": {
+        "3": 5,
+        "4": 5,
+        "5": 3,
+        "6": 5
+      }
+    },
+    {
+      "run_id": 36,
+      "n_words": 19,
+      "words": [
+        "sake",
+        "late",
+        "pound",
+        "match",
+        "hound",
+        "patent",
+        "lake",
+        "found",
+        "bar",
+        "pet",
+        "catch",
+        "tank",
+        "tan",
+        "patch",
+        "paint",
+        "mine",
+        "mat",
+        "pan",
+        "yank"
+      ],
+      "regime": "mixeddfa_r36",
+      "task": "mixeddfa_r36_ns",
+      "n_dfa_states": 32,
+      "length_counts": {
+        "3": 5,
+        "4": 6,
+        "5": 7,
+        "6": 1
+      }
+    },
+    {
+      "run_id": 37,
+      "n_words": 19,
+      "words": [
+        "pine",
+        "patent",
+        "garden",
+        "hate",
+        "tank",
+        "hound",
+        "man",
+        "batch",
+        "sank",
+        "dream",
+        "catch",
+        "cake",
+        "taught",
+        "bar",
+        "light",
+        "wet",
+        "jar",
+        "sister",
+        "line"
+      ],
+      "regime": "mixeddfa_r37",
+      "task": "mixeddfa_r37_ns",
+      "n_dfa_states": 45,
+      "length_counts": {
+        "3": 4,
+        "4": 6,
+        "5": 5,
+        "6": 4
+      }
+    },
+    {
+      "run_id": 38,
+      "n_words": 20,
+      "words": [
+        "pine",
+        "bought",
+        "pound",
+        "ration",
+        "ban",
+        "bake",
+        "hate",
+        "rake",
+        "dream",
+        "taught",
+        "hat",
+        "sake",
+        "cake",
+        "sight",
+        "talent",
+        "round",
+        "rate",
+        "bottle",
+        "hatch",
+        "bat"
+      ],
+      "regime": "mixeddfa_r38",
+      "task": "mixeddfa_r38_ns",
+      "n_dfa_states": 36,
+      "length_counts": {
+        "3": 3,
+        "4": 7,
+        "5": 5,
+        "6": 5
+      }
+    },
+    {
+      "run_id": 39,
+      "n_words": 20,
+      "words": [
+        "sought",
+        "batch",
+        "rat",
+        "dream",
+        "hatch",
+        "catch",
+        "hound",
+        "cement",
+        "wine",
+        "pine",
+        "patent",
+        "car",
+        "bar",
+        "forest",
+        "hat",
+        "bank",
+        "pan",
+        "steam",
+        "line",
+        "far"
+      ],
+      "regime": "mixeddfa_r39",
+      "task": "mixeddfa_r39_ns",
+      "n_dfa_states": 38,
+      "length_counts": {
+        "3": 6,
+        "4": 4,
+        "5": 6,
+        "6": 4
+      }
+    },
+    {
+      "run_id": 40,
+      "n_words": 21,
+      "words": [
+        "wet",
+        "moment",
+        "forest",
+        "window",
+        "bar",
+        "night",
+        "hate",
+        "patch",
+        "found",
+        "cat",
+        "nation",
+        "mister",
+        "hatch",
+        "sought",
+        "line",
+        "met",
+        "mat",
+        "gate",
+        "hat",
+        "cement",
+        "pet"
+      ],
+      "regime": "mixeddfa_r40",
+      "task": "mixeddfa_r40_ns",
+      "n_dfa_states": 45,
+      "length_counts": {
+        "3": 7,
+        "4": 3,
+        "5": 4,
+        "6": 7
+      }
+    },
+    {
+      "run_id": 41,
+      "n_words": 21,
+      "words": [
+        "nation",
+        "fought",
+        "far",
+        "yank",
+        "fine",
+        "cement",
+        "rank",
+        "master",
+        "sister",
+        "window",
+        "bat",
+        "mine",
+        "rate",
+        "faster",
+        "hatch",
+        "forest",
+        "bought",
+        "bound",
+        "match",
+        "hate",
+        "paint"
+      ],
+      "regime": "mixeddfa_r41",
+      "task": "mixeddfa_r41_ns",
+      "n_dfa_states": 49,
+      "length_counts": {
+        "3": 2,
+        "4": 6,
+        "5": 4,
+        "6": 9
+      }
+    },
+    {
+      "run_id": 42,
+      "n_words": 22,
+      "words": [
+        "far",
+        "hat",
+        "match",
+        "cement",
+        "mat",
+        "pet",
+        "nation",
+        "fought",
+        "garden",
+        "cake",
+        "net",
+        "mine",
+        "pound",
+        "cat",
+        "dream",
+        "met",
+        "rate",
+        "found",
+        "fight",
+        "gleam",
+        "fine",
+        "bank"
+      ],
+      "regime": "mixeddfa_r42",
+      "task": "mixeddfa_r42_ns",
+      "n_dfa_states": 43,
+      "length_counts": {
+        "3": 7,
+        "4": 5,
+        "5": 6,
+        "6": 4
+      }
+    },
+    {
+      "run_id": 43,
+      "n_words": 22,
+      "words": [
+        "sank",
+        "talent",
+        "mat",
+        "hate",
+        "bat",
+        "moment",
+        "steam",
+        "garden",
+        "bank",
+        "pound",
+        "gate",
+        "faster",
+        "fight",
+        "cement",
+        "cake",
+        "man",
+        "right",
+        "forest",
+        "mine",
+        "lake",
+        "tank",
+        "patent"
+      ],
+      "regime": "mixeddfa_r43",
+      "task": "mixeddfa_r43_ns",
+      "n_dfa_states": 46,
+      "length_counts": {
+        "3": 3,
+        "4": 8,
+        "5": 4,
+        "6": 7
+      }
+    },
+    {
+      "run_id": 44,
+      "n_words": 23,
+      "words": [
+        "wet",
+        "fine",
+        "fight",
+        "far",
+        "moment",
+        "rate",
+        "tan",
+        "steam",
+        "line",
+        "sought",
+        "late",
+        "fought",
+        "lake",
+        "pound",
+        "net",
+        "mine",
+        "bought",
+        "nation",
+        "cement",
+        "can",
+        "rake",
+        "patent",
+        "bank"
+      ],
+      "regime": "mixeddfa_r44",
+      "task": "mixeddfa_r44_ns",
+      "n_dfa_states": 38,
+      "length_counts": {
+        "3": 5,
+        "4": 8,
+        "5": 3,
+        "6": 7
+      }
+    },
+    {
+      "run_id": 45,
+      "n_words": 23,
+      "words": [
+        "pet",
+        "patch",
+        "cement",
+        "hatch",
+        "cat",
+        "rake",
+        "talent",
+        "action",
+        "night",
+        "pan",
+        "pine",
+        "sight",
+        "batch",
+        "lake",
+        "match",
+        "mister",
+        "master",
+        "taught",
+        "hat",
+        "fought",
+        "fine",
+        "patent",
+        "gate"
+      ],
+      "regime": "mixeddfa_r45",
+      "task": "mixeddfa_r45_ns",
+      "n_dfa_states": 41,
+      "length_counts": {
+        "3": 4,
+        "4": 5,
+        "5": 6,
+        "6": 8
+      }
+    },
+    {
+      "run_id": 46,
+      "n_words": 24,
+      "words": [
+        "bake",
+        "light",
+        "nation",
+        "mister",
+        "found",
+        "bound",
+        "talent",
+        "pet",
+        "forest",
+        "sought",
+        "tank",
+        "mate",
+        "rake",
+        "jar",
+        "garden",
+        "bought",
+        "bar",
+        "ration",
+        "fought",
+        "wine",
+        "faster",
+        "can",
+        "night",
+        "gate"
+      ],
+      "regime": "mixeddfa_r46",
+      "task": "mixeddfa_r46_ns",
+      "n_dfa_states": 45,
+      "length_counts": {
+        "3": 4,
+        "4": 6,
+        "5": 4,
+        "6": 10
+      }
+    },
+    {
+      "run_id": 47,
+      "n_words": 24,
+      "words": [
+        "found",
+        "mate",
+        "hatch",
+        "net",
+        "action",
+        "bank",
+        "match",
+        "mat",
+        "hat",
+        "sight",
+        "taught",
+        "cement",
+        "cake",
+        "line",
+        "mister",
+        "talent",
+        "yank",
+        "patch",
+        "sought",
+        "pound",
+        "jar",
+        "batch",
+        "lake",
+        "bar"
+      ],
+      "regime": "mixeddfa_r47",
+      "task": "mixeddfa_r47_ns",
+      "n_dfa_states": 47,
+      "length_counts": {
+        "3": 5,
+        "4": 6,
+        "5": 7,
+        "6": 6
+      }
+    },
+    {
+      "run_id": 48,
+      "n_words": 25,
+      "words": [
+        "can",
+        "pet",
+        "gleam",
+        "rank",
+        "mister",
+        "bought",
+        "rate",
+        "match",
+        "night",
+        "round",
+        "fought",
+        "car",
+        "tan",
+        "steam",
+        "found",
+        "wine",
+        "cream",
+        "light",
+        "bottle",
+        "met",
+        "moment",
+        "mate",
+        "pan",
+        "hat",
+        "patch"
+      ],
+      "regime": "mixeddfa_r48",
+      "task": "mixeddfa_r48_ns",
+      "n_dfa_states": 46,
+      "length_counts": {
+        "3": 7,
+        "4": 4,
+        "5": 9,
+        "6": 5
+      }
+    },
+    {
+      "run_id": 49,
+      "n_words": 25,
+      "words": [
+        "hatch",
+        "pound",
+        "talent",
+        "sake",
+        "gleam",
+        "sought",
+        "cement",
+        "fight",
+        "sank",
+        "net",
+        "bet",
+        "master",
+        "patch",
+        "tank",
+        "rank",
+        "found",
+        "mat",
+        "batch",
+        "mate",
+        "garden",
+        "bought",
+        "met",
+        "moment",
+        "car",
+        "can"
+      ],
+      "regime": "mixeddfa_r49",
+      "task": "mixeddfa_r49_ns",
+      "n_dfa_states": 44,
+      "length_counts": {
+        "3": 6,
+        "4": 5,
+        "5": 7,
+        "6": 7
+      }
+    }
+  ]
+}

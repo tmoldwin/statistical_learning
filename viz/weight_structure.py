@@ -57,13 +57,68 @@ def compute_weight_structure_metrics(
     return out
 
 
+def compute_weight_entry_spikiness(w: np.ndarray) -> dict[str, float]:
+    """Entrywise localization of |W|: spiky (concentrated) vs ergodic (spread).
+
+    participation_frac = PR / n_entries in (0, 1]; 1 = equal mass on all entries.
+    top1_mass / gini high ⇒ spiky; participation_frac high ⇒ ergodic.
+    """
+    abs_w = np.abs(np.asarray(w, dtype=float).ravel())
+    n = int(abs_w.size)
+    total = float(abs_w.sum())
+    nan = {
+        "n_entries": float(n),
+        "participation_ratio": float("nan"),
+        "participation_frac": float("nan"),
+        "top1_mass": float("nan"),
+        "top1pct_mass": float("nan"),
+        "gini": float("nan"),
+    }
+    if n == 0 or total < 1e-30:
+        return nan
+    p = abs_w / total
+    pr = float(1.0 / np.sum(p ** 2))
+    top1 = float(np.max(abs_w) / total)
+    k = max(1, int(np.ceil(0.01 * n)))
+    top1pct = float(np.sort(abs_w)[-k:].sum() / total)
+    xs = np.sort(abs_w)
+    idx = np.arange(1, n + 1, dtype=float)
+    gini = float((2.0 * np.sum(idx * xs) / (n * total)) - (n + 1.0) / n)
+    return {
+        "n_entries": float(n),
+        "participation_ratio": pr,
+        "participation_frac": float(pr / n),
+        "top1_mass": top1,
+        "top1pct_mass": top1pct,
+        "gini": gini,
+    }
+
+
+def compute_weight_spikiness_pair(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, dict[str, float]]:
+    """Entrywise spikiness for input and recurrent matrices."""
+    return {
+        "xh": compute_weight_entry_spikiness(w_in),
+        "hh": compute_weight_entry_spikiness(w_rec),
+    }
+
+
 def init_weights_for_model(model: dict, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     hidden_size = int(model["hidden_size"])
     vocab_size = int(model["vocab_size"])
     dale_law = bool(model.get("dale_law", False))
     e_fraction = float(model.get("e_fraction", 0.8))
+    raw_scale = model.get("dale_init_scale")
+    dale_init_scale = None
+    if raw_scale is not None:
+        scale = float(np.asarray(raw_scale).reshape(-1)[0])
+        if np.isfinite(scale):
+            dale_init_scale = scale
     return reconstruct_init_weights(
         hidden_size, vocab_size, seed, dale_law=dale_law, e_fraction=e_fraction,
+        dale_init_scale=dale_init_scale,
     )
 
 
@@ -472,6 +527,1373 @@ def compute_weight_motif_metrics(
         "n_units": float(n_units),
         "n_blocks": float(n_blocks),
     }
+
+
+def compute_weight_rank_metrics(w_rec: np.ndarray) -> dict[str, float]:
+    """Matrix rank / pseudo-rank scalars for W_hh (singular spectrum)."""
+    w = np.asarray(w_rec, dtype=float)
+    try:
+        s = np.linalg.svd(w, compute_uv=False)
+    except np.linalg.LinAlgError:
+        return {
+            "stable_rank": float("nan"),
+            "effective_rank": float("nan"),
+            "numerical_rank_1e3": float("nan"),
+            "participation_ratio": float("nan"),
+            "spectral_gap_sv": float("nan"),
+            "nuclear_norm": float("nan"),
+            "op_norm": float("nan"),
+            "frobenius": float("nan"),
+        }
+    s = np.asarray(s, dtype=float)
+    s_pos = s[s > 0]
+    fro2 = float(np.sum(s ** 2))
+    op = float(s[0]) if s.size else float("nan")
+    if s_pos.size == 0 or fro2 < 1e-30:
+        return {
+            "stable_rank": float("nan"),
+            "effective_rank": float("nan"),
+            "numerical_rank_1e3": float("nan"),
+            "participation_ratio": float("nan"),
+            "spectral_gap_sv": float("nan"),
+            "nuclear_norm": float("nan"),
+            "op_norm": op,
+            "frobenius": float(np.sqrt(fro2)),
+        }
+    p = (s_pos ** 2) / fro2
+    # Roy & Vetterli effective rank; participation ratio = 1 / sum p^2.
+    effective_rank = float(np.exp(-np.sum(p * np.log(p + 1e-30))))
+    participation = float(1.0 / np.sum(p ** 2))
+    stable_rank = fro2 / max(op ** 2, 1e-30)
+    thr = op * 1e-3
+    numerical = float(np.sum(s >= thr))
+    gap = float(s[0] / s[1]) if s.size >= 2 and s[1] > 1e-30 else float("nan")
+    return {
+        "stable_rank": float(stable_rank),
+        "effective_rank": effective_rank,
+        "numerical_rank_1e3": numerical,
+        "participation_ratio": participation,
+        "spectral_gap_sv": gap,
+        "nuclear_norm": float(np.sum(s_pos)),
+        "op_norm": op,
+        "frobenius": float(np.sqrt(fro2)),
+    }
+
+
+def compute_weight_directionality_metrics(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, float]:
+    """Feedforward / ordering proxies after letter-cluster unit order."""
+    order = _cluster_unit_order(w_in, w_rec)
+    w_ord = np.asarray(w_rec, dtype=float)[np.ix_(order, order)]
+    abs_w = np.abs(w_ord)
+    n = abs_w.shape[0]
+    iu = np.triu_indices(n, k=1)
+    il = np.tril_indices(n, k=1)
+    upper = float(abs_w[iu].sum())
+    lower = float(abs_w[il].sum())
+    off = upper + lower
+    upper_frac = upper / max(off, 1e-12)
+    antisym = w_ord - w_ord.T
+    sym = w_ord + w_ord.T
+    asymmetry = _frobenius_norm(antisym) / max(_frobenius_norm(sym), 1e-12)
+    try:
+        rho = float(np.max(np.abs(np.linalg.eigvals(w_ord))))
+    except np.linalg.LinAlgError:
+        rho = float("nan")
+    try:
+        rho_abs = float(np.max(np.abs(np.linalg.eigvals(abs_w))))
+    except np.linalg.LinAlgError:
+        rho_abs = float("nan")
+    if not np.isfinite(rho_abs) or rho_abs < 1e-12:
+        walk_ratio_2 = float("nan")
+    else:
+        an = abs_w / rho_abs
+        walk_ratio_2 = _frobenius_norm(an @ an) / max(_frobenius_norm(an), 1e-12)
+
+    # Mean shortest path on strong-|W| undirected graph (legacy q=0.75 cut).
+    mean_path = float("nan")
+    pos = abs_w[abs_w > 0]
+    if pos.size >= 2:
+        thr = float(np.quantile(pos, 0.75))
+        adj = abs_w >= thr
+        np.fill_diagonal(adj, False)
+        adj = np.logical_or(adj, adj.T)
+        lens: list[float] = []
+        for src in range(n):
+            dist = np.full(n, -1, dtype=int)
+            dist[src] = 0
+            queue = [src]
+            qi = 0
+            while qi < len(queue):
+                u = queue[qi]
+                qi += 1
+                for v in np.where(adj[u])[0]:
+                    if dist[v] < 0:
+                        dist[v] = dist[u] + 1
+                        queue.append(int(v))
+            lens.extend(float(d) for d in dist if d > 0)
+        if lens:
+            mean_path = float(np.mean(lens))
+
+    return {
+        "hh_upper_frac": float(upper_frac),
+        "hh_asymmetry": float(asymmetry),
+        "hh_walk_ratio_2": float(walk_ratio_2),
+        "hh_mean_path_q75": mean_path,
+        "spectral_radius_hh": float(rho) if np.isfinite(rho) else float("nan"),
+        "spectral_radius_abs_hh": float(rho_abs) if np.isfinite(rho_abs) else float("nan"),
+    }
+
+
+def _thresholded_digraph(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+):
+    """Build a digraph from strong |W_hh| edges.
+
+    ``mode="mean"`` (default): keep |W_ij| ≥ mean(off-diagonal |W|), so density
+    can vary with weight concentration. ``mode="quantile"``: keep ≥ ``q`` quantile.
+    """
+    import networkx as nx
+
+    abs_w = np.abs(np.asarray(w_rec, dtype=float))
+    np.fill_diagonal(abs_w, 0.0)
+    pos = abs_w[abs_w > 0]
+    n = abs_w.shape[0]
+    g = nx.DiGraph()
+    g.add_nodes_from(range(n))
+    if pos.size == 0:
+        return g, float("nan")
+    if mode == "quantile":
+        thr = float(np.quantile(pos, q))
+    else:
+        thr = float(np.mean(pos))
+    src, dst = np.where(abs_w >= thr)
+    for i, j in zip(src.tolist(), dst.tolist()):
+        g.add_edge(i, j, weight=float(abs_w[i, j]))
+    return g, thr
+
+
+def _digraph_motif_rates_from_adj(E: np.ndarray) -> dict[str, float]:
+    """Pairwise dyad census + 3-node motif rates on a boolean directed adjacency."""
+    n = E.shape[0]
+    n_dir = int(np.sum(E))
+    n_rec = int(np.sum(E & E.T)) // 2
+    recip = (2.0 * n_rec) / max(n_dir, 1)
+
+    # Holland–Leinhardt dyad census among unordered pairs with ≥1 directed edge.
+    n_asym = n_mutual = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = bool(E[i, j]), bool(E[j, i])
+            if a and b:
+                n_mutual += 1
+            elif a or b:
+                n_asym += 1
+    n_conn = n_asym + n_mutual
+    dyad = {
+        "dyad_connected": float(n_conn),
+        "dyad_asym_frac": float(n_asym / n_conn) if n_conn else float("nan"),
+        "dyad_mutual_frac": float(n_mutual / n_conn) if n_conn else float("nan"),
+        "motif_reciprocal_frac": float(recip),
+    }
+
+    if n < 3 or n_dir < 2:
+        return {
+            **dyad,
+            "motif_feedforward_rate": float("nan"),
+            "motif_cycle_rate": float("nan"),
+            "motif_n_triples": 0.0,
+        }
+    ff = 0
+    cyc = 0
+    triples = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                edges = (
+                    int(E[i, j]) + int(E[j, i])
+                    + int(E[i, k]) + int(E[k, i])
+                    + int(E[j, k]) + int(E[k, j])
+                )
+                if edges < 2:
+                    continue
+                triples += 1
+                if (
+                    (E[i, j] and E[j, k] and E[k, i])
+                    or (E[i, k] and E[k, j] and E[j, i])
+                ):
+                    cyc += 1
+                ff_hit = False
+                for a, b, c in (
+                    (i, j, k), (i, k, j), (j, i, k),
+                    (j, k, i), (k, i, j), (k, j, i),
+                ):
+                    if E[a, b] and E[b, c] and E[a, c]:
+                        if not (E[b, a] or E[c, b] or E[c, a]):
+                            ff_hit = True
+                            break
+                if ff_hit:
+                    ff += 1
+    return {
+        **dyad,
+        "motif_feedforward_rate": float(ff / triples) if triples else float("nan"),
+        "motif_cycle_rate": float(cyc / triples) if triples else float("nan"),
+        "motif_n_triples": float(triples),
+    }
+
+
+_DIGRAPH_MOTIF_NAN_KEYS: tuple[str, ...] = (
+    "dyad_connected",
+    "dyad_asym_frac",
+    "dyad_mutual_frac",
+    "motif_reciprocal_frac",
+    "motif_feedforward_rate",
+    "motif_cycle_rate",
+    "motif_n_triples",
+    "motif_threshold",
+    "triad_030T_frac",
+    "triad_030C_frac",
+    "triad_120D_frac",
+    "triad_120U_frac",
+    "triad_120C_frac",
+    "triad_210_frac",
+    "triad_300_frac",
+    "triad_connected",
+    "triad_ff_over_cycle",
+)
+
+
+def compute_weight_digraph_motifs(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """3-node digraph motifs + key triad-census fractions on thresholded |W_hh|."""
+    import networkx as nx
+
+    g, thr = _thresholded_digraph(w_rec, mode=mode, q=q)
+    n = g.number_of_nodes()
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+    out = _digraph_motif_rates_from_adj(E)
+    out["motif_threshold"] = float(thr) if np.isfinite(thr) else float("nan")
+
+    try:
+        census = nx.triadic_census(g)
+        total = float(sum(census.values())) or 1.0
+        # Holland–Leinhardt labels of interest for feedforward / cycle structure.
+        out["triad_030T_frac"] = float(census.get("030T", 0) / total)  # transitive
+        out["triad_030C_frac"] = float(census.get("030C", 0) / total)  # 3-cycle
+        out["triad_120D_frac"] = float(census.get("120D", 0) / total)
+        out["triad_120U_frac"] = float(census.get("120U", 0) / total)
+        out["triad_120C_frac"] = float(census.get("120C", 0) / total)
+        out["triad_210_frac"] = float(census.get("210", 0) / total)
+        out["triad_300_frac"] = float(census.get("300", 0) / total)  # complete mutual
+        # Among non-empty connected triads, share that are pure transitive vs cyclic.
+        connected = (
+            census.get("030T", 0) + census.get("030C", 0)
+            + census.get("120D", 0) + census.get("120U", 0) + census.get("120C", 0)
+            + census.get("210", 0) + census.get("300", 0)
+            + census.get("021D", 0) + census.get("021U", 0) + census.get("021C", 0)
+            + census.get("111D", 0) + census.get("111U", 0) + census.get("201", 0)
+        )
+        out["triad_connected"] = float(connected)
+        out["triad_ff_over_cycle"] = (
+            float(census.get("030T", 0) / max(census.get("030C", 0), 1))
+        )
+    except Exception:
+        for k in (
+            "triad_030T_frac", "triad_030C_frac", "triad_120D_frac",
+            "triad_120U_frac", "triad_120C_frac", "triad_210_frac",
+            "triad_300_frac", "triad_connected", "triad_ff_over_cycle",
+        ):
+            out[k] = float("nan")
+    return out
+
+
+# 6-bit local triad edge pattern -> Holland-Leinhardt class (nodes 0,1,2).
+_HL_TRIAD_PATTERN_CLASS: dict[int, str] = {}
+
+
+def _hl_triad_pattern_classes() -> dict[int, str]:
+    if _HL_TRIAD_PATTERN_CLASS:
+        return _HL_TRIAD_PATTERN_CLASS
+    import networkx as nx
+
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+    for bits in range(64):
+        h = nx.DiGraph()
+        h.add_nodes_from([0, 1, 2])
+        for bi, (a, b) in enumerate(edges):
+            if (bits >> bi) & 1:
+                h.add_edge(a, b)
+        census = nx.triadic_census(h)
+        _HL_TRIAD_PATTERN_CLASS[bits] = max(census, key=census.get)
+    return _HL_TRIAD_PATTERN_CLASS
+
+
+def compute_weight_colored_hl_motif_counts(
+    w_rec: np.ndarray,
+    dale_sign: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, int | float]:
+    """Signed Holland-Leinhardt motif census with D|/T| keys (r43 board format).
+
+    Dyads use local nodes 0,1 and edge codes ``01`` / ``10``. Triads use local
+    0,1,2 on each connected triple. Skips HL classes ``003``, ``012``, and ``102``
+    (same connected-triple pool as the r43 census boards).
+    """
+    from collections import Counter
+
+    from rnn.rnn_dyn import dale_ei_blocks
+
+    w = np.asarray(w_rec, dtype=float)
+    g, thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    exc, inh = dale_ei_blocks(dale_sign)
+    types = np.full(n, "i", dtype=object)
+    types[exc] = "e"
+    types[inh] = "i"
+
+    pat_to_hl = _hl_triad_pattern_classes()
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+
+    def _tri_pat(i: int, j: int, k: int) -> int:
+        nodes = (i, j, k)
+        bits = 0
+        for bi, (a, b) in enumerate(edges):
+            if E[nodes[a], nodes[b]]:
+                bits |= 1 << bi
+        return bits
+
+    def _tri_edge_key(bits: int) -> str:
+        parts = [f"{a}{b}" for bi, (a, b) in enumerate(edges) if (bits >> bi) & 1]
+        return ",".join(sorted(parts))
+
+    cnt: Counter[str] = Counter()
+    dyads_conn = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            fwd, back = bool(E[i, j]), bool(E[j, i])
+            if not (fwd or back):
+                continue
+            dyads_conn += 1
+            parts: list[str] = []
+            if fwd:
+                parts.append("01")
+            if back:
+                parts.append("10")
+            ek = ",".join(parts)
+            if fwd and back:
+                col = "ee" if types[i] == types[j] else "ei"
+            else:
+                src, dst = (i, j) if fwd else (j, i)
+                col = f"{types[src]}{types[dst]}"
+            cnt[f"D|{ek}|{col}"] += 1
+
+    triples_conn = 0
+    skip_hl = {"003", "012", "102"}
+    if n >= 3:
+        for i in range(n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    bits = _tri_pat(i, j, k)
+                    if pat_to_hl[bits] in skip_hl:
+                        continue
+                    triples_conn += 1
+                    ek = _tri_edge_key(bits)
+                    col = f"{types[i]}{types[j]}{types[k]}"
+                    cnt[f"T|{ek}|{col}"] += 1
+
+    return {
+        "cnt": dict(cnt),
+        "edges": float(int(E.sum())),
+        "dyads_conn": float(dyads_conn),
+        "triples_conn": float(triples_conn),
+        "thr": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+
+
+def compute_weight_edge_signed_hl_motif_counts(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, int | float]:
+    """Holland–Leinhardt census colored by **edge weight signs** (not Dale E/I).
+
+    Same thresholded |W| digraph and D|/T| key skeleton as
+    ``compute_weight_colored_hl_motif_counts``, but each present edge is tagged
+    ``+`` (W>0) or ``-`` (W<0). Example: ``T|01,12,20|++-``.
+
+    For unconstrained RNNs (no Dale partition) this is the natural signed motif
+    coloring: polarity lives on directed synapses, not on units.
+    """
+    from collections import Counter
+
+    w = np.asarray(w_rec, dtype=float)
+    g, thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    def _edge_polarity(i: int, j: int) -> str:
+        return "+" if float(w[i, j]) > 0 else "-"
+
+    pat_to_hl = _hl_triad_pattern_classes()
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+
+    def _tri_pat(i: int, j: int, k: int) -> int:
+        nodes = (i, j, k)
+        bits = 0
+        for bi, (a, b) in enumerate(edges):
+            if E[nodes[a], nodes[b]]:
+                bits |= 1 << bi
+        return bits
+
+    def _tri_edge_parts(bits: int) -> list[tuple[int, int]]:
+        return [(a, b) for bi, (a, b) in enumerate(edges) if (bits >> bi) & 1]
+
+    cnt: Counter[str] = Counter()
+    dyads_conn = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            fwd, back = bool(E[i, j]), bool(E[j, i])
+            if not (fwd or back):
+                continue
+            dyads_conn += 1
+            parts: list[str] = []
+            pols: list[str] = []
+            if fwd:
+                parts.append("01")
+                pols.append(_edge_polarity(i, j))
+            if back:
+                parts.append("10")
+                pols.append(_edge_polarity(j, i))
+            ek = ",".join(parts)
+            col = "".join(pols)
+            cnt[f"D|{ek}|{col}"] += 1
+
+    triples_conn = 0
+    skip_hl = {"003", "012", "102"}
+    if n >= 3:
+        for i in range(n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    bits = _tri_pat(i, j, k)
+                    if pat_to_hl[bits] in skip_hl:
+                        continue
+                    triples_conn += 1
+                    nodes = (i, j, k)
+                    edge_parts = _tri_edge_parts(bits)
+                    # Match key order used by Dale census: sorted edge codes.
+                    coded = sorted(
+                        (f"{a}{b}", _edge_polarity(nodes[a], nodes[b]))
+                        for a, b in edge_parts
+                    )
+                    ek = ",".join(c for c, _ in coded)
+                    col = "".join(p for _, p in coded)
+                    cnt[f"T|{ek}|{col}"] += 1
+
+    return {
+        "cnt": dict(cnt),
+        "edges": float(int(E.sum())),
+        "dyads_conn": float(dyads_conn),
+        "triples_conn": float(triples_conn),
+        "thr": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+
+
+_DYAD_COLORINGS: tuple[str, ...] = ("ee", "ei", "ie", "ii")
+# Mutual dyads are unordered for type; mixed E–I is stored as ``ei`` only.
+_MUTUAL_COLORINGS: tuple[str, ...] = ("ee", "ei", "ii")
+_TRIPLE_COLORINGS: tuple[str, ...] = (
+    "eee", "eei", "eie", "eii", "iee", "iei", "iie", "iii",
+)
+
+# Schema base key for typed motif metrics (edges in _MOTIF_SCHEMA_EDGES).
+_TYPED_MOTIF_SCHEMA_BASE: dict[str, str] = {
+    "asym": "dyad_asym_frac",
+    "mutual": "dyad_mutual_frac",
+    "ff": "motif_feedforward_rate",
+    "cycle": "motif_cycle_rate",
+}
+
+
+def compute_weight_digraph_motifs_by_ei(
+    w_rec: np.ndarray,
+    dale_sign: np.ndarray,
+    *,
+    mode: str = "quantile",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """Dale node-typed digraph motifs: every E/I coloring of dyad/triad roles.
+
+    On the full thresholded |W_hh| digraph, each motif instance is labeled by the
+    E/I type of its role-ordered nodes:
+
+    * asymmetric dyad ``i→j``: coloring = type(i)+type(j) ∈ {ee,ei,ie,ii}
+    * mutual dyad ``i↔j``: unordered type label ee / ei (mixed) / ii
+    * feedforward ``a→b→c``, ``a→c``: coloring = type(a)+type(b)+type(c)
+    * cycle ``a→b→c→a``: each directed cycle counts under all 3 rotations of
+      its coloring (so I-leading labels are not dropped by index order)
+
+    Dyad rates / connected dyads; FF rates / ≥2-edge triples; cycle rates /
+    (3 × #directed 3-cycles) so the eight cycle colorings sum to 1.
+    """
+    from collections import Counter
+
+    from rnn.rnn_dyn import dale_ei_blocks
+
+    w = np.asarray(w_rec, dtype=float)
+    g, thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    exc, inh = dale_ei_blocks(dale_sign)
+    types = np.full(n, "i", dtype=object)
+    types[exc] = "e"
+    types[inh] = "i"
+
+    asym = Counter({c: 0 for c in _DYAD_COLORINGS})
+    mutual = Counter({c: 0 for c in _MUTUAL_COLORINGS})
+    n_conn = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = bool(E[i, j]), bool(E[j, i])
+            if not (a or b):
+                continue
+            n_conn += 1
+            if a and b:
+                ti, tj = types[i], types[j]
+                if ti == tj:
+                    mutual[f"{ti}{tj}"] += 1
+                else:
+                    mutual["ei"] += 1
+            elif a:
+                asym[f"{types[i]}{types[j]}"] += 1
+            else:
+                asym[f"{types[j]}{types[i]}"] += 1
+
+    ff = Counter({c: 0 for c in _TRIPLE_COLORINGS})
+    cyc = Counter({c: 0 for c in _TRIPLE_COLORINGS})
+    triples = 0
+    n_dir_cycles = 0
+
+    def _add_directed_cycle(a: int, b: int, c: int) -> None:
+        nonlocal n_dir_cycles
+        n_dir_cycles += 1
+        ta, tb, tc = types[a], types[b], types[c]
+        # All rotations: a cycle has no canonical start, so I-leading colorings
+        # must not be dropped just because we discovered it at min index.
+        cyc[f"{ta}{tb}{tc}"] += 1
+        cyc[f"{tb}{tc}{ta}"] += 1
+        cyc[f"{tc}{ta}{tb}"] += 1
+
+    if n >= 3:
+        for i in range(n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    edges = (
+                        int(E[i, j]) + int(E[j, i])
+                        + int(E[i, k]) + int(E[k, i])
+                        + int(E[j, k]) + int(E[k, j])
+                    )
+                    if edges < 2:
+                        continue
+                    triples += 1
+                    # Both directed orientations are separate cycles.
+                    if E[i, j] and E[j, k] and E[k, i]:
+                        _add_directed_cycle(i, j, k)
+                    if E[i, k] and E[k, j] and E[j, i]:
+                        _add_directed_cycle(i, k, j)
+                    # Feedforward: first role order (a,b,c) that matches.
+                    for a, b, c in (
+                        (i, j, k), (i, k, j), (j, i, k),
+                        (j, k, i), (k, i, j), (k, j, i),
+                    ):
+                        if E[a, b] and E[b, c] and E[a, c]:
+                            if not (E[b, a] or E[c, b] or E[c, a]):
+                                ff[f"{types[a]}{types[b]}{types[c]}"] += 1
+                                break
+
+    out: dict[str, float] = {
+        "n_exc": float(len(exc)),
+        "n_inh": float(len(inh)),
+        "motif_threshold": float(thr) if np.isfinite(thr) else float("nan"),
+        "dyad_connected": float(n_conn),
+        "motif_n_triples": float(triples),
+        "n_directed_cycles": float(n_dir_cycles),
+    }
+    denom_dyad = float(n_conn) if n_conn else float("nan")
+    denom_tri = float(triples) if triples else float("nan")
+    denom_cyc = float(3 * n_dir_cycles) if n_dir_cycles else float("nan")
+    for c in _DYAD_COLORINGS:
+        out[f"asym_{c}"] = float(asym[c] / denom_dyad) if n_conn else float("nan")
+        out[f"asym_{c}_n"] = float(asym[c])
+    for c in _MUTUAL_COLORINGS:
+        out[f"mutual_{c}"] = float(mutual[c] / denom_dyad) if n_conn else float("nan")
+        out[f"mutual_{c}_n"] = float(mutual[c])
+    for c in _TRIPLE_COLORINGS:
+        out[f"ff_{c}"] = float(ff[c] / denom_tri) if triples else float("nan")
+        out[f"ff_{c}_n"] = float(ff[c])
+        out[f"cycle_{c}"] = float(cyc[c] / denom_cyc) if n_dir_cycles else float("nan")
+        out[f"cycle_{c}_n"] = float(cyc[c])
+    return out
+
+
+# Alias kept for older call sites.
+compute_weight_digraph_motifs_typed = compute_weight_digraph_motifs_by_ei
+
+
+def _triangle_node_xy() -> dict[int, tuple[float, float]]:
+    """Canonical 3-node layout: 0=top, 1=bottom-left, 2=bottom-right."""
+    return {
+        0: (0.50, 0.82),
+        1: (0.18, 0.18),
+        2: (0.82, 0.18),
+    }
+
+
+# Directed edges (i→j) for motif schematics on the metric board.
+_MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
+    # Pairwise (dyad) motifs.
+    "dyad_asym_frac": ((0, 1),),
+    "dyad_mutual_frac": ((0, 1), (1, 0)),
+    # Reciprocal dyad (edge-fraction definition; same schematic as mutual).
+    "motif_reciprocal_frac": ((0, 1), (1, 0)),
+    # Transitive feedforward: i→j→k and i→k.
+    "motif_feedforward_rate": ((0, 1), (1, 2), (0, 2)),
+    "motif_cycle_rate": ((0, 1), (1, 2), (2, 0)),
+    # Holland–Leinhardt (A=0, B=1, C=2). All 16 classes; each edge set is
+    # verified to yield exactly its own class under nx.triadic_census.
+    "triad_003_frac": (),  # empty
+    "triad_012_frac": ((0, 1),),  # A→B
+    "triad_102_frac": ((0, 1), (1, 0)),  # A↔B
+    "triad_021D_frac": ((1, 0), (1, 2)),  # A←B→C (out-star)
+    "triad_021U_frac": ((0, 1), (2, 1)),  # A→B←C (in-star)
+    "triad_021C_frac": ((0, 1), (1, 2)),  # A→B→C (2-path)
+    "triad_111D_frac": ((0, 1), (1, 0), (2, 1)),  # A↔B←C
+    "triad_111U_frac": ((0, 1), (1, 0), (1, 2)),  # A↔B→C
+    "triad_030T_frac": ((0, 1), (2, 1), (0, 2)),  # A→B←C, A→C
+    "triad_030C_frac": ((1, 0), (2, 1), (0, 2)),  # A←B←C, A→C
+    "triad_201_frac": ((0, 1), (1, 0), (1, 2), (2, 1)),  # A↔B↔C
+    "triad_120D_frac": ((1, 0), (1, 2), (0, 2), (2, 0)),  # A←B→C, A↔C
+    "triad_120U_frac": ((0, 1), (2, 1), (0, 2), (2, 0)),  # A→B←C, A↔C
+    "triad_120C_frac": ((0, 1), (1, 2), (0, 2), (2, 0)),  # A→B→C, A↔C
+    "triad_210_frac": ((0, 1), (1, 2), (2, 1), (0, 2), (2, 0)),
+    "triad_300_frac": ((0, 1), (1, 0), (1, 2), (2, 1), (0, 2), (2, 0)),
+}
+
+
+def _motif_node_pt(ax, node_r: float) -> float:
+    """Node radius in points for a unit-x-range axes, so nodes stay circular.
+
+    Drawing nodes as ``Circle`` patches turns them into flat ovals whenever the
+    host axes is wider than tall (every schema band in the metric grids).
+    """
+    bbox = ax.get_position()
+    w_in = float(bbox.width) * float(ax.figure.get_size_inches()[0])
+    return max(1.5, node_r * w_in * 72.0)
+
+
+def square_axes_box(
+    ax,
+    *,
+    height_frac: float = 0.92,
+    center_x: float = 0.45,
+    max_width: float = 0.55,
+    aspect: float = 1.0,
+) -> tuple[float, float, float, float]:
+    """Sub-box of ``ax`` (axes coords) with a controlled *physical* aspect.
+
+    ``aspect`` is the drawn width/height in inches. Without this, a wide short
+    schema band flattens triangles and collapses the two arcs of a mutual dyad
+    onto each other.
+    """
+    pos = ax.get_position()
+    fw, fh = ax.figure.get_size_inches()
+    w_in = max(1e-6, float(pos.width) * float(fw))
+    h_in = max(1e-6, float(pos.height) * float(fh))
+    span_y = float(height_frac)
+    span_x = span_y * (h_in / w_in) * float(aspect)
+    if span_x > max_width:
+        shrink = max_width / span_x
+        span_x *= shrink
+        span_y *= shrink
+    x0 = center_x - 0.5 * span_x
+    y0 = 0.5 - 0.5 * span_y
+    return (x0, x0 + span_x, y0, y0 + span_y)
+
+
+_DYAD_SCHEMA_KEYS: frozenset[str] = frozenset({
+    "motif_reciprocal_frac",
+    "dyad_mutual_frac",
+    "dyad_asym_frac",
+})
+
+# E = red, I = blue (Dale population color in motif insets).
+_EI_SCHEMA_NODE_COLOR: dict[str, str] = {
+    "e": "#c0392b",
+    "i": "#2471a3",
+}
+
+
+def motif_schema_key_parts(key: str) -> tuple[str, str | None, str | None]:
+    """Parse motif schema key.
+
+    Returns ``(base_schema_key, ei_uniform, coloring)`` where ``coloring`` is an
+    E/I string like ``ei`` / ``eie`` for typed Dale panels, else None.
+    """
+    if "_" in key:
+        kind, _, rest = key.partition("_")
+        if kind in _TYPED_MOTIF_SCHEMA_BASE and rest and set(rest) <= {"e", "i"}:
+            return _TYPED_MOTIF_SCHEMA_BASE[kind], None, rest
+    if key.startswith("e_") or key.startswith("i_"):
+        return key[2:], key[0], None
+    return key, None, None
+
+
+def motif_schema_box(
+    ax,
+    key: str,
+    *,
+    height_frac: float = 0.94,
+    center_x: float = 0.45,
+    max_width: float = 0.62,
+) -> tuple[float, float, float, float]:
+    """Drawing box for motif ``key``: wide for dyads, square for triangles."""
+    base_key, _ei, coloring = motif_schema_key_parts(key)
+    signed = _SIGNED_MOTIF_SCHEMAS.get(base_key)
+    two_node = (
+        base_key in _DYAD_SCHEMA_KEYS
+        or (coloring is not None and len(coloring) == 2)
+        or (signed is not None and max(i for e in signed for i in e[:2]) <= 1)
+    )
+    if two_node:
+        aspect = 2.0
+    elif base_key == "triad_ff_over_cycle":
+        aspect = 2.2
+    else:
+        aspect = 1.0
+    return square_axes_box(
+        ax,
+        height_frac=height_frac,
+        center_x=center_x,
+        max_width=max_width,
+        aspect=aspect,
+    )
+
+
+def _draw_motif_nodes(
+    ax,
+    pos,
+    *,
+    color: str,
+    node_r: float,
+    fill: str | None = None,
+    node_colors: dict[int, str] | None = None,
+) -> float:
+    r_pt = _motif_node_pt(ax, node_r)
+    for idx, (x, y) in pos.items():
+        if node_colors is not None and idx in node_colors:
+            edge = node_colors[idx]
+            face = edge
+        else:
+            edge = color
+            face = color if fill == "solid" else (fill if fill is not None else "white")
+        ax.plot(
+            [x], [y],
+            marker="o",
+            markersize=2.0 * r_pt,
+            markerfacecolor=face,
+            markeredgecolor=edge,
+            markeredgewidth=1.0,
+            linestyle="none",
+            zorder=3,
+        )
+    return r_pt
+
+
+def _draw_motif_nodes_edges(
+    ax,
+    pos: dict[int, tuple[float, float]],
+    edges: tuple[tuple[int, int], ...],
+    *,
+    color: str,
+    node_r: float,
+    rad: float = 0.0,
+    mutual_rad: float = 0.28,
+    node_fill: str | None = None,
+    node_colors: dict[int, str] | None = None,
+) -> None:
+    from matplotlib.patches import FancyArrowPatch
+
+    r_pt = _motif_node_pt(ax, node_r)
+    shrink = r_pt + 1.2
+    head = max(4.0, 2.6 * r_pt)
+    lw = max(0.7, 0.38 * r_pt)
+
+    edge_set = set(edges)
+    drawn_pairs: set[tuple[int, int]] = set()
+    for i, j in edges:
+        if (i, j) in drawn_pairs:
+            continue
+        x0, y0 = pos[i]
+        x1, y1 = pos[j]
+        mutual = (j, i) in edge_set
+        if mutual:
+            for a, b in ((i, j), (j, i)):
+                xa, ya = pos[a]
+                xb, yb = pos[b]
+                arr = FancyArrowPatch(
+                    (xa, ya), (xb, yb),
+                    arrowstyle="-|>",
+                    mutation_scale=head,
+                    lw=lw,
+                    color=color,
+                    connectionstyle=f"arc3,rad={mutual_rad}",
+                    shrinkA=shrink,
+                    shrinkB=shrink,
+                )
+                ax.add_patch(arr)
+            drawn_pairs.add((i, j))
+            drawn_pairs.add((j, i))
+        else:
+            arr = FancyArrowPatch(
+                (x0, y0), (x1, y1),
+                arrowstyle="-|>",
+                mutation_scale=head,
+                lw=lw,
+                color=color,
+                connectionstyle=f"arc3,rad={rad}",
+                shrinkA=shrink,
+                shrinkB=shrink,
+            )
+            ax.add_patch(arr)
+            drawn_pairs.add((i, j))
+
+    _draw_motif_nodes(
+        ax, pos, color=color, node_r=node_r, fill=node_fill, node_colors=node_colors,
+    )
+
+
+def _signed_threshold_adj(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "quantile",
+    q: float = 0.75,
+) -> tuple[np.ndarray, float]:
+    """Signed adjacency: S_ij ∈ {-1,0,+1} for |W_ij| at/above threshold."""
+    w = np.asarray(w_rec, dtype=float)
+    abs_w = np.abs(w)
+    np.fill_diagonal(abs_w, 0.0)
+    pos = abs_w[abs_w > 0]
+    if pos.size == 0:
+        return np.zeros_like(w), float("nan")
+    thr = float(np.quantile(pos, q)) if mode == "quantile" else float(np.mean(pos))
+    s = np.zeros_like(w)
+    mask = abs_w >= thr
+    s[mask] = np.sign(w[mask])
+    return s, thr
+
+
+def compute_weight_signed_motifs(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "quantile",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """Signed digraph motifs on thresholded W_hh (keep edge signs).
+
+    Blue(+) / red(−) structure: edge polarity, signed reciprocal dyads,
+    balanced vs unbalanced directed 3-cycles (sign product), and signed
+    feedforward triples (all+/all−/mixed).
+    """
+    s, thr = _signed_threshold_adj(w_rec, mode=mode, q=q)
+    n = s.shape[0]
+    out: dict[str, float] = {
+        "signed_threshold": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+    edges = [(i, j, int(s[i, j])) for i in range(n) for j in range(n) if s[i, j] != 0]
+    n_edge = len(edges)
+    if n_edge == 0:
+        for k in (
+            "signed_pos_edge_frac", "signed_neg_edge_frac",
+            "signed_recip_pp_frac", "signed_recip_pm_frac", "signed_recip_mm_frac",
+            "signed_cycle_balanced_frac", "signed_cycle_unbalanced_frac",
+            "signed_ff_all_pos_rate", "signed_ff_all_neg_rate", "signed_ff_mixed_rate",
+            "signed_undir_tri_balanced_frac",
+        ):
+            out[k] = float("nan")
+        return out
+
+    n_pos = sum(1 for _, _, sg in edges if sg > 0)
+    out["signed_pos_edge_frac"] = float(n_pos / n_edge)
+    out["signed_neg_edge_frac"] = float(1.0 - out["signed_pos_edge_frac"])
+
+    # Reciprocal dyads (unordered pairs).
+    pp = pm = mm = 0
+    n_rec = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = s[i, j], s[j, i]
+            if a == 0 or b == 0:
+                continue
+            n_rec += 1
+            if a > 0 and b > 0:
+                pp += 1
+            elif a < 0 and b < 0:
+                mm += 1
+            else:
+                pm += 1
+    if n_rec:
+        out["signed_recip_pp_frac"] = float(pp / n_rec)
+        out["signed_recip_pm_frac"] = float(pm / n_rec)
+        out["signed_recip_mm_frac"] = float(mm / n_rec)
+    else:
+        out["signed_recip_pp_frac"] = float("nan")
+        out["signed_recip_pm_frac"] = float("nan")
+        out["signed_recip_mm_frac"] = float("nan")
+
+    # Directed 3-cycles and feedforward triples among connected triples.
+    bal = unbal = 0
+    ff_pos = ff_neg = ff_mix = 0
+    ff_n = 0
+    undir_bal = undir_unbal = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                # Undirected structural-balance triangle on strong |W| edges.
+                e_ij = 1 if (s[i, j] or s[j, i]) else 0
+                e_ik = 1 if (s[i, k] or s[k, i]) else 0
+                e_jk = 1 if (s[j, k] or s[k, j]) else 0
+                if e_ij + e_ik + e_jk == 3:
+                    def _u_sign(a: int, b: int) -> int:
+                        sab, sba = s[a, b], s[b, a]
+                        if sab != 0 and sba == 0:
+                            return int(sab)
+                        if sba != 0 and sab == 0:
+                            return int(sba)
+                        if sab != 0 and sba != 0:
+                            return 1 if (sab > 0 and sba > 0) else -1
+                        return 0
+
+                    p = _u_sign(i, j) * _u_sign(i, k) * _u_sign(j, k)
+                    if p > 0:
+                        undir_bal += 1
+                    elif p < 0:
+                        undir_unbal += 1
+
+                # Directed cycles (both orientations).
+                for a, b, c in ((i, j, k), (i, k, j)):
+                    if s[a, b] and s[b, c] and s[c, a]:
+                        prod = int(s[a, b] * s[b, c] * s[c, a])
+                        if prod > 0:
+                            bal += 1
+                        else:
+                            unbal += 1
+
+                # Feedforward transitive (no back-edges), track signs.
+                for a, b, c in (
+                    (i, j, k), (i, k, j), (j, i, k),
+                    (j, k, i), (k, i, j), (k, j, i),
+                ):
+                    if not (s[a, b] and s[b, c] and s[a, c]):
+                        continue
+                    if s[b, a] or s[c, b] or s[c, a]:
+                        continue
+                    ff_n += 1
+                    signs = (s[a, b], s[b, c], s[a, c])
+                    if all(x > 0 for x in signs):
+                        ff_pos += 1
+                    elif all(x < 0 for x in signs):
+                        ff_neg += 1
+                    else:
+                        ff_mix += 1
+                    break  # count each unordered triple at most once as FF
+
+    n_cyc = bal + unbal
+    out["signed_cycle_balanced_frac"] = float(bal / n_cyc) if n_cyc else float("nan")
+    out["signed_cycle_unbalanced_frac"] = float(unbal / n_cyc) if n_cyc else float("nan")
+    out["signed_ff_all_pos_rate"] = float(ff_pos / ff_n) if ff_n else float("nan")
+    out["signed_ff_all_neg_rate"] = float(ff_neg / ff_n) if ff_n else float("nan")
+    out["signed_ff_mixed_rate"] = float(ff_mix / ff_n) if ff_n else float("nan")
+    n_utri = undir_bal + undir_unbal
+    out["signed_undir_tri_balanced_frac"] = (
+        float(undir_bal / n_utri) if n_utri else float("nan")
+    )
+    return out
+
+
+# Signed motif schematics: (src, dst, sign) with sign ∈ {+1, −1}.
+_SIGNED_MOTIF_SCHEMAS: dict[str, tuple[tuple[int, int, int], ...]] = {
+    "signed_pos_edge_frac": ((0, 1, +1),),
+    "signed_neg_edge_frac": ((0, 1, -1),),
+    "signed_recip_pp_frac": ((0, 1, +1), (1, 0, +1)),
+    "signed_recip_pm_frac": ((0, 1, +1), (1, 0, -1)),
+    "signed_recip_mm_frac": ((0, 1, -1), (1, 0, -1)),
+    "signed_cycle_balanced_frac": ((0, 1, +1), (1, 2, +1), (2, 0, +1)),  # +++ cycle
+    "signed_cycle_unbalanced_frac": ((0, 1, +1), (1, 2, +1), (2, 0, -1)),  # ++− cycle
+    "signed_ff_all_pos_rate": ((0, 1, +1), (1, 2, +1), (0, 2, +1)),
+    "signed_ff_all_neg_rate": ((0, 1, -1), (1, 2, -1), (0, 2, -1)),
+    "signed_ff_mixed_rate": ((0, 1, +1), (1, 2, +1), (0, 2, -1)),
+    "signed_undir_tri_balanced_frac": ((0, 1, +1), (1, 2, +1), (0, 2, +1)),
+}
+
+_SIGNED_POS_COLOR = "#2166ac"
+_SIGNED_NEG_COLOR = "#b2182b"
+
+
+def draw_digraph_motif_schema(
+    ax,
+    key: str,
+    *,
+    color: str = "#1a1a1a",
+    box: tuple[float, float, float, float] | None = None,
+) -> bool:
+    """Draw a tiny digraph motif schematic on ``ax``. Returns False if unknown.
+
+    ``box`` restricts the drawing to ``(x0, x1, y0, y1)`` in axes coords, which
+    keeps the glyph compact inside a wide, short schema band.
+
+    Keys may be Dale-conditioned (``e_*`` / ``i_*``): nodes are filled red (E)
+    or blue (I) to show which population the panel analyzes.
+    """
+    base_key, ei, coloring = motif_schema_key_parts(key)
+    node_colors: dict[int, str] | None = None
+    node_fill: str | None = None
+    if coloring is not None:
+        node_colors = {
+            i: _EI_SCHEMA_NODE_COLOR[ch]
+            for i, ch in enumerate(coloring)
+            if ch in _EI_SCHEMA_NODE_COLOR
+        }
+        color = "#1a1a1a"
+    elif ei in _EI_SCHEMA_NODE_COLOR:
+        color = _EI_SCHEMA_NODE_COLOR[ei]
+        node_fill = "solid"
+
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
+    # Do NOT set equal aspect — it resizes the axes box into neighboring
+    # title bands in multipanel figures. Nodes are placed in unit box coords.
+    ax.set_aspect("auto")
+    ax.axis("off")
+    ax.set_clip_on(True)
+
+    bx0, bx1, by0, by1 = box if box is not None else (0.0, 1.0, 0.0, 1.0)
+    sx = float(bx1 - bx0)
+    sy = float(by1 - by0)
+
+    # Node radii are given in units of the box *height* so glyphs keep the same
+    # physical node size whatever the box aspect; `sn` converts that to x units.
+    ax_pos = ax.get_position()
+    fw, fh = ax.figure.get_size_inches()
+    w_in = max(1e-6, float(ax_pos.width) * float(fw))
+    h_in = max(1e-6, float(ax_pos.height) * float(fh))
+    sn = sy * h_in / w_in
+
+    def fit(p: dict[int, tuple[float, float]]) -> dict[int, tuple[float, float]]:
+        return {k: (bx0 + sx * x, by0 + sy * y) for k, (x, y) in p.items()}
+
+    def arc_rad(dx_unit: float, bulge: float) -> float:
+        """Curvature giving a bulge of ``bulge`` * box height.
+
+        ``arc3`` curvature is applied in *display* space, so the value depends
+        on the physical length of the segment, not on data units.
+        """
+        d_in = max(1e-6, dx_unit * sx * w_in)
+        return float(2.0 * bulge * sy * h_in / d_in)
+
+    signed = _SIGNED_MOTIF_SCHEMAS.get(base_key)
+    if signed is not None:
+        # Dyad-only schemas use two nodes; triangles use three.
+        nodes = {i for e in signed for i in e[:2]}
+        if nodes <= {0, 1} and max(nodes) <= 1:
+            pos = {0: (0.20, 0.50), 1: (0.80, 0.50)}
+            _draw_signed_motif_edges(
+                ax, fit(pos), signed,
+                node_r=0.10 * sn,
+                rad=arc_rad(0.60, 0.24),
+                mutual_rad=arc_rad(0.60, 0.24),
+            )
+        else:
+            pos = _triangle_node_xy()
+            _draw_signed_motif_edges(
+                ax, fit(pos), signed,
+                node_r=0.095 * sn,
+                mutual_rad=arc_rad(0.64, 0.14),
+            )
+        return True
+
+    if base_key == "triad_ff_over_cycle":
+        # Side-by-side 030T | 030C.
+        for x0, edges in (
+            (0.0, _MOTIF_SCHEMA_EDGES["triad_030T_frac"]),
+            (0.52, _MOTIF_SCHEMA_EDGES["triad_030C_frac"]),
+        ):
+            pos = {
+                0: (x0 + 0.24, 0.78),
+                1: (x0 + 0.08, 0.22),
+                2: (x0 + 0.40, 0.22),
+            }
+            _draw_motif_nodes_edges(
+                ax, fit(pos), edges, color=color, node_r=0.075 * sn,
+                mutual_rad=arc_rad(0.32, 0.12),
+                node_fill=node_fill,
+                node_colors=node_colors,
+            )
+        ax.text(
+            bx0 + sx * 0.50, by0 + sy * 0.48,
+            "/", fontsize=9, ha="center", va="center", color=color,
+        )
+        return True
+
+    edges = _MOTIF_SCHEMA_EDGES.get(base_key)
+    if edges is None:
+        return False
+
+    if base_key in ("motif_reciprocal_frac", "dyad_mutual_frac", "dyad_asym_frac"):
+        pos = {0: (0.18, 0.50), 1: (0.82, 0.50)}
+        bulge = arc_rad(0.64, 0.22)
+        _draw_motif_nodes_edges(
+            ax, fit(pos), edges,
+            color=color,
+            node_r=0.105 * sn,
+            rad=0.0 if len(edges) == 1 else bulge,
+            mutual_rad=bulge,
+            node_fill=node_fill,
+            node_colors=node_colors,
+        )
+        return True
+
+    pos = {
+        0: (0.50, 0.92),
+        1: (0.08, 0.10),
+        2: (0.92, 0.10),
+    }
+    _draw_motif_nodes_edges(
+        ax, fit(pos), edges, color=color, node_r=0.115 * sn,
+        mutual_rad=arc_rad(0.64, 0.13),
+        node_fill=node_fill,
+        node_colors=node_colors,
+    )
+    return True
+
+
+def _draw_signed_motif_edges(
+    ax,
+    pos: dict[int, tuple[float, float]],
+    edges: tuple[tuple[int, int, int], ...],
+    *,
+    node_r: float,
+    rad: float = 0.0,
+    mutual_rad: float = 0.22,
+) -> None:
+    from matplotlib.patches import FancyArrowPatch
+
+    r_pt = _motif_node_pt(ax, node_r)
+    shrink = r_pt + 1.2
+    head = max(4.0, 2.6 * r_pt)
+    lw_e = max(0.7, 0.38 * r_pt)
+
+    # Group by unordered pair to curve mutuals.
+    by_pair: dict[tuple[int, int], list[tuple[int, int, int]]] = {}
+    for i, j, sg in edges:
+        key = (min(i, j), max(i, j))
+        by_pair.setdefault(key, []).append((i, j, sg))
+
+    for pair_edges in by_pair.values():
+        mutual = len(pair_edges) == 2
+        for _idx, (i, j, sg) in enumerate(pair_edges):
+            col = _SIGNED_POS_COLOR if sg > 0 else _SIGNED_NEG_COLOR
+            curve = rad
+            if mutual:
+                curve = mutual_rad
+            elif i > j and rad == 0.0:
+                curve = 0.0
+            arr = FancyArrowPatch(
+                pos[i], pos[j],
+                arrowstyle="-|>",
+                mutation_scale=head,
+                lw=lw_e,
+                color=col,
+                connectionstyle=f"arc3,rad={curve}",
+                shrinkA=shrink,
+                shrinkB=shrink,
+            )
+            ax.add_patch(arr)
+
+    _draw_motif_nodes(ax, pos, color="#333333", node_r=node_r)
+
+
+def compute_weight_graph_metrics(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, float]:
+    """Standard network metrics on a thresholded |W_hh| digraph.
+
+    Default threshold: off-diagonal |W| ≥ mean(|W|) so edge density can vary.
+    Path / diameter / modularity use the undirected projection (largest CC).
+    SCC stats stay directed.
+    """
+    import networkx as nx
+    from networkx.algorithms import community as nx_comm
+
+    g, thr = _thresholded_digraph(w_rec, mode=mode, q=q)
+    n = g.number_of_nodes()
+    m = g.number_of_edges()
+    out: dict[str, float] = {
+        "threshold_mode": 0.0 if mode == "mean" else float(q),
+        "threshold_value": float(thr),
+        "n_nodes": float(n),
+        "n_edges": float(m),
+        "density": float(nx.density(g)) if n > 1 else float("nan"),
+        "mean_out_degree": float(m / n) if n else float("nan"),
+    }
+
+    try:
+        out["reciprocity"] = float(nx.reciprocity(g)) if m else float("nan")
+    except Exception:
+        out["reciprocity"] = float("nan")
+
+    try:
+        out["avg_clustering"] = float(nx.average_clustering(g)) if n > 2 else float("nan")
+    except Exception:
+        out["avg_clustering"] = float("nan")
+
+    try:
+        out["degree_assortativity"] = float(
+            nx.degree_assortativity_coefficient(g)
+        ) if m > 1 else float("nan")
+    except Exception:
+        out["degree_assortativity"] = float("nan")
+
+    # Strongly connected components (directed).
+    try:
+        sccs = list(nx.strongly_connected_components(g))
+        out["n_scc"] = float(len(sccs))
+        largest_scc = max((len(c) for c in sccs), default=0)
+        out["largest_scc_frac"] = float(largest_scc / n) if n else float("nan")
+    except Exception:
+        out["n_scc"] = float("nan")
+        out["largest_scc_frac"] = float("nan")
+
+    # Undirected projection for classical path / community metrics.
+    u = g.to_undirected()
+    if u.number_of_edges() == 0:
+        out["avg_shortest_path"] = float("nan")
+        out["diameter"] = float("nan")
+        out["modularity"] = float("nan")
+        out["n_communities"] = float("nan")
+        out["transitivity"] = float("nan")
+        out["mean_betweenness"] = float("nan")
+        out["max_betweenness"] = float("nan")
+        out["mean_closeness"] = float("nan")
+        out["out_degree_cv"] = float("nan")
+        out["condensation_height"] = float("nan")
+        out["n_condensation_nodes"] = float("nan")
+        out["largest_cc_frac"] = float("nan")
+        return out
+
+    try:
+        out["transitivity"] = float(nx.transitivity(u))
+    except Exception:
+        out["transitivity"] = float("nan")
+
+    # Largest connected component for paths.
+    try:
+        largest_cc_nodes = max(nx.connected_components(u), key=len)
+        u_cc = u.subgraph(largest_cc_nodes).copy()
+        if u_cc.number_of_nodes() >= 2 and nx.is_connected(u_cc):
+            out["avg_shortest_path"] = float(nx.average_shortest_path_length(u_cc))
+            out["diameter"] = float(nx.diameter(u_cc))
+            out["largest_cc_frac"] = float(u_cc.number_of_nodes() / n)
+        else:
+            out["avg_shortest_path"] = float("nan")
+            out["diameter"] = float("nan")
+            out["largest_cc_frac"] = float(u_cc.number_of_nodes() / n) if n else float("nan")
+    except Exception:
+        out["avg_shortest_path"] = float("nan")
+        out["diameter"] = float("nan")
+        out["largest_cc_frac"] = float("nan")
+
+    try:
+        communities = list(nx_comm.greedy_modularity_communities(u))
+        out["n_communities"] = float(len(communities))
+        out["modularity"] = float(nx_comm.modularity(u, communities))
+    except Exception:
+        out["n_communities"] = float("nan")
+        out["modularity"] = float("nan")
+
+    try:
+        bc = nx.betweenness_centrality(u)
+        vals = list(bc.values())
+        out["mean_betweenness"] = float(np.mean(vals)) if vals else float("nan")
+        out["max_betweenness"] = float(np.max(vals)) if vals else float("nan")
+    except Exception:
+        out["mean_betweenness"] = float("nan")
+        out["max_betweenness"] = float("nan")
+
+    try:
+        cc = nx.closeness_centrality(u)
+        out["mean_closeness"] = float(np.mean(list(cc.values()))) if cc else float("nan")
+    except Exception:
+        out["mean_closeness"] = float("nan")
+
+    # Degree heterogeneity on the digraph.
+    try:
+        out_degs = np.asarray([d for _, d in g.out_degree()], dtype=float)
+        if out_degs.size and float(np.mean(out_degs)) > 0:
+            out["out_degree_cv"] = float(np.std(out_degs) / np.mean(out_degs))
+        else:
+            out["out_degree_cv"] = float("nan")
+    except Exception:
+        out["out_degree_cv"] = float("nan")
+
+    # Condensation DAG height = longest path among SCCs (graph-theoretic "rank").
+    try:
+        cond = nx.condensation(g)
+        if cond.number_of_nodes() >= 1 and nx.is_directed_acyclic_graph(cond):
+            out["condensation_height"] = float(nx.dag_longest_path_length(cond))
+            out["n_condensation_nodes"] = float(cond.number_of_nodes())
+        else:
+            out["condensation_height"] = float("nan")
+            out["n_condensation_nodes"] = float(cond.number_of_nodes())
+    except Exception:
+        out["condensation_height"] = float("nan")
+        out["n_condensation_nodes"] = float("nan")
+
+    return out
+
+
+def compute_weight_layeredness_metrics(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+) -> dict[str, float]:
+    """Legacy layeredness bag: directionality + digraph motifs (quantile q=0.75)."""
+    direction = compute_weight_directionality_metrics(w_in, w_rec)
+    motifs = compute_weight_digraph_motifs(w_rec, mode="quantile", q=0.75)
+    return {**direction, **motifs}
 
 
 def collect_weight_metrics_by_seed(

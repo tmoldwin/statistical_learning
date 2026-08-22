@@ -92,6 +92,7 @@ def collect_all_runs_motif_cache(
     model: str,
     seed: int,
     coloring: str = "dale_node",
+    motif_prefix: str = "T|",
 ) -> Path:
     import vocab_mixed_dfa as vocab
     from experiment import checkpoint_path
@@ -129,7 +130,7 @@ def collect_all_runs_motif_cache(
         ]
         c0, c1 = series[0]["cnt"], series[-1]["cnt"]
         for key, v0 in c0.items():
-            if not key.startswith("T|") or float(v0) < min_start:
+            if not key.startswith(motif_prefix) or float(v0) < min_start:
                 continue
             v1 = float(c1.get(key, 0))
             fold_rows.append({
@@ -143,13 +144,14 @@ def collect_all_runs_motif_cache(
         denom = max(it1 - it0, 1.0)
         prog_rows = []
         for row in series:
-            triad_keys = [k for k in row["cnt"] if k.startswith("T|")]
-            counts = np.array([float(row["cnt"].get(k, 0)) for k in triad_keys], dtype=float)
+            keys = [k for k in row["cnt"] if k.startswith(motif_prefix)]
+            counts = np.array([float(row["cnt"].get(k, 0)) for k in keys], dtype=float)
             slog = np.log(np.maximum(counts, EPS))
             prog_rows.append({
                 "progress": float((float(row["it"]) - it0) / denom),
                 "edges": float(row["edges"]),
-                "triples_conn": float(row["triples_conn"]),
+                "triples_conn": float(row.get("triples_conn", float("nan"))),
+                "dyads_conn": float(row.get("dyads_conn", float("nan"))),
                 "sd_log_count": float(slog.std()) if len(slog) else float("nan"),
             })
         run_series.append({
@@ -171,6 +173,7 @@ def collect_all_runs_motif_cache(
         "model": model,
         "seed": seed,
         "coloring": coloring,
+        "motif_prefix": motif_prefix,
         "min_start": min_start,
         "target_we": TARGET_WE,
         "skip_iter0": True,
@@ -184,7 +187,7 @@ def collect_all_runs_motif_cache(
     cache_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(
         f"wrote {cache_path}  runs={len(run_series)}  solved={n_solved}  "
-        f"points={len(fold_rows)}  coloring={coloring}",
+        f"points={len(fold_rows)}  coloring={coloring}  prefix={motif_prefix}",
         flush=True,
     )
     return cache_path
@@ -200,6 +203,7 @@ def _n_edges_from_key(key: str) -> int:
 
 
 _EDGE_COUNT_COLORS: dict[int, str] = {
+    1: "#72B7B2",
     2: "#4C78A8",
     3: "#F58518",
     4: "#54A24B",
@@ -309,6 +313,7 @@ def plot_all_runs_over_learning(
     ncol: int = 6,
     beta_out_path: Path | None = None,
     coloring: str = "dale_node",
+    motif_prefix: str = "T|",
 ) -> Path:
     if rebuild_cache or not cache_path.is_file():
         collect_all_runs_motif_cache(
@@ -318,6 +323,7 @@ def plot_all_runs_over_learning(
             model=model,
             seed=seed,
             coloring=coloring,
+            motif_prefix=motif_prefix,
         )
     payload = json.loads(cache_path.read_text(encoding="utf-8"))
     rows = payload["fold_rows"]
@@ -326,6 +332,10 @@ def plot_all_runs_over_learning(
     n_solved = int(payload.get("n_solved", sum(1 for r in series if r.get("solved"))))
     coloring_used = str(payload.get("coloring", coloring))
     color_tag = "edge-sign" if coloring_used == "edge_sign" else "Dale-node"
+    motif_used = str(payload.get("motif_prefix", motif_prefix))
+    motif_tag = "dyad" if motif_used.startswith("D") else "triad"
+    # Dyads have few classes per run; allow smaller within-#edges fits.
+    min_fit = 3 if motif_used.startswith("D") else 8
 
     by_run: dict[int, list[dict]] = {}
     for r in rows:
@@ -393,7 +403,7 @@ def plot_all_runs_over_learning(
         # Within-#edges regressions — span only that group's observed x-range.
         for ne in sorted(set(int(v) for v in n_e)):
             mask = n_e == ne
-            if int(mask.sum()) < 8 or float(np.std(x[mask])) < 1e-9:
+            if int(mask.sum()) < min_fit or float(np.std(x[mask])) < 1e-9:
                 continue
             b_e, _, _ = ols_fn(y[mask], x[mask])
             x0, x1 = float(x[mask].min()), float(x[mask].max())
@@ -485,7 +495,7 @@ def plot_all_runs_over_learning(
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"mixed DFA {model} ({color_tag}): start vs fold by #edges "
+            f"mixed DFA {model} ({color_tag}, {motif_tag}): start vs fold by #edges "
             f"(DFA order, post-init, start>={min_start}, "
             f"n={len(series)} runs, {n_solved} solved, median pooled R$^2$={med_r2:.2f})"
         ),
@@ -513,7 +523,7 @@ def plot_all_runs_over_learning(
     finalize_grid_figure(
         fig_b,
         suptitle=(
-            f"{model} motif compression slope vs DFA ({color_tag}; "
+            f"{model} {motif_tag} compression slope vs DFA ({color_tag}; "
             f"n={len(series)}, {n_solved} solved, start>={min_start})"
         ),
         top=0.88,

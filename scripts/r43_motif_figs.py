@@ -37,6 +37,11 @@ R43_RNN_OUT = MOTIF_DIR / "r43_rnn_motif_counts_raw_over_learning.png"
 R43_RNN_UNSIGNED_JSON = MOTIF_DIR / "r43_rnn_motif_unsigned_all.json"
 R43_RNN_UNSIGNED_OUT = MOTIF_DIR / "r43_rnn_motif_unsigned_over_learning.png"
 R43_RNN_LOLLIPOP_OUT = MOTIF_DIR / "r43_rnn_motif_lollipop_before_after.png"
+R43_RNN_DYAD_OUT = MOTIF_DIR / "r43_rnn_dyad_counts_raw_over_learning.png"
+R43_RNN_DYAD_LOLLIPOP_OUT = MOTIF_DIR / "r43_rnn_dyad_lollipop_before_after.png"
+ALL_RUNS_DYAD_CACHE = MOTIF_DIR / "mixed_dfa_rnn_dyad_fold_all_runs.json"
+ALL_RUNS_DYAD_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_counts_raw_over_learning.png"
+ALL_RUNS_DYAD_BETA_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_fold_beta_vs_dfa.png"
 MODEL = "rnn"
 COLORING = "edge_sign"
 SEED = 1
@@ -130,6 +135,7 @@ def plot_raw_counts_over_learning(
     edges_json_path: Path = DEFAULT_EDGES_JSON,
     min_start: int = MIN_START,
     title: str | None = None,
+    motif_prefix: str = "T|",
 ) -> Path:
     snaps = json.loads(json_path.read_text(encoding="utf-8"))
     edge_snaps = json.loads(edges_json_path.read_text(encoding="utf-8"))
@@ -137,20 +143,24 @@ def plot_raw_counts_over_learning(
         raise ValueError("colored census and edge-count snapshots must share iteration grid")
     iters = np.array([s["it"] for s in snaps], dtype=float)
     n_edges = np.array([s["edges"] for s in edge_snaps], dtype=float)
-    triples_total = np.array([s["triples_conn"] for s in snaps], dtype=float)
-    triad_keys = sorted(k for k in snaps[0]["cnt"] if k.startswith("T|"))
+    is_dyad = motif_prefix.startswith("D")
+    conn_key = "dyads_conn" if is_dyad else "triples_conn"
+    conn_total = np.array([s.get(conn_key, float("nan")) for s in snaps], dtype=float)
+    motif_keys = sorted(k for k in snaps[0]["cnt"] if k.startswith(motif_prefix))
+    if not motif_keys:
+        raise ValueError(f"no keys with prefix {motif_prefix!r} in {json_path}")
 
     def mat(keys: list[str]) -> np.ndarray:
         return np.array([[s["cnt"].get(k, 0) for k in keys] for s in snaps], dtype=float)
 
-    T = mat(triad_keys)
+    T = mat(motif_keys)
     t0 = np.maximum(T[0], EPS)
     t1 = np.maximum(T[-1], EPS)
     logt0 = np.log(t0)
     fold = t1 / t0
     log_fold = np.log(fold)
 
-    n_e = np.array([mar._n_edges_from_key(k) for k in triad_keys], dtype=int)
+    n_e = np.array([mar._n_edges_from_key(k) for k in motif_keys], dtype=int)
     edge_colors = {
         int(ne): mar._EDGE_COUNT_COLORS.get(int(ne), "#888888")
         for ne in np.unique(n_e)
@@ -161,6 +171,7 @@ def plot_raw_counts_over_learning(
     y_sc = log_fold[mask]
     n_e_sc = n_e[mask]
     beta, _, r2 = _ols(y_sc, x_sc)
+    min_fit = 3 if is_dyad else 8
 
     def _outlined_line(ax, xs, ys, color, *, lw=1.35, z=5, ls="-"):
         ax.plot(xs, ys, color="white", lw=lw + 2.2, zorder=z - 0.1,
@@ -178,7 +189,7 @@ def plot_raw_counts_over_learning(
     rng = np.random.default_rng(0)
     beta_lines: list[tuple[str, float, str]] = [("pool", float(beta[1]), "0.12")]
 
-    fig = plt.figure(figsize=(13.2, 10.8))
+    fig = plt.figure(figsize=(max(8.0, 3.2 * n_tier + 2.0), 10.8))
     outer = fig.add_gridspec(4, 1, height_ratios=[1.20, 1.15, 1.00, 0.90], hspace=0.55)
     gs_fold = outer[0].subgridspec(1, n_tier, wspace=0.38)
     gs_traj = outer[1].subgridspec(1, n_tier, wspace=0.38)
@@ -191,18 +202,23 @@ def plot_raw_counts_over_learning(
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    fold_axes: list = []
     for j, ne in enumerate(tiers):
         ax = fig.add_subplot(gs_fold[0, j])
-        fold_axes.append(ax)
         m = n_e_sc == ne
         x, y = x_sc[m], y_sc[m]
         col = edge_colors[ne]
-        x_disp = x + rng.normal(0.0, 0.028, size=len(x))
-        ax.scatter(x_disp, y, c=col, s=16, alpha=0.80, edgecolors="0.25",
-                   linewidths=0.25, zorder=3)
+        # Label points for dyads (few classes).
+        labels = [motif_keys[i] for i, ok in enumerate(mask) if ok and n_e[i] == ne]
+        x_disp = x + rng.normal(0.0, 0.012 if is_dyad else 0.028, size=len(x))
+        ax.scatter(x_disp, y, c=col, s=48 if is_dyad else 16, alpha=0.85,
+                   edgecolors="0.25", linewidths=0.35, zorder=3)
+        if is_dyad:
+            for xi, yi, lab in zip(x_disp, y, labels):
+                short = lab.replace("D|", "")
+                ax.annotate(short, (xi, yi), textcoords="offset points",
+                            xytext=(4, 3), fontsize=5.5, color="0.2")
         b1, r2_e = float("nan"), float("nan")
-        if int(m.sum()) >= 8 and float(np.std(x)) > 1e-9:
+        if int(m.sum()) >= min_fit and float(np.std(x)) > 1e-9:
             b_e, _, r2_e = _ols(y, x)
             b1 = float(b_e[1])
             x_line = np.linspace(float(x.min()), float(x.max()), 40)
@@ -211,10 +227,10 @@ def plot_raw_counts_over_learning(
         ax.axhline(0.0, color="0.55", lw=0.65, ls="--", zorder=1)
         if len(y):
             y_span = float(y.max() - y.min())
-            y_pad = 0.14 * max(y_span, 0.15)
+            y_pad = 0.18 * max(y_span, 0.15)
             ax.set_ylim(float(y.min()) - y_pad, float(y.max()) + y_pad)
             x_span = float(x.max() - x.min())
-            x_pad = 0.12 * max(x_span, 0.15)
+            x_pad = 0.15 * max(x_span, 0.15)
             ax.set_xlim(float(x.min()) - x_pad, float(x.max()) + x_pad)
         ax.set_title(f"{ne}e  β={b1:+.2f}  $R^2$={r2_e:.2f}", fontsize=7.4,
                      color=col, pad=3)
@@ -224,15 +240,18 @@ def plot_raw_counts_over_learning(
         if j == mid:
             ax.set_xlabel("log start", fontsize=7.5)
 
-    traj_axes: list = []
     for j, ne in enumerate(tiers):
         ax = fig.add_subplot(gs_traj[0, j])
-        traj_axes.append(ax)
         col = edge_colors[ne]
         tm = n_e == ne
         series = np.maximum(T[:, tm], EPS)
         for k in range(series.shape[1]):
-            ax.plot(iters, series[:, k], color=col, lw=0.55, alpha=0.28, zorder=2)
+            ax.plot(iters, series[:, k], color=col, lw=1.1 if is_dyad else 0.55,
+                    alpha=0.55 if is_dyad else 0.28, zorder=2)
+            if is_dyad:
+                keys_ne = [motif_keys[i] for i, ok in enumerate(tm) if ok]
+                ax.text(iters[-1], series[-1, k], " " + keys_ne[k].replace("D|", ""),
+                        fontsize=5.5, color=col, va="center")
         med_e = np.median(series, axis=1)
         _outlined_line(ax, iters, med_e, col, lw=1.55, z=5)
         ax.set_yscale("log")
@@ -246,10 +265,8 @@ def plot_raw_counts_over_learning(
         if j == mid:
             ax.set_xlabel("iteration", fontsize=7.5)
 
-    sd_axes: list = []
     for j, ne in enumerate(tiers):
         ax = fig.add_subplot(gs_sd[0, j])
-        sd_axes.append(ax)
         col = edge_colors[ne]
         sd_e = slog[:, n_e == ne].std(axis=1)
         _outlined_line(ax, iters, sd_e, col, lw=1.55, z=5)
@@ -266,7 +283,7 @@ def plot_raw_counts_over_learning(
 
     ax_edge = fig.add_subplot(gs_foot[0, 0])
     ax_spr = fig.add_subplot(gs_foot[0, 1])
-    ax_tri = fig.add_subplot(gs_foot[0, 2])
+    ax_conn = fig.add_subplot(gs_foot[0, 2])
 
     edge_fold = float(n_edges[-1] / n_edges[0])
     ax_edge.plot(iters, n_edges, color="#4c78a8", lw=1.6)
@@ -287,21 +304,29 @@ def plot_raw_counts_over_learning(
     ax_spr.set_title("median count by #edges", fontsize=8, pad=3)
     _style(ax_spr)
 
-    tri_fold = float(triples_total[-1] / triples_total[0])
-    ax_tri.plot(iters, triples_total, color="#2ca02c", lw=1.6)
-    ax_tri.set_xlabel("iteration", fontsize=7.5)
-    ax_tri.set_ylabel("count", fontsize=7.5)
-    ax_tri.set_title(
-        f"connected triad instances  ({int(triples_total[0])}→{int(triples_total[-1])}, ×{tri_fold:.2f})",
-        fontsize=8, pad=3,
-    )
-    _style(ax_tri)
+    if np.all(np.isfinite(conn_total)):
+        conn_fold = float(conn_total[-1] / conn_total[0])
+        ax_conn.plot(iters, conn_total, color="#2ca02c", lw=1.6)
+        kind = "dyad" if is_dyad else "triad"
+        ax_conn.set_title(
+            f"connected {kind} instances  "
+            f"({int(conn_total[0])}→{int(conn_total[-1])}, ×{conn_fold:.2f})",
+            fontsize=8, pad=3,
+        )
+    else:
+        ax_conn.text(0.5, 0.5, "no connected-count series", ha="center", va="center",
+                     transform=ax_conn.transAxes, fontsize=8)
+        ax_conn.set_title("connected instances", fontsize=8, pad=3)
+    ax_conn.set_xlabel("iteration", fontsize=7.5)
+    ax_conn.set_ylabel("count", fontsize=7.5)
+    _style(ax_conn)
 
+    kind = "dyad" if is_dyad else "triad"
     finalize_grid_figure(
         fig,
         suptitle=(
             title
-            or "r43: motif class counts vs training (by #edges)"
+            or f"r43: {kind} class counts vs training (by #edges)"
         ) + f"   pooled β={beta[1]:+.2f}, $R^2$={r2:.2f}, n={int(mask.sum())}",
         top=0.935,
         bottom=0.055,
@@ -317,7 +342,7 @@ def plot_raw_counts_over_learning(
         print(f"  {name:5s}  beta={b:+.3f}")
     print(
         f"edges {int(n_edges[0])} -> {int(n_edges[-1])}  "
-        f"triples {int(triples_total[0])} -> {int(triples_total[-1])}"
+        f"{conn_key} {conn_total[0]:.0f} -> {conn_total[-1]:.0f}"
     )
     print(f"sd log start/end {float(sd[0]):.2f} {float(sd[-1]):.2f}")
     return out_path
@@ -329,13 +354,15 @@ def plot_lollipop_before_after(
     *,
     min_start: int = MIN_START,
     title: str | None = None,
+    motif_prefix: str = "T|",
 ) -> Path:
-    """Per-motif start / end / Δ lollipops, ordered by #edges then start, |Δ|."""
+    """Per-motif start / end / Δ lollipops, ordered by #edges then end−start."""
     snaps = json.loads(json_path.read_text(encoding="utf-8"))
     c0 = snaps[0]["cnt"]
     c1 = snaps[-1]["cnt"]
     it0, it1 = int(snaps[0]["it"]), int(snaps[-1]["it"])
-    keys = [k for k in c0 if str(k).startswith("T|")]
+    keys = [k for k in c0 if str(k).startswith(motif_prefix)]
+    is_dyad = motif_prefix.startswith("D")
 
     rows: list[tuple[int, float, float, float, str]] = []
     for key in keys:
@@ -345,7 +372,6 @@ def plot_lollipop_before_after(
         end = float(c1.get(key, 0.0))
         ne = int(mar._n_edges_from_key(key))
         rows.append((ne, start, end, end - start, key))
-    # #edges first, then end−start (gains at top), then start, then key.
     rows.sort(key=lambda r: (r[0], -r[3], -r[1], r[4]))
 
     tiers = sorted({r[0] for r in rows})
@@ -355,12 +381,13 @@ def plot_lollipop_before_after(
 
     n_tier = len(tiers)
     counts = [len(by_ne[ne]) for ne in tiers]
-    fig_h = 0.052 * sum(counts) + 2.4
-    fig = plt.figure(figsize=(9.6, fig_h))
+    row_h = 0.42 if is_dyad else 0.052
+    fig_h = max(4.5, row_h * sum(counts) + 2.2)
+    fig = plt.figure(figsize=(10.2 if is_dyad else 9.6, fig_h))
     gs = fig.add_gridspec(
         n_tier, 3,
-        height_ratios=[max(n, 6) for n in counts],
-        hspace=0.28, wspace=0.22,
+        height_ratios=[max(n, 3 if is_dyad else 6) for n in counts],
+        hspace=0.32, wspace=0.28,
     )
 
     for i, ne in enumerate(tiers):
@@ -371,38 +398,52 @@ def plot_lollipop_before_after(
         starts = np.array([r[1] for r in block], dtype=float)
         ends = np.array([r[2] for r in block], dtype=float)
         deltas = np.array([r[3] for r in block], dtype=float)
-        y_lim = (n - 0.5, -0.5)  # first (largest start) at top
+        labels = [r[4].replace("D|", "").replace("T|", "") for r in block]
+        y_lim = (n - 0.5, -0.5)
 
         ax_s = fig.add_subplot(gs[i, 0])
         ax_e = fig.add_subplot(gs[i, 1])
         ax_d = fig.add_subplot(gs[i, 2])
 
-        for ax, vals, v0 in ((ax_s, starts, 0.0), (ax_e, ends, 0.0)):
-            ax.hlines(ys, v0, vals, colors=col, lw=0.75, zorder=2)
-            ax.scatter(vals, ys, s=9, c=col, zorder=3, edgecolors="0.2", linewidths=0.25)
+        for ax, vals in ((ax_s, starts), (ax_e, ends)):
+            ax.hlines(ys, 0.0, vals, colors=col, lw=1.2 if is_dyad else 0.75, zorder=2)
+            ax.scatter(vals, ys, s=36 if is_dyad else 9, c=col, zorder=3,
+                       edgecolors="0.2", linewidths=0.35)
             ax.axvline(0.0, color="0.75", lw=0.5, zorder=1)
             xmax = float(max(starts.max(), ends.max()))
             ax.set_xlim(-0.02 * xmax, xmax * 1.06)
             ax.set_ylim(*y_lim)
-            ax.tick_params(labelleft=False, labelsize=6.2)
+            ax.tick_params(labelsize=6.5)
             ax.grid(True, axis="x", alpha=0.22)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
             ax.spines["left"].set_visible(False)
 
         ax_d.axvline(0.0, color="0.35", lw=0.8, zorder=1)
-        ax_d.hlines(ys, 0.0, deltas, colors=col, lw=0.75, zorder=2)
-        ax_d.scatter(deltas, ys, s=9, c=col, zorder=3, edgecolors="0.2", linewidths=0.25)
+        ax_d.hlines(ys, 0.0, deltas, colors=col, lw=1.2 if is_dyad else 0.75, zorder=2)
+        ax_d.scatter(deltas, ys, s=36 if is_dyad else 9, c=col, zorder=3,
+                     edgecolors="0.2", linewidths=0.35)
         dmax = float(np.max(np.abs(deltas))) if len(deltas) else 1.0
         ax_d.set_xlim(-1.08 * dmax, 1.08 * dmax)
         ax_d.set_ylim(*y_lim)
-        ax_d.tick_params(labelleft=False, labelsize=6.2)
+        ax_d.tick_params(labelleft=False, labelsize=6.5)
         ax_d.grid(True, axis="x", alpha=0.22)
         ax_d.spines["top"].set_visible(False)
         ax_d.spines["right"].set_visible(False)
         ax_d.spines["left"].set_visible(False)
 
-        ax_s.set_ylabel(f"{ne}e  n={n}", fontsize=8, color=col, fontweight="bold")
+        if is_dyad:
+            ax_s.set_yticks(ys)
+            ax_s.set_yticklabels(labels, fontsize=7)
+            ax_e.tick_params(labelleft=False)
+        else:
+            ax_s.tick_params(labelleft=False)
+            ax_e.tick_params(labelleft=False)
+            ax_s.set_ylabel(f"{ne}e  n={n}", fontsize=8, color=col, fontweight="bold")
+
+        if is_dyad:
+            ax_s.set_ylabel(f"{ne}e  n={n}", fontsize=8, color=col, fontweight="bold")
+
         if i == 0:
             ax_s.set_title("start", fontsize=9, pad=4)
             ax_e.set_title("end", fontsize=9, pad=4)
@@ -416,19 +457,20 @@ def plot_lollipop_before_after(
             ax_e.tick_params(labelbottom=False)
             ax_d.tick_params(labelbottom=False)
 
+    kind = "dyad" if is_dyad else "triad"
     finalize_grid_figure(
         fig,
         suptitle=title or (
-            f"r{SINGLE_RUN_ID:02d} rnn (edge-sign): motif lollipops  "
+            f"r{SINGLE_RUN_ID:02d} rnn (edge-sign): {kind} lollipops  "
             f"iter {it0}→{it1}, start>={min_start}, n={len(rows)}  "
             f"(order: #edges, end−start)"
         ),
-        top=0.965,
-        bottom=0.035,
-        left=0.07,
+        top=0.94 if is_dyad else 0.965,
+        bottom=0.08 if is_dyad else 0.035,
+        left=0.16 if is_dyad else 0.07,
         right=0.985,
-        hspace=0.28,
-        wspace=0.22,
+        hspace=0.32,
+        wspace=0.28,
     )
     save_figure(fig, out_path, dpi=140)
     print(f"wrote {out_path}")
@@ -440,6 +482,9 @@ def plot_lollipop_before_after(
             f"median d={float(np.median(d)):+.1f}  "
             f"mean d={float(np.mean(d)):+.1f}"
         )
+        if is_dyad:
+            for r in block:
+                print(f"    {r[4]:18s}  start={r[1]:6.0f}  end={r[2]:6.0f}  d={r[3]:+7.0f}")
     return out_path
 
 
@@ -630,9 +675,12 @@ def main() -> None:
         choices=(
             "raw-over-learning",
             "all-runs-over-learning",
+            "all-runs-dyad-over-learning",
             "r43-rnn-over-learning",
+            "r43-rnn-dyad-over-learning",
             "r43-rnn-unsigned",
             "r43-rnn-lollipop",
+            "r43-rnn-dyad-lollipop",
         ),
         default="raw-over-learning",
         help="figure to generate",
@@ -671,17 +719,52 @@ def main() -> None:
             min_start=args.min_start,
             title="r43 rnn (edge-sign): start vs fold by #edges",
         )
+    elif args.only == "r43-rnn-dyad-over-learning":
+        plot_raw_counts_over_learning(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_DYAD_OUT,
+            edges_json_path=(
+                args.edges_json if args.edges_json != DEFAULT_EDGES_JSON
+                else R43_RNN_EDGES_JSON
+            ),
+            min_start=args.min_start,
+            motif_prefix="D|",
+            title="r43 rnn (edge-sign): dyad start vs fold by #edges",
+        )
+    elif args.only == "r43-rnn-dyad-lollipop":
+        plot_lollipop_before_after(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_DYAD_LOLLIPOP_OUT,
+            min_start=args.min_start,
+            motif_prefix="D|",
+            title="r43 rnn (edge-sign): dyad lollipops by #edges",
+        )
     elif args.only == "r43-rnn-lollipop":
         plot_lollipop_before_after(
             args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
             args.out or R43_RNN_LOLLIPOP_OUT,
             min_start=args.min_start,
+            motif_prefix="T|",
         )
     elif args.only == "r43-rnn-unsigned":
         collect_r43_rnn_unsigned_census(run_id=SINGLE_RUN_ID, model="rnn", seed=SEED)
         plot_unsigned_motifs_over_learning(
             R43_RNN_UNSIGNED_JSON,
             args.out or R43_RNN_UNSIGNED_OUT,
+        )
+    elif args.only == "all-runs-dyad-over-learning":
+        mar.plot_all_runs_over_learning(
+            ALL_RUNS_DYAD_CACHE,
+            args.out or ALL_RUNS_DYAD_OUT,
+            min_start=args.min_start,
+            rebuild_cache=args.rebuild_cache or not ALL_RUNS_DYAD_CACHE.is_file(),
+            model=args.model,
+            seed=SEED,
+            max_snaps_per_run=MAX_SNAPS_PER_RUN,
+            ols_fn=_ols,
+            beta_out_path=ALL_RUNS_DYAD_BETA_OUT,
+            coloring=args.coloring,
+            motif_prefix="D|",
         )
     elif args.only == "all-runs-over-learning":
         model = args.model
@@ -703,6 +786,7 @@ def main() -> None:
             ols_fn=_ols,
             beta_out_path=ALL_RUNS_BETA_OUT,
             coloring=coloring,
+            motif_prefix="T|",
         )
 
 

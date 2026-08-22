@@ -36,6 +36,7 @@ R43_RNN_EDGES_JSON = MOTIF_DIR / "r43_rnn_motif_counts_over_learning.json"
 R43_RNN_OUT = MOTIF_DIR / "r43_rnn_motif_counts_raw_over_learning.png"
 R43_RNN_UNSIGNED_JSON = MOTIF_DIR / "r43_rnn_motif_unsigned_all.json"
 R43_RNN_UNSIGNED_OUT = MOTIF_DIR / "r43_rnn_motif_unsigned_over_learning.png"
+R43_RNN_LOLLIPOP_OUT = MOTIF_DIR / "r43_rnn_motif_lollipop_before_after.png"
 MODEL = "rnn"
 COLORING = "edge_sign"
 SEED = 1
@@ -322,6 +323,126 @@ def plot_raw_counts_over_learning(
     return out_path
 
 
+def plot_lollipop_before_after(
+    json_path: Path = R43_RNN_JSON,
+    out_path: Path = R43_RNN_LOLLIPOP_OUT,
+    *,
+    min_start: int = MIN_START,
+    title: str | None = None,
+) -> Path:
+    """Per-motif start / end / Δ lollipops, ordered by #edges then start, |Δ|."""
+    snaps = json.loads(json_path.read_text(encoding="utf-8"))
+    c0 = snaps[0]["cnt"]
+    c1 = snaps[-1]["cnt"]
+    it0, it1 = int(snaps[0]["it"]), int(snaps[-1]["it"])
+    keys = [k for k in c0 if str(k).startswith("T|")]
+
+    rows: list[tuple[int, float, float, float, str]] = []
+    for key in keys:
+        start = float(c0.get(key, 0.0))
+        if start < min_start:
+            continue
+        end = float(c1.get(key, 0.0))
+        ne = int(mar._n_edges_from_key(key))
+        rows.append((ne, start, end, end - start, key))
+    # #edges first, then end−start (gains at top), then start, then key.
+    rows.sort(key=lambda r: (r[0], -r[3], -r[1], r[4]))
+
+    tiers = sorted({r[0] for r in rows})
+    by_ne: dict[int, list[tuple[int, float, float, float, str]]] = {ne: [] for ne in tiers}
+    for row in rows:
+        by_ne[row[0]].append(row)
+
+    n_tier = len(tiers)
+    counts = [len(by_ne[ne]) for ne in tiers]
+    fig_h = 0.052 * sum(counts) + 2.4
+    fig = plt.figure(figsize=(9.6, fig_h))
+    gs = fig.add_gridspec(
+        n_tier, 3,
+        height_ratios=[max(n, 6) for n in counts],
+        hspace=0.28, wspace=0.22,
+    )
+
+    for i, ne in enumerate(tiers):
+        block = by_ne[ne]
+        col = mar._EDGE_COUNT_COLORS.get(ne, "#888888")
+        n = len(block)
+        ys = np.arange(n, dtype=float)
+        starts = np.array([r[1] for r in block], dtype=float)
+        ends = np.array([r[2] for r in block], dtype=float)
+        deltas = np.array([r[3] for r in block], dtype=float)
+        y_lim = (n - 0.5, -0.5)  # first (largest start) at top
+
+        ax_s = fig.add_subplot(gs[i, 0])
+        ax_e = fig.add_subplot(gs[i, 1])
+        ax_d = fig.add_subplot(gs[i, 2])
+
+        for ax, vals, v0 in ((ax_s, starts, 0.0), (ax_e, ends, 0.0)):
+            ax.hlines(ys, v0, vals, colors=col, lw=0.75, zorder=2)
+            ax.scatter(vals, ys, s=9, c=col, zorder=3, edgecolors="0.2", linewidths=0.25)
+            ax.axvline(0.0, color="0.75", lw=0.5, zorder=1)
+            xmax = float(max(starts.max(), ends.max()))
+            ax.set_xlim(-0.02 * xmax, xmax * 1.06)
+            ax.set_ylim(*y_lim)
+            ax.tick_params(labelleft=False, labelsize=6.2)
+            ax.grid(True, axis="x", alpha=0.22)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.spines["left"].set_visible(False)
+
+        ax_d.axvline(0.0, color="0.35", lw=0.8, zorder=1)
+        ax_d.hlines(ys, 0.0, deltas, colors=col, lw=0.75, zorder=2)
+        ax_d.scatter(deltas, ys, s=9, c=col, zorder=3, edgecolors="0.2", linewidths=0.25)
+        dmax = float(np.max(np.abs(deltas))) if len(deltas) else 1.0
+        ax_d.set_xlim(-1.08 * dmax, 1.08 * dmax)
+        ax_d.set_ylim(*y_lim)
+        ax_d.tick_params(labelleft=False, labelsize=6.2)
+        ax_d.grid(True, axis="x", alpha=0.22)
+        ax_d.spines["top"].set_visible(False)
+        ax_d.spines["right"].set_visible(False)
+        ax_d.spines["left"].set_visible(False)
+
+        ax_s.set_ylabel(f"{ne}e  n={n}", fontsize=8, color=col, fontweight="bold")
+        if i == 0:
+            ax_s.set_title("start", fontsize=9, pad=4)
+            ax_e.set_title("end", fontsize=9, pad=4)
+            ax_d.set_title("end − start", fontsize=9, pad=4)
+        if i == n_tier - 1:
+            ax_s.set_xlabel("count", fontsize=8)
+            ax_e.set_xlabel("count", fontsize=8)
+            ax_d.set_xlabel("Δ count", fontsize=8)
+        else:
+            ax_s.tick_params(labelbottom=False)
+            ax_e.tick_params(labelbottom=False)
+            ax_d.tick_params(labelbottom=False)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=title or (
+            f"r{SINGLE_RUN_ID:02d} rnn (edge-sign): motif lollipops  "
+            f"iter {it0}→{it1}, start>={min_start}, n={len(rows)}  "
+            f"(order: #edges, end−start)"
+        ),
+        top=0.965,
+        bottom=0.035,
+        left=0.07,
+        right=0.985,
+        hspace=0.28,
+        wspace=0.22,
+    )
+    save_figure(fig, out_path, dpi=140)
+    print(f"wrote {out_path}")
+    for ne in tiers:
+        block = by_ne[ne]
+        d = np.array([r[3] for r in block], dtype=float)
+        print(
+            f"  {ne}e  n={len(block):3d}  "
+            f"median d={float(np.median(d)):+.1f}  "
+            f"mean d={float(np.mean(d)):+.1f}"
+        )
+    return out_path
+
+
 def collect_r43_rnn_unsigned_census(
     *,
     run_id: int = SINGLE_RUN_ID,
@@ -511,6 +632,7 @@ def main() -> None:
             "all-runs-over-learning",
             "r43-rnn-over-learning",
             "r43-rnn-unsigned",
+            "r43-rnn-lollipop",
         ),
         default="raw-over-learning",
         help="figure to generate",
@@ -548,6 +670,12 @@ def main() -> None:
             edges_json_path=edges,
             min_start=args.min_start,
             title="r43 rnn (edge-sign): start vs fold by #edges",
+        )
+    elif args.only == "r43-rnn-lollipop":
+        plot_lollipop_before_after(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_LOLLIPOP_OUT,
+            min_start=args.min_start,
         )
     elif args.only == "r43-rnn-unsigned":
         collect_r43_rnn_unsigned_census(run_id=SINGLE_RUN_ID, model="rnn", seed=SEED)

@@ -1018,6 +1018,112 @@ def compute_weight_edge_signed_hl_motif_counts(
     }
 
 
+# Connected HL triad classes shown on unsigned boards (skip empty / single-edge).
+_UNSIGNED_HL_TRIAD_CLASSES: tuple[str, ...] = (
+    "021D", "021U", "021C",
+    "111D", "111U",
+    "030T", "030C",
+    "201",
+    "120D", "120U", "120C",
+    "210", "300",
+)
+
+
+def compute_weight_unsigned_hl_motif_counts(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+) -> dict[str, int | float]:
+    """Unsigned Holland–Leinhardt census (isomorphism class, no E/I or edge sign).
+
+    Keys:
+    * ``D|asym`` / ``D|mutual`` — directed one-way vs reciprocal dyads
+    * ``T|<HL>`` — connected triad class, e.g. ``T|030T``, ``T|030C``
+
+    Skips empty / sparse classes ``003``, ``012``, ``102`` (same pool as colored boards).
+    """
+    from collections import Counter
+
+    w = np.asarray(w_rec, dtype=float)
+    g, thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    pat_to_hl = _hl_triad_pattern_classes()
+    edges = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1))
+    skip_hl = {"003", "012", "102"}
+
+    def _tri_pat(i: int, j: int, k: int) -> int:
+        nodes = (i, j, k)
+        bits = 0
+        for bi, (a, b) in enumerate(edges):
+            if E[nodes[a], nodes[b]]:
+                bits |= 1 << bi
+        return bits
+
+    cnt: Counter[str] = Counter()
+    dyads_conn = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            fwd, back = bool(E[i, j]), bool(E[j, i])
+            if not (fwd or back):
+                continue
+            dyads_conn += 1
+            if fwd and back:
+                cnt["D|mutual"] += 1
+            else:
+                cnt["D|asym"] += 1
+
+    triples_conn = 0
+    if n >= 3:
+        for i in range(n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    bits = _tri_pat(i, j, k)
+                    hl = pat_to_hl[bits]
+                    if hl in skip_hl:
+                        continue
+                    triples_conn += 1
+                    cnt[f"T|{hl}"] += 1
+
+    return {
+        "cnt": dict(cnt),
+        "edges": float(int(E.sum())),
+        "dyads_conn": float(dyads_conn),
+        "triples_conn": float(triples_conn),
+        "thr": float(thr) if np.isfinite(thr) else float("nan"),
+    }
+
+
+def draw_unsigned_hl_motif(
+    ax,
+    key: str,
+    *,
+    color: str = "#1a1a1a",
+) -> bool:
+    """Draw unsigned dyad/triad glyph for keys ``D|asym``, ``D|mutual``, ``T|030T``, …"""
+    schema_map = {
+        "D|asym": "dyad_asym_frac",
+        "D|mutual": "dyad_mutual_frac",
+        **{f"T|{hl}": f"triad_{hl}_frac" for hl in _UNSIGNED_HL_TRIAD_CLASSES},
+    }
+    schema = schema_map.get(key)
+    if schema is None:
+        ax.axis("off")
+        return False
+    return draw_digraph_motif_schema(
+        ax,
+        schema,
+        color=color,
+        box=motif_schema_box(
+            ax, schema, center_x=0.50, height_frac=0.98, max_width=0.78,
+        ),
+    )
+
+
 _DYAD_COLORINGS: tuple[str, ...] = ("ee", "ei", "ie", "ii")
 # Mutual dyads are unordered for type; mixed E–I is stored as ``ei`` only.
 _MUTUAL_COLORINGS: tuple[str, ...] = ("ee", "ei", "ii")
@@ -1163,11 +1269,15 @@ compute_weight_digraph_motifs_typed = compute_weight_digraph_motifs_by_ei
 
 
 def _triangle_node_xy() -> dict[int, tuple[float, float]]:
-    """Canonical 3-node layout: 0=top, 1=bottom-left, 2=bottom-right."""
+    """Canonical 3-node layout: 0=top, 1=bottom-left, 2=bottom-right.
+
+    Inset from the unit box so outward-bowed mutual arcs stay inside the axes
+    (clipping was eating the bottom of 210/300 glyphs in schema bands).
+    """
     return {
-        0: (0.50, 0.82),
-        1: (0.18, 0.18),
-        2: (0.82, 0.18),
+        0: (0.50, 0.72),
+        1: (0.26, 0.26),
+        2: (0.74, 0.26),
     }
 
 
@@ -1331,6 +1441,30 @@ def _draw_motif_nodes(
     return r_pt
 
 
+def _outward_arc_rad(
+    pos: dict[int, tuple[float, float]],
+    i: int,
+    j: int,
+    magnitude: float,
+) -> float:
+    """``arc3`` rad so the curve bows *away* from the motif centroid."""
+    xs = [p[0] for p in pos.values()]
+    ys = [p[1] for p in pos.values()]
+    cx = float(sum(xs) / len(xs))
+    cy = float(sum(ys) / len(ys))
+    xa, ya = pos[i]
+    xb, yb = pos[j]
+    mx, my = 0.5 * (xa + xb), 0.5 * (ya + yb)
+    ex, ey = xb - xa, yb - ya
+    # Left normal relative to travel (matches arc3 rad > 0).
+    nx, ny = -ey, ex
+    # Prefer the normal that points away from the centroid.
+    outward_x, outward_y = mx - cx, my - cy
+    if nx * outward_x + ny * outward_y >= 0.0:
+        return float(magnitude)
+    return float(-magnitude)
+
+
 def _draw_motif_nodes_edges(
     ax,
     pos: dict[int, tuple[float, float]],
@@ -1345,10 +1479,19 @@ def _draw_motif_nodes_edges(
 ) -> None:
     from matplotlib.patches import FancyArrowPatch
 
+    n_e = len(edges)
+    # Dense triads (210/300) need thinner strokes and smaller heads or they
+    # collapse into a black scribble in the triangle interior.
+    dens = 1.0 if n_e <= 3 else (0.78 if n_e <= 4 else (0.62 if n_e <= 5 else 0.50))
     r_pt = _motif_node_pt(ax, node_r)
-    shrink = r_pt + 1.2
-    head = max(4.0, 2.6 * r_pt)
-    lw = max(0.7, 0.38 * r_pt)
+    # Cap stroke/head in *points* so large schema bands stay crisp instead of
+    # turning into felt-tip blobs (lw was previously ~4pt on wide panels).
+    shrink = min(r_pt + 1.6, r_pt * 1.35 + 1.0)
+    head = min(9.0, max(4.0, dens * 1.55 * r_pt))
+    lw = min(1.35, max(0.70, dens * 0.18 * r_pt))
+    # Mild outward bulge — strong enough to separate mutuals, weak enough that
+    # arcs stay inside the axes after the inset triangle layout.
+    mut_mag = float(mutual_rad) * (1.0 if n_e <= 3 else (1.08 if n_e <= 5 else 1.15))
 
     edge_set = set(edges)
     drawn_pairs: set[tuple[int, int]] = set()
@@ -1360,6 +1503,7 @@ def _draw_motif_nodes_edges(
         mutual = (j, i) in edge_set
         if mutual:
             for a, b in ((i, j), (j, i)):
+                curve = _outward_arc_rad(pos, a, b, mut_mag)
                 xa, ya = pos[a]
                 xb, yb = pos[b]
                 arr = FancyArrowPatch(
@@ -1368,23 +1512,31 @@ def _draw_motif_nodes_edges(
                     mutation_scale=head,
                     lw=lw,
                     color=color,
-                    connectionstyle=f"arc3,rad={mutual_rad}",
+                    connectionstyle=f"arc3,rad={curve}",
                     shrinkA=shrink,
                     shrinkB=shrink,
+                    zorder=2,
+                    clip_on=False,
                 )
                 ax.add_patch(arr)
             drawn_pairs.add((i, j))
             drawn_pairs.add((j, i))
         else:
+            curve = rad
+            if abs(rad) < 1e-12 and len(pos) >= 3:
+                # Nudge one-ways slightly outward too so they clear mutuals.
+                curve = 0.35 * _outward_arc_rad(pos, i, j, mut_mag)
             arr = FancyArrowPatch(
                 (x0, y0), (x1, y1),
                 arrowstyle="-|>",
                 mutation_scale=head,
                 lw=lw,
                 color=color,
-                connectionstyle=f"arc3,rad={rad}",
+                connectionstyle=f"arc3,rad={curve}",
                 shrinkA=shrink,
                 shrinkB=shrink,
+                zorder=2,
+                clip_on=False,
             )
             ax.add_patch(arr)
             drawn_pairs.add((i, j))
@@ -1596,9 +1748,13 @@ def draw_digraph_motif_schema(
     # title bands in multipanel figures. Nodes are placed in unit box coords.
     ax.set_aspect("auto")
     ax.axis("off")
-    ax.set_clip_on(True)
+    # Allow mutual arcs to render past the axes box; the inset triangle keeps
+    # them from colliding with neighboring panels.
+    ax.set_clip_on(False)
 
-    bx0, bx1, by0, by1 = box if box is not None else (0.0, 1.0, 0.0, 1.0)
+    if box is None:
+        box = motif_schema_box(ax, base_key, center_x=0.50)
+    bx0, bx1, by0, by1 = box
     sx = float(bx1 - bx0)
     sy = float(by1 - by0)
 
@@ -1684,14 +1840,10 @@ def draw_digraph_motif_schema(
         )
         return True
 
-    pos = {
-        0: (0.50, 0.92),
-        1: (0.08, 0.10),
-        2: (0.92, 0.10),
-    }
+    pos = _triangle_node_xy()
     _draw_motif_nodes_edges(
-        ax, fit(pos), edges, color=color, node_r=0.115 * sn,
-        mutual_rad=arc_rad(0.64, 0.13),
+        ax, fit(pos), edges, color=color, node_r=0.12 * sn,
+        mutual_rad=arc_rad(0.64, 0.16),
         node_fill=node_fill,
         node_colors=node_colors,
     )

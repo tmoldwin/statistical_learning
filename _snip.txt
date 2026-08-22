@@ -1,0 +1,94 @@
+327|    nrow = int(np.ceil(len(series) / ncol))
+328|    fig_w = 2.05 * ncol + 0.55
+329|    # Room for a compact centered meta β panel (not full-width).
+330|    fig_h = 1.85 * nrow + 2.6
+331|    fig = plt.figure(figsize=(fig_w, fig_h))
+332|    height_ratios = [1.0] * nrow + [0.95]
+333|    gs = fig.add_gridspec(nrow + 1, ncol, height_ratios=height_ratios, hspace=0.48, wspace=0.28)
+334|
+335|    per_run: list[dict] = []
+336|    for idx, run in enumerate(series):
+337|        rid = int(run["run_id"])
+338|        n_dfa = int(run["n_dfa_states"])
+339|        solved = bool(run.get("solved", False))
+340|        ax = fig.add_subplot(gs[idx // ncol, idx % ncol])
+341|        pts = by_run.get(rid, [])
+342|        beta_val = float("nan")
+343|        r2 = float("nan")
+344|        if not pts:
+345|            ax.axis("off")
+346|            per_run.append({
+347|                "run_id": rid, "n_dfa_states": n_dfa, "solved": solved,
+348|                "beta": beta_val, "r2": r2, "n": 0,
+349|            })
+350|            continue
+351|        x = np.array([p["log_c0"] for p in pts], dtype=float)
+352|        y = np.array([p["log_fold"] for p in pts], dtype=float)
+353|        c = [dfa_cmap(dfa_norm(n_dfa))] * len(x)
+354|        # Display-only jitter: edge-sign classes are integer counts on a log axis,
+355|        # so raw points stack into vertical stripes. Fit still uses true x.
+356|        rng = np.random.default_rng(rid)
+357|        x_disp = x + rng.normal(0.0, 0.045, size=len(x))
+358|        ax.scatter(x_disp, y, s=9, c=c, alpha=0.70, edgecolors="none", zorder=3)
+359|        if len(x) >= 3 and np.std(x) > 1e-12:
+360|            beta, _, r2 = ols_fn(y, x)
+361|            beta_val = float(beta[1])
+362|            x_line = np.linspace(x_lim[0], x_lim[1], 50)
+363|            ax.plot(x_line, beta[0] + beta[1] * x_line, color="#c0392b", lw=1.0, zorder=2)
+364|        per_run.append({
+365|            "run_id": rid, "n_dfa_states": n_dfa, "solved": solved,
+366|            "beta": beta_val, "r2": r2, "n": len(x),
+367|        })
+368|        ax.axhline(0.0, color="0.55", lw=0.6, ls="--", zorder=1)
+369|        ax.set_xlim(*x_lim)
+370|        ax.set_ylim(*y_lim)
+371|        solve_tag = "" if solved else "  (unsolved)"
+372|        ax.set_title(
+373|            f"r{rid:02d}  DFA={n_dfa}  $\\beta$={beta_val:+.2f}  R$^2$={r2:.2f}{solve_tag}",
+374|            fontsize=7.0, pad=2,
+375|        )
+376|        ax.tick_params(labelsize=6)
+377|        ax.grid(True, alpha=0.22)
+378|        ax.spines["top"].set_visible(False)
+379|        ax.spines["right"].set_visible(False)
+380|        if idx // ncol == nrow - 1:
+381|            ax.set_xlabel("log start", fontsize=6.5)
+382|        else:
+383|            ax.tick_params(labelbottom=False)
+384|        if idx % ncol == 0:
+385|            ax.set_ylabel("log fold", fontsize=6.5)
+386|        else:
+387|            ax.tick_params(labelleft=False)
+388|
+389|    for j in range(len(series), nrow * ncol):
+390|        fig.add_subplot(gs[j // ncol, j % ncol]).axis("off")
+391|
+392|    # Meta β panel: centered over a few columns, not stretched across the whole grid.
+393|    meta_span = min(3, ncol)
+394|    meta_c0 = (ncol - meta_span) // 2
+395|    ax_beta = fig.add_subplot(gs[nrow, meta_c0 : meta_c0 + meta_span])
+396|    _plot_beta_vs_dfa(
+397|        per_run, ax=ax_beta, dfa_cmap=dfa_cmap, dfa_norm=dfa_norm, target_we=target_we,
+398|    )
+399|    ax_beta.text(
+400|        0.5, -0.28,
+401|        "Per-run stripes: integer start counts on log x; polarity variants share early abundance.\n"
+402|        "Points jittered for display only.",
+403|        transform=ax_beta.transAxes, ha="center", va="top", fontsize=6.0, color="0.25",
+404|    )
+405|
+406|    sm = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
+407|    cax = fig.add_axes([0.935, 0.22, 0.012, 0.60])
+408|    cbar = fig.colorbar(sm, cax=cax)
+409|    cbar.set_label("DFA states", fontsize=7)
+410|    cbar.ax.tick_params(labelsize=6)
+411|
+412|    r2_vals = [r["r2"] for r in per_run if np.isfinite(r["r2"])]
+413|    med_r2 = float(np.median(r2_vals)) if r2_vals else float("nan")
+414|    finalize_grid_figure(
+415|        fig,
+416|        suptitle=(
+417|            f"mixed DFA {model} ({color_tag}): start vs fold "
+418|            f"(DFA order, post-init, start>={min_start}, "
+419|            f"n={len(series)} runs, {n_solved} solved, median R$^2$={med_r2:.2f})"
+420|        ),

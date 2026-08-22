@@ -190,6 +190,24 @@ def collect_all_runs_motif_cache(
     return cache_path
 
 
+
+def _n_edges_from_key(key: str) -> int:
+    """Number of directed edges encoded in an edge-sign / Dale motif key."""
+    parts = str(key).split("|")
+    if len(parts) < 2:
+        return 0
+    return len([e for e in parts[1].split(",") if e])
+
+
+_EDGE_COUNT_COLORS: dict[int, str] = {
+    2: "#4C78A8",
+    3: "#F58518",
+    4: "#54A24B",
+    5: "#E45756",
+    6: "#B279A2",
+}
+
+
 def _run_sort_key(run: dict) -> tuple[int, int]:
     return (int(run["n_dfa_states"]), int(run["run_id"]))
 
@@ -202,6 +220,8 @@ def _plot_beta_vs_dfa(
     dfa_norm,
     target_we: float,
 ) -> None:
+    from matplotlib.lines import Line2D
+
     xs, ys, cs, solved_flags = [], [], [], []
     for row in per_run:
         beta = row.get("beta")
@@ -218,27 +238,33 @@ def _plot_beta_vs_dfa(
 
     x_arr = np.array(xs, dtype=float)
     y_arr = np.array(ys, dtype=float)
-    for x, y, c, solved in zip(xs, ys, cs, solved_flags):
+    # x jitter so runs that share a DFA size are readable (fit uses true x).
+    rng = np.random.default_rng(0)
+    x_plot = x_arr + rng.uniform(-0.9, 0.9, size=len(x_arr))
+
+    for x, y, c, solved in zip(x_plot, ys, cs, solved_flags):
         if solved:
-            ax.scatter(x, y, s=28, c=[c], alpha=0.9, edgecolors="0.15", linewidths=0.4, zorder=3)
+            ax.scatter(x, y, s=36, c=[c], alpha=0.92, edgecolors="0.15", linewidths=0.45, zorder=3)
         else:
             ax.scatter(
-                x, y, s=34, facecolors="none", edgecolors=c, linewidths=1.2, alpha=0.95, zorder=3,
+                x, y, s=42, facecolors="none", edgecolors=c, linewidths=1.3, alpha=0.95, zorder=3,
             )
 
     if len(x_arr) >= 3 and np.std(x_arr) > 1e-12:
         X = np.column_stack([np.ones(len(x_arr)), x_arr])
         b, *_ = np.linalg.lstsq(X, y_arr, rcond=None)
-        x_line = np.linspace(x_arr.min(), x_arr.max(), 100)
-        ax.plot(x_line, b[0] + b[1] * x_line, color="#c0392b", lw=1.2, zorder=2)
+        x_line = np.linspace(float(x_arr.min()), float(x_arr.max()), 100)
+        y_line = b[0] + b[1] * x_line
+        ax.plot(x_line, y_line, color="white", lw=3.4, zorder=1.9, solid_capstyle="round")
+        ax.plot(x_line, y_line, color="#c0392b", lw=1.45, zorder=2, solid_capstyle="round")
         ss_res = float(np.sum((y_arr - (b[0] + b[1] * x_arr)) ** 2))
         ss_tot = float(np.sum((y_arr - y_arr.mean()) ** 2))
         meta_r2 = 1.0 - ss_res / ss_tot if ss_tot else float("nan")
-        ax.text(
-            0.03, 0.97,
-            f"meta: $\\beta$ = {b[0]:+.2f} + {b[1]:+.3f}·DFA  ($R^2$={meta_r2:.2f})",
-            transform=ax.transAxes, fontsize=7, va="top", ha="left",
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.8", alpha=0.92),
+        # Avoid "+ +" when the DFA slope is positive: use signed terms only.
+        ax.set_title(
+            rf"meta: $\beta$ = ${b[0]:+.2f}{b[1]:+.3f}\cdot\mathrm{{DFA}}$"
+            rf"  ($R^2$={meta_r2:.2f})",
+            fontsize=8, pad=4,
         )
 
     ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
@@ -248,11 +274,25 @@ def _plot_beta_vs_dfa(
     ax.grid(True, alpha=0.22)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.text(
-        0.97, 0.03,
-        f"filled: best WE $\\leq$ {100 * target_we:.0f}%\nopen: unsolved",
-        transform=ax.transAxes, fontsize=6.5, va="bottom", ha="right",
-        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.8", alpha=0.92),
+    x_pad = max(1.0, 0.04 * (float(x_arr.max()) - float(x_arr.min()) + 1.0))
+    ax.set_xlim(float(x_arr.min()) - x_pad, float(x_arr.max()) + x_pad)
+    # Keep legend clear of the cloud (low-DFA / near-zero β corner is crowded).
+    handles = [
+        Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor="0.35", markeredgecolor="0.15", markersize=7,
+            label=rf"solved (best WE $\leq$ {100 * target_we:.0f}%)",
+        ),
+        Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor="none", markeredgecolor="0.35",
+            markeredgewidth=1.4, markersize=7,
+            label="unsolved",
+        ),
+    ]
+    ax.legend(
+        handles=handles, loc="upper left", fontsize=6.5, frameon=True,
+        fancybox=False, edgecolor="0.8", framealpha=0.92,
     )
 
 
@@ -305,11 +345,12 @@ def plot_all_runs_over_learning(
     y_lim = (y_lo - y_pad, y_hi + y_pad)
 
     nrow = int(np.ceil(len(series) / ncol))
-    fig_w = 2.05 * ncol + 0.55
-    fig_h = 1.85 * nrow + 2.35
+    # Room for per-panel β chips outside axes + centered meta β panel.
+    fig_w = 1.65 * ncol + 1.8
+    fig_h = 2.15 * nrow + 2.8
     fig = plt.figure(figsize=(fig_w, fig_h))
-    height_ratios = [1.0] * nrow + [0.55]
-    gs = fig.add_gridspec(nrow + 1, ncol, height_ratios=height_ratios, hspace=0.42, wspace=0.28)
+    height_ratios = [1.0] * nrow + [0.95]
+    gs = fig.add_gridspec(nrow + 1, ncol, height_ratios=height_ratios, hspace=0.62, wspace=0.58)
 
     per_run: list[dict] = []
     for idx, run in enumerate(series):
@@ -329,25 +370,69 @@ def plot_all_runs_over_learning(
             continue
         x = np.array([p["log_c0"] for p in pts], dtype=float)
         y = np.array([p["log_fold"] for p in pts], dtype=float)
-        c = [dfa_cmap(dfa_norm(n_dfa))] * len(x)
-        ax.scatter(x, y, s=10, c=c, alpha=0.75, edgecolors="none", zorder=3)
+        n_e = np.array([_n_edges_from_key(p["key"]) for p in pts], dtype=int)
+        point_colors = [_EDGE_COUNT_COLORS.get(int(k), "#888888") for k in n_e]
+        # Display-only jitter: integer start counts stack on log x. Fit uses true x.
+        rng = np.random.default_rng(rid)
+        x_disp = x + rng.normal(0.0, 0.045, size=len(x))
+        ax.scatter(x_disp, y, s=9, c=point_colors, alpha=0.70, edgecolors="none", zorder=3)
+
+        def _outlined_line(xs, ys, color, *, lw=1.35, z=5):
+            ax.plot(xs, ys, color="white", lw=lw + 2.2, zorder=z - 0.1, solid_capstyle="round")
+            ax.plot(xs, ys, color="0.05", lw=lw + 0.55, zorder=z - 0.05, solid_capstyle="round", alpha=0.35)
+            ax.plot(xs, ys, color=color, lw=lw, zorder=z, solid_capstyle="round", alpha=0.98)
+
+        beta_lines: list[tuple[str, float, str]] = []
+        # Pooled regression (black) — confounded by #edges tiers.
         if len(x) >= 3 and np.std(x) > 1e-12:
             beta, _, r2 = ols_fn(y, x)
             beta_val = float(beta[1])
-            x_line = np.linspace(x_lim[0], x_lim[1], 50)
-            ax.plot(x_line, beta[0] + beta[1] * x_line, color="#c0392b", lw=1.0, zorder=2)
+            x_line = np.linspace(float(x.min()), float(x.max()), 50)
+            _outlined_line(x_line, beta[0] + beta[1] * x_line, "0.12", lw=1.25, z=4)
+            beta_lines.append(("pool", beta_val, "0.12"))
+        # Within-#edges regressions — span only that group's observed x-range.
+        for ne in sorted(set(int(v) for v in n_e)):
+            mask = n_e == ne
+            if int(mask.sum()) < 8 or float(np.std(x[mask])) < 1e-9:
+                continue
+            b_e, _, _ = ols_fn(y[mask], x[mask])
+            x0, x1 = float(x[mask].min()), float(x[mask].max())
+            x_e = np.linspace(x0, x1, 40)
+            col = _EDGE_COUNT_COLORS.get(ne, "#888888")
+            _outlined_line(x_e, b_e[0] + b_e[1] * x_e, col, lw=1.45, z=5)
+            beta_lines.append((f"{ne}e", float(b_e[1]), col))
+
         per_run.append({
             "run_id": rid, "n_dfa_states": n_dfa, "solved": solved,
             "beta": beta_val, "r2": r2, "n": len(x),
         })
         ax.axhline(0.0, color="0.55", lw=0.6, ls="--", zorder=1)
         ax.set_xlim(*x_lim)
-        ax.set_ylim(*y_lim)
-        solve_tag = "" if solved else "  (unsolved)"
-        ax.set_title(
-            f"r{rid:02d}  DFA={n_dfa}  $\\beta$={beta_val:+.2f}  R$^2$={r2:.2f}{solve_tag}",
-            fontsize=7.0, pad=2,
-        )
+        # Per-panel y-scale (shared ylim hid within-tier structure).
+        y_span = float(y.max() - y.min())
+        y_pad = 0.14 * max(y_span, 0.25)
+        ax.set_ylim(float(y.min()) - y_pad, float(y.max()) + y_pad)
+
+        # β chips on the RIGHT (axes coords) — title is short/centered; left holds
+        # the dense 5e/6e cloud. White chips keep labels readable and separated.
+        # β chips OUTSIDE axes (right of panel) — never on data / fit lines.
+        if beta_lines:
+            n_chip = len(beta_lines)
+            step = 0.105 if n_chip <= 5 else 0.092
+            for i, (name, b, col) in enumerate(beta_lines):
+                ax.text(
+                    1.02, 0.98 - step * i, f"{name} {b:+.2f}",
+                    transform=ax.transAxes, ha="left", va="top", fontsize=4.6,
+                    color=col, fontweight="bold" if name == "pool" else "normal",
+                    zorder=11, clip_on=False,
+                    bbox=dict(
+                        boxstyle="round,pad=0.10", fc="white", ec=col,
+                        alpha=0.96, lw=0.6,
+                    ),
+                )
+
+        solve_tag = "" if solved else " · U"
+        ax.set_title(f"r{rid:02d} DFA={n_dfa}{solve_tag}", fontsize=6.5, pad=2)
         ax.tick_params(labelsize=6)
         ax.grid(True, alpha=0.22)
         ax.spines["top"].set_visible(False)
@@ -356,40 +441,60 @@ def plot_all_runs_over_learning(
             ax.set_xlabel("log start", fontsize=6.5)
         else:
             ax.tick_params(labelbottom=False)
+        # Per-panel ylims → keep y tick labels on every panel (not just col 0).
         if idx % ncol == 0:
             ax.set_ylabel("log fold", fontsize=6.5)
-        else:
-            ax.tick_params(labelleft=False)
+        ax.tick_params(labelleft=True, labelsize=5.5)
 
     for j in range(len(series), nrow * ncol):
         fig.add_subplot(gs[j // ncol, j % ncol]).axis("off")
 
-    ax_beta = fig.add_subplot(gs[nrow, :])
+    # Meta β panel: centered over a few columns, not stretched across the whole grid.
+    meta_span = min(3, ncol)
+    meta_c0 = (ncol - meta_span) // 2
+    ax_beta = fig.add_subplot(gs[nrow, meta_c0 : meta_c0 + meta_span])
     _plot_beta_vs_dfa(
         per_run, ax=ax_beta, dfa_cmap=dfa_cmap, dfa_norm=dfa_norm, target_we=target_we,
     )
+    ax_beta.text(
+        0.5, -0.28,
+        "Points by #edges. Black = pooled β; colored = within-#edges β (often flips).\n"
+        "Stripes: integer start counts on log x. Points jittered for display only.  ·U = unsolved.",
+        transform=ax_beta.transAxes, ha="center", va="top", fontsize=6.0, color="0.25",
+    )
 
-    sm = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
-    cax = fig.add_axes([0.935, 0.30, 0.012, 0.52])
-    cbar = fig.colorbar(sm, cax=cax)
-    cbar.set_label("DFA states", fontsize=7)
-    cbar.ax.tick_params(labelsize=6)
+    from matplotlib.lines import Line2D
+    edge_handles = [
+        Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor=col, markeredgecolor="none", markersize=6,
+            label=f"{ne} edges",
+        )
+        for ne, col in sorted(_EDGE_COUNT_COLORS.items())
+    ]
+    edge_handles.append(Line2D([0], [0], color="0.15", lw=1.2, label="pooled fit"))
+    fig.legend(
+        handles=edge_handles, loc="center left",
+        bbox_to_anchor=(0.97, 0.55), fontsize=6.5,
+        frameon=True, fancybox=False, edgecolor="0.8",
+        title="#edges", title_fontsize=7,
+    )
 
     r2_vals = [r["r2"] for r in per_run if np.isfinite(r["r2"])]
     med_r2 = float(np.median(r2_vals)) if r2_vals else float("nan")
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"mixed DFA {model} ({color_tag}): start vs fold "
+            f"mixed DFA {model} ({color_tag}): start vs fold by #edges "
             f"(DFA order, post-init, start>={min_start}, "
-            f"n={len(series)} runs, {n_solved} solved, median R$^2$={med_r2:.2f})"
+            f"n={len(series)} runs, {n_solved} solved, median pooled R$^2$={med_r2:.2f})"
         ),
-        top=0.93,
-        bottom=0.05,
+        top=0.945,
+        bottom=0.08,
         left=0.05,
-        right=0.92,
-        hspace=0.42,
-        wspace=0.28,
+        right=0.90,
+        hspace=0.62,
+        wspace=0.58,
     )
     save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")

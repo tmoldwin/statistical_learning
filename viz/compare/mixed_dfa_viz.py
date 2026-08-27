@@ -11,12 +11,39 @@ import numpy as np
 
 from experiment import checkpoint_path, comparison_dir
 from vocab_diagrams import build_minimized_vocabulary_automaton
+import vocab_mixed_dfa as _DEFAULT_SWEEP
 from vocab_mixed_dfa import (
     COMPARISON_NAME,
     DEFAULT_SEEDS,
     iter_runs,
     write_run_manifest,
 )
+
+_ACTIVE_SWEEP = _DEFAULT_SWEEP
+
+
+def set_active_sweep(vocab_module) -> None:
+    """Point the whole mixed-DFA plot suite at another sweep module.
+
+    The module must expose ``COMPARISON_NAME``, ``DEFAULT_SEEDS``, ``iter_runs``,
+    ``write_run_manifest``, and ``task_name`` (same contract as
+    ``vocab_mixed_dfa``). Sibling analysis modules with their own hardcoded
+    imports are rebound too.
+    """
+    global _ACTIVE_SWEEP, COMPARISON_NAME, DEFAULT_SEEDS, iter_runs, write_run_manifest
+    _ACTIVE_SWEEP = vocab_module
+    COMPARISON_NAME = vocab_module.COMPARISON_NAME
+    DEFAULT_SEEDS = vocab_module.DEFAULT_SEEDS
+    iter_runs = vocab_module.iter_runs
+    write_run_manifest = vocab_module.write_run_manifest
+    import viz.compare.mixed_dfa_learning_decode as _ld
+    import viz.compare.mixed_dfa_unit_selectivity as _sel
+
+    for mod in (_sel, _ld):
+        mod.COMPARISON_NAME = vocab_module.COMPARISON_NAME
+        mod.iter_runs = vocab_module.iter_runs
+
+
 from viz.compare._data import load_task_decoding_context
 from viz.compare.decoding import (
     DECODING_FEATURES,
@@ -934,13 +961,59 @@ _METRICS_BOARD_SKIP_TITLES: frozenset[str] = frozenset({
 })
 
 
+def _overview_learning_curves_from_checkpoint(
+    task: str,
+    *,
+    model_type: str,
+    seed: int,
+) -> dict[str, np.ndarray] | None:
+    """Return CE + word-error series for one mixed-dfa run checkpoint."""
+    ckpt = checkpoint_path(task, model_type, seed=seed)
+    if not ckpt.is_file():
+        return None
+    data = np.load(ckpt, allow_pickle=True)
+    metric_iters = np.asarray(data["metric_iterations"], dtype=float).ravel()
+    word_err = np.asarray(data["metric_word_error_frac"], dtype=float).ravel()
+    if metric_iters.size < 2 or word_err.size != metric_iters.size:
+        return None
+
+    if "metric_val_ce" in data.files:
+        ce_iters = metric_iters
+        ce = np.asarray(data["metric_val_ce"], dtype=float).ravel()
+        if ce.size != ce_iters.size:
+            return None
+    elif "loss_smooth" in data.files and "loss_iterations" in data.files:
+        ce_iters = np.asarray(data["loss_iterations"], dtype=float).ravel()
+        ce = np.asarray(data["loss_smooth"], dtype=float).ravel()
+        seq_len = (
+            float(np.asarray(data["sequence_length"]).reshape(-1)[0])
+            if "sequence_length" in data.files
+            else 0.0
+        )
+        if seq_len > 0:
+            ce = ce / seq_len
+        if ce_iters.size < 2 or ce.size != ce_iters.size:
+            return None
+    else:
+        return None
+
+    return {
+        "ce_iters": ce_iters,
+        "ce": ce,
+        "we_iters": metric_iters,
+        "word_err": word_err,
+    }
+
+
 def plot_mixed_dfa_scaling_overview(
     payload: dict[str, Any] | None = None,
     *,
     outfile: str = "scaling_overview.png",
     recompute: bool = False,
+    model_type: str | None = None,
+    seed: int | None = None,
 ) -> Path:
-    """Paper overview: vocab–DFA + PC spectra + training iters (equal panels)."""
+    """Paper overview: CE + word-error curves, training cost, PC spectra."""
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     decode_payload = payload or _load_panels()
@@ -948,21 +1021,25 @@ def plot_mixed_dfa_scaling_overview(
         p for p in decode_payload["panels"]
         if "error" not in p and p.get("spectrum_pct")
     ]
-    metric_path = collect_mixed_dfa_metric_board(recompute=recompute)
+    mt = model_type or str(decode_payload.get("model_type") or "rnn")
+    metric_path = collect_mixed_dfa_metric_board(recompute=recompute, model_type=mt)
     metric_panels = [
         p for p in json.loads(metric_path.read_text(encoding="utf-8"))["panels"]
         if "error" not in p
     ]
 
-    fig, (ax_nw, ax_it, ax_sp) = plt.subplots(1, 3, figsize=(10.2, 3.5))
-
-    xs, ys = _nwords_dfa_xy(decode_payload)
-    ax_nw.scatter(xs, ys, s=28, alpha=0.8, color="#E45756", edgecolors="white", linewidths=0.4)
-    ax_nw.set_xlabel("# words", fontsize=8)
-    ax_nw.set_ylabel("DFA states", fontsize=8)
-    ax_nw.set_title("vocab size vs DFA", fontsize=9, pad=4)
-    ax_nw.grid(True, alpha=0.25)
-    ax_nw.tick_params(labelsize=7)
+    # Story: learning (CE → word-error) then summaries (iters → spectra).
+    # Colorbar columns sit with the panels that introduce each scale.
+    fig = plt.figure(figsize=(10.5, 6.4))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0])
+    ax_ce = fig.add_subplot(gs[0, 0])
+    gs_we = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
+    ax_we = fig.add_subplot(gs_we[0, 0])
+    cax_dfa = fig.add_subplot(gs_we[0, 1])
+    gs_it = gs[1, 0].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
+    ax_it = fig.add_subplot(gs_it[0, 0])
+    cax_w = fig.add_subplot(gs_it[0, 1])
+    ax_sp = fig.add_subplot(gs[1, 1])
 
     max_pcs = int(decode_payload.get("max_k", _DEFAULT_MAX_PCS))
     ks = np.arange(1, max_pcs + 1, dtype=float)
@@ -979,11 +1056,6 @@ def plot_mixed_dfa_scaling_overview(
             color=cmap(norm(float(panel["n_dfa_states"]))),
             lw=1.0, alpha=0.75,
         )
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
-    cbar_sp = fig.colorbar(sm, ax=ax_sp, pad=0.02, fraction=0.055)
-    cbar_sp.set_label("DFA states", fontsize=7)
-    cbar_sp.ax.tick_params(labelsize=6)
     ax_sp.set_xlabel("PC index", fontsize=8)
     ax_sp.set_ylabel("% variance", fontsize=8)
     ax_sp.set_title("closed-loop PC spectra", fontsize=9, pad=4)
@@ -1004,6 +1076,7 @@ def plot_mixed_dfa_scaling_overview(
         mx.append(float(p["n_dfa_states"]))
         my.append(y)
         mn.append(float(p["n_words"]))
+    words_cbar_spec: tuple[Any, Any] | None
     if len(mx) >= 3:
         x = np.asarray(mx, dtype=float)
         y = np.asarray(my, dtype=float)
@@ -1023,28 +1096,77 @@ def plot_mixed_dfa_scaling_overview(
         ax_it.set_title(panel_title, fontsize=8, pad=4)
         ax_it.set_xlabel("DFA states", fontsize=8)
         if use_log:
-            ax_it.set_ylabel("log10", fontsize=8)
+            ax_it.set_ylabel("log10 iters", fontsize=8)
         ax_it.grid(True, alpha=0.25)
         ax_it.tick_params(labelsize=7)
+        words_cbar_spec = (words_cmap, words_norm)
+    else:
+        ax_it.set_axis_off()
+        words_cbar_spec = None
+
+    # Learning curves: one curve per run, colored by DFA size (same as spectra).
+    run_seed = int(seed if seed is not None else (decode_payload.get("seeds") or [1])[0])
+    n_curves = 0
+    for panel in sorted(decode_panels, key=lambda p: float(p["n_dfa_states"])):
+        curves = _overview_learning_curves_from_checkpoint(
+            str(panel["task"]),
+            model_type=mt,
+            seed=int(panel.get("seed", run_seed)),
+        )
+        if curves is None:
+            continue
+        color = cmap(norm(float(panel["n_dfa_states"])))
+        ax_ce.plot(curves["ce_iters"], curves["ce"], color=color, lw=1.0, alpha=0.75)
+        ax_we.plot(curves["we_iters"], curves["word_err"], color=color, lw=1.0, alpha=0.75)
+        n_curves += 1
+    ax_ce.set_xlabel("iteration", fontsize=8)
+    ax_ce.set_ylabel("val CE / char", fontsize=8)
+    ax_ce.set_title("cross-entropy learning", fontsize=9, pad=4)
+    ax_ce.grid(True, alpha=0.25)
+    ax_ce.tick_params(labelsize=7)
+    ax_we.axhline(0.03, color="0.45", ls="--", lw=0.9, zorder=1)
+    ax_we.set_xlabel("iteration", fontsize=8)
+    ax_we.set_ylabel("word error frac", fontsize=8)
+    ax_we.set_title("word-error learning", fontsize=9, pad=4)
+    ax_we.set_ylim(0.0, 1.05)
+    ax_we.grid(True, alpha=0.25)
+    ax_we.tick_params(labelsize=7)
+    if n_curves == 0:
+        ax_ce.set_axis_off()
+        ax_we.set_axis_off()
+
+    finalize_grid_figure(
+        fig,
+        suptitle="Mixed-vocab scaling with DFA size",
+        bottom=0.08,
+        left=0.08,
+        right=0.94,
+        top=0.90,
+        wspace=0.28,
+        hspace=0.32,
+    )
+
+    if words_cbar_spec is not None:
+        w_cmap, w_norm = words_cbar_spec
         cbar_w = fig.colorbar(
-            plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
-            ax=ax_it, pad=0.02, fraction=0.055,
+            plt.cm.ScalarMappable(cmap=w_cmap, norm=w_norm),
+            cax=cax_w,
         )
         cbar_w.set_label("# words", fontsize=7)
         cbar_w.ax.tick_params(labelsize=6)
     else:
-        ax_it.set_axis_off()
+        cax_w.set_axis_off()
 
-    finalize_grid_figure(
-        fig,
-        # Equal panels: vocab–DFA, scree, training cost (no spectrum-summary scrapes).
-        suptitle="Mixed-vocab scaling with DFA size",
-        bottom=0.16,
-        left=0.06,
-        right=0.98,
-        top=0.84,
-        wspace=0.32,
-    )
+    if decode_panels:
+        cbar_dfa = fig.colorbar(
+            plt.cm.ScalarMappable(cmap=cmap, norm=norm),
+            cax=cax_dfa,
+        )
+        cbar_dfa.set_label("DFA states", fontsize=7)
+        cbar_dfa.ax.tick_params(labelsize=6)
+    else:
+        cax_dfa.set_axis_off()
+
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
     plt.close(fig)
@@ -2912,22 +3034,72 @@ def _bin_dfa_oracle_cc(
     return {feat: float(np.mean(vals)) for feat, vals in acc.items() if vals}
 
 
+def _rebin_learning_decode_runs(
+    payload: dict[str, Any],
+    *,
+    n_bins: int = 2,
+) -> tuple[np.ndarray, list[dict[str, Any]]]:
+    """Rebuild DFA quantile bins from stored learning-decode runs (no recompute)."""
+    runs = [r for r in (payload.get("runs") or []) if r.get("snaps")]
+    if not runs:
+        raise FileNotFoundError("learning-decode payload has no runs to rebin")
+    dfa_by_rid: dict[int, float] = {}
+    for r in runs:
+        dfa_by_rid.setdefault(int(r["run_id"]), float(r["n_dfa_states"]))
+    edges = _dfa_quantile_edges(
+        np.asarray(list(dfa_by_rid.values()), dtype=float),
+        n_bins=n_bins,
+    )
+    raw_ks = payload.get("pc_ks") or [1, 3, 5, 15, "full"]
+    parsed: list[int | None] = []
+    for k in raw_ks:
+        if k is None or k == "full":
+            parsed.append(None)
+        else:
+            parsed.append(int(k))
+    basis_keys = tuple(b for b, _ in _learning_basis_specs(tuple(parsed)))
+    bins: list[dict[str, Any]] = []
+    for bi in range(len(edges) - 1):
+        subset = _subset_for_dfa_bin(runs, edges=edges, bin_index=bi)
+        seed_rows = [r["snaps"] for r in subset]
+        agg = (
+            _aggregate_learning_decode_rows(seed_rows, basis_keys=basis_keys)
+            if seed_rows else None
+        )
+        bins.append({
+            "bin_index": bi,
+            "title": _dfa_bin_title(edges, bi),
+            "lo": float(edges[bi]),
+            "hi": float(edges[bi + 1]),
+            "n_runs": len(subset),
+            "n_vocabs": len({int(r["run_id"]) for r in subset}),
+            "seeds": sorted({int(r["seed"]) for r in subset}),
+            "run_ids": sorted({int(r["run_id"]) for r in subset}),
+            "aggregated": agg,
+        })
+    return edges, [b for b in bins if b.get("aggregated")]
+
+
 def _prepare_learning_decode_bins(
     *,
     json_path: Path | None = None,
     progress_xlim: float | None = 0.22,
     pc_row_ks: tuple[int | None, ...] | None = None,
     n_middle_cols: int | None = 3,
+    n_bins: int | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], tuple[tuple[str, str], ...], float]:
     """Load learning-decode JSON and return (payload, bins, basis_keys, xlim)."""
     path = json_path or (sweep_decoding_dir(COMPARISON_NAME) / "learning_decode_by_dfa.json")
     if not path.is_file():
-        path = collect_learning_decode_by_dfa(recompute=True)
+        path = collect_learning_decode_by_dfa(recompute=True, n_bins=n_bins or 4)
     payload = json.loads(path.read_text(encoding="utf-8"))
-    bins = [b for b in payload.get("bins", []) if b.get("aggregated")]
+    if n_bins is not None and payload.get("runs"):
+        _, bins = _rebin_learning_decode_runs(payload, n_bins=n_bins)
+    else:
+        bins = [b for b in payload.get("bins", []) if b.get("aggregated")]
+        bins = _select_middle_items(bins, n_middle_cols)
     if not bins:
         raise FileNotFoundError(f"no binned learning curves in {path}")
-    bins = _select_middle_items(bins, n_middle_cols)
 
     raw_ks = payload.get("pc_ks") or [1, 3, 5, 15, "full"]
     parsed: list[int | None] = []
@@ -3191,10 +3363,10 @@ def plot_decoding_and_learning_combined(
     json_path: Path | None = None,
     progress_xlim: float | None = 0.22,
     pc_row_ks: tuple[int | None, ...] | None = None,
-    n_middle_cols: int | None = 3,
-    n_bins: int = 4,
+    n_middle_cols: int | None = None,
+    n_bins: int = 2,
 ) -> Path:
-    """Paper Fig 13: final PCA/neuron curves (A) + learning 3/15-PC probes (B)."""
+    """Paper Fig 15: 2×4 — final readout (left) | learning (right), two DFA bins."""
     from matplotlib.lines import Line2D
 
     payload = payload or _load_panels()
@@ -3207,37 +3379,53 @@ def plot_decoding_and_learning_combined(
         progress_xlim=progress_xlim,
         pc_row_ks=pc_row_ks,
         n_middle_cols=n_middle_cols,
-    )
-    edges = _resolve_decoding_dfa_edges(
-        panels,
         n_bins=n_bins,
-        edges=learn_payload.get("edges"),
     )
-    bin_indices = _select_middle_items(list(range(len(edges) - 1)), n_middle_cols)
+    edges = np.asarray(
+        [float(learn_bins[0]["lo"]), *[float(b["hi"]) for b in learn_bins]],
+        dtype=float,
+    )
+    bin_indices = list(range(len(edges) - 1))
     n_bin_cols = len(bin_indices)
     n_learn = len(basis_keys)
+    if n_learn != 2:
+        # Keep 2×4: use first two learning rows (3 / 15 PCs by default).
+        basis_keys = basis_keys[:2]
+        n_learn = len(basis_keys)
     max_k = int(payload.get("max_k", _DEFAULT_MAX_PCS))
 
-    # Banner A | curve rows | banner B | learning rows
-    fig = plt.figure(figsize=(2.75 * n_bin_cols + 0.9, 1.95 * (2 + n_learn) + 1.45))
+    # 2 data rows × (2 curve bins | 2 learning bins) = 2×4, plus banner row.
+    fig = plt.figure(figsize=(2.55 * (2 * n_bin_cols) + 1.1, 2.15 * 2 + 1.05))
     gs = fig.add_gridspec(
-        2 + 2 + n_learn,
-        n_bin_cols,
-        height_ratios=[0.20, 1.0, 1.0, 0.20] + [1.0] * n_learn,
-        hspace=0.50,
-        wspace=0.28,
+        3,
+        2 * n_bin_cols,
+        height_ratios=[0.22, 1.0, 1.0],
+        hspace=0.42,
+        wspace=0.32,
     )
-    ax_ban_a = fig.add_subplot(gs[0, :])
+    ax_ban_a = fig.add_subplot(gs[0, :n_bin_cols])
     ax_ban_a.set_axis_off()
     ax_ban_a.text(
         0.0, 0.35,
         "A. Final readout vs # dimensions (PCA / random neurons)",
         fontsize=9, fontweight="bold", va="center",
     )
+    ax_ban_b = fig.add_subplot(gs[0, n_bin_cols:])
+    ax_ban_b.set_axis_off()
+    ax_ban_b.text(
+        0.0, 0.35,
+        "B. Readout over learning (3 / 15 PCs)",
+        fontsize=9, fontweight="bold", va="center",
+    )
+
     curve_axes = np.empty((2, n_bin_cols), dtype=object)
-    for r in range(2):
-        for c in range(n_bin_cols):
-            curve_axes[r, c] = fig.add_subplot(gs[1 + r, c])
+    learn_axes = np.empty((2, n_bin_cols), dtype=object)
+    for c in range(n_bin_cols):
+        curve_axes[0, c] = fig.add_subplot(gs[1, c])
+        curve_axes[1, c] = fig.add_subplot(gs[2, c])
+        learn_axes[0, c] = fig.add_subplot(gs[1, n_bin_cols + c])
+        learn_axes[1, c] = fig.add_subplot(gs[2, n_bin_cols + c])
+
     _draw_decoding_curves_on_axes(
         curve_axes,
         panels=panels,
@@ -3247,31 +3435,14 @@ def plot_decoding_and_learning_combined(
         set_col_titles=True,
         label_features=True,
     )
-
-    ax_ban_b = fig.add_subplot(gs[3, :])
-    ax_ban_b.set_axis_off()
-    ax_ban_b.text(
-        0.0, 0.35,
-        "B. Readout over learning (3 / 15 PCs)",
-        fontsize=9, fontweight="bold", va="center",
-    )
-    learn_axes = np.empty((n_learn, n_bin_cols), dtype=object)
-    for r in range(n_learn):
-        for c in range(n_bin_cols):
-            learn_axes[r, c] = fig.add_subplot(gs[4 + r, c])
-    # Align learning columns with curve bin order (same middle indices).
-    learn_bins_aligned = [learn_bins[i] for i in range(min(len(learn_bins), n_bin_cols))]
     word_err_line = _draw_learning_decode_on_axes(
         learn_axes,
         payload=learn_payload,
-        bins=learn_bins_aligned,
+        bins=learn_bins,
         basis_keys=basis_keys,
         x0=0.0,
         x1=float(xlim),
     )
-    # Drop duplicate DFA titles on learning row (already on A).
-    for c in range(n_bin_cols):
-        learn_axes[0, c].set_title("")
 
     handles, labels = curve_axes[0, 0].get_legend_handles_labels()
     handles = list(handles) + [
@@ -3297,15 +3468,15 @@ def plot_decoding_and_learning_combined(
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"Readouts by DFA bin: final curves and learning "
+            f"Readouts by DFA bin: final curves | learning "
             f"({n_vocabs} mixed vocabs; dashed = DFA-state oracle)"
         ),
-        top=0.94,
-        bottom=0.055,
-        left=0.08,
+        top=0.93,
+        bottom=0.065,
+        left=0.06,
         right=0.97,
-        wspace=0.28,
-        hspace=0.50,
+        wspace=0.32,
+        hspace=0.42,
     )
     out = sweep_decoding_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -3884,7 +4055,12 @@ def run_all_mixed_dfa_plots(
         plot_spectra_vs_dfa(payload),
         plot_training_vs_dfa(payload),
         plot_metrics_vs_dfa(recompute=recompute),
-        plot_mixed_dfa_scaling_overview(payload, recompute=False),
+        plot_mixed_dfa_scaling_overview(
+            payload,
+            recompute=False,
+            model_type=str(payload.get("model_type") or "rnn"),
+            seed=seeds[0] if seeds else 1,
+        ),
         plot_mixed_dfa_weight_matrices_by_dfa(),
         plot_mixed_dfa_trajectory_vocab_grid(),
         plot_mixed_dfa_within_corr_vs_dfa(recompute=False),

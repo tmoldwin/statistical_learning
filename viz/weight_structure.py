@@ -648,6 +648,14 @@ def _thresholded_digraph(
 ):
     """Build a digraph from strong |W_hh| edges.
 
+    Edge ``i→j`` is added when ``|W_hh[i, j]|`` is large. For the Elman update
+    ``h ← f(W_hh @ h)``, matrix entry ``W_hh[i, j]`` is the synapse **j→i**, so
+    this graph orientation is the matrix indexing (not the synaptic pre→post
+    convention). Feedforward / cycle **rates** and triad classes ``030T`` /
+    ``030C`` are invariant under transpose; Holland–Leinhardt D/U labels
+    (``021D↔021U``, ``111D↔111U``, ``120D↔120U``) swap if the true synaptic
+    digraph is needed.
+
     ``mode="mean"`` (default): keep |W_ij| ≥ mean(off-diagonal |W|), so density
     can vary with weight concentration. ``mode="quantile"``: keep ≥ ``q`` quantile.
     """
@@ -817,6 +825,16 @@ _MOTIF_SCHEMA_EDGES: dict[str, tuple[tuple[int, int], ...]] = {
     "triad_120C_frac": ((0, 1), (1, 2), (0, 2), (2, 0)),  # A→B→C, A↔C
     "triad_210_frac": ((0, 1), (1, 2), (2, 1), (0, 2), (2, 0)),
     "triad_300_frac": ((0, 1), (1, 0), (1, 2), (2, 1), (0, 2), (2, 0)),
+    # Additional HL classes used by census / motif boards (schema drawing only).
+    "triad_003_frac": (),  # empty
+    "triad_012_frac": ((0, 1),),  # A→B
+    "triad_021D_frac": ((1, 0), (1, 2)),  # A←B→C (out-star)
+    "triad_021U_frac": ((0, 1), (2, 1)),  # A→B←C (in-star)
+    "triad_021C_frac": ((0, 1), (1, 2)),  # A→B→C (2-path)
+    "triad_102_frac": ((0, 1), (1, 0)),  # A↔B
+    "triad_111D_frac": ((0, 1), (1, 0), (1, 2)),  # A↔B→C
+    "triad_111U_frac": ((0, 1), (1, 0), (2, 1)),  # A↔B←C
+    "triad_201_frac": ((0, 1), (1, 0), (1, 2), (2, 1)),  # A↔B↔C (path of mutuals)
 }
 
 

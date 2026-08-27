@@ -75,6 +75,7 @@ body {
   min-height: 0;
   flex: 1;
 }
+.col-mid { flex: 1.18; }
 .card {
   background: var(--card-bg);
   border-radius: 1.8mm;
@@ -114,9 +115,25 @@ body {
 }
 .card .cap { font-size: 10.5pt; color: var(--text-light); line-height: 1.18; margin-top: 0.5mm; flex-shrink: 0; }
 .card .cap b { color: var(--navy); font-weight: 900; }
-.card.schem-vocab { flex: 1.55 1 0; }
-.card.schem-train { flex: 1.25 1 0; }
-.card.schem-eval { flex: 0.85 1 0; }
+.card.dfas { flex: 1.15 1 0; }
+.card.schem-vocab { flex: 1.25 1 0; }
+.card.schem-train { flex: 1.10 1 0; }
+.card.schem-learn { flex: 0.95 1 0; }
+.card.probs { flex: 1.08 1 0; }
+.card.heat { flex: 1.65 1 0; }
+.card.prefix { flex: 1.52 1 0; }
+.col-mid .card { flex: 1.00 1 0; }
+.col-mid .card.corr { flex: 1.48 1 0; }
+.col-mid .card.geom { flex: 1.42 1 0; }
+.col-mid .card.units { flex: 1.45 1 0; }
+.col-mid .card.decode { flex: 1.18 1 0; }
+.col-mid .card.traj { flex: 1.27 1 0; }
+.col .card.scale { flex: 1.22 1 0; }
+.col .card.actdfa { flex: 1.18 1 0; }
+.col .card.readout { flex: 1.38 1 0; }
+.col .card.geometry { flex: 1.10 1 0; }
+.col .card.weights { flex: 1.85 1 0; }
+.col .card.motifs { flex: 0.82 1 0; }
 
 .abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 1.8mm 2.5mm; flex: 0 0 auto; }
 .abstract h2 { font-size: 14pt; font-weight: 900; color: var(--navy); margin-bottom: 0.8mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.3mm; }
@@ -173,7 +190,7 @@ body {
       <h2>Abstract</h2>
       <p>Eight-month-old infants can segment continuous speech by tracking transitional probabilities (Saffran, Aslin &amp; Newport, 1996). We ask whether a vanilla Elman RNN trained only on next-character prediction develops internal representations aligned with word structure. After learning, the network generates legal vocabulary items, and its hidden states become a continuous embedding of the vocabulary's minimal DFA. On an eight-word <em>-ate/-at</em> demo, DFA state explains $\eta^2 \approx 0.88$ of condensed hidden variance; word identity is much weaker ($\eta^2 \approx 0.06$). Fifty mixed-length English vocab runs ($H{=}100$) show that dimensionality, training cost, and readouts track minimized DFA size. Weight matrices become letter-columnar in $W_{xh}$ and locally clumped in $W_{hh}$, most clearly for small automata.</p>
     </div>
-    <div class="card">
+    <div class="card dfas">
       <div class="card-title">Fig 1 · Minimal DFAs</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_dfa_examples.jpg" alt="Figure 1"></div>
       <div class="cap">Same next-character task; automata differ in size and prefix sharing.</div>
@@ -188,93 +205,83 @@ body {
       <div class="figframe"><img src="schematics/training.png" alt="Training schematic"></div>
       <div class="cap">Character-level Elman RNN. Input $x_t$ predicts the next character via $h_t=\tanh(W_{xh}x_t+W_{hh}h_{t-1})$; cross-entropy loss.</div>
     </div>
-    <div class="card schem-eval">
-      <div class="card-title">Experiment · Evaluation</div>
-      <div class="figframe"><img src="schematics/evaluation.png" alt="Evaluation schematic"></div>
-      <div class="cap">Closed-loop rollout from a corpus prefix. Green = in-vocabulary words; red = OOV.</div>
+    <div class="card schem-learn">
+      <div class="card-title">Fig 3 · Learning &amp; generation</div>
+      <div class="figframe"><img src="../paper/figures/demo/fig03_learning_with_samples.jpg" alt="Figure 3"></div>
+      <div class="cap">Loss and OOV collapse together; rollouts become legal vocabulary words.</div>
     </div>
-    <div class="card">
+    <div class="card probs">
       <div class="card-title">Fig 4 · Next-character probabilities</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_next_char_probs.jpg" alt="Figure 4"></div>
       <div class="cap">Softmax $P(\text{next char}\mid\text{input so far})$. Red dots = actual next character.</div>
     </div>
-    <div class="card">
+    <div class="card heat">
       <div class="card-title">Fig 5 · Activation heatmap</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_activation_heatmap.jpg" alt="Figure 5"></div>
       <div class="cap">Hidden units over timesteps (input letters; units clustered).</div>
     </div>
-    <div class="card">
+    <div class="card prefix">
       <div class="card-title">Fig 6 · Activations by prefix</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_activation_clustered.jpg" alt="Figure 6"></div>
       <div class="cap">Activations clustered by in-word prefix. Tick color = DFA state.</div>
     </div>
   </div>
 
-  <div class="col">
-    <div class="card">
+  <div class="col col-mid">
+    <div class="card corr">
       <div class="card-title">Fig 7 · Hidden-state correlation</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_state_correlation.jpg" alt="Figure 7"></div>
       <div class="cap">Prefix $\times$ prefix correlation. Blocks merge prefixes that share a future.</div>
     </div>
-    <div class="card">
+    <div class="card geom">
       <div class="card-title">Fig 8 · DFA geometry &amp; separation</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_dfa_pca_geometry.jpg" alt="Figure 8"></div>
-      <div class="cap">PCA of $\mathbf{h}$ by feature. DFA $\eta^2 \approx 0.88$; word identity $\approx 0.06$.</div>
+      <div class="cap">PCA of $\mathbf{h}$ by feature; pairwise within/between/shuffle at end of row. DFA $\eta^2 \approx 0.88$; word identity $\approx 0.06$.</div>
     </div>
-    <div class="card">
+    <div class="card units">
       <div class="card-title">Fig 9 · Example selective units</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_example_units.jpg" alt="Figure 9"></div>
       <div class="cap">One top unit per feature on a shared corpus window.</div>
     </div>
-    <div class="card">
+    <div class="card decode">
       <div class="card-title">Fig 10 · Linear decoding</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_decoding_with_word.jpg" alt="Figure 10"></div>
       <div class="cap">Mean $\pm$ std, 6 seeds. DFA/character saturate in a few PCs; word identity needs many more.</div>
     </div>
-    <div class="card">
+    <div class="card traj">
       <div class="card-title">Fig 11 · Word trajectories</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_word_trajectories.jpg" alt="Figure 11"></div>
       <div class="cap">DFA-labeled PCA (top) and closed-loop trajectories (bottom) across five seeds.</div>
     </div>
-    <div class="card">
+  </div>
+
+  <div class="col">
+    <div class="card scale">
       <div class="card-title">Fig 12 · Mixed vocabs track DFA size</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_mixed_scaling_overview.jpg" alt="Figure 12"></div>
-      <div class="cap">50 mixed English vocabs ($H{=}100$). Training cost and PC spectra track DFA size.</div>
+      <div class="cap">50 mixed vocabs ($H{=}100$). Top: CE and word-error curves by DFA size. Bottom: iters to 3\% WE and closed-loop PC spectra.</div>
     </div>
-    <div class="card">
+    <div class="card actdfa">
       <div class="card-title">Fig 13 · Activations vs DFA size</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_activation_heatmaps_by_dfa.jpg" alt="Figure 13"></div>
       <div class="cap">20 mixed vocabs. Low-DFA: coarse bands; larger DFAs: denser, less repetitive rasters.</div>
     </div>
-  </div>
-
-  <div class="col">
-    <div class="card">
-      <div class="card-title">Fig 14 · Trajectories vs DFA size</div>
-      <div class="figframe"><img src="../paper/figures/compare/fig_mixed_traj_by_dfa.jpg" alt="Figure 14"></div>
-      <div class="cap">25 mixed vocabs. Small automata: sparse motifs; larger DFAs crowd the PC plane.</div>
-    </div>
-    <div class="card">
+    <div class="card readout">
       <div class="card-title">Fig 15 · Readouts vs DFA size</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_mixed_decoding_curves.jpg" alt="Figure 15"></div>
-      <div class="cap">Chance-corrected readout by DFA-size bin. Word identity needs $\sim$15 PCs.</div>
+      <div class="cap">Two DFA bins. Left: final PCA/neuron readout. Right: readout over learning (3/15 PCs). Word identity needs $\sim$15 PCs.</div>
     </div>
-    <div class="card">
+    <div class="card geometry">
       <div class="card-title">Fig 16 · Geometry &amp; unit selectivity</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_mixed_cosine_within.jpg" alt="Figure 16"></div>
       <div class="cap">Within/between cosine and Euclidean distance, plus per-unit SI vs DFA size.</div>
     </div>
-    <div class="card">
-      <div class="card-title">Fig 17 · Readout vs DFA at fixed PCs</div>
-      <div class="figframe"><img src="../paper/figures/compare/fig_mixed_decoding_vs_dfa.jpg" alt="Figure 17"></div>
-      <div class="cap">Accuracy vs DFA size at 1 PC, 5 PCs, and full $H$. Word identity falls off with DFA size.</div>
-    </div>
-    <div class="card">
+    <div class="card weights">
       <div class="card-title">Fig 18 · Weight matrices vs DFA</div>
       <div class="figframe"><img src="../paper/figures/main/fig_weight_matrices_by_dfa.jpg" alt="Figure 18"></div>
       <div class="cap">Clustered $W_{xh}$ / $W_{hh}$. Small DFAs: letter columns and local $W_{hh}$ clumps.</div>
     </div>
-    <div class="card">
+    <div class="card motifs">
       <div class="card-title">Fig 19 · Weight graph motifs vs DFA</div>
       <div class="figframe"><img src="../paper/figures/main/fig_weight_graph_motifs_vs_dfa.jpg" alt="Figure 19"></div>
       <div class="cap">Norms, structure, pairwise and 3-node motifs. Larger DFAs shift feedforward.</div>

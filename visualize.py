@@ -2807,7 +2807,7 @@ def plot_feature_separation_summary(
         "n_points": stats.n_points,
         "n_shuffle": n_shuffle,
         "summary_panels": [
-            "silhouette", "within_corr", "pairwise_within_between", "pairwise_ratio",
+            "pairwise_within_between",
         ],
     }
     with open(json_path, "w", encoding="utf-8") as f:
@@ -2894,18 +2894,16 @@ def _draw_obs_vs_shuffle_bars(
         ax.legend(fontsize=7, loc=legend_loc, frameon=True, framealpha=0.9)
 
 
-def _draw_feature_separation_panels_on_axes(
-    axes: np.ndarray,
+def _draw_pairwise_within_between_panel(
+    ax,
     *,
     features: list[str],
     per_seed_stats: dict[int, FeatureSeparationStats],
     repr_label: str,
-    show_bottom_tick_labels: bool = True,
+    show_tick_labels: bool = True,
+    show_legend: bool = True,
 ) -> None:
-    """Fill a 2×2 axes grid: silhouette | within-corr; pairwise distances | ratio.
-
-    Every panel shows observed vs label-shuffle; bars colored by feature.
-    """
+    """Pairwise within / between / shuffle-within L2 distances (feature-colored)."""
     from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
     from viz.plot_layout import apply_category_tick_labels
 
@@ -2924,57 +2922,6 @@ def _draw_feature_separation_panels_on_axes(
         for f in features
     ]
     err_kw = {"elinewidth": 0.9, "ecolor": "#333333", "capthick": 0.9}
-
-    def _means_errs(metric_key: str) -> tuple[list[float], list[float]]:
-        means, errs = [], []
-        for feat in features:
-            m, s = _seed_mean_std([_metric_from_stats(st, metric_key, feat) for st in seed_stats])
-            means.append(m)
-            errs.append(s)
-        return means, errs
-
-    # --- (0,0) silhouette observed vs shuffle ---
-    ax = axes[0, 0]
-    sil_m, sil_e = _means_errs("silhouette")
-    sh_sil_m, sh_sil_e = _means_errs("shuffle_silhouette")
-    _draw_obs_vs_shuffle_bars(
-        ax, x=x, colors=colors,
-        obs_means=sil_m, obs_errs=sil_e,
-        shuf_means=sh_sil_m, shuf_errs=sh_sil_e,
-        n_seeds=n_seeds, show_legend=True, legend_loc="upper right",
-    )
-    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.set_ylabel("mean silhouette", fontsize=8)
-    ax.set_title("Mean silhouette", fontsize=9)
-    y_lo = [m - e for m, e in zip(sil_m, sil_e)] + [m - e for m, e in zip(sh_sil_m, sh_sil_e)]
-    y_hi = [m + e for m, e in zip(sil_m, sil_e)] + [m + e for m, e in zip(sh_sil_m, sh_sil_e)]
-    ax.set_ylim(*_padded_ylim(y_lo, y_hi, include=(0.0,), floor=-1.0, ceil=1.0))
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    # --- (0,1) within-feature mean correlation observed vs shuffle ---
-    ax = axes[0, 1]
-    corr_m, corr_e = _means_errs("within_corr")
-    sh_corr_m, sh_corr_e = _means_errs("shuffle_within_corr")
-    _draw_obs_vs_shuffle_bars(
-        ax, x=x, colors=colors,
-        obs_means=corr_m, obs_errs=corr_e,
-        shuf_means=sh_corr_m, shuf_errs=sh_corr_e,
-        n_seeds=n_seeds, show_legend=False,
-    )
-    ax.axhline(0.0, color="0.3", linewidth=0.8, linestyle=":")
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.set_ylabel("mean Pearson r", fontsize=8)
-    ax.set_title("Within-feature state correlation", fontsize=9)
-    y_lo = [m - e for m, e in zip(corr_m, corr_e)] + [m - e for m, e in zip(sh_corr_m, sh_corr_e)]
-    y_hi = [m + e for m, e in zip(corr_m, corr_e)] + [m + e for m, e in zip(sh_corr_m, sh_corr_e)]
-    ax.set_ylim(*_padded_ylim(y_lo, y_hi, include=(0.0,), floor=-1.0, ceil=1.05))
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    # --- (1,0) pairwise within / between / shuffle-within (feature-colored) ---
-    ax = axes[1, 0]
     width = 0.24
     w_means, w_errs, b_means, b_errs = [], [], [], []
     sw_means, sw_errs = [], []
@@ -3002,7 +2949,7 @@ def _draw_feature_separation_panels_on_axes(
         hatch="///", edgecolor=colors, linewidth=0.6,
         yerr=sw_errs if n_seeds > 1 else None, capsize=2.0, error_kw=err_kw,
     )
-    if show_bottom_tick_labels:
+    if show_tick_labels:
         apply_category_tick_labels(ax, tick_labels, fontsize=7)
     else:
         ax.set_xticks(x)
@@ -3017,50 +2964,11 @@ def _draw_feature_separation_panels_on_axes(
     finite_hi = [v for v in y_hi if np.isfinite(v)]
     y_top = (max(finite_hi) * 1.28) if finite_hi else 1.0
     ax.set_ylim(0.0, y_top)
-    ax.legend(
-        fontsize=6.0, loc="upper left", frameon=True, framealpha=0.94, ncol=1,
-        handlelength=1.3, borderpad=0.3, labelspacing=0.25,
-    )
-    ax.grid(True, axis="y", linestyle=":", alpha=0.35)
-
-    # --- (1,1) pairwise ratio observed vs shuffle ---
-    ax = axes[1, 1]
-    ratio_m, ratio_e = _means_errs("pairwise_ratio")
-    sh_ratio_m, sh_ratio_e = _means_errs("shuffle_pairwise_ratio")
-    p_means = []
-    for feat in features:
-        pm, _ = _seed_mean_std([st.shuffle_p[feat] for st in seed_stats])
-        p_means.append(pm)
-    _draw_obs_vs_shuffle_bars(
-        ax, x=x, colors=colors,
-        obs_means=ratio_m, obs_errs=ratio_e,
-        shuf_means=sh_ratio_m, shuf_errs=sh_ratio_e,
-        n_seeds=n_seeds, show_legend=False,
-    )
-    ax.axhline(1.0, color="0.3", linewidth=0.8, linestyle=":")
-    y_lo = [m - e for m, e in zip(ratio_m, ratio_e)] + [m - e for m, e in zip(sh_ratio_m, sh_ratio_e)]
-    y_hi = [m + e for m, e in zip(ratio_m, ratio_e)] + [m + e for m, e in zip(sh_ratio_m, sh_ratio_e)]
-    finite_lo = [v for v in y_lo if np.isfinite(v)]
-    finite_hi = [v for v in y_hi if np.isfinite(v)]
-    # Zoom near 1 so obs vs shuffle is readable; leave room for p labels.
-    y0 = max(0.0, (min(finite_lo) if finite_lo else 0.5) - 0.08)
-    y1 = max(1.08, (max(finite_hi) if finite_hi else 1.0) + 0.14)
-    for i, (r, p, e) in enumerate(zip(ratio_m, p_means, ratio_e)):
-        if np.isfinite(p) and np.isfinite(r):
-            stars = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
-            y_text = (r + (e if np.isfinite(e) else 0.0)) + 0.025 * (y1 - y0)
-            ax.text(
-                i - 0.18, min(y_text, y1 - 0.02 * (y1 - y0)), f"p={p:.3f}{stars}",
-                ha="center", va="bottom", fontsize=5.5,
-            )
-    ax.set_ylim(y0, y1)
-    if show_bottom_tick_labels:
-        apply_category_tick_labels(ax, tick_labels, fontsize=7)
-    else:
-        ax.set_xticks(x)
-        ax.set_xticklabels([])
-    ax.set_ylabel("within / between", fontsize=8)
-    ax.set_title("Pairwise ratio (obs vs shuffle)", fontsize=9)
+    if show_legend:
+        ax.legend(
+            fontsize=6.0, loc="upper left", frameon=True, framealpha=0.94, ncol=1,
+            handlelength=1.3, borderpad=0.3, labelspacing=0.25,
+        )
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
 
 
@@ -3073,24 +2981,24 @@ def _plot_feature_separation_summary_figure(
     condensed: CondensedView | None,
     repr_label: str,
 ) -> None:
-    """2×2: silhouette | within-corr; pairwise distances | pairwise ratio (obs vs shuffle)."""
+    """Single panel: pairwise within / between / shuffle distances."""
     from viz.plot_layout import save_figure
 
     n_seeds = len(per_seed_stats)
-    fig, axes = plt.subplots(2, 2, figsize=(9.2, 6.8))
-    _draw_feature_separation_panels_on_axes(
-        axes,
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    _draw_pairwise_within_between_panel(
+        ax,
         features=features,
         per_seed_stats=per_seed_stats,
         repr_label=repr_label,
     )
 
     seed_bit = f", mean ± std across {n_seeds} seeds" if n_seeds > 1 else ""
-    title = f"Feature separation summary ({repr_label}, n={n_points} points{seed_bit})"
+    title = f"Feature separation ({repr_label}, n={n_points} points{seed_bit})"
     if condensed is None and n_seeds > 1:
         title = f"{title} (prefix-condensed)"
     fig.suptitle(_condensed_plot_title(title, condensed), fontsize=11, y=0.98)
-    fig.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.14, hspace=0.48, wspace=0.35)
+    fig.subplots_adjust(left=0.11, right=0.98, top=0.86, bottom=0.16)
     save_figure(fig, save_path, dpi=150)
     print(f"wrote {save_path}")
 
@@ -3138,7 +3046,7 @@ def run_multi_seed_feature_separation(
         "seeds": list(per_seed.keys()),
         "features": features,
         "summary_panels": [
-            "silhouette", "within_corr", "pairwise_within_between", "pairwise_ratio",
+            "pairwise_within_between",
         ],
         "mean": {},
         "std": {},
@@ -8466,7 +8374,7 @@ def plot_dfa_pca_and_separation_combined(
     separation_n_points: int | None = None,
     separation_task_label: str | None = None,
 ) -> None:
-    """Paper composite: PCA feature panels + separation metrics (no DFA diagram)."""
+    """Paper composite: five PCA panels + pairwise within/between/shuffle at end of row."""
     from unit_selectivity import FEATURE_COLORS, FEATURE_DISPLAY
     from viz.plot_layout import save_figure
 
@@ -8504,34 +8412,22 @@ def plot_dfa_pca_and_separation_combined(
     if n_pts is None and features:
         n_pts = int(next(iter(separation_per_seed.values())).n_points.get(features[0], 0))
 
-    fig = plt.figure(figsize=(12.2, 11.8))
-    outer = fig.add_gridspec(
-        3, 1,
-        height_ratios=[1.15, 0.10, 1.35],
-        hspace=0.16,
-        left=0.06, right=0.98, top=0.90, bottom=0.07,
-    )
-    gs_geo = outer[0].subgridspec(
+    # 2×3: five PCA panels + pairwise within/between/shuffle at end of bottom row.
+    fig = plt.figure(figsize=(12.2, 7.4))
+    gs_geo = fig.add_gridspec(
         2, 3,
         height_ratios=[1.0, 1.0],
         hspace=0.42,
         wspace=0.28,
+        left=0.06, right=0.98, top=0.90, bottom=0.08,
     )
-    ax_band = fig.add_subplot(outer[1])
-    ax_band.axis("off")
-    gs_sep = outer[2].subgridspec(2, 2, hspace=0.72, wspace=0.40)
 
     ax_dfa_pca = fig.add_subplot(gs_geo[0, 0])
     ax_char = fig.add_subplot(gs_geo[0, 1])
     ax_word = fig.add_subplot(gs_geo[0, 2])
     ax_pos = fig.add_subplot(gs_geo[1, 0])
     ax_pos_end = fig.add_subplot(gs_geo[1, 1])
-    ax_geo_spacer = fig.add_subplot(gs_geo[1, 2])
-    ax_geo_spacer.axis("off")
-    sep_axes = np.array([
-        [fig.add_subplot(gs_sep[0, 0]), fig.add_subplot(gs_sep[0, 1])],
-        [fig.add_subplot(gs_sep[1, 0]), fig.add_subplot(gs_sep[1, 1])],
-    ])
+    ax_sep = fig.add_subplot(gs_geo[1, 2])
 
     for ax, feat, title in [
         (ax_dfa_pca, "dfa", "PCA · DFA state"),
@@ -8552,11 +8448,19 @@ def plot_dfa_pca_and_separation_combined(
             title_color=FEATURE_COLORS.get(feat),
         )
 
-    _draw_feature_separation_panels_on_axes(
-        sep_axes,
+    n_seeds = len(separation_per_seed)
+    seed_bit = f", mean ± std across {n_seeds} seeds" if n_seeds > 1 else ""
+    task_bit = separation_task_label or "demo vocabulary"
+    _draw_pairwise_within_between_panel(
+        ax_sep,
         features=features,
         per_seed_stats=separation_per_seed,
         repr_label="hidden state",
+    )
+    ax_sep.set_title(
+        f"Pairwise within / between / shuffle\n"
+        f"({task_bit}, n={n_pts} prefixes{seed_bit})",
+        fontsize=8,
     )
 
     rep = representation_label(model, repr_name=None) if model is not None else "hidden state h"
@@ -8564,16 +8468,7 @@ def plot_dfa_pca_and_separation_combined(
         repr_name=rep, words=words, chars=chars, condensed=condensed,
         dim_label=embed_dim_label(embed_method),
     )
-    n_seeds = len(separation_per_seed)
-    seed_bit = f", mean ± std across {n_seeds} seeds" if n_seeds > 1 else ""
-    task_bit = separation_task_label or "demo vocabulary"
     fig.suptitle(geo_title, fontsize=10, y=0.98)
-    ax_band.text(
-        0.5, 0.5,
-        f"Feature separation · {task_bit} (n={n_pts} condensed prefixes{seed_bit})",
-        transform=ax_band.transAxes,
-        ha="center", va="center", fontsize=10, fontweight="600",
-    )
     save_figure(fig, save_path, dpi=150)
     print(f"wrote {save_path}")
 
@@ -9303,7 +9198,7 @@ def plot_output_probs(
     max_len = max(p[0].shape[0] for p in panels)
     # Wide enough that every single-char column can carry an upright tick.
     fig_w = float(max(12.0, min(20.0, max_len * 0.32 + 2.0)))
-    fig_h = float(max(3.6, vocab_size * 0.28 + 1.3) * n_rows + (0.55 if n_rows > 1 else 0.0))
+    fig_h = float(max(3.1, vocab_size * 0.24 + 1.0) * n_rows)
     fig, axes = plt.subplots(
         n_rows, 1, figsize=(fig_w, fig_h), squeeze=False, sharey=True,
     )
@@ -9320,25 +9215,25 @@ def plot_output_probs(
             interpolation="nearest", origin="lower",
         )
         ax.set_yticks(range(vocab_size))
-        ax.set_yticklabels(chars, fontsize=8)
+        ax.set_yticklabels(chars, fontsize=14)
         short_seq = is_sequence and all(len(str(lab)) <= 1 for lab in x_labels)
         if short_seq:
             # Every timestep labeled, upright only on the bottom edge.
             ax.set_xticks(list(range(length)))
             ax.set_xticklabels(
                 [str(lab) for lab in x_labels],
-                fontsize=7.0, rotation=0, ha="center", fontfamily="monospace",
+                fontsize=13.0, rotation=0, ha="center", fontfamily="monospace",
             )
-            bottom_need = max(bottom_need, 0.20)
+            bottom_need = max(bottom_need, 0.13)
         else:
-            tick_fs = 6.5 if length > 16 else 7.5
+            tick_fs = 12.5 if length > 16 else 14.0
             bottom_need = max(
                 bottom_need,
                 apply_category_tick_labels(ax, x_labels, fontsize=tick_fs),
             )
         # No tick labels on the top edge of either panel.
         ax.tick_params(axis="x", which="both", top=False, bottom=True,
-                       labeltop=False, labelbottom=True, length=3, pad=2)
+                       labeltop=False, labelbottom=True, length=4, pad=2)
         axis_label = x_axis
         if automaton is not None:
             if prefix_keys is not None:
@@ -9353,8 +9248,8 @@ def plot_output_probs(
             axis_label += " · tick color = min DFA state"
         # Only the last row keeps the x-axis label (avoids colliding with the
         # next panel when both rows have dense ticks).
-        ax.set_xlabel(axis_label if ri == n_rows - 1 else "", fontsize=8)
-        ax.set_ylabel("predicted next char", fontsize=8)
+        ax.set_xlabel(axis_label if ri == n_rows - 1 else "", fontsize=13)
+        ax.set_ylabel("predicted next char", fontsize=13)
         if n_rows > 1:
             row_title = (
                 "sequential timesteps"
@@ -9364,11 +9259,11 @@ def plot_output_probs(
                     f"({len(x_labels)} prefixes, avg over {sum(condensed.counts)} steps)"
                 )
             )
-            ax.set_title(row_title, fontsize=9, pad=4)
+            ax.set_title(row_title, fontsize=14, pad=3)
         else:
             ax.set_title(
                 "P(next char | input so far)  —  red dots = actual next char",
-                fontsize=10,
+                fontsize=12,
             )
         ax.scatter(
             np.arange(length), target_indices,
@@ -9381,11 +9276,11 @@ def plot_output_probs(
             fig,
             # Sequence (top) + condensed prefixes (bottom).
             suptitle="P(next char | input so far)  —  red dots = actual next char",
-            top=0.92,
-            bottom=max(0.18, bottom_need),
-            left=0.05,
-            right=0.97,
-            hspace=0.55,
+            top=0.89,
+            bottom=max(0.11, bottom_need),
+            left=0.06,
+            right=0.96,
+            hspace=0.42,
         )
     else:
         finalize_grid_figure(
@@ -9410,8 +9305,8 @@ def plot_output_probs(
                 last_im, ax=axes[0, 0],
                 fraction=0.015, pad=0.02, shrink=0.72, aspect=24,
             )
-        cbar.ax.tick_params(labelsize=6, length=2)
-        cbar.set_label("probability", fontsize=7)
+        cbar.ax.tick_params(labelsize=12, length=3)
+        cbar.set_label("probability", fontsize=13)
     save_figure(fig, save_path, dpi=220)
     plt.close(fig)
     print(f"wrote {save_path}")

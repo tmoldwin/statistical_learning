@@ -30,7 +30,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 **Model.** Elman RNN, \(H = 50\) (demo), \(H{=}100\) (mixed-vocab runs); next-character cross-entropy; early stop on word-error \(\leq 3\%\).
 
-**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (silhouette, within-feature state correlation, pairwise within/between, shuffle tests; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected vs uniform label chance; mean ± std across seeds), with a **DFA-state oracle** baseline \(\mathbb{E}_s[\max_y P(y\mid s)]\) for each non-DFA feature (dashed on readout plots)—the expected accuracy if \(\mathbf{h}\) carried only automaton state; readout over learning; closed-loop word trajectories; weight-matrix structure and digraph motifs (pairwise + 3-node) vs DFA size.
+**Analyses.** Softmax next-character probabilities; activation heatmaps; hierarchical clustering of timesteps; hidden-state correlation clustermaps; PCA embeddings (colored by DFA state, position, and character); feature separation (pairwise within/between/shuffle distances; mean ± std across seeds); per-unit selectivity with exemplar units; linear decoding of character, DFA state, position, and word identity from top-\(k\) PCs or random neurons (chance-corrected vs uniform label chance; mean ± std across seeds), with a **DFA-state oracle** baseline \(\mathbb{E}_s[\max_y P(y\mid s)]\) for each non-DFA feature (dashed on readout plots)—the expected accuracy if \(\mathbf{h}\) carried only automaton state; readout over learning; closed-loop word trajectories; weight-matrix structure and digraph motifs (pairwise + 3-node) vs DFA size.
 
 ---
 
@@ -76,7 +76,7 @@ For a finite vocabulary streamed without separators, optimal next-character pred
 
 ![DFA PCA geometry and feature separation](figures/demo/fig_dfa_pca_geometry.jpg)
 
-**Figure 8.** Top: PCA of \(\mathbf{h}\) colored by DFA state, current character, word identity, position from beginning, and position from end. Bottom: feature separation on the same demo vocabulary (mean ± std across seeds 1, 2, 3, 5, 7, 8; bars colored by feature). Solid = observed, hatched = label shuffle: mean silhouette, mean within-feature hidden-state correlation, pairwise within/between/shuffle distances, and within/between ratio (with shuffle \(p\) on observed bars).
+**Figure 8.** PCA of \(\mathbf{h}\) colored by DFA state, current character, word identity, position from beginning, and position from end. End of row: pairwise within / between / shuffle L2 distances by feature (mean ± std across seeds 1, 2, 3, 5, 7, 8; bars colored by feature).
 
 DFA-colored PCA forms tight clusters that merge distinct prefixes at different depths (e.g. *a* with *pla*). Position-from-beginning is weaker and geometrically distinct from DFA. Population \(\eta^2\) ranks DFA highest (\(\approx 0.88\)), then character and position-from-end, with position-from-beginning weaker; word identity is near floor (\(\eta^2 \approx 0.06\)), consistent with shared DFA states across words.
 
@@ -106,7 +106,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Mixed-vocab scaling overview](figures/compare/fig_mixed_scaling_overview.jpg)
 
-**Figure 12.** Mixed-vocab scaling with minimized DFA size. Left: sampled vocabulary size vs DFA state count. Middle: iterations to 3\% word error (color = \# words). Right: closed-loop PC spectra colored by DFA size (larger automata flatten the scree).
+**Figure 12.** Mixed-vocab scaling with minimized DFA size. Top: validation cross-entropy and word-error learning curves (one curve per run, colored by DFA size; dashed = 3\% word-error threshold). Bottom: iterations to 3\% word error (color = \# words) and closed-loop PC spectra (same DFA-size color scale; larger automata flatten the scree).
 
 ![Activation heatmaps across DFA size](figures/compare/fig_activation_heatmaps_by_dfa.jpg)
 
@@ -118,7 +118,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Readout curves and learning](figures/compare/fig_mixed_decoding_curves.jpg)
 
-**Figure 15.** Chance-corrected readouts by minimized DFA size (three middle quantile bins). **A.** Final readout vs \#dimensions: top-\(k\) PCA (top) and random subsets of \(k\) neurons (bottom). **B.** Same bins over learning with 3-PC and 15-PC probes (mean ± std; dashed colored = DFA-state oracle; dashed grey = word error). Features: character, DFA state, position from beginning/end, word identity. Word identity is weakest at low dimension and needs \(\sim\)15 PCs, rising after word error collapses.
+**Figure 15.** Chance-corrected readouts by minimized DFA size (two quantile bins). **A** (left): final readout vs \#dimensions—top-\(k\) PCA (top) and random subsets of \(k\) neurons (bottom). **B** (right): same bins over learning with 3-PC and 15-PC probes (mean ± std; dashed colored = DFA-state oracle; dashed grey = word error). Features: character, DFA state, position from beginning/end, word identity. Word identity is weakest at low dimension and needs \(\sim\)15 PCs, rising after word error collapses.
 
 ![Within-feature geometry and unit selectivity](figures/compare/fig_mixed_cosine_within.jpg)
 

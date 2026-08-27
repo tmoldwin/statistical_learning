@@ -114,6 +114,9 @@ body {
 }
 .card .cap { font-size: 10.5pt; color: var(--text-light); line-height: 1.18; margin-top: 0.5mm; flex-shrink: 0; }
 .card .cap b { color: var(--navy); font-weight: 900; }
+.card.schem-vocab { flex: 1.55 1 0; }
+.card.schem-train { flex: 1.25 1 0; }
+.card.schem-eval { flex: 0.85 1 0; }
 
 .abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 1.8mm 2.5mm; flex: 0 0 auto; }
 .abstract h2 { font-size: 14pt; font-weight: 900; color: var(--navy); margin-bottom: 0.8mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.3mm; }
@@ -175,20 +178,20 @@ body {
       <div class="figframe"><img src="../paper/figures/demo/fig_dfa_examples.jpg" alt="Figure 1"></div>
       <div class="cap">Same next-character task; automata differ in size and prefix sharing.</div>
     </div>
-    <div class="card">
-      <div class="card-title">Fig 2 · Demo trie</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig01_trie.svg" alt="Figure 2 trie"></div>
-      <div class="cap">Prefix tree for <em>ate, late, plate, slate, gate, cat, hat, mat</em>.</div>
+    <div class="card schem-vocab">
+      <div class="card-title">Experiment · Vocabulary conditions</div>
+      <div class="figframe"><img src="schematics/vocabularies.png" alt="Vocabulary conditions"></div>
+      <div class="cap">Same setup, different #words and lengths: 8×3, 4×5, and mixed 3–4. Colors mark word identity in the unsegmented stream.</div>
     </div>
-    <div class="card">
-      <div class="card-title">Fig 2 · Demo minimal DFA</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig02_dfa.svg" alt="Figure 2 DFA"></div>
-      <div class="cap">Shared states merge prefixes with identical futures (e.g. <em>a/ga/la/pla/sla</em>).</div>
+    <div class="card schem-train">
+      <div class="card-title">Experiment · Training the RNN</div>
+      <div class="figframe"><img src="schematics/training.png" alt="Training schematic"></div>
+      <div class="cap">Character-level Elman RNN. Input $x_t$ predicts the next character via $h_t=\tanh(W_{xh}x_t+W_{hh}h_{t-1})$; cross-entropy loss.</div>
     </div>
-    <div class="card">
-      <div class="card-title">Fig 3 · Learning &amp; generation</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig03_learning_with_samples.jpg" alt="Figure 3"></div>
-      <div class="cap">Loss and OOV collapse together; rollouts become legal vocabulary words.</div>
+    <div class="card schem-eval">
+      <div class="card-title">Experiment · Evaluation</div>
+      <div class="figframe"><img src="schematics/evaluation.png" alt="Evaluation schematic"></div>
+      <div class="cap">Closed-loop rollout from a corpus prefix. Green = in-vocabulary words; red = OOV.</div>
     </div>
     <div class="card">
       <div class="card-title">Fig 4 · Next-character probabilities</div>

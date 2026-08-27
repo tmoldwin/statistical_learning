@@ -1304,6 +1304,9 @@ def draw_minimized_dfa_on_axes(
     shortest_prefix_labels: bool = False,
     fit_labels: bool = False,
     accept_marker: str | None = None,
+    horizontal: bool = False,
+    fixed_radius: float | None = None,
+    view_span: tuple[float, float] | None = None,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`.
 
@@ -1311,6 +1314,8 @@ def draw_minimized_dfa_on_axes(
     while accept nodes name the completed words. ``fit_labels`` grows circles
     until they nearly touch and then picks the largest font that fits inside
     each circle, so node text is never clipped in multipanel figures.
+    ``horizontal`` lays BFS layers left-to-right instead of top-to-bottom.
+    ``fixed_radius`` / ``view_span`` keep node size identical across panels.
     """
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
     from matplotlib.path import Path
@@ -1359,21 +1364,55 @@ def draw_minimized_dfa_on_axes(
         key: val * float(node_scale)
         for key, val in _compute_radii(state_labels, compact=compact).items()
     }
+    if fixed_radius is not None:
+        layout_radii = {key: float(fixed_radius) for key in layout_radii}
     gap_scale = _gap_scale(layout_radii) * (1.12 if compact else 1.0)
-    coords = _scale_positions(layout_dfa(dfa), gap_scale=gap_scale)
+    positions = layout_dfa(dfa)
+    if horizontal:
+        positions = {k: NodeLayout(x=p.y, y=p.x) for k, p in positions.items()}
+    coords = _scale_positions(positions, gap_scale=gap_scale)
+    if horizontal and coords:
+        xs = [xy[0] for xy in coords.values()]
+        min_x = min(xs)
+        span = max(max(xs) - min_x, 1.0)
+        stretch = 1.8
+        coords = {
+            k: (min_x + (x - min_x) * stretch, y)
+            for k, (x, y) in coords.items()
+        }
     # Deliberately separate circle size from graph spacing. Scaling both together
     # is mostly cancelled when Matplotlib fits the graph into the same axes.
     radii = {
         key: radius * float(circle_scale)
         for key, radius in layout_radii.items()
     }
-    if fit_labels:
+    if fixed_radius is not None:
+        radii = {key: float(fixed_radius) for key in radii}
+    elif fit_labels:
         radii = _uniform_node_radii(coords, radii)
     width, height = _canvas_size(coords, radii)
 
     ax.set_facecolor(BG_COLOR)
-    ax.set_xlim(0, width)
-    ax.set_ylim(height, 0)
+    if view_span is not None and coords:
+        vw, vh = view_span
+        x0 = min(coords[s][0] - radii[s] for s in coords) - 48
+        x1 = max(coords[s][0] + radii[s] for s in coords) + 20
+        y0 = min(coords[s][1] - radii[s] for s in coords) - 18
+        y1 = max(coords[s][1] + radii[s] for s in coords) + 18
+        cx = 0.5 * (x0 + x1)
+        cy = 0.5 * (y0 + y1)
+        ax.set_xlim(cx - vw / 2, cx + vw / 2)
+        ax.set_ylim(cy + vh / 2, cy - vh / 2)
+    elif horizontal and coords:
+        x0 = min(coords[s][0] - radii[s] for s in coords) - 48
+        x1 = max(coords[s][0] + radii[s] for s in coords) + 20
+        y0 = min(coords[s][1] - radii[s] for s in coords) - 18
+        y1 = max(coords[s][1] + radii[s] for s in coords) + 18
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y1, y0)
+    else:
+        ax.set_xlim(0, width)
+        ax.set_ylim(height, 0)
     ax.set_aspect("equal", adjustable="box")
     ax.axis("off")
     if not compact:

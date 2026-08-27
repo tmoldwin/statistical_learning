@@ -28,6 +28,7 @@ DEMO_WORDS: tuple[str, ...] = (
 DEMO_STREAM_WORDS: tuple[str, ...] = (
     "plate", "late", "gate", "cat", "hat", "mat", "ate", "slate",
     "late", "mat", "ate", "hat", "plate", "gate", "slate", "cat",
+    "mat", "slate", "gate", "ate", "hat", "plate", "cat", "late",
 )
 DEMO_STREAM = "".join(DEMO_STREAM_WORDS)
 
@@ -66,6 +67,70 @@ def _word_colors(word: str) -> tuple[str, str]:
     # Stable fallback for non-demo DFA panel labels.
     palette = list(WORD_STYLE.values())
     return palette[hash(word) % len(palette)]
+
+
+def _draw_colored_letter_stream(
+    ax,
+    stream_words: Sequence[str],
+    words: Sequence[str],
+    *,
+    y_rows: Sequence[float],
+    fontsize: float,
+    margin: float = 0.03,
+    tight: bool = False,
+) -> None:
+    """Draw an unsegmented stream as colored letters (no per-character boxes).
+
+    ``tight`` packs letters at monospace width on a single line instead of
+    stretching them to fill the axes.
+    """
+    palette = list(WORD_STYLE.values())
+    # Same index→color mapping as the word chips (do not look up WORD_STYLE by
+    # name: "hat"/"late" would steal demo-vocab colors and vanish from the stream).
+    color_of = {w: palette[i % len(palette)][0] for i, w in enumerate(words)}
+    stream = "".join(stream_words)
+    n = len(stream)
+    n_rows = max(1, len(y_rows))
+    if tight:
+        fig = ax.figure
+        fig.canvas.draw()
+        width_px = max(ax.get_window_extent().width, 1.0)
+        cell_w = (fontsize * 0.60 * fig.dpi / 72.0) / width_px
+        max_n = max(1, int((1.0 - 2 * margin) / cell_w))
+        if n > max_n:
+            kept: list[str] = []
+            used = 0
+            for word in stream_words:
+                if used + len(word) > max_n:
+                    break
+                kept.append(word)
+                used += len(word)
+            stream_words = kept
+            n = used
+        n_rows = 1
+        cols = max(n, 1)
+    else:
+        cols = max(1, (n + n_rows - 1) // n_rows)
+        cell_w = (1.0 - 2 * margin) / cols
+    char_i = 0
+    for word in stream_words:
+        color = color_of[word]
+        for ch in word:
+            row_i = min(char_i // cols, n_rows - 1)
+            col_i = char_i % cols
+            ax.text(
+                margin + (col_i + 0.5) * cell_w,
+                y_rows[min(row_i, len(y_rows) - 1)],
+                ch,
+                ha="center",
+                va="center",
+                fontsize=fontsize,
+                color=color,
+                fontfamily="monospace",
+                fontweight="700",
+                transform=ax.transAxes,
+            )
+            char_i += 1
 
 
 def plot_dfa_examples(
@@ -139,9 +204,9 @@ def plot_mixed_vocab_dfa_examples(
         ("bat", "bake", "bank"),   # shared ba · DFA=6
         ("hat", "hate", "late"),   # hat→hate + late · DFA=8
     ),
-    stream_chars: int = 48,
+    stream_chars: int = 80,
 ) -> Path:
-    """Two ≤3-word 3/4-letter vocabularies with long streams + prefix DFAs."""
+    """Two ≤3-word 3/4-letter vocabularies: chips, one-line stream, horizontal DFA."""
     from vocab_diagrams import (
         build_minimized_vocabulary_automaton,
         draw_minimized_dfa_on_axes,
@@ -162,54 +227,45 @@ def plot_mixed_vocab_dfa_examples(
             raise ValueError(f"DFA has {n_states} states (>10) for {words}")
         examples.append((words, aut))
 
-    fig = plt.figure(figsize=(11.4, 6.8))
-    gs = fig.add_gridspec(
-        2, 2,
-        width_ratios=[0.34, 0.66],
-        hspace=0.16,
-        wspace=0.01,
-    )
+    fig = plt.figure(figsize=(12.2, 5.6))
+    outer = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.0], hspace=0.08)
     palette = list(WORD_STYLE.values())
-    # Longer demos: cycle a fixed shuffle until we reach stream_chars.
     stream_patterns = (
         (0, 1, 2, 0, 2, 1, 0, 1, 2, 1, 0, 2),
-        (2, 0, 1, 2, 1, 0, 1, 2, 0, 2, 0, 1),
+        (0, 2, 1, 0, 2, 1, 0, 1, 2, 0, 2, 1),
     )
 
     for row, (words, aut) in enumerate(examples):
-        ax_vocab = fig.add_subplot(gs[row, 0])
+        inner = outer[row].subgridspec(3, 1, height_ratios=[0.28, 0.24, 1.85], hspace=0.04)
+
+        ax_vocab = fig.add_subplot(inner[0])
         ax_vocab.set_axis_off()
         ax_vocab.set_xlim(0, 1)
         ax_vocab.set_ylim(0, 1)
+        letter = "A" if row == 0 else "B"
         ax_vocab.text(
-            0.03, 0.94,
-            f"Vocabulary {'A' if row == 0 else 'B'} · {len(words)} words",
-            fontsize=12, fontweight="bold", va="top",
+            0.0, 0.52,
+            f"Vocabulary {letter}  ·  {', '.join(str(len(w)) for w in words)} letters  ·  "
+            f"DFA={int(aut.dfa._n)}",
+            fontsize=11, fontweight="bold", va="center",
+            transform=ax_vocab.transAxes,
         )
-        ax_vocab.text(
-            0.03, 0.86,
-            f"lengths {', '.join(str(len(w)) for w in words)}",
-            fontsize=9, color="0.35", va="top",
-        )
-        # Compact word chips in one row.
-        chip_w = 0.22
-        gap = 0.03
-        x0 = 0.03
+        chip_w, gap, x0 = 0.09, 0.012, 0.58
         for i, word in enumerate(words):
             stroke, fill = palette[i % len(palette)]
             x = x0 + i * (chip_w + gap)
             ax_vocab.add_patch(
                 FancyBboxPatch(
-                    (x, 0.74), chip_w, 0.07,
-                    boxstyle="round,pad=0.008,rounding_size=0.018",
+                    (x, 0.22), chip_w, 0.56,
+                    boxstyle="round,pad=0.008,rounding_size=0.08",
                     facecolor=fill, edgecolor=stroke, linewidth=1.1,
                     transform=ax_vocab.transAxes,
                 )
             )
             ax_vocab.text(
-                x + chip_w / 2, 0.775, word,
-                ha="center", va="center", fontsize=9,
-                color=stroke, fontfamily="monospace", fontweight="600",
+                x + chip_w / 2, 0.50, word,
+                ha="center", va="center", fontsize=11,
+                color=stroke, fontfamily="monospace", fontweight="700",
                 transform=ax_vocab.transAxes,
             )
 
@@ -222,67 +278,40 @@ def plot_mixed_vocab_dfa_examples(
             stream_words.append(w)
             chars += len(w)
             pi += 1
-        stream = "".join(stream_words)
-        ax_vocab.text(
-            0.03, 0.64, "unsegmented training sequence",
-            fontsize=9, fontweight="600", color="0.3",
-        )
-        # Wrap the long stream onto two rows.
-        n = len(stream)
-        cols = (n + 1) // 2
-        margin = 0.03
-        cell_w = 0.94 / cols
-        char_i = 0
-        for word in stream_words:
-            stroke, fill = palette[words.index(word) % len(palette)]
-            for ch in word:
-                row_i = 0 if char_i < cols else 1
-                col_i = char_i if char_i < cols else char_i - cols
-                x = margin + col_i * cell_w
-                y = 0.44 if row_i == 0 else 0.26
-                ax_vocab.add_patch(
-                    FancyBboxPatch(
-                        (x, y), cell_w * 0.88, 0.11,
-                        boxstyle="round,pad=0.002,rounding_size=0.008",
-                        facecolor=fill, edgecolor=stroke, linewidth=0.65,
-                        transform=ax_vocab.transAxes,
-                    )
-                )
-                ax_vocab.text(
-                    x + cell_w * 0.44, y + 0.055, ch,
-                    ha="center", va="center", fontsize=7.5,
-                    color=stroke, fontfamily="monospace", fontweight="600",
-                    transform=ax_vocab.transAxes,
-                )
-                char_i += 1
-        ax_vocab.text(
-            0.03, 0.10, "no spaces; colors = hidden word boundaries",
-            fontsize=7.5, color="0.5",
+
+        ax_seq = fig.add_subplot(inner[1])
+        ax_seq.set_axis_off()
+        ax_seq.set_xlim(0, 1)
+        ax_seq.set_ylim(0, 1)
+        _draw_colored_letter_stream(
+            ax_seq, stream_words, words,
+            y_rows=(0.50,),
+            fontsize=15.0,
+            margin=0.01,
+            tight=True,
         )
 
-        ax_dfa = fig.add_subplot(gs[row, 1])
+        ax_dfa = fig.add_subplot(inner[2])
         draw_minimized_dfa_on_axes(
             ax_dfa, aut, words,
             compact=True,
-            label_fontsize=13.5,
-            node_scale=1.35,
-            circle_scale=1.25,
+            label_fontsize=10.0,
+            node_scale=1.0,
+            circle_scale=1.0,
             shortest_prefix_labels=True,
             fit_labels=True,
-            accept_marker="✓",
-        )
-        ax_dfa.set_title(
-            f"minimal DFA · {int(aut.dfa._n)} states",
-            fontsize=12, fontweight="bold", pad=2,
+            horizontal=True,
+            fixed_radius=36.0,
+            view_span=(1600.0, 560.0),
         )
 
     finalize_grid_figure(
         fig,
         suptitle="Same mixed-length task, different vocabulary structure",
-        top=0.92, bottom=0.025, left=0.02, right=0.99,
-        hspace=0.18, wspace=0.02,
+        top=0.96, bottom=0.01, left=0.02, right=0.995,
+        hspace=0.08, wspace=0.04,
     )
-    save_figure(fig, save_path, dpi=180)
+    save_figure(fig, save_path, dpi=180, pad_inches=0.04)
     plt.close(fig)
     return save_path
 
@@ -348,36 +377,13 @@ def plot_training_stream(
         ha="center", fontsize=9, fontweight="600", color="0.25",
         transform=ax_stream.transAxes,
     )
-    n_chars = len(stream)
-    margin = 0.02
-    usable = 1.0 - 2 * margin
-    cell = usable / n_chars
-    y0 = 0.28
-    h = 0.42
-    for i, ch in enumerate(stream):
-        pos = 0
-        owner = demo_words[0]
-        for w, _ in segments:
-            if pos <= i < pos + len(w):
-                owner = w
-                break
-            pos += len(w)
-        stroke, fill = _word_colors(owner)
-        x = margin + i * cell
-        ax_stream.add_patch(
-            FancyBboxPatch(
-                (x, y0), cell * 0.92, h,
-                boxstyle="round,pad=0.002,rounding_size=0.01",
-                facecolor=fill, edgecolor=stroke, linewidth=0.9,
-                transform=ax_stream.transAxes, clip_on=False,
-            )
-        )
-        ax_stream.text(
-            x + cell * 0.46, y0 + h / 2, ch,
-            ha="center", va="center", fontsize=9, color=stroke,
-            fontfamily="monospace", fontweight="600",
-            transform=ax_stream.transAxes,
-        )
+    stream_words = [w for w, _ in segments]
+    _draw_colored_letter_stream(
+        ax_stream, stream_words, list(demo_words),
+        y_rows=(0.58, 0.32),
+        fontsize=13.0,
+        margin=0.02,
+    )
     ax_stream.text(
         0.5, 0.06,
         "Unsegmented character stream · word boundaries invisible to the network "

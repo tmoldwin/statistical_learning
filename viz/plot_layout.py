@@ -95,8 +95,8 @@ def condition_bar_colors(n: int) -> list[tuple[float, float, float, float]]:
     return [cmap(i % 20) for i in range(n)]
 
 
-def save_figure(fig, path, *, dpi: int = 150) -> None:
+def save_figure(fig, path, *, dpi: int = 150, pad_inches: float = 0.20) -> None:
     # Do not use bbox_inches="tight": it collapses the headroom reserved for
     # suptitles via subplots_adjust / gridspec and causes title overlap.
-    fig.savefig(path, dpi=dpi, pad_inches=0.20)
+    fig.savefig(path, dpi=dpi, pad_inches=pad_inches)
     plt.close(fig)

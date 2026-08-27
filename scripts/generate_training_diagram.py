@@ -50,7 +50,7 @@ def esc(text: str) -> str:
 
 
 def sub(s: str) -> str:
-    return f'<tspan baseline-shift="sub" font-size="10">{s}</tspan>'
+    return f'<tspan baseline-shift="sub" font-size="12">{s}</tspan>'
 
 
 def colored_w(name: str, color: str) -> str:
@@ -520,12 +520,12 @@ def _layer_positions(lx: float, n: int, y_top: float, y_bot: float) -> list[tupl
     return [(lx, y_top + span * (i + 1) / (n + 1)) for i in range(n)]
 
 
-def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
+def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float, *, height: float = 480) -> float:
     """Input -> one recurrent hidden column (all-pairs mesh) -> output."""
-    h = 270
+    h = height
 
-    y_top = y + 36
-    y_bot = y + h - 36
+    y_top = y + 44
+    y_bot = y + h - 40
     lx_in = x + w * 0.14
     lx_h = x + w * 0.50
     lx_out = x + w * 0.78
@@ -592,42 +592,42 @@ def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
                 f'stroke="{node_stroke}" stroke-width="{sw}"/>'
             )
             lines.append(
-                f'<text x="{px:.1f}" y="{py + 4:.1f}" text-anchor="middle" font-family="{FONT}" '
-                f'font-size="18" font-weight="600" fill="{INK}">{esc(labels[i])}</text>'
+                f'<text x="{px:.1f}" y="{py + 6:.1f}" text-anchor="middle" font-family="{FONT}" '
+                f'font-size="22" font-weight="600" fill="{INK}">{esc(labels[i])}</text>'
             )
 
-    draw_nodes(in_pos, in_labels, 15, active=active_in, fill="#eef4fb", stroke=ACCENT)
-    draw_nodes(h_pos, h_labels, 15, fill="#fff3e6", stroke=ACCENT2)
-    draw_nodes(out_pos, out_labels, 15, fill="#e8f6f4", stroke=C_OUT)
+    draw_nodes(in_pos, in_labels, 24, active=active_in, fill="#eef4fb", stroke=ACCENT)
+    draw_nodes(h_pos, h_labels, 24, fill="#fff3e6", stroke=ACCENT2)
+    draw_nodes(out_pos, out_labels, 24, fill="#e8f6f4", stroke=C_OUT)
 
-    hdr_y = y + 18
+    hdr_y = y + 22
     lines.append(
-        f'<text x="{lx_in:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{ACCENT}">'
+        f'<text x="{lx_in:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="24" font-weight="600" fill="{ACCENT}">'
         f"input x{sub('t')}</text>"
     )
     lines.append(
-        f'<text x="{lx_h:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{ACCENT2}">'
+        f'<text x="{lx_h:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="24" font-weight="600" fill="{ACCENT2}">'
         f"hidden h{sub('t')}</text>"
     )
     lines.append(
-        f'<text x="{lx_out:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{C_OUT}">'
+        f'<text x="{lx_out:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="24" font-weight="600" fill="{C_OUT}">'
         f"softmax</text>"
     )
 
     lines.append(
-        f'<text x="{(lx_in + lx_h) / 2:.0f}" y="{y_top + 6:.0f}" text-anchor="middle" '
-        f'font-size="18" font-weight="600">{colored_w("Wxh", ACCENT)}</text>'
+        f'<text x="{(lx_in + lx_h) / 2:.0f}" y="{y_top + 8:.0f}" text-anchor="middle" '
+        f'font-size="22" font-weight="600">{colored_w("Wxh", ACCENT)}</text>'
     )
     lines.append(
-        f'<text x="{lx_h + max_bulge + 12:.0f}" y="{(y_top + y_bot) / 2:.0f}" text-anchor="start" '
-        f'font-size="18" font-weight="600">{colored_w("Whh", ACCENT2)}</text>'
+        f'<text x="{lx_h + max_bulge + 16:.0f}" y="{(y_top + y_bot) / 2:.0f}" text-anchor="start" '
+        f'font-size="22" font-weight="600">{colored_w("Whh", ACCENT2)}</text>'
     )
     lines.append(
-        f'<text x="{(lx_h + lx_out) / 2:.0f}" y="{y_top + 6:.0f}" text-anchor="middle" '
-        f'font-size="18" font-weight="600">{colored_w("Wyh", C_OUT)}</text>'
+        f'<text x="{(lx_h + lx_out) / 2:.0f}" y="{y_top + 8:.0f}" text-anchor="middle" '
+        f'font-size="22" font-weight="600">{colored_w("Wyh", C_OUT)}</text>'
     )
     lines.append(
-        f'<text x="{x + w / 2:.0f}" y="{y + h - 8:.0f}" text-anchor="middle" font-size="18" fill="{MUTED}">'
+        f'<text x="{x + w / 2:.0f}" y="{y + h - 10:.0f}" text-anchor="middle" font-size="22" fill="{MUTED}">'
         f"h{sub('t')} = tanh({colored_w('Wxh', ACCENT)} x{sub('t')} + {colored_w('Whh', ACCENT2)} h{sub('t-1')}) "
         f"· predict next char · cross-entropy loss</text>"
     )
@@ -642,7 +642,7 @@ def render_bptt_panel(
     w: float,
 ) -> float:
     n = len(window)
-    cell_w, cell_h, gap = 32, 38, 6
+    cell_w, cell_h, gap = 40, 48, 8
     wx = x
     ty = y
     for i, ch in enumerate(window):
@@ -654,7 +654,7 @@ def render_bptt_panel(
         )
         lines.append(
             f'<text x="{cx + cell_w / 2:.1f}" y="{cy + cell_h * 0.72:.0f}" text-anchor="middle" '
-            f'font-family="{FONT}" font-size="17" fill="{ACCENT}">{esc(ch)}</text>'
+            f'font-family="{FONT}" font-size="21" fill="{ACCENT}">{esc(ch)}</text>'
         )
         ax = cx + cell_w / 2
         lines.append(
@@ -671,7 +671,7 @@ def render_bptt_panel(
         )
         lines.append(
             f'<text x="{cx + cell_w / 2:.1f}" y="{ty + cell_h * 0.72:.0f}" text-anchor="middle" '
-            f'font-family="{FONT}" font-size="17" fill="{C_OUT}">{esc(ch)}</text>'
+            f'font-family="{FONT}" font-size="21" fill="{C_OUT}">{esc(ch)}</text>'
         )
     return y + cell_h + 28 + cell_h
 
@@ -683,11 +683,12 @@ def build_figure2() -> str:
     demo = trim_in_vocab(make_stream(words, 32, seed=100), vocab)[:24]
     window = demo[4:12]
 
-    inner_w = w - 2 * MARGIN
-    pad = 28
+    margin = 20
+    inner_w = w - 2 * margin
+    pad = 16
     content_w = inner_w - 2 * pad
-    bx = MARGIN + pad
-    panel_y = MARGIN
+    bx = margin + pad
+    panel_y = margin
 
     panel: list[str] = []
     rnn_bottom = draw_rnn_schematic(panel, bx, panel_y, content_w)
@@ -709,7 +710,7 @@ def build_figure2() -> str:
     )
     ty += 24
     bptt_bottom = render_bptt_panel(panel, bx, ty, window, content_w)
-    total_h = int(bptt_bottom + MARGIN)
+    total_h = int(bptt_bottom + margin)
 
     lines = svg_open(w, total_h)
     lines.extend(panel)
@@ -852,7 +853,7 @@ def main() -> None:
     right_x = MARGIN + col_w + 80
     figures = [
         ("01_corpus_generation.svg", build_figure1, MARGIN + 20, inner_w - 40),
-        ("02_bptt_and_rnn.svg", build_figure2, MARGIN + 28, inner_w - 56),
+        ("02_bptt_and_rnn.svg", build_figure2, 36, 1280 - 72),
         ("03_rollout_evaluation.svg", build_figure3),
     ]
     for old in ("02_bptt_feeding.svg", "03_rnn_architecture.svg", "04_rollout_evaluation.svg"):

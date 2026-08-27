@@ -2055,10 +2055,11 @@ def plot_hidden_states_correlation_clustermap(
         )
 
     axis_label = prefix_axis_label(spaced=spaced, text=text, words=words)
-    grid.ax_heatmap.set_xlabel(axis_label)
-    grid.ax_heatmap.set_ylabel(axis_label)
-    grid.ax_heatmap.tick_params(axis="both", labelsize=7)
+    grid.ax_heatmap.set_xlabel(axis_label, fontsize=12)
+    grid.ax_heatmap.set_ylabel(axis_label, fontsize=12)
+    grid.ax_heatmap.tick_params(axis="both", labelsize=12, length=3)
     plt.setp(grid.ax_heatmap.get_xticklabels(), rotation=90, ha="center")
+    plt.setp(grid.ax_heatmap.get_yticklabels(), fontsize=12)
 
     title = f"{repr_label} correlation"
     if automaton is not None:
@@ -3858,6 +3859,7 @@ def plot_learning_curve_on_axes(
     truncate_to_plateau: bool = False,
     plateau_tail_iters: int = 200,
     sequence_length: int | None = None,
+    fontsize: float | None = None,
 ) -> bool:
     """Plot cross-entropy (and optional rollout metric) on ax. Returns False if no history."""
     series = _learning_curve_series(model, smoothed=smoothed, sequence_length=sequence_length)
@@ -3876,6 +3878,8 @@ def plot_learning_curve_on_axes(
             return False
     lw = 1.0 if compact else 1.2
     fs = 7 if compact else 8
+    if fontsize is not None:
+        fs = float(fontsize)
     ce_line, = ax.plot(iters, ce_plot, color="steelblue", linewidth=lw, label=ce_label)
     legend_lines = [ce_line]
     legend_labels = [ce_label]
@@ -3903,7 +3907,7 @@ def plot_learning_curve_on_axes(
         ylabel = "cross-entropy / char" if val_line is not None else ce_label
         ax.set_ylabel(ylabel, fontsize=fs)
     if title is not None:
-        ax.set_title(title, fontsize=fs + 1 if compact else 10)
+        ax.set_title(title, fontsize=fs + 1)
     ax.grid(True, linestyle=":", alpha=0.4)
     ce_for_ylim = ce_plot
     if val_line is not None:
@@ -4019,39 +4023,39 @@ def _draw_before_after_generation_panel(ax, model, *, max_len: int = 42) -> bool
     vocab_label = ", ".join(vocab_list) if vocab_list else "(vocab unknown)"
     ax.text(
         0.06, 0.93, "Generation before vs after learning",
-        transform=ax.transAxes, fontsize=11, fontweight="600", va="top",
+        transform=ax.transAxes, fontsize=13, fontweight="600", va="top",
     )
     ax.text(
         0.06, 0.84, vocab_label,
-        transform=ax.transAxes, fontsize=9, color="0.35", va="top",
+        transform=ax.transAxes, fontsize=11, color="0.35", va="top",
     )
 
     ax.text(
         0.06, 0.70, "Before training",
-        transform=ax.transAxes, fontsize=10, fontweight="600", va="top",
+        transform=ax.transAxes, fontsize=12, fontweight="600", va="top",
     )
     ax.text(
         0.06, 0.62, "high out-of-vocabulary rate",
-        transform=ax.transAxes, fontsize=8, color="0.45", va="top",
+        transform=ax.transAxes, fontsize=10, color="0.45", va="top",
     )
     _draw_sample_chars(
         ax, demo_before, 0.48,
         vocab=vocab, spaced=spaced, color_by_vocab=True, show_word_separators=False,
-        max_len=max_len, fontsize=12, x0=0.06, x_span=0.88,
+        max_len=max_len, fontsize=14, x0=0.06, x_span=0.88,
     )
 
     ax.text(
         0.06, 0.34, "After training",
-        transform=ax.transAxes, fontsize=10, fontweight="600", va="top",
+        transform=ax.transAxes, fontsize=12, fontweight="600", va="top",
     )
     ax.text(
         0.06, 0.26, "mostly vocabulary words",
-        transform=ax.transAxes, fontsize=8, color="0.45", va="top",
+        transform=ax.transAxes, fontsize=10, color="0.45", va="top",
     )
     _draw_sample_chars(
         ax, demo_after, 0.12,
         vocab=vocab, spaced=spaced, color_by_vocab=True, show_word_separators=False,
-        max_len=max_len, fontsize=12, x0=0.06, x_span=0.88,
+        max_len=max_len, fontsize=14, x0=0.06, x_span=0.88,
     )
 
     from matplotlib.patches import Rectangle
@@ -4075,8 +4079,8 @@ def plot_learning_curve_with_samples(model, save_path: str) -> None:
         print(f"skip {save_path}: re-run min-char-rnn.py to record samples")
         return
 
-    fig = plt.figure(figsize=(12.6, 3.8))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.2, 1.05], wspace=0.22)
+    fig = plt.figure(figsize=(12.4, 5.6))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.2, 1.05], wspace=0.18)
     ax_curve = fig.add_subplot(gs[0, 0])
     ax_samples = fig.add_subplot(gs[0, 1])
 
@@ -4085,8 +4089,8 @@ def plot_learning_curve_with_samples(model, save_path: str) -> None:
         model,
         title="Training: cross-entropy vs word-validity rollout",
         truncate_to_plateau=True,
-        legend_loc="upper left",
-        legend_bbox_to_anchor=(0.0, -0.18),
+        legend_loc="upper right",
+        fontsize=11,
     )
     ok_samples = _draw_before_after_generation_panel(ax_samples, model, max_len=42)
     if not ok_curve or not ok_samples:
@@ -4094,8 +4098,8 @@ def plot_learning_curve_with_samples(model, save_path: str) -> None:
         print(f"skip {save_path}: missing curve or samples")
         return
 
-    fig.subplots_adjust(left=0.08, right=0.98, top=0.88, bottom=0.24, wspace=0.22)
-    fig.savefig(save_path, dpi=150)
+    fig.subplots_adjust(left=0.09, right=0.97, top=0.90, bottom=0.12, wspace=0.18)
+    fig.savefig(save_path, dpi=160)
     plt.close(fig)
     print(f"wrote {save_path}")
 

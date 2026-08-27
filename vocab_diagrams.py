@@ -1291,6 +1291,143 @@ def _fitted_font_size(
     return fontsize, tallest * shrink * line_spacing
 
 
+def _content_scaled_radii(
+    lines_by_state: dict[int, list[str]],
+    base_radius: float,
+    *,
+    max_scale: float | None = None,
+) -> dict[int, float]:
+    """Radius from label bulk: more lines / longer words → larger circle.
+
+    A 1-letter prefix stays at ``base_radius``; a 3-word accept state grows.
+    Same formula everywhere so top/bottom DFAs share one size mapping.
+    ``max_scale`` caps the growth so bulky accept states cannot balloon past
+    their layer spacing in tightly packed multipanel layouts.
+    """
+    out: dict[int, float] = {}
+    for s, lines in lines_by_state.items():
+        n_lines = max(1, len(lines) if lines else 1)
+        longest = max((len(str(ln)) for ln in (lines or [""])), default=1)
+        scale = 1.0 + 0.38 * (n_lines - 1)
+        if longest >= 4:
+            scale *= 1.10
+        if max_scale is not None:
+            scale = min(scale, float(max_scale))
+        out[s] = float(base_radius) * scale
+    return out
+
+
+def _apply_sink_offset(
+    coords: dict[int, tuple[float, float]],
+    dfa,
+    lines_by_state: dict[int, list[str]],
+    sink_offset: tuple[float, float] | None,
+) -> None:
+    """Nudge the multi-word accept sink (the final state with the most label
+    lines) by ``(dx, dy)`` data units, e.g. to clear a crowded fork."""
+    if sink_offset is None or not coords:
+        return
+    multi = [
+        s for s in dfa.finals
+        if s in coords and len(lines_by_state.get(s, [])) > 1
+    ]
+    if not multi:
+        return
+    target = max(multi, key=lambda s: len(lines_by_state.get(s, [])))
+    dx, dy = sink_offset
+    x, y = coords[target]
+    coords[target] = (x + float(dx), y + float(dy))
+
+
+def dfa_content_view_span(
+    automaton: MinimizedVocabAutomaton,
+    words: list[str],
+    *,
+    compact: bool = False,
+    node_scale: float = 1.0,
+    fixed_radius: float | None = None,
+    horizontal: bool = False,
+    horizontal_stretch: float = 1.8,
+    shortest_prefix_labels: bool = False,
+    layout_gap_scale: float | None = None,
+    y_compress: float = 1.0,
+    pad: float = 56.0,
+    max_radius_scale: float | None = None,
+    sink_offset: tuple[float, float] | None = None,
+) -> tuple[float, float]:
+    """Data-space (width, height) needed to frame the DFA without clipping."""
+    dfa = automaton.dfa
+    state_labels = _dfa_state_label_map(automaton)
+    if shortest_prefix_labels:
+        vocab = set(words)
+
+        def _simple_prefix_set(prefs: set[str], *, accepting: bool) -> set[str]:
+            shown = {display_prefix(p) for p in prefs}
+            shown.discard("")
+            if not shown:
+                return {""}
+            if accepting:
+                complete = sorted(w for w in shown if w in vocab)
+                if complete:
+                    return set(complete[:3])
+            ordered = sorted(shown, key=lambda s: (len(s), s))
+            if len(ordered) <= 2 and all(len(s) <= 2 for s in ordered):
+                return {"/".join(ordered)}
+            return {ordered[0]}
+
+        state_labels = {
+            s: _simple_prefix_set(prefs, accepting=(s in dfa.finals))
+            for s, prefs in state_labels.items()
+        }
+    lines_by_state = {
+        s: (sorted(prefs, key=lambda p: (len(p), p)) if prefs else ["ε"])
+        for s, prefs in state_labels.items()
+    }
+    lines_by_state = {
+        s: [display_prefix(p) for p in lines] for s, lines in lines_by_state.items()
+    }
+    layout_radii = {
+        key: val * float(node_scale)
+        for key, val in _compute_radii(state_labels, compact=compact).items()
+    }
+    base_r = float(fixed_radius) if fixed_radius is not None else max(
+        layout_radii.values(), default=MIN_NODE_R,
+    )
+    layout_radii = _content_scaled_radii(
+        lines_by_state, base_r, max_scale=max_radius_scale,
+    )
+    if layout_gap_scale is not None:
+        gap_scale = float(layout_gap_scale)
+    else:
+        gap_scale = _gap_scale(layout_radii) * (1.12 if compact else 1.0)
+    positions = layout_dfa(dfa)
+    if horizontal:
+        positions = {k: NodeLayout(x=p.y, y=p.x) for k, p in positions.items()}
+    coords = _scale_positions(positions, gap_scale=gap_scale)
+    if horizontal and coords:
+        xs = [xy[0] for xy in coords.values()]
+        min_x = min(xs)
+        stretch = float(horizontal_stretch)
+        coords = {
+            k: (min_x + (x - min_x) * stretch, y)
+            for k, (x, y) in coords.items()
+        }
+    if float(y_compress) != 1.0 and coords:
+        ys = [xy[1] for xy in coords.values()]
+        cy = 0.5 * (min(ys) + max(ys))
+        yc = float(y_compress)
+        coords = {k: (x, cy + (y - cy) * yc) for k, (x, y) in coords.items()}
+    _apply_sink_offset(coords, dfa, lines_by_state, sink_offset)
+    radii = dict(layout_radii)
+    if not coords:
+        return 400.0, 300.0
+    x0 = min(coords[s][0] - radii[s] for s in coords) - pad
+    x1 = max(coords[s][0] + radii[s] for s in coords) + pad
+    y0 = min(coords[s][1] - radii[s] for s in coords) - pad
+    y1 = max(coords[s][1] + radii[s] for s in coords) + pad
+    return float(x1 - x0), float(y1 - y0)
+
+
 def draw_minimized_dfa_on_axes(
     ax,
     automaton: MinimizedVocabAutomaton,
@@ -1309,6 +1446,11 @@ def draw_minimized_dfa_on_axes(
     view_span: tuple[float, float] | None = None,
     arrow_mutation_scale: float = 10.0,
     horizontal_stretch: float = 1.8,
+    layout_gap_scale: float | None = None,
+    y_compress: float = 1.0,
+    max_radius_scale: float | None = None,
+    sink_offset: tuple[float, float] | None = None,
+    multiline_fontsize_cap: float | None = None,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`.
 
@@ -1320,7 +1462,10 @@ def draw_minimized_dfa_on_axes(
     ``fixed_radius`` / ``view_span`` keep node size identical across panels.
     ``arrow_mutation_scale`` controls arrowhead size; ``horizontal_stretch``
     widens layer spacing when ``horizontal`` is True (lower → larger nodes
-    relative to edges).
+    relative to edges).     ``layout_gap_scale`` overrides radius-linked spacing
+    so large ``fixed_radius`` nodes can sit close together.
+    ``y_compress`` (<1) squeezes vertical spread after layout so wide panels
+    are not forced into a tall shared view window.
     """
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
     from matplotlib.path import Path
@@ -1369,9 +1514,16 @@ def draw_minimized_dfa_on_axes(
         key: val * float(node_scale)
         for key, val in _compute_radii(state_labels, compact=compact).items()
     }
-    if fixed_radius is not None:
-        layout_radii = {key: float(fixed_radius) for key in layout_radii}
-    gap_scale = _gap_scale(layout_radii) * (1.12 if compact else 1.0)
+    base_r = float(fixed_radius) if fixed_radius is not None else max(
+        layout_radii.values(), default=MIN_NODE_R,
+    )
+    layout_radii = _content_scaled_radii(
+        lines_by_state, base_r, max_scale=max_radius_scale,
+    )
+    if layout_gap_scale is not None:
+        gap_scale = float(layout_gap_scale)
+    else:
+        gap_scale = _gap_scale(layout_radii) * (1.12 if compact else 1.0)
     positions = layout_dfa(dfa)
     if horizontal:
         positions = {k: NodeLayout(x=p.y, y=p.x) for k, p in positions.items()}
@@ -1379,28 +1531,23 @@ def draw_minimized_dfa_on_axes(
     if horizontal and coords:
         xs = [xy[0] for xy in coords.values()]
         min_x = min(xs)
-        span = max(max(xs) - min_x, 1.0)
         stretch = float(horizontal_stretch)
         coords = {
             k: (min_x + (x - min_x) * stretch, y)
             for k, (x, y) in coords.items()
         }
+    if float(y_compress) != 1.0 and coords:
+        ys = [xy[1] for xy in coords.values()]
+        cy = 0.5 * (min(ys) + max(ys))
+        yc = float(y_compress)
+        coords = {k: (x, cy + (y - cy) * yc) for k, (x, y) in coords.items()}
+    _apply_sink_offset(coords, dfa, lines_by_state, sink_offset)
     # Deliberately separate circle size from graph spacing. Scaling both together
     # is mostly cancelled when Matplotlib fits the graph into the same axes.
     radii = {
         key: radius * float(circle_scale)
         for key, radius in layout_radii.items()
     }
-    if fixed_radius is not None:
-        radii = {key: float(fixed_radius) for key in radii}
-    elif fit_labels:
-        radii = _uniform_node_radii(coords, radii)
-    # Grow crowded accept / multi-line nodes so every label stays readable.
-    for s, lines in lines_by_state.items():
-        n_lines = max(1, len(lines))
-        if n_lines <= 1:
-            continue
-        radii[s] = float(radii.get(s, MIN_NODE_R)) * (1.0 + 0.42 * (n_lines - 1))
     width, height = _canvas_size(coords, radii)
 
     ax.set_facecolor(BG_COLOR)
@@ -1551,7 +1698,10 @@ def draw_minimized_dfa_on_axes(
         # point-sized glyphs cannot overflow the per-line data slot.
         line_step = (1.7 * r) / n_lines
         if n_lines > 1:
-            fs = min(fs, max(5.5, 11.0 - 1.5 * (n_lines - 1)))
+            if multiline_fontsize_cap is not None:
+                fs = min(fs, float(multiline_fontsize_cap))
+            else:
+                fs = min(fs, max(5.5, 11.0 - 1.5 * (n_lines - 1)))
         if n_lines == 1:
             ax.text(
                 cx, cy, wrapped[0],

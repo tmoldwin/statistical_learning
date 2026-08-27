@@ -417,6 +417,42 @@ def _load_task_si_arrays(
     return out or None
 
 
+def _mean_si_by_feature(
+    ctx,
+    *,
+    features: tuple[str, ...],
+) -> dict[str, float] | None:
+    """Mean per-unit SI on condensed prefixes for each requested feature."""
+    from unit_selectivity import build_timestep_labels, compute_unit_selectivity_matrix
+    from visualize import condense_hidden_states_by_prefix
+    from vocab_diagrams import build_minimized_vocabulary_automaton
+
+    automaton = build_minimized_vocabulary_automaton(ctx.words)
+    condensed = condense_hidden_states_by_prefix(
+        ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+    )
+    if condensed.hidden_states.shape[0] < 2:
+        return None
+    labels = build_timestep_labels(
+        ctx.text, automaton,
+        spaced=ctx.spaced, words=ctx.words, condensed=condensed,
+        model=None, activations=None,
+    )
+    si, *_rest = compute_unit_selectivity_matrix(
+        condensed.hidden_states, labels, features=features,
+    )
+    out: dict[str, float] = {}
+    for feat in features:
+        vals = si.get(feat)
+        if vals is None:
+            out[feat] = float("nan")
+            continue
+        arr = np.asarray(vals, dtype=float)
+        arr = arr[np.isfinite(arr)]
+        out[feat] = float(np.mean(arr)) if arr.size else float("nan")
+    return out
+
+
 def _pooled_si_arrays_across_seeds(
     task: str,
     seeds: tuple[int, ...],
@@ -425,7 +461,7 @@ def _pooled_si_arrays_across_seeds(
     features: tuple[str, ...] = DECODING_FEATURES,
 ) -> dict[str, np.ndarray] | None:
     """Concatenate per-unit SI across training seeds (one population per checkpoint)."""
-    from unit_selectivity import build_timestep_labels, compute_selectivity
+    from unit_selectivity import build_timestep_labels, compute_unit_selectivity_matrix
     from visualize import condense_hidden_states_by_prefix
     from vocab_diagrams import build_minimized_vocabulary_automaton
 
@@ -445,13 +481,13 @@ def _pooled_si_arrays_across_seeds(
         labels = build_timestep_labels(
             ctx.text, automaton,
             spaced=ctx.spaced, words=ctx.words, condensed=condensed,
-            model=ctx.model, activations=condensed.hidden_states,
+            model=None, activations=None,
         )
-        result = compute_selectivity(
-            condensed.hidden_states, labels, ctx.model, ctx.text,
+        si, *_rest = compute_unit_selectivity_matrix(
+            condensed.hidden_states, labels, features=features,
         )
         for feat in features:
-            vals = result.si.get(feat)
+            vals = si.get(feat)
             if vals is None:
                 continue
             arr = np.asarray(vals, dtype=float)
@@ -466,6 +502,194 @@ def _pooled_si_arrays_across_seeds(
     return out or None
 
 
+def _si_learning_model_path(
+    task: str,
+    seed: int,
+    *,
+    model_type: str = "rnn",
+) -> Path | None:
+    """Checkpoint that has learning snaps: published model, else sidecar probe."""
+    from experiment import checkpoint_path, model_dir
+    from rnn.learning_snaps import list_learning_snaps
+
+    ckpt = checkpoint_path(task, model_type, seed=seed)
+    if list_learning_snaps(ckpt):
+        return ckpt
+    probe = model_dir(task, model_type) / f"model_seed{int(seed)}_si_learn.npz"
+    if list_learning_snaps(probe):
+        return probe
+    return None
+
+
+def _metric_word_error_series(model_path: Path) -> tuple[list[int], list[float]] | None:
+    data = np.load(model_path, allow_pickle=True)
+    if "metric_iterations" not in data.files or "metric_word_error_frac" not in data.files:
+        return None
+    iters = np.asarray(data["metric_iterations"], dtype=int).ravel()
+    err = np.asarray(data["metric_word_error_frac"], dtype=float).ravel()
+    n = min(iters.size, err.size)
+    if n < 2:
+        return None
+    return iters[:n].tolist(), err[:n].tolist()
+
+
+def _si_over_learning_cache_path(
+    task: str,
+    seed: int,
+    *,
+    model_type: str = "rnn",
+) -> Path:
+    from experiment import plots_dir
+
+    return plots_dir(task, model_type) / "decoding" / f"si_over_learning_seed{int(seed)}.json"
+
+
+def collect_si_over_learning(
+    task: str,
+    seed: int,
+    *,
+    model_type: str = "rnn",
+    features: tuple[str, ...] = DECODING_FEATURES,
+    recompute: bool = False,
+) -> dict[str, Any] | None:
+    """Mean unit SI at each learning snap, plus the run's word-error curve."""
+    from rnn.learning_snaps import list_learning_snaps
+
+    cache = _si_over_learning_cache_path(task, seed, model_type=model_type)
+    if cache.is_file() and not recompute:
+        payload = json.loads(cache.read_text(encoding="utf-8"))
+        if payload.get("mean_si"):
+            return payload
+
+    ckpt = _si_learning_model_path(task, seed, model_type=model_type)
+    if ckpt is None:
+        return None
+    snaps = list_learning_snaps(ckpt)
+    if not snaps:
+        return None
+
+    iterations: list[int] = []
+    word_err: list[float] = []
+    mean_si: dict[str, list[float]] = {feat: [] for feat in features}
+    for snap in snaps:
+        print(f"  SI over learning {task} seed {seed} {snap.name}", flush=True)
+        meta = np.load(snap, allow_pickle=True)
+        iteration = (
+            int(meta["learning_snap_iteration"])
+            if "learning_snap_iteration" in meta.files
+            else int(snap.stem.split("_")[1])
+        )
+        err = (
+            float(meta["learning_snap_word_err"])
+            if "learning_snap_word_err" in meta.files
+            else float("nan")
+        )
+        ctx = load_task_viz_context(
+            task, model_type=model_type, seed=seed, checkpoint=snap,
+        )
+        si_row = _mean_si_by_feature(ctx, features=features)
+        if si_row is None:
+            continue
+        iterations.append(iteration)
+        word_err.append(err)
+        for feat in features:
+            mean_si[feat].append(float(si_row.get(feat, float("nan"))))
+
+    if len(iterations) < 2:
+        return None
+
+    payload: dict[str, Any] = {
+        "task": task,
+        "seed": int(seed),
+        "n_snaps": len(iterations),
+        "features": list(features),
+        "iterations": iterations,
+        "word_err": word_err,
+        "mean_si": mean_si,
+        "snap_model": str(ckpt),
+    }
+    dense = _metric_word_error_series(ckpt)
+    if dense is not None:
+        payload["metric_iterations"] = dense[0]
+        payload["metric_word_error_frac"] = dense[1]
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {cache}")
+    return payload
+
+
+def _load_si_over_learning(
+    task: str,
+    seeds: tuple[int, ...],
+    *,
+    model_type: str = "rnn",
+    features: tuple[str, ...] = DECODING_FEATURES,
+    exemplar_seed: int | None = None,
+) -> dict[str, Any] | None:
+    """Prefer the exemplar seed (default 1); otherwise first seed with snaps."""
+    ordered: list[int] = []
+    preferred = 1 if exemplar_seed is None else int(exemplar_seed)
+    if preferred in seeds:
+        ordered.append(preferred)
+    ordered.extend(s for s in seeds if s not in ordered)
+    for seed in ordered:
+        payload = collect_si_over_learning(
+            task, seed, model_type=model_type, features=features,
+        )
+        if payload is not None:
+            return payload
+    return None
+
+
+def _plot_si_over_learning_on_ax(
+    ax,
+    payload: dict[str, Any],
+    *,
+    features: tuple[str, ...],
+) -> Any:
+    """Feature-colored mean SI vs iteration; dashed grey = exemplar word error."""
+    iters = np.asarray(payload.get("iterations", []), dtype=float)
+    mean_si = payload.get("mean_si") or {}
+    y_hi = 0.0
+    for feat in features:
+        vals = np.asarray(mean_si.get(feat, []), dtype=float)
+        if vals.size != iters.size or not np.any(np.isfinite(vals)):
+            continue
+        color = DECODE_FEATURE_COLORS.get(feat, "#333333")
+        ax.plot(iters, vals, color=color, lw=1.7)
+        y_hi = max(y_hi, float(np.nanmax(vals)))
+    ax.set_xlabel("iteration", fontsize=9)
+    ax.set_ylabel("mean SI", fontsize=9)
+    seed = payload.get("seed")
+    ax.set_title(
+        f"mean SI over training · seed {seed}" if seed is not None
+        else "mean SI over training",
+        fontsize=10,
+    )
+    ax.set_ylim(-0.02, max(0.55, y_hi * 1.12) if y_hi > 0 else 1.05)
+    ax.grid(True, alpha=0.3, linewidth=0.5)
+    ax.tick_params(labelsize=8)
+
+    we_x = np.asarray(
+        payload.get("metric_iterations") or payload.get("iterations") or [],
+        dtype=float,
+    )
+    we_y = np.asarray(
+        payload.get("metric_word_error_frac") or payload.get("word_err") or [],
+        dtype=float,
+    )
+    word_err_line = None
+    if we_x.size >= 2 and we_x.size == we_y.size and np.any(np.isfinite(we_y)):
+        ax2 = ax.twinx()
+        (word_err_line,) = ax2.plot(
+            we_x, we_y, color="0.45", lw=1.1, ls="--", alpha=0.85,
+        )
+        ax2.set_ylabel("word err", fontsize=8, color="0.45")
+        ax2.set_ylim(-0.02, 1.05)
+        ax2.tick_params(labelsize=7, colors="0.45")
+    return word_err_line
+
+
 def plot_aggregated_seed_decode_curves(
     panels: dict[int, dict[str, Any]],
     save_path: str | Path,
@@ -476,7 +700,7 @@ def plot_aggregated_seed_decode_curves(
     n_neuron_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
     model_type: str = "rnn",
 ) -> Path:
-    """Mean ± std decoding curves across seeds, plus pooled per-unit SI density."""
+    """Mean ± std decoding curves, SI over training (exemplar), pooled SI density."""
     save_path = Path(save_path)
     seeds = tuple(sorted(panels))
     if not seeds:
@@ -487,10 +711,13 @@ def plot_aggregated_seed_decode_curves(
     )
     if si_by_feat is None:
         si_by_feat = _load_task_si_arrays(task, model_type=model_type, features=features)
-    n_cols = 3 if si_by_feat else 2
+    si_learn = _load_si_over_learning(
+        task, seeds, model_type=model_type, features=features,
+    )
+    n_cols = 2 + int(si_learn is not None) + int(si_by_feat is not None)
     fig, axes = plt.subplots(
         1, n_cols,
-        figsize=(12.6 if si_by_feat else 9.6, 3.6),
+        figsize=(4.15 * n_cols + 0.4, 3.6),
         sharey=False,
     )
     axes = np.atleast_1d(axes)
@@ -575,10 +802,18 @@ def plot_aggregated_seed_decode_curves(
     axes[0].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
     axes[1].set_ylabel("(accuracy − chance) / (1 − chance)", fontsize=9)
 
+    extra_col = 2
+    word_err_line = None
+    if si_learn is not None:
+        word_err_line = _plot_si_over_learning_on_ax(
+            axes[extra_col], si_learn, features=features,
+        )
+        extra_col += 1
+
     if si_by_feat is not None:
         from unit_selectivity import plot_selectivity_si_on_ax
 
-        ax_si = axes[2]
+        ax_si = axes[extra_col]
         plot_selectivity_si_on_ax(
             ax_si, si_by_feat, features=features, show_legend=False, fill=False,
         )
@@ -600,11 +835,18 @@ def plot_aggregated_seed_decode_curves(
             Line2D([0], [0], color="0.35", ls="--", lw=1.0, alpha=0.8),
         ]
         legend_labels = list(legend_labels) + ["DFA-state oracle"]
+    if word_err_line is not None:
+        from matplotlib.lines import Line2D
+
+        legend_handles = list(legend_handles) + [
+            Line2D([0], [0], color="0.45", ls="--", lw=1.1, alpha=0.85),
+        ]
+        legend_labels = list(legend_labels) + ["word err"]
     if legend_handles:
         fig.legend(
             legend_handles, legend_labels,
             loc="upper center", bbox_to_anchor=(0.5, 0.995),
-            ncol=min(len(legend_handles), 6), fontsize=8, frameon=False, columnspacing=1.2,
+            ncol=min(len(legend_handles), 7), fontsize=8, frameon=False, columnspacing=1.2,
         )
     # No figure-level title: the legend already names the series (avoids overlap).
     finalize_grid_figure(
@@ -612,9 +854,9 @@ def plot_aggregated_seed_decode_curves(
         suptitle=None,
         top=0.88,
         bottom=0.18,
-        left=0.08,
-        right=0.99,
-        wspace=0.32 if si_by_feat else 0.18,
+        left=0.06,
+        right=0.97,
+        wspace=0.38 if (si_learn is not None or si_by_feat is not None) else 0.18,
     )
     # finalize_grid_figure / tight packing can hide y labels on non-left panels.
     for ax in axes[:2]:

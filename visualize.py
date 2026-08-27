@@ -333,6 +333,9 @@ def plot_hidden_states_heatmap(
         spaced = condensed.spaced
         words = condensed.words
     else:
+        clip = _clip_next_char_sequence(text, words=words, spaced=spaced, max_len=32)
+        hidden_states = np.asarray(hidden_states, dtype=float)[:len(clip)]
+        text = clip
         x_labels = list(text)
         x_axis = "timestep / input character"
     length, hidden_size = hidden_states.shape
@@ -357,8 +360,8 @@ def plot_hidden_states_heatmap(
 
     axis_ylabel = "h" if y_label == "hidden unit" else y_label
     # Wider heatmap so x-axis letters stay readable on the poster.
-    heat_h = float(min(7.2, max(4.8, hidden_size * 0.12)))
-    heat_w = float(max(11.0, min(15.0, length * 0.18)))
+    heat_h = float(min(7.6, max(5.2, hidden_size * 0.13)))
+    heat_w = float(max(12.2, min(15.0, length * 0.38)))
 
     if cluster_units:
         unit_labels = [
@@ -404,12 +407,12 @@ def plot_hidden_states_heatmap(
         # that seaborn places to the right and can collide with the colorbar.
         grid.ax_heatmap.set_ylabel("")
         grid.ax_heatmap.tick_params(axis="x", labelsize=10)
-        grid.ax_heatmap.tick_params(axis="y", labelsize=5)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=6.5)
         # Avoid overlapping unit tick labels when H is large.
         step = 3 if hidden_size >= 40 else 2 if hidden_size >= 24 else 1
         for i, tick in enumerate(grid.ax_heatmap.get_yticklabels()):
             tick.set_visible(i % step == 0)
-            tick.set_fontsize(5)
+            tick.set_fontsize(6.5)
         for tick in grid.ax_heatmap.get_xticklabels():
             tick.set_fontweight("bold")
         # Compact colorbar to the right of y tick labels (pad clears them).
@@ -9147,6 +9150,35 @@ def plot_weight_eigenspectra(model, save_path: str) -> None:
     print(f"wrote {save_path}")
 
 
+_NEXT_CHAR_SEQ_MAX = 24
+
+
+def _clip_next_char_sequence(
+    text: str,
+    *,
+    max_len: int = _NEXT_CHAR_SEQ_MAX,
+    words: list[str] | None = None,
+    spaced: bool = False,
+) -> str:
+    """Keep a short sequential window so per-character ticks stay readable."""
+    if max_len < 1 or len(text) <= max_len:
+        return text
+    chunk = text[:max_len]
+    if spaced:
+        cut = chunk.rfind(" ")
+        return chunk[:cut] if cut > max_len // 2 else chunk
+    if not words:
+        return chunk
+    segs = segment_corpus_by_words(chunk, set(words))
+    if not segs:
+        return chunk
+    start, end, word = segs[-1]
+    vocab = set(words)
+    if word in vocab and chunk[start : end + 1] == word:
+        return chunk
+    return chunk[:start] if start > 0 else chunk
+
+
 def plot_output_probs(
     text,
     output_probs,
@@ -9172,11 +9204,17 @@ def plot_output_probs(
     # Each: probs, x_labels, targets, x_axis, prefix_keys_or_None, is_sequence
 
     # Sequence first (paper Fig 4 top), then prefix-condensed.
-    seq_probs = np.asarray(output_probs, dtype=float)
+    seq_text = _clip_next_char_sequence(text, words=words, spaced=spaced)
+    seq_n = len(seq_text)
+    seq_probs = np.asarray(output_probs[:seq_n], dtype=float)
+    if seq_n < len(text):
+        seq_targets = list(text[1:seq_n]) + [text[seq_n]]
+    else:
+        seq_targets = list(text[1:]) + [text[0]]
     panels.append((
         seq_probs,
-        list(text),
-        list(text[1:]) + [text[0]],
+        list(seq_text),
+        seq_targets,
         "timestep / input character",
         None,
         True,
@@ -9200,9 +9238,10 @@ def plot_output_probs(
 
     n_rows = len(panels)
     max_len = max(p[0].shape[0] for p in panels)
-    # Wide enough that every single-char column can carry an upright tick.
-    fig_w = float(max(12.0, min(20.0, max_len * 0.32 + 2.0)))
-    fig_h = float(max(3.1, vocab_size * 0.24 + 1.0) * n_rows)
+    # Wide banner: two stacked heatmaps, not a tall empty canvas.
+    fig_w = float(max(12.5, min(18.0, max_len * 0.32 + 2.0)))
+    row_h = float(max(2.35, min(2.85, vocab_size * 0.19 + 0.75)))
+    fig_h = row_h * n_rows + (0.55 if n_rows > 1 else 0.10)
     fig, axes = plt.subplots(
         n_rows, 1, figsize=(fig_w, fig_h), squeeze=False, sharey=True,
     )
@@ -9245,8 +9284,9 @@ def plot_output_probs(
                     prefix_keys, automaton, spaced=spaced,
                 )
             else:
+                seq_for_dfa = "".join(str(lab) for lab in x_labels)
                 state_ids = _dfa_state_ids_at_timesteps(
-                    text, automaton, spaced=spaced, words=words,
+                    seq_for_dfa, automaton, spaced=spaced, words=words,
                 )
             _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
             axis_label += " · tick color = min DFA state"
@@ -9280,11 +9320,11 @@ def plot_output_probs(
             fig,
             # Sequence (top) + condensed prefixes (bottom).
             suptitle="P(next char | input so far)  —  red dots = actual next char",
-            top=0.89,
-            bottom=max(0.11, bottom_need),
-            left=0.06,
+            top=0.91,
+            bottom=0.14,
+            left=0.05,
             right=0.96,
-            hspace=0.42,
+            hspace=0.40,
         )
     else:
         finalize_grid_figure(

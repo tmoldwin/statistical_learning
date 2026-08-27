@@ -24,6 +24,7 @@ from visualize import (
     _closed_loop_summary_seed,
     _cube_data_limits,
     _one_vocab_cycle_steps,
+    _plot_segmented_closed_loop_rollout,
     _plot_trajectory_closed_loop_panel,
     _project_hidden_to_pca,
     _square_data_limits,
@@ -31,6 +32,7 @@ from visualize import (
     _trajectory_seed_letters,
     _vocab_word_colors,
     condense_hidden_states_by_prefix,
+    corpus_segments,
 )
 from vocab_diagrams import build_minimized_vocabulary_automaton
 
@@ -471,20 +473,93 @@ def plot_closed_loop_trajectories(
     return out_path
 
 
+def _plot_open_loop_word_trajectories_on_ax(
+    ax,
+    text: str,
+    hidden_states: np.ndarray,
+    mean: np.ndarray,
+    components: np.ndarray,
+    limit_arrays: list,
+    *,
+    spaced: bool,
+    vocab_words: list[str],
+    word_colors: dict[str, tuple],
+    max_segments: int = 16,
+    linewidth: float = 1.05,
+    arrow_mutation_scale: float = 7.0,
+    one_per_word: bool = True,
+) -> tuple[np.ndarray, list[str]]:
+    """Overlay open-loop word trajectories; return first-visit prefix coords/labels.
+
+    Condensed *mean* prefixes sit near the origin while raw timesteps do not, so
+    annotations use the first corpus visit of each prefix (trajectory vertices).
+    """
+    from vocab_diagrams import in_word_prefix_at_position
+
+    segments = corpus_segments(text, list(vocab_words), spaced=spaced)
+    if len(segments) >= 2:
+        segments = segments[1:]
+
+    first_pref_xy: dict[str, np.ndarray] = {}
+    first_pref_order: list[str] = []
+    seen_words: set[str] = set()
+    n_plot = 0
+    for start, end, word in segments:
+        if one_per_word and word in seen_words:
+            continue
+        if n_plot >= max_segments:
+            break
+        path = np.asarray(hidden_states[int(start) : int(end) + 1], dtype=float)
+        if path.shape[0] < 2:
+            continue
+        z = _project_hidden_to_pca(path, mean, components)
+        limit_arrays.append(z)
+        prefs: list[str] = []
+        words_at: list[str] = []
+        for i, t in enumerate(range(int(start), int(end) + 1)):
+            pref = in_word_prefix_at_position(
+                text, t, spaced=spaced, vocab=set(vocab_words),
+            ) or ""
+            prefs.append(pref)
+            words_at.append(str(word))
+            if pref and pref not in first_pref_xy:
+                first_pref_xy[pref] = np.asarray(z[i], dtype=float)
+                first_pref_order.append(pref)
+        _plot_segmented_closed_loop_rollout(
+            ax, z, prefs, words_at,
+            word_colors=word_colors,
+            vocab_words=vocab_words,
+            annotate=False,
+            annotate_fontsize=5.0,
+            is_3d=False,
+            linewidth=linewidth,
+            alpha=0.85,
+            unique_word_labels=False,
+            arrow_mutation_scale=arrow_mutation_scale,
+        )
+        seen_words.add(str(word))
+        n_plot += 1
+
+    if not first_pref_order:
+        return np.zeros((0, 2)), []
+    z_pts = np.vstack([first_pref_xy[p] for p in first_pref_order])
+    return z_pts, first_pref_order
+
+
 def plot_vocab_complexity_prefix_traj_grid(
     *,
-    n_vocabs: int = 4,
+    n_vocabs: int = 3,
     seeds: tuple[int, ...] = (1, 2),
     out_path: Path | None = None,
     model_type: str = "rnn",
     embed_method: str = "pca",
     rollout_seed: int = 0,
     text_chars: int = 100,
-    panel_inches: float = 2.35,
+    panel_inches: float = 3.15,
     max_dfa: int = 12,
-    target_n_words: tuple[int, ...] = (2, 3, 4, 5),
+    target_n_words: tuple[int, ...] = (2, 3, 4),
 ) -> Path:
-    """2×K grid: rows = seeds, columns = small mixed vocabs (~2–5 words).
+    """2×K grid: rows = seeds, columns = small mixed vocabs (~2–4 words).
 
     Prefers DFA size ≤ ``max_dfa``; if a target word count has no such run,
     falls back to the smallest-DFA vocab at that word count. Each panel overlays
@@ -516,8 +591,8 @@ def plot_vocab_complexity_prefix_traj_grid(
     n_rows = len(run_seeds)
     n_cols = len(vocabs)
     panel = float(panel_inches)
-    fig_w = panel * n_cols + 0.85
-    fig_h = panel * n_rows + 0.95
+    fig_w = panel * n_cols + 0.55
+    fig_h = panel * n_rows + 0.62
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_w, fig_h), squeeze=False)
 
     for col, (n_dfa, n_words, task, words_t) in enumerate(vocabs):
@@ -550,31 +625,31 @@ def plot_vocab_complexity_prefix_traj_grid(
             condensed = condense_hidden_states_by_prefix(
                 ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
             )
-            z_dfa = _project_hidden_to_pca(condensed.hidden_states, mean, components)
+            del condensed  # means collapse to center; annotate first visits instead
 
             vocab_words = list(ctx.words)
-            seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
-            summary_seed = _closed_loop_summary_seed(
-                vocab_words, seed_letters, spaced=ctx.spaced,
-            )
-            summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
-            if vocab_words:
-                summary_steps += max(len(w) for w in vocab_words)
             word_colors = _vocab_word_colors(vocab_words)
-            limit_arrays: list = [np.asarray(z_dfa, dtype=float)]
+            limit_arrays: list = []
 
-            # Trajectories first (under), then prefix labels on top.
-            _plot_trajectory_closed_loop_panel(
-                ax, ctx.model, [summary_seed], summary_steps, rollout_seed,
-                mean, components, limit_arrays,
-                vocab_words=vocab_words, word_colors=word_colors,
-                spaced=ctx.spaced, is_3d=False,
-                average_trials=1,
-                annotate=False,
-                annotate_fontsize=5.0,
+            z_dfa, prefix_labels = _plot_open_loop_word_trajectories_on_ax(
+                ax,
+                ctx.text,
+                ctx.hidden_states,
+                mean,
+                components,
+                limit_arrays,
+                spaced=ctx.spaced,
+                vocab_words=vocab_words,
+                word_colors=word_colors,
+                max_segments=max(8, 2 * len(vocab_words)),
                 linewidth=1.05,
                 arrow_mutation_scale=7.0,
+                one_per_word=True,
             )
+            if len(z_dfa) == 0:
+                ax.set_visible(False)
+                continue
+            limit_arrays.append(np.asarray(z_dfa, dtype=float))
             add_dfa_state_annotations(
                 ax,
                 ctx.text,
@@ -586,7 +661,7 @@ def plot_vocab_complexity_prefix_traj_grid(
                 point_size=28,
                 label_fontsize=5.5,
                 leader_linewidth=0.35,
-                prefix_labels=list(condensed.labels),
+                prefix_labels=list(prefix_labels),
                 show_legend=False,
             )
             xlim, ylim = _square_data_limits(*limit_arrays, padding_frac=0.12)
@@ -620,16 +695,16 @@ def plot_vocab_complexity_prefix_traj_grid(
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"Prefixes + closed-loop trajectories · {word_note} · "
+            f"Prefixes + open-loop word trajectories · {word_note} · "
             f"{dfa_note} · {n_rows} seeds"
         ),
         suptitle_fontsize=11,
-        top=0.90,
-        bottom=0.08,
-        left=0.06,
+        top=0.92,
+        bottom=0.06,
+        left=0.05,
         right=0.995,
-        hspace=0.16,
-        wspace=0.10,
+        hspace=0.12,
+        wspace=0.08,
     )
 
     if out_path is None:

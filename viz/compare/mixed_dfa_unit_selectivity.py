@@ -834,32 +834,40 @@ def plot_mixed_fig15_geometry_and_selectivity(
     within_panels = within_payload.get("panels", [])
     within_feats = tuple(within_payload.get("features", features[:4]))
 
-    fig, axes = plt.subplots(2, 2, figsize=(10.4, 6.0), squeeze=False)
-    ax_cw, ax_cb = axes[0]
-    ax_den, ax_sc = axes[1]
+    fig, axes = plt.subplots(1, 4, figsize=(12.8, 3.80), squeeze=False)
+    ax_cw, ax_cb, ax_den, ax_sc = axes[0]
 
     _plot_cosine_within_on_ax(ax_cw, within_panels, features=within_feats)
     _plot_cosine_between_on_ax(ax_cb, within_panels, features=within_feats)
     _plot_pooled_si_density_on_ax(ax_den, pooled_all, features=features)
     _plot_mean_si_scatter_on_ax(ax_sc, si_payload.get("per_run", []), features=features)
+    for ax in (ax_cw, ax_cb, ax_den, ax_sc):
+        ax.set_title(ax.get_title(), fontsize=9, pad=2)
 
     handles, labels = ax_sc.get_legend_handles_labels()
     if handles:
         fig.legend(
             handles, labels,
-            loc="lower center", bbox_to_anchor=(0.5, 0.005),
-            ncol=len(handles), fontsize=7, frameon=False, columnspacing=1.0,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0.915),
+            bbox_transform=fig.transFigure,
+            ncol=len(handles),
+            fontsize=7,
+            frameon=False,
+            columnspacing=1.15,
+            handletextpad=0.4,
         )
 
     finalize_grid_figure(
         fig,
         suptitle="Population geometry and unit selectivity vs DFA size (mixed vocabs)",
-        top=0.90,
-        bottom=0.10,
-        left=0.07,
+        suptitle_fontsize=10,
+        top=0.74,
+        bottom=0.14,
+        left=0.055,
         right=0.99,
-        wspace=0.34,
-        hspace=0.42,
+        wspace=0.28,
+        hspace=0.25,
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     save_figure(fig, out, dpi=150)

@@ -1,5 +1,5 @@
 {
-  "copied": 37,
+  "copied": 38,
   "missing": [],
   "figures": [
     {
@@ -165,8 +165,16 @@
     {
       "section": "demo",
       "paper_name": "fig_word_trajectories.jpg",
-      "source": "experiments/eight_word_ate_at_demo_ns/rnn/plots/trajectories/dfa_and_trajectory_by_seed.png",
+      "source": "experiments/comparisons/mixed_vocab_dfa_ns/trajectories/prefix_traj_by_vocab_seed_grid.png",
       "dest": "paper/figures/demo/fig_word_trajectories.jpg",
+      "exists": true,
+      "skipped_self": false
+    },
+    {
+      "section": "demo",
+      "paper_name": "fig_word_trajectories_by_seed.jpg",
+      "source": "experiments/eight_word_ate_at_demo_ns/rnn/plots/trajectories/dfa_and_trajectory_by_seed.png",
+      "dest": "paper/figures/demo/fig_word_trajectories_by_seed.jpg",
       "exists": true,
       "skipped_self": false
     },

@@ -1015,8 +1015,12 @@ def plot_mixed_dfa_scaling_overview(
     recompute: bool = False,
     model_type: str | None = None,
     seed: int | None = None,
+    with_activation_row: bool = True,
+    activation_target_dfas: tuple[int, ...] = (4, 15, 27, 49),
 ) -> Path:
-    """Paper overview: CE + word-error curves, training cost, PC spectra."""
+    """Paper overview: CE/WE/iters/spectra (top) + optional activation rasters (bottom)."""
+    from scipy.cluster.hierarchy import leaves_list, linkage
+    from viz.compare._data import load_task_viz_context
     from viz.compare.pow2_sweep_metric_board import _fit_trend
 
     decode_payload = payload or _load_panels()
@@ -1031,16 +1035,87 @@ def plot_mixed_dfa_scaling_overview(
         if "error" not in p
     ]
 
-    # Story: learning (CE → word-error) then summaries (iters → spectra).
-    # Matching inset colorbars on the bottom-row panels.
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    run_seed = int(seed if seed is not None else (decode_payload.get("seeds") or [1])[0])
+    heat_panels: list[tuple[int, int, str, tuple[str, ...]]] = []
+    if with_activation_row:
+        ranked = _pick_mixed_dfa_trajectory_span_tasks(
+            n_panels=50,
+            seed=run_seed,
+            model_type=mt,
+            unique_dfa=True,
+        )
+        by_dfa: dict[int, tuple[int, int, str, tuple[str, ...]]] = {}
+        for item in ranked:
+            by_dfa.setdefault(int(item[0]), item)
+        for target in activation_target_dfas:
+            if not by_dfa:
+                break
+            best = min(by_dfa.keys(), key=lambda d: (abs(d - int(target)), d))
+            heat_panels.append(by_dfa.pop(best))
 
-    fig = plt.figure(figsize=(10.5, 6.4))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0])
-    ax_ce = fig.add_subplot(gs[0, 0])
-    ax_we = fig.add_subplot(gs[0, 1])
-    ax_it = fig.add_subplot(gs[1, 0])
-    ax_sp = fig.add_subplot(gs[1, 1])
+    n_heat = len(heat_panels)
+    n_scale = 4
+    n_cols = max(n_heat, n_scale) if n_heat else n_scale
+    n_rows = 2 if n_heat else 1
+    fig_h = 1.95 * n_rows + 0.38
+    fig = plt.figure(figsize=(2.45 * n_cols + 0.30, fig_h))
+    gs = fig.add_gridspec(
+        n_rows, n_cols,
+        height_ratios=([1.12, 1.0] if n_heat else [1.0]),
+    )
+
+    # --- optional activation heatmaps (bottom row) ---
+    if n_heat:
+        def _mean_abs_unit_corr(hidden: np.ndarray) -> float:
+            h = np.asarray(hidden, dtype=float)
+            if h.ndim != 2 or h.shape[1] < 2 or h.shape[0] < 2:
+                return float("nan")
+            std = np.std(h, axis=0)
+            keep = std > 1e-12
+            if int(np.count_nonzero(keep)) < 2:
+                return float("nan")
+            c = np.corrcoef(h[:, keep].T)
+            tri = c[np.triu_indices(c.shape[0], k=1)]
+            tri = tri[np.isfinite(tri)]
+            return float(np.mean(np.abs(tri))) if tri.size else float("nan")
+
+        for col, (n_dfa, _nw, task, _words) in enumerate(heat_panels):
+            ax = fig.add_subplot(gs[1, col])
+            ctx = load_task_viz_context(
+                task, model_type=mt, seed=run_seed, text_chars=100,
+            )
+            hidden = np.asarray(ctx.hidden_states, dtype=float)
+            unit_coh = _mean_abs_unit_corr(hidden)
+            if hidden.shape[1] > 1:
+                order = leaves_list(linkage(hidden.T, method="average", metric="euclidean"))
+                hidden = hidden[:, order]
+            ax.imshow(
+                hidden.T,
+                aspect="auto",
+                interpolation="nearest",
+                cmap="RdBu_r",
+                vmin=-1.0,
+                vmax=1.0,
+                rasterized=True,
+            )
+            if np.isfinite(unit_coh):
+                caption = f"DFA={n_dfa}  ⟨|r|⟩={unit_coh:.2f}"
+            else:
+                caption = f"DFA={n_dfa}"
+            ax.set_axis_off()
+            ax.text(
+                0.5, -0.07, caption,
+                transform=ax.transAxes, ha="center", va="top", fontsize=8,
+                clip_on=False,
+            )
+        for col in range(n_heat, n_cols):
+            fig.add_subplot(gs[1, col]).set_axis_off()
+
+    scale_row = 0
+    ax_ce = fig.add_subplot(gs[scale_row, 0])
+    ax_we = fig.add_subplot(gs[scale_row, 1])
+    ax_it = fig.add_subplot(gs[scale_row, 2])
+    ax_sp = fig.add_subplot(gs[scale_row, 3])
 
     max_pcs = int(decode_payload.get("max_k", _DEFAULT_MAX_PCS))
     ks = np.arange(1, max_pcs + 1, dtype=float)
@@ -1059,54 +1134,48 @@ def plot_mixed_dfa_scaling_overview(
         )
     ax_sp.set_xlabel("PC index", fontsize=8)
     ax_sp.set_ylabel("% variance", fontsize=8)
-    ax_sp.set_title("closed-loop PC spectra", fontsize=9, pad=4)
+    ax_sp.set_title("closed-loop PC spectra", fontsize=9, pad=3)
     ax_sp.set_xlim(1, max_pcs)
     ax_sp.grid(True, alpha=0.25)
     ax_sp.tick_params(labelsize=7)
 
     path_key, title, log_y = _OVERVIEW_METRICS[0]
-    words_cmap = plt.get_cmap("YlOrRd")
-    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
     mx: list[float] = []
     my: list[float] = []
-    mn: list[float] = []
     for p in metric_panels:
         y = _dig(p, path_key)
         if y is None:
             continue
         mx.append(float(p["n_dfa_states"]))
         my.append(y)
-        mn.append(float(p["n_words"]))
-    words_cbar_spec: tuple[Any, Any] | None
     if len(mx) >= 3:
         x = np.asarray(mx, dtype=float)
         y = np.asarray(my, dtype=float)
-        n_words = np.asarray(mn, dtype=float)
         use_log = bool(log_y and np.all(y > 0))
         y_plot = np.log10(np.clip(y, 1e-12, None)) if use_log else y
         ax_it.scatter(
             x, y_plot,
-            c=n_words, cmap=words_cmap, norm=words_norm,
+            color="0.28",
             s=18, alpha=0.75, linewidths=0.25, edgecolors="white", zorder=2,
         )
         x_fit, y_fit, r2, _model = _fit_trend(x, y_plot)
-        panel_title = title
-        if x_fit is not None and y_fit is not None and np.isfinite(r2):
+        ax_it.set_title(title, fontsize=8, pad=3)
+        if x_fit is not None and y_fit is not None:
             ax_it.plot(x_fit, y_fit, color="#111111", lw=1.15, zorder=3)
-            panel_title = f"{title}\n$R^2$={r2:.2f}"
-        ax_it.set_title(panel_title, fontsize=8, pad=4)
+            if np.isfinite(r2):
+                ax_it.text(
+                    0.04, 0.96, f"$R^2$={r2:.2f}",
+                    transform=ax_it.transAxes, fontsize=7,
+                    va="top", ha="left",
+                )
         ax_it.set_xlabel("DFA states", fontsize=8)
         if use_log:
             ax_it.set_ylabel("log10 iters", fontsize=8)
         ax_it.grid(True, alpha=0.25)
         ax_it.tick_params(labelsize=7)
-        words_cbar_spec = (words_cmap, words_norm)
     else:
         ax_it.set_axis_off()
-        words_cbar_spec = None
 
-    # Learning curves: one curve per run, colored by DFA size (same as spectra).
-    run_seed = int(seed if seed is not None else (decode_payload.get("seeds") or [1])[0])
     n_curves = 0
     for panel in sorted(decode_panels, key=lambda p: float(p["n_dfa_states"])):
         curves = _overview_learning_curves_from_checkpoint(
@@ -1122,13 +1191,13 @@ def plot_mixed_dfa_scaling_overview(
         n_curves += 1
     ax_ce.set_xlabel("iteration", fontsize=8)
     ax_ce.set_ylabel("val CE / char", fontsize=8)
-    ax_ce.set_title("cross-entropy learning", fontsize=9, pad=4)
+    ax_ce.set_title("cross-entropy learning", fontsize=9, pad=3)
     ax_ce.grid(True, alpha=0.25)
     ax_ce.tick_params(labelsize=7)
     ax_we.axhline(0.03, color="0.45", ls="--", lw=0.9, zorder=1)
     ax_we.set_xlabel("iteration", fontsize=8)
     ax_we.set_ylabel("word error frac", fontsize=8)
-    ax_we.set_title("word-error learning", fontsize=9, pad=4)
+    ax_we.set_title("word-error learning", fontsize=9, pad=3)
     ax_we.set_ylim(0.0, 1.05)
     ax_we.grid(True, alpha=0.25)
     ax_we.tick_params(labelsize=7)
@@ -1138,35 +1207,26 @@ def plot_mixed_dfa_scaling_overview(
 
     finalize_grid_figure(
         fig,
-        suptitle="Mixed-vocab scaling with DFA size",
-        bottom=0.08,
-        left=0.08,
-        right=0.97,
+        suptitle=(
+            "Activations + mixed-vocab scaling with DFA size"
+            if n_heat else "Mixed-vocab scaling with DFA size"
+        ),
+        bottom=0.10,
+        left=0.05,
+        right=0.995,
         top=0.90,
-        wspace=0.28,
-        hspace=0.32,
+        wspace=0.20,
+        hspace=0.18,
     )
 
-    # Matched inset colorbars (same physical size) inside bottom panels.
-    _cbar_kw = dict(width="4.5%", height="48%", loc="upper right", borderpad=0.55)
-    if words_cbar_spec is not None:
-        w_cmap, w_norm = words_cbar_spec
-        cax_w = inset_axes(ax_it, **_cbar_kw)
-        cbar_w = fig.colorbar(
-            plt.cm.ScalarMappable(cmap=w_cmap, norm=w_norm),
-            cax=cax_w,
-        )
-        cbar_w.set_label("# words", fontsize=7.5)
-        cbar_w.ax.tick_params(labelsize=6.5)
-
-    if decode_panels:
-        cax_dfa = inset_axes(ax_sp, **_cbar_kw)
-        cbar_dfa = fig.colorbar(
-            plt.cm.ScalarMappable(cmap=cmap, norm=norm),
-            cax=cax_dfa,
-        )
-        cbar_dfa.set_label("DFA states", fontsize=7.5)
-        cbar_dfa.ax.tick_params(labelsize=6.5)
+    # One DFA colorbar, CE panel upper-right (curves have dropped there).
+    if n_curves and decode_panels:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        cax = ax_ce.inset_axes([0.80, 0.50, 0.045, 0.42])
+        cbar = fig.colorbar(sm, cax=cax)
+        cbar.set_label("DFA", fontsize=6.5)
+        cbar.ax.tick_params(labelsize=5.5)
 
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -3469,7 +3529,7 @@ def plot_decoding_and_learning_combined(
     fig.legend(
         handles, labels,
         loc="lower center",
-        bbox_to_anchor=(0.5, 0.004),
+        bbox_to_anchor=(0.5, 0.01),
         ncol=min(len(labels), 8),
         fontsize=6.5,
         frameon=False,
@@ -3486,7 +3546,7 @@ def plot_decoding_and_learning_combined(
             f"({n_vocabs} mixed vocabs; dashed = DFA-state oracle)"
         ),
         top=0.93,
-        bottom=0.065,
+        bottom=0.12,
         left=0.06,
         right=0.97,
         wspace=0.32,

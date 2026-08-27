@@ -92,13 +92,13 @@ Per-unit selectivity uses a peak-vs-rest index on category-mean activations (fla
 
 ![Linear decoding with word identity](figures/demo/fig_decoding_with_word.jpg)
 
-**Figure 10.** Linear decoding including word identity, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle), with per-unit selectivity-index density curves (line only) pooled over the same seeds on the right (same feature colors). Dashed horizontals = DFA-state oracle (chance-corrected majority label given automaton state alone). DFA state and current character saturate within a few PCs; word identity rises more slowly and needs more dimensions (near ceiling only with full \(H\)), remaining above its DFA-oracle floor when the full hidden state is available.
+**Figure 10.** Linear decoding including word identity, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle-left), mean unit selectivity index over training for an exemplar seed (middle-right; dashed grey = word error), and per-unit SI density curves (line only) pooled over the same seeds on the right (same feature colors). Dashed horizontals = DFA-state oracle (chance-corrected majority label given automaton state alone). DFA state and current character saturate within a few PCs; word identity rises more slowly and needs more dimensions (near ceiling only with full \(H\)), remaining above its DFA-oracle floor when the full hidden state is available.
 
 ### 3.8 Word trajectories
 
 ![DFA states and trajectories across seeds](figures/demo/fig_word_trajectories.jpg)
 
-**Figure 11.** Across three training seeds (columns): condensed PCA with prefix labels colored by minimized DFA state (top); closed-loop word trajectories in the same PCA plane (bottom).
+**Figure 11.** Mixed vocabs of 2–4 words (columns) across two training seeds (rows): DFA-labeled prefixes with open-loop word trajectories overlaid in the same PCA plane.
 
 ### 3.9 Mixed-vocabulary runs scored by DFA size
 
@@ -106,7 +106,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Mixed-vocab scaling overview](figures/compare/fig_mixed_scaling_overview.jpg)
 
-**Figure 12.** Mixed-vocab scaling with minimized DFA size. Top: validation cross-entropy and word-error learning curves (one curve per run, colored by DFA size; dashed = 3\% word-error threshold). Bottom: iterations to 3\% word error (color = \# words) and closed-loop PC spectra (same DFA-size color scale; larger automata flatten the scree).
+**Figure 12.** Mixed-vocab scaling with minimized DFA size. Top: validation cross-entropy and word-error learning curves (one curve per run, colored by DFA size; dashed = 3\% word-error threshold), iterations to 3\% word error, and closed-loop PC spectra (larger automata flatten the scree). Bottom: hidden-state activation rasters spanning DFA size (seed 1; units clustered within panel).
 
 ![Activation heatmaps across DFA size](figures/compare/fig_activation_heatmaps_by_dfa.jpg)
 

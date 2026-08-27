@@ -99,7 +99,7 @@ def paper_manifest() -> list[FigureRef]:
                   _demo("decoding/decoding_curves_seed_mean.png")),
         FigureRef("demo", "fig_decoding_with_word.jpg",
                   _demo("decoding/decoding_with_word_seed_mean.png"),
-                  max_w=1200),
+                  max_w=1400),
         FigureRef("demo", "fig_decoding_by_position_word_length.jpg",
                   _demo("decoding/decoding_by_position_word_length.png"),
                   max_w=1100),

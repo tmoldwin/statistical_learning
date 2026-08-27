@@ -115,29 +115,35 @@ body {
 }
 .card .cap { font-size: 10.5pt; color: var(--text-light); line-height: 1.18; margin-top: 0.5mm; flex-shrink: 0; }
 .card .cap b { color: var(--navy); font-weight: 900; }
-.card.setup { flex: 1.45 1 0; }
-.card.schem-train { flex: 1.70 1 0; }
-.card.schem-learn { flex: 1.28 1 0; }
-.card.probs { flex: 1.05 1 0; }
-.card.heat { flex: 1.85 1 0; }
-.card.prefix { flex: 1.45 1 0; }
+.card.setup { flex: 1.30 1 0; }
+.card.schem-train { flex: 1.40 1 0; }
+.card.schem-learn { flex: 1.12 1 0; }
+.card.probs { flex: 1.48 1 0; }
+.card.heat { flex: 2.05 1 0; }
 .col-mid .card { flex: 1.00 1 0; }
+.col-mid .card.prefix { flex: 1.15 1 0; }
 .col-mid .card.corr { flex: 1.90 1 0; }
 .col-mid .card.geom { flex: 1.35 1 0; }
 .col-mid .card.units { flex: 1.55 1 0; }
 .col-mid .card.decode { flex: 0.82 1 0; }
-.col-mid .card.traj { flex: 1.45 1 0; }
+.col:last-child { gap: 0.5mm; }
+.col:last-child .card { padding: 0.7mm; }
+.col:last-child .card .card-title {
+  margin: -0.7mm -0.7mm 0.4mm -0.7mm;
+  padding: 0.8mm 1.6mm;
+}
+.col:last-child .card .cap { margin-top: 0.3mm; }
+.col .card.traj { flex: 1.35 1 0; }
 .col .card.scale { flex: 1.22 1 0; }
-.col .card.actdfa { flex: 1.45 1 0; }
-.col .card.readout { flex: 1.38 1 0; }
-.col .card.geometry { flex: 1.10 1 0; }
-.col .card.weights { flex: 1.15 1 0; }
-.col .card.motifs { flex: 1.75 1 0; }
+.col .card.readout { flex: 1.15 1 0; }
+.col .card.geometry { flex: 0.62 1 0; }
+.col .card.weights { flex: 1.22 1 0; }
+.col .card.motifs { flex: 1.55 1 0; }
 
-.abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 1.8mm 2.5mm; flex: 0 0 auto; }
-.abstract h2 { font-size: 14pt; font-weight: 900; color: var(--navy); margin-bottom: 0.8mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.3mm; }
-.abstract ul.aims { font-size: 11.5pt; line-height: 1.22; color: var(--text-light); margin: 0; padding-left: 5mm; }
-.abstract ul.aims li { margin-bottom: 1.2mm; }
+.abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 2.4mm 3mm; flex: 0.72 1 0; min-height: 0; }
+.abstract h2 { font-size: 16.5pt; font-weight: 900; color: var(--navy); margin-bottom: 1.4mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.4mm; }
+.abstract ul.aims { font-size: 14.5pt; line-height: 1.32; color: var(--text-light); margin: 0; padding-left: 6mm; }
+.abstract ul.aims li { margin-bottom: 2.0mm; }
 
 .footer {
   background: var(--navy);
@@ -219,14 +225,14 @@ body {
       <div class="figframe"><img src="../paper/figures/demo/fig_activation_heatmap.jpg" alt="Figure 5"></div>
       <div class="cap">Hidden units over timesteps (input letters; units clustered).</div>
     </div>
+  </div>
+
+  <div class="col col-mid">
     <div class="card prefix">
       <div class="card-title">Fig 6 · Activations by prefix</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_activation_clustered.jpg" alt="Figure 6"></div>
       <div class="cap">Activations clustered by in-word prefix. Tick color = DFA state.</div>
     </div>
-  </div>
-
-  <div class="col col-mid">
     <div class="card corr">
       <div class="card-title">Fig 7 · Hidden-state correlation</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_state_correlation.jpg" alt="Figure 7"></div>
@@ -244,26 +250,21 @@ body {
     </div>
     <div class="card decode">
       <div class="card-title">Fig 10 · Linear decoding</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig_decoding_with_word.jpg" alt="Figure 10"></div>
-      <div class="cap">Mean $\pm$ std, 6 seeds. DFA/character saturate in a few PCs; word identity needs many more. Right: unit SI density (lines).</div>
-    </div>
-    <div class="card traj">
-      <div class="card-title">Fig 11 · Word trajectories</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig_word_trajectories.jpg" alt="Figure 11"></div>
-      <div class="cap">DFA-labeled prefixes with closed-loop trajectories overlaid. Columns: 2–5 word mixed vocabs (DFA ≤12 where available); rows: two seeds.</div>
+      <div class="figframe"><img src="../paper/figures/demo/fig_decoding_with_word.jpg?v=4panel" alt="Figure 10"></div>
+      <div class="cap">Mean $\pm$ std, 6 seeds. DFA/character saturate in a few PCs; word identity needs many more. Middle-right: mean SI over training (seed 1; dashed = word err). Right: unit SI density (lines).</div>
     </div>
   </div>
 
   <div class="col">
-    <div class="card scale">
-      <div class="card-title">Fig 12 · Mixed vocabs track DFA size</div>
-      <div class="figframe"><img src="../paper/figures/compare/fig_mixed_scaling_overview.jpg" alt="Figure 12"></div>
-      <div class="cap">50 mixed vocabs ($H{=}100$). Top: CE and word-error curves by DFA size. Bottom: iters to 3\% WE and closed-loop PC spectra.</div>
+    <div class="card traj">
+      <div class="card-title">Fig 11 · Word trajectories</div>
+      <div class="figframe"><img src="../paper/figures/demo/fig_word_trajectories.jpg" alt="Figure 11"></div>
+      <div class="cap">DFA-labeled prefixes with open-loop word trajectories overlaid (same PCA plane). Columns: 2–4 word mixed vocabs; rows: two seeds.</div>
     </div>
-    <div class="card actdfa">
-      <div class="card-title">Fig 13 · Activations vs DFA size</div>
-      <div class="figframe"><img src="../paper/figures/compare/fig_activation_heatmaps_by_dfa.jpg" alt="Figure 13"></div>
-      <div class="cap">10 mixed vocabs spanning DFA size. Low-DFA: coarse bands; larger DFAs: denser rasters.</div>
+    <div class="card scale">
+      <div class="card-title">Fig 12 · Activations &amp; scaling vs DFA size</div>
+      <div class="figframe"><img src="../paper/figures/compare/fig_mixed_scaling_overview.jpg" alt="Figure 12"></div>
+      <div class="cap">Top: four activation rasters spanning DFA size. Bottom: CE and word-error learning, iters to 3\% WE, and closed-loop PC spectra.</div>
     </div>
     <div class="card readout">
       <div class="card-title">Fig 15 · Readouts vs DFA size</div>

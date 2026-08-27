@@ -209,6 +209,7 @@ def plot_mixed_vocab_dfa_examples(
     """Two ≤3-word 3/4-letter vocabularies: chips, one-line stream, horizontal DFA."""
     from vocab_diagrams import (
         build_minimized_vocabulary_automaton,
+        dfa_content_view_span,
         draw_minimized_dfa_on_axes,
     )
 
@@ -227,8 +228,38 @@ def plot_mixed_vocab_dfa_examples(
             raise ValueError(f"DFA has {n_states} states (>10) for {words}")
         examples.append((words, aut))
 
-    fig = plt.figure(figsize=(12.2, 7.2))
-    outer = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.0], hspace=0.12)
+    # Shared data window so both DFAs use the same scale. Radius grows with
+    # label bulk (1-letter prefix vs 3-word accept) via the same mapping.
+    # One column per vocabulary: the DFAs fill their column width instead of
+    # floating small in the middle of full-width rows (poster readability).
+    base_r = 57.5 * 1.75
+    stretch = 1.45
+    gap = 2.35
+    y_comp = 1.15
+    max_r_scale = 1.42
+    # Per-vocab nudge for the multi-word accept sink (data units; +y is down):
+    # A drops below the ban/bak fork, B slides right of hat/lat.
+    sink_offsets = [(0.0, 60.0), (65.0, 0.0)]
+    spans = [
+        dfa_content_view_span(
+            aut, words,
+            compact=True,
+            fixed_radius=base_r,
+            horizontal=True,
+            horizontal_stretch=stretch,
+            shortest_prefix_labels=True,
+            layout_gap_scale=gap,
+            y_compress=y_comp,
+            pad=56.0,
+            max_radius_scale=max_r_scale,
+            sink_offset=sink_offsets[i],
+        )
+        for i, (words, aut) in enumerate(examples)
+    ]
+    view_span = (max(w for w, _ in spans) * 1.03, max(h for _, h in spans) * 1.12)
+
+    fig = plt.figure(figsize=(12.4, 5.2))
+    outer = fig.add_gridspec(1, 2, wspace=0.08)
     palette = list(WORD_STYLE.values())
     stream_patterns = (
         (0, 1, 2, 0, 2, 1, 0, 1, 2, 1, 0, 2),
@@ -236,39 +267,43 @@ def plot_mixed_vocab_dfa_examples(
     )
 
     for row, (words, aut) in enumerate(examples):
-        inner = outer[row].subgridspec(3, 1, height_ratios=[0.30, 0.18, 2.55], hspace=0.04)
+        inner = outer[row].subgridspec(
+            4, 1, height_ratios=[0.30, 0.26, 0.30, 3.40], hspace=0.10,
+        )
 
-        ax_vocab = fig.add_subplot(inner[0])
+        ax_head = fig.add_subplot(inner[0])
+        ax_head.set_axis_off()
+        ax_head.set_xlim(0, 1)
+        ax_head.set_ylim(0, 1)
+        letter = "A" if row == 0 else "B"
+        ax_head.text(
+            0.0, 0.45,
+            f"Vocabulary {letter}  ·  DFA={int(aut.dfa._n)}",
+            fontsize=12, fontweight="bold", va="center",
+            transform=ax_head.transAxes,
+        )
+
+        ax_vocab = fig.add_subplot(inner[1])
         ax_vocab.set_axis_off()
         ax_vocab.set_xlim(0, 1)
         ax_vocab.set_ylim(0, 1)
-        letter = "A" if row == 0 else "B"
-        ax_vocab.text(
-            0.0, 0.72,
-            f"Vocabulary {letter}  ·  DFA={int(aut.dfa._n)}",
-            fontsize=12, fontweight="bold", va="center",
-            transform=ax_vocab.transAxes,
-        )
-        # Plain bold colored words under the heading (no chip boxes).
         x = 0.0
         for i, word in enumerate(words):
             stroke, _fill = palette[i % len(palette)]
             if i > 0:
                 ax_vocab.text(
-                    x, 0.22, " · ",
+                    x, 0.5, " · ",
                     ha="left", va="center", fontsize=13, color="0.45",
                     transform=ax_vocab.transAxes,
                 )
                 x += 0.035
-            t = ax_vocab.text(
-                x, 0.22, word,
+            ax_vocab.text(
+                x, 0.5, word,
                 ha="left", va="center", fontsize=14,
                 color=stroke, fontfamily="monospace", fontweight="800",
                 transform=ax_vocab.transAxes,
             )
-            # Advance x roughly by rendered width in axes fraction.
             x += 0.018 * max(len(word), 3) + 0.01
-            del t
 
         pattern = stream_patterns[row % len(stream_patterns)]
         stream_words: list[str] = []
@@ -280,7 +315,7 @@ def plot_mixed_vocab_dfa_examples(
             chars += len(w)
             pi += 1
 
-        ax_seq = fig.add_subplot(inner[1])
+        ax_seq = fig.add_subplot(inner[2])
         ax_seq.set_axis_off()
         ax_seq.set_xlim(0, 1)
         ax_seq.set_ylim(0, 1)
@@ -292,7 +327,7 @@ def plot_mixed_vocab_dfa_examples(
             tight=True,
         )
 
-        ax_dfa = fig.add_subplot(inner[2])
+        ax_dfa = fig.add_subplot(inner[3])
         draw_minimized_dfa_on_axes(
             ax_dfa, aut, words,
             compact=True,
@@ -302,17 +337,21 @@ def plot_mixed_vocab_dfa_examples(
             shortest_prefix_labels=True,
             fit_labels=True,
             horizontal=True,
-            # Larger equal nodes; pack layers tighter so circles dominate over long edges.
-            fixed_radius=82.0,
-            arrow_mutation_scale=5.5,
-            horizontal_stretch=0.78,
+            fixed_radius=base_r,
+            view_span=view_span,
+            arrow_mutation_scale=7.0,
+            horizontal_stretch=stretch,
+            layout_gap_scale=gap,
+            y_compress=y_comp,
+            max_radius_scale=max_r_scale,
+            sink_offset=sink_offsets[row],
+            multiline_fontsize_cap=12.5,
         )
 
     finalize_grid_figure(
         fig,
-        suptitle="Same mixed-length task, different vocabulary structure",
-        top=0.96, bottom=0.01, left=0.02, right=0.995,
-        hspace=0.08, wspace=0.04,
+        top=0.99, bottom=0.02, left=0.02, right=0.99,
+        hspace=0.10, wspace=0.04,
     )
     save_figure(fig, save_path, dpi=180, pad_inches=0.04)
     plt.close(fig)

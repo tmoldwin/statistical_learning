@@ -1303,6 +1303,7 @@ def draw_minimized_dfa_on_axes(
     circle_scale: float = 1.0,
     shortest_prefix_labels: bool = False,
     fit_labels: bool = False,
+    accept_marker: str | None = None,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`.
 
@@ -1325,6 +1326,8 @@ def draw_minimized_dfa_on_axes(
             if not shown:
                 return {""}
             if accepting:
+                if accept_marker is not None:
+                    return {accept_marker}
                 # Accept states name the completed words themselves.
                 complete = sorted(w for w in shown if w in vocab)
                 if complete:

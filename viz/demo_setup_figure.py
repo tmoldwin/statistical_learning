@@ -132,6 +132,161 @@ def plot_dfa_examples(
     return save_path
 
 
+def plot_mixed_vocab_dfa_examples(
+    save_path: str | Path,
+    *,
+    vocabularies: Sequence[Sequence[str]] = (
+        ("bat", "bake", "bank"),   # shared ba · DFA=6
+        ("hat", "hate", "late"),   # hat→hate + late · DFA=8
+    ),
+    stream_chars: int = 48,
+) -> Path:
+    """Two ≤3-word 3/4-letter vocabularies with long streams + prefix DFAs."""
+    from vocab_diagrams import (
+        build_minimized_vocabulary_automaton,
+        draw_minimized_dfa_on_axes,
+    )
+
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    examples = []
+    for words_in in vocabularies:
+        words = list(words_in)
+        if len(words) > 3:
+            raise ValueError(f"max 3 words per vocabulary, got {words}")
+        if any(len(w) not in (3, 4) for w in words):
+            raise ValueError(f"only 3–4 letter words allowed, got {words}")
+        aut = build_minimized_vocabulary_automaton(words)
+        n_states = int(aut.dfa._n)
+        if n_states > 10:
+            raise ValueError(f"DFA has {n_states} states (>10) for {words}")
+        examples.append((words, aut))
+
+    fig = plt.figure(figsize=(11.4, 6.8))
+    gs = fig.add_gridspec(
+        2, 2,
+        width_ratios=[0.34, 0.66],
+        hspace=0.16,
+        wspace=0.01,
+    )
+    palette = list(WORD_STYLE.values())
+    # Longer demos: cycle a fixed shuffle until we reach stream_chars.
+    stream_patterns = (
+        (0, 1, 2, 0, 2, 1, 0, 1, 2, 1, 0, 2),
+        (2, 0, 1, 2, 1, 0, 1, 2, 0, 2, 0, 1),
+    )
+
+    for row, (words, aut) in enumerate(examples):
+        ax_vocab = fig.add_subplot(gs[row, 0])
+        ax_vocab.set_axis_off()
+        ax_vocab.set_xlim(0, 1)
+        ax_vocab.set_ylim(0, 1)
+        ax_vocab.text(
+            0.03, 0.94,
+            f"Vocabulary {'A' if row == 0 else 'B'} · {len(words)} words",
+            fontsize=12, fontweight="bold", va="top",
+        )
+        ax_vocab.text(
+            0.03, 0.86,
+            f"lengths {', '.join(str(len(w)) for w in words)}",
+            fontsize=9, color="0.35", va="top",
+        )
+        # Compact word chips in one row.
+        chip_w = 0.22
+        gap = 0.03
+        x0 = 0.03
+        for i, word in enumerate(words):
+            stroke, fill = palette[i % len(palette)]
+            x = x0 + i * (chip_w + gap)
+            ax_vocab.add_patch(
+                FancyBboxPatch(
+                    (x, 0.74), chip_w, 0.07,
+                    boxstyle="round,pad=0.008,rounding_size=0.018",
+                    facecolor=fill, edgecolor=stroke, linewidth=1.1,
+                    transform=ax_vocab.transAxes,
+                )
+            )
+            ax_vocab.text(
+                x + chip_w / 2, 0.775, word,
+                ha="center", va="center", fontsize=9,
+                color=stroke, fontfamily="monospace", fontweight="600",
+                transform=ax_vocab.transAxes,
+            )
+
+        pattern = stream_patterns[row % len(stream_patterns)]
+        stream_words: list[str] = []
+        chars = 0
+        pi = 0
+        while chars < stream_chars:
+            w = words[pattern[pi % len(pattern)] % len(words)]
+            stream_words.append(w)
+            chars += len(w)
+            pi += 1
+        stream = "".join(stream_words)
+        ax_vocab.text(
+            0.03, 0.64, "unsegmented training sequence",
+            fontsize=9, fontweight="600", color="0.3",
+        )
+        # Wrap the long stream onto two rows.
+        n = len(stream)
+        cols = (n + 1) // 2
+        margin = 0.03
+        cell_w = 0.94 / cols
+        char_i = 0
+        for word in stream_words:
+            stroke, fill = palette[words.index(word) % len(palette)]
+            for ch in word:
+                row_i = 0 if char_i < cols else 1
+                col_i = char_i if char_i < cols else char_i - cols
+                x = margin + col_i * cell_w
+                y = 0.44 if row_i == 0 else 0.26
+                ax_vocab.add_patch(
+                    FancyBboxPatch(
+                        (x, y), cell_w * 0.88, 0.11,
+                        boxstyle="round,pad=0.002,rounding_size=0.008",
+                        facecolor=fill, edgecolor=stroke, linewidth=0.65,
+                        transform=ax_vocab.transAxes,
+                    )
+                )
+                ax_vocab.text(
+                    x + cell_w * 0.44, y + 0.055, ch,
+                    ha="center", va="center", fontsize=7.5,
+                    color=stroke, fontfamily="monospace", fontweight="600",
+                    transform=ax_vocab.transAxes,
+                )
+                char_i += 1
+        ax_vocab.text(
+            0.03, 0.10, "no spaces; colors = hidden word boundaries",
+            fontsize=7.5, color="0.5",
+        )
+
+        ax_dfa = fig.add_subplot(gs[row, 1])
+        draw_minimized_dfa_on_axes(
+            ax_dfa, aut, words,
+            compact=True,
+            label_fontsize=13.5,
+            node_scale=1.35,
+            circle_scale=1.25,
+            shortest_prefix_labels=True,
+            fit_labels=True,
+            accept_marker="✓",
+        )
+        ax_dfa.set_title(
+            f"minimal DFA · {int(aut.dfa._n)} states",
+            fontsize=12, fontweight="bold", pad=2,
+        )
+
+    finalize_grid_figure(
+        fig,
+        suptitle="Same mixed-length task, different vocabulary structure",
+        top=0.92, bottom=0.025, left=0.02, right=0.99,
+        hspace=0.18, wspace=0.02,
+    )
+    save_figure(fig, save_path, dpi=180)
+    plt.close(fig)
+    return save_path
+
+
 def plot_training_stream(
     save_path: str | Path,
     *,

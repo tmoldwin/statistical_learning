@@ -73,6 +73,8 @@ def paper_manifest() -> list[FigureRef]:
                   _demo("training/learning_curve_with_samples.png")),
         FigureRef("demo", "fig_dfa_examples.jpg",
                   _demo_shared("vocabulary_dfa_examples.png"), max_w=1200),
+        FigureRef("demo", "fig_mixed_vocab_dfa_examples.jpg",
+                  _demo_shared("mixed_vocabulary_dfa_examples.png"), max_w=1400),
         FigureRef("demo", "fig04_corpus_stream.jpg",
                   _demo_shared("corpus_stream_overview.png"), max_w=1200),
         FigureRef("demo", "fig04_samples.svg",

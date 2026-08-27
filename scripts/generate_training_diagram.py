@@ -593,7 +593,7 @@ def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
             )
             lines.append(
                 f'<text x="{px:.1f}" y="{py + 4:.1f}" text-anchor="middle" font-family="{FONT}" '
-                f'font-size="11" fill="{INK}">{esc(labels[i])}</text>'
+                f'font-size="18" font-weight="600" fill="{INK}">{esc(labels[i])}</text>'
             )
 
     draw_nodes(in_pos, in_labels, 15, active=active_in, fill="#eef4fb", stroke=ACCENT)
@@ -602,32 +602,32 @@ def draw_rnn_schematic(lines: list[str], x: float, y: float, w: float) -> float:
 
     hdr_y = y + 18
     lines.append(
-        f'<text x="{lx_in:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="13" fill="{ACCENT}">'
+        f'<text x="{lx_in:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{ACCENT}">'
         f"input x{sub('t')}</text>"
     )
     lines.append(
-        f'<text x="{lx_h:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="13" fill="{ACCENT2}">'
+        f'<text x="{lx_h:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{ACCENT2}">'
         f"hidden h{sub('t')}</text>"
     )
     lines.append(
-        f'<text x="{lx_out:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="13" fill="{C_OUT}">'
+        f'<text x="{lx_out:.1f}" y="{hdr_y:.0f}" text-anchor="middle" font-size="20" font-weight="600" fill="{C_OUT}">'
         f"softmax</text>"
     )
 
     lines.append(
         f'<text x="{(lx_in + lx_h) / 2:.0f}" y="{y_top + 6:.0f}" text-anchor="middle" '
-        f'font-size="13" font-weight="600">{colored_w("Wxh", ACCENT)}</text>'
+        f'font-size="18" font-weight="600">{colored_w("Wxh", ACCENT)}</text>'
     )
     lines.append(
         f'<text x="{lx_h + max_bulge + 12:.0f}" y="{(y_top + y_bot) / 2:.0f}" text-anchor="start" '
-        f'font-size="13" font-weight="600">{colored_w("Whh", ACCENT2)}</text>'
+        f'font-size="18" font-weight="600">{colored_w("Whh", ACCENT2)}</text>'
     )
     lines.append(
         f'<text x="{(lx_h + lx_out) / 2:.0f}" y="{y_top + 6:.0f}" text-anchor="middle" '
-        f'font-size="13" font-weight="600">{colored_w("Wyh", C_OUT)}</text>'
+        f'font-size="18" font-weight="600">{colored_w("Wyh", C_OUT)}</text>'
     )
     lines.append(
-        f'<text x="{x + w / 2:.0f}" y="{y + h - 8:.0f}" text-anchor="middle" font-size="13" fill="{MUTED}">'
+        f'<text x="{x + w / 2:.0f}" y="{y + h - 8:.0f}" text-anchor="middle" font-size="18" fill="{MUTED}">'
         f"h{sub('t')} = tanh({colored_w('Wxh', ACCENT)} x{sub('t')} + {colored_w('Whh', ACCENT2)} h{sub('t-1')}) "
         f"· predict next char · cross-entropy loss</text>"
     )

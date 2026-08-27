@@ -115,9 +115,8 @@ body {
 }
 .card .cap { font-size: 10.5pt; color: var(--text-light); line-height: 1.18; margin-top: 0.5mm; flex-shrink: 0; }
 .card .cap b { color: var(--navy); font-weight: 900; }
-.card.dfas { flex: 1.15 1 0; }
-.card.schem-vocab { flex: 1.25 1 0; }
-.card.schem-train { flex: 1.10 1 0; }
+.card.setup { flex: 2.10 1 0; }
+.card.schem-train { flex: 1.45 1 0; }
 .card.schem-learn { flex: 0.95 1 0; }
 .card.probs { flex: 1.08 1 0; }
 .card.heat { flex: 1.65 1 0; }
@@ -190,19 +189,14 @@ body {
       <h2>Abstract</h2>
       <p>Eight-month-old infants can segment continuous speech by tracking transitional probabilities (Saffran, Aslin &amp; Newport, 1996). We ask whether a vanilla Elman RNN trained only on next-character prediction develops internal representations aligned with word structure. After learning, the network generates legal vocabulary items, and its hidden states become a continuous embedding of the vocabulary's minimal DFA. On an eight-word <em>-ate/-at</em> demo, DFA state explains $\eta^2 \approx 0.88$ of condensed hidden variance; word identity is much weaker ($\eta^2 \approx 0.06$). Fifty mixed-length English vocab runs ($H{=}100$) show that dimensionality, training cost, and readouts track minimized DFA size. Weight matrices become letter-columnar in $W_{xh}$ and locally clumped in $W_{hh}$, most clearly for small automata.</p>
     </div>
-    <div class="card dfas">
-      <div class="card-title">Fig 1 · Minimal DFAs</div>
-      <div class="figframe"><img src="../paper/figures/demo/fig_dfa_examples.jpg" alt="Figure 1"></div>
-      <div class="cap">Same next-character task; automata differ in size and prefix sharing.</div>
-    </div>
-    <div class="card schem-vocab">
-      <div class="card-title">Experiment · Vocabulary conditions</div>
-      <div class="figframe"><img src="schematics/vocabularies.png" alt="Vocabulary conditions"></div>
-      <div class="cap">Same setup, different #words and lengths: 8×3, 4×5, and mixed 3–4. Colors mark word identity in the unsegmented stream.</div>
+    <div class="card setup">
+      <div class="card-title">Fig 1 · Mixed vocabularies &amp; minimal DFAs</div>
+      <div class="figframe"><img src="../paper/figures/demo/fig_mixed_vocab_dfa_examples.jpg" alt="Figure 1"></div>
+      <div class="cap">Two ≤3-word conditions (3–4 letter words) with long unsegmented streams and prefix-labeled minimal DFAs (6 vs 8 states).</div>
     </div>
     <div class="card schem-train">
-      <div class="card-title">Experiment · Training the RNN</div>
-      <div class="figframe"><img src="schematics/training.png" alt="Training schematic"></div>
+      <div class="card-title">Fig 2 · Training the RNN</div>
+      <div class="figframe"><img src="../plots/training_diagram/02_bptt_and_rnn.svg" alt="Training schematic"></div>
       <div class="cap">Character-level Elman RNN. Input $x_t$ predicts the next character via $h_t=\tanh(W_{xh}x_t+W_{hh}h_{t-1})$; cross-entropy loss.</div>
     </div>
     <div class="card schem-learn">

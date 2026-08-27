@@ -9990,12 +9990,17 @@ def main() -> None:
                 DEMO_STREAM,
                 DEMO_WORDS,
                 plot_dfa_examples,
+                plot_mixed_vocab_dfa_examples,
                 plot_training_stream,
             )
 
             dfa_examples = shared / "vocabulary_dfa_examples.png"
             plot_dfa_examples(dfa_examples)
             print(f"wrote {dfa_examples}")
+
+            mixed_dfa_examples = shared / "mixed_vocabulary_dfa_examples.png"
+            plot_mixed_vocab_dfa_examples(mixed_dfa_examples)
+            print(f"wrote {mixed_dfa_examples}")
 
             stream_path = shared / "corpus_stream_overview.png"
             if list(words) == list(DEMO_WORDS):

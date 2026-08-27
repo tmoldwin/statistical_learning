@@ -63,40 +63,40 @@
 <path d="M640.0,250.4 Q610.0,210.8 640.0,171.2" fill="none" stroke="#F58518" stroke-width="1.6" opacity="0.9"/>
 <path d="M640.0,250.4 Q616.0,230.6 640.0,210.8" fill="none" stroke="#F58518" stroke-width="1.6" opacity="0.9"/>
 <circle cx="239.7" cy="125.0" r="15.0" fill="#eef4fb" stroke="#4477AA" stroke-width="1.6"/>
-<text x="239.7" y="129.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">a</text>
+<text x="239.7" y="129.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">a</text>
 <circle cx="239.7" cy="158.0" r="15.0" fill="#eef4fb" stroke="#4477AA" stroke-width="1.6"/>
-<text x="239.7" y="162.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">c</text>
+<text x="239.7" y="162.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">c</text>
 <circle cx="239.7" cy="191.0" r="15.0" fill="#eef4fb" stroke="#4477AA" stroke-width="1.6"/>
-<text x="239.7" y="195.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h</text>
+<text x="239.7" y="195.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h</text>
 <circle cx="239.7" cy="224.0" r="15.0" fill="#cce0f5" stroke="#225588" stroke-width="2.0"/>
-<text x="239.7" y="228.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">t</text>
+<text x="239.7" y="228.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">t</text>
 <circle cx="239.7" cy="257.0" r="15.0" fill="#eef4fb" stroke="#4477AA" stroke-width="1.6"/>
-<text x="239.7" y="261.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">m</text>
+<text x="239.7" y="261.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">m</text>
 <circle cx="640.0" cy="131.6" r="15.0" fill="#fff3e6" stroke="#F58518" stroke-width="1.6"/>
-<text x="640.0" y="135.6" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h0</text>
+<text x="640.0" y="135.6" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h0</text>
 <circle cx="640.0" cy="171.2" r="15.0" fill="#fff3e6" stroke="#F58518" stroke-width="1.6"/>
-<text x="640.0" y="175.2" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h1</text>
+<text x="640.0" y="175.2" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h1</text>
 <circle cx="640.0" cy="210.8" r="15.0" fill="#fff3e6" stroke="#F58518" stroke-width="1.6"/>
-<text x="640.0" y="214.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h2</text>
+<text x="640.0" y="214.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h2</text>
 <circle cx="640.0" cy="250.4" r="15.0" fill="#fff3e6" stroke="#F58518" stroke-width="1.6"/>
-<text x="640.0" y="254.4" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h3</text>
+<text x="640.0" y="254.4" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h3</text>
 <circle cx="951.4" cy="125.0" r="15.0" fill="#e8f6f4" stroke="#2a9d8f" stroke-width="1.6"/>
-<text x="951.4" y="129.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">a</text>
+<text x="951.4" y="129.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">a</text>
 <circle cx="951.4" cy="158.0" r="15.0" fill="#e8f6f4" stroke="#2a9d8f" stroke-width="1.6"/>
-<text x="951.4" y="162.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">c</text>
+<text x="951.4" y="162.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">c</text>
 <circle cx="951.4" cy="191.0" r="15.0" fill="#e8f6f4" stroke="#2a9d8f" stroke-width="1.6"/>
-<text x="951.4" y="195.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">h</text>
+<text x="951.4" y="195.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">h</text>
 <circle cx="951.4" cy="224.0" r="15.0" fill="#e8f6f4" stroke="#2a9d8f" stroke-width="1.6"/>
-<text x="951.4" y="228.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">t</text>
+<text x="951.4" y="228.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">t</text>
 <circle cx="951.4" cy="257.0" r="15.0" fill="#e8f6f4" stroke="#2a9d8f" stroke-width="1.6"/>
-<text x="951.4" y="261.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="11" fill="#1a1a1a">m</text>
-<text x="239.7" y="74" text-anchor="middle" font-size="13" fill="#4477AA">input x<tspan baseline-shift="sub" font-size="10">t</tspan></text>
-<text x="640.0" y="74" text-anchor="middle" font-size="13" fill="#F58518">hidden h<tspan baseline-shift="sub" font-size="10">t</tspan></text>
-<text x="951.4" y="74" text-anchor="middle" font-size="13" fill="#2a9d8f">softmax</text>
-<text x="440" y="98" text-anchor="middle" font-size="13" font-weight="600"><tspan fill="#4477AA">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#4477AA">xh</tspan></text>
-<text x="688" y="191" text-anchor="start" font-size="13" font-weight="600"><tspan fill="#F58518">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#F58518">hh</tspan></text>
-<text x="796" y="98" text-anchor="middle" font-size="13" font-weight="600"><tspan fill="#2a9d8f">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#2a9d8f">yh</tspan></text>
-<text x="640" y="318" text-anchor="middle" font-size="13" fill="#666">h<tspan baseline-shift="sub" font-size="10">t</tspan> = tanh(<tspan fill="#4477AA">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#4477AA">xh</tspan> x<tspan baseline-shift="sub" font-size="10">t</tspan> + <tspan fill="#F58518">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#F58518">hh</tspan> h<tspan baseline-shift="sub" font-size="10">t-1</tspan>) · predict next char · cross-entropy loss</text>
+<text x="951.4" y="261.0" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="18" font-weight="600" fill="#1a1a1a">m</text>
+<text x="239.7" y="74" text-anchor="middle" font-size="20" font-weight="600" fill="#4477AA">input x<tspan baseline-shift="sub" font-size="10">t</tspan></text>
+<text x="640.0" y="74" text-anchor="middle" font-size="20" font-weight="600" fill="#F58518">hidden h<tspan baseline-shift="sub" font-size="10">t</tspan></text>
+<text x="951.4" y="74" text-anchor="middle" font-size="20" font-weight="600" fill="#2a9d8f">softmax</text>
+<text x="440" y="98" text-anchor="middle" font-size="18" font-weight="600"><tspan fill="#4477AA">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#4477AA">xh</tspan></text>
+<text x="688" y="191" text-anchor="start" font-size="18" font-weight="600"><tspan fill="#F58518">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#F58518">hh</tspan></text>
+<text x="796" y="98" text-anchor="middle" font-size="18" font-weight="600"><tspan fill="#2a9d8f">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#2a9d8f">yh</tspan></text>
+<text x="640" y="318" text-anchor="middle" font-size="18" fill="#666">h<tspan baseline-shift="sub" font-size="10">t</tspan> = tanh(<tspan fill="#4477AA">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#4477AA">xh</tspan> x<tspan baseline-shift="sub" font-size="10">t</tspan> + <tspan fill="#F58518">W</tspan><tspan baseline-shift="sub" font-size="10" fill="#F58518">hh</tspan> h<tspan baseline-shift="sub" font-size="10">t-1</tspan>) · predict next char · cross-entropy loss</text>
 <line x1="84" y1="346" x2="1196" y2="346" stroke="#ddd8cc" stroke-width="1"/>
 <rect x="84.0" y="370.0" width="26.0" height="32.0" rx="4" fill="#ffffff" stroke="#ddd8cc" stroke-width="1"/>
 <text x="97.0" y="391.8" text-anchor="middle" font-family="ui-monospace, Consolas, 'Courier New', monospace" font-size="16" fill="#4477AA">m</text>

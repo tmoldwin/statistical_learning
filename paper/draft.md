@@ -92,13 +92,13 @@ Per-unit selectivity uses a peak-vs-rest index on category-mean activations (fla
 
 ![Linear decoding with word identity](figures/demo/fig_decoding_with_word.jpg)
 
-**Figure 10.** Linear decoding including word identity, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle), with per-unit selectivity-index density curves pooled over the same seeds on the right (same feature colors). Dashed horizontals = DFA-state oracle (chance-corrected majority label given automaton state alone). DFA state and current character saturate within a few PCs; word identity rises more slowly and needs more dimensions (near ceiling only with full \(H\)), remaining above its DFA-oracle floor when the full hidden state is available.
+**Figure 10.** Linear decoding including word identity, mean ± std across seeds 1, 2, 3, 5, 7, 8 (left / middle), with per-unit selectivity-index density curves (line only) pooled over the same seeds on the right (same feature colors). Dashed horizontals = DFA-state oracle (chance-corrected majority label given automaton state alone). DFA state and current character saturate within a few PCs; word identity rises more slowly and needs more dimensions (near ceiling only with full \(H\)), remaining above its DFA-oracle floor when the full hidden state is available.
 
 ### 3.8 Word trajectories
 
 ![DFA states and trajectories across seeds](figures/demo/fig_word_trajectories.jpg)
 
-**Figure 11.** Across five training seeds (columns): condensed PCA with prefix labels colored by minimized DFA state (top); closed-loop word trajectories in the same PCA plane (bottom).
+**Figure 11.** Across three training seeds (columns): condensed PCA with prefix labels colored by minimized DFA state (top); closed-loop word trajectories in the same PCA plane (bottom).
 
 ### 3.9 Mixed-vocabulary runs scored by DFA size
 
@@ -110,7 +110,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Activation heatmaps across DFA size](figures/compare/fig_activation_heatmaps_by_dfa.jpg)
 
-**Figure 13.** Hidden-state activation heatmaps for 20 mixed vocabularies spanning minimized DFA size (seed 1; \(H{=}100\)). Each panel shows the same 100-timestep window with units clustered within that panel; ticks, unit labels, and dendrograms are omitted to emphasize the activation raster. Panel titles report mean pairwise absolute correlation among unit time courses (\(\langle|r|\rangle\)). Low-DFA runs show coarse repeated bands and higher unit coherence; larger DFAs produce denser, less visibly repetitive activity with lower \(\langle|r|\rangle\).
+**Figure 13.** Hidden-state activation heatmaps for 10 mixed vocabularies spanning minimized DFA size (seed 1; \(H{=}100\); unique DFA sizes). Each panel shows the same 100-timestep window with units clustered within that panel; ticks, unit labels, and dendrograms are omitted to emphasize the activation raster. Panel titles report mean pairwise absolute correlation among unit time courses (\(\langle|r|\rangle\)). Low-DFA runs show coarse repeated bands and higher unit coherence; larger DFAs produce denser, less visibly repetitive activity with lower \(\langle|r|\rangle\).
 
 ![Closed-loop trajectories by DFA span](figures/compare/fig_mixed_traj_by_dfa.jpg)
 
@@ -122,7 +122,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Within-feature geometry and unit selectivity](figures/compare/fig_mixed_cosine_within.jpg)
 
-**Figure 16.** Mixed-vocab geometry and unit selectivity vs minimized DFA size. Top: within-label and between-label cosine similarity of condensed hidden states (seed 1; solid = observed, open/dashed = label shuffle). Bottom left two: same contrast with median Euclidean distance. Right column: pooled per-unit SI density and per-run mean SI vs DFA (DFA ≥ 10). Feature colors match Figure 15.
+**Figure 16.** Mixed-vocab geometry and unit selectivity vs minimized DFA size. Left: within-label and between-label cosine similarity of condensed hidden states (seed 1; solid = observed, open/dashed = label shuffle). Right: pooled per-unit SI density and per-run mean SI vs DFA (DFA ≥ 10). Feature colors match Figure 15.
 
 ![Readout vs DFA at fixed PCs](figures/compare/fig_mixed_decoding_vs_dfa.jpg)
 
@@ -132,7 +132,7 @@ Instead of a fixed length × word-count grid, we sample mixed English vocabs fro
 
 ![Weight matrices by DFA size](figures/main/fig_weight_matrices_by_dfa.jpg)
 
-**Figure 18.** Weight structure from the mixed-vocab runs (\(H{=}100\), seed 1). Top: clustered \(W_{xh}\) / \(W_{hh}\) (left = random init; remaining columns = after learning at successive small minimized DFA sizes; titles also note \#words). Each matrix is color-scaled independently (± inset); bottom matrix row = signed-weight density histograms on one shared \(x\)/\(y\) scale. Bottom: four weight metrics vs DFA over all 50 runs (color = \# words; black = best trend by adjusted \(R^2\)): input/recurrent Frobenius ratio, \(W_{hh}\) adjacent absolute correlation, \(W_{xh}\) top-1 mass, and mean input-drive fraction.
+**Figure 18.** Weight structure from the mixed-vocab runs (\(H{=}100\), seed 1). Top: clustered \(W_{xh}\) / \(W_{hh}\) (left = random init; remaining columns = DFA sizes 8, 9, and 13) on one shared signed-symmetric log color scale so init and trained magnitudes are comparable. Bottom: signed-weight density curves for \(W_{xh}\) and \(W_{hh}\) over all 50 mixed runs, colored by minimized DFA size (same scale as closed-loop PC spectra).
 
 Easy (few-state) automata show the strongest local \(W_{hh}\) blocks and clearer \(W_{xh}\) letter stripes; larger DFAs yield denser, more feedforward-looking weight maps. The scatters quantify that shift across the full sweep.
 

@@ -580,11 +580,10 @@ def plot_aggregated_seed_decode_curves(
 
         ax_si = axes[2]
         plot_selectivity_si_on_ax(
-            ax_si, si_by_feat, features=features, show_legend=False,
+            ax_si, si_by_feat, features=features, show_legend=False, fill=False,
         )
         ax_si.set_title(f"unit SI density · {len(seeds)} seeds (SI > 0)", fontsize=10)
         ax_si.set_xlabel("SI (peak vs rest)", fontsize=9)
-        # Keep density curves fully inside the axes (no clipped peaks).
         y_top = 0.0
         for line in ax_si.lines:
             yd = np.asarray(line.get_ydata(), dtype=float)

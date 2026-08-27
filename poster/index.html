@@ -131,8 +131,8 @@ body {
 .col .card.actdfa { flex: 1.18 1 0; }
 .col .card.readout { flex: 1.38 1 0; }
 .col .card.geometry { flex: 1.10 1 0; }
-.col .card.weights { flex: 1.85 1 0; }
-.col .card.motifs { flex: 0.82 1 0; }
+.col .card.weights { flex: 1.15 1 0; }
+.col .card.motifs { flex: 1.75 1 0; }
 
 .abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 1.8mm 2.5mm; flex: 0 0 auto; }
 .abstract h2 { font-size: 14pt; font-weight: 900; color: var(--navy); margin-bottom: 0.8mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.3mm; }
@@ -240,12 +240,12 @@ body {
     <div class="card decode">
       <div class="card-title">Fig 10 · Linear decoding</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_decoding_with_word.jpg" alt="Figure 10"></div>
-      <div class="cap">Mean $\pm$ std, 6 seeds. DFA/character saturate in a few PCs; word identity needs many more.</div>
+      <div class="cap">Mean $\pm$ std, 6 seeds. DFA/character saturate in a few PCs; word identity needs many more. Right: unit SI density (lines).</div>
     </div>
     <div class="card traj">
       <div class="card-title">Fig 11 · Word trajectories</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_word_trajectories.jpg" alt="Figure 11"></div>
-      <div class="cap">DFA-labeled PCA (top) and closed-loop trajectories (bottom) across five seeds.</div>
+      <div class="cap">DFA-labeled PCA (top) and closed-loop trajectories (bottom) across three seeds.</div>
     </div>
   </div>
 
@@ -258,7 +258,7 @@ body {
     <div class="card actdfa">
       <div class="card-title">Fig 13 · Activations vs DFA size</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_activation_heatmaps_by_dfa.jpg" alt="Figure 13"></div>
-      <div class="cap">20 mixed vocabs. Low-DFA: coarse bands; larger DFAs: denser, less repetitive rasters.</div>
+      <div class="cap">10 mixed vocabs spanning DFA size. Low-DFA: coarse bands; larger DFAs: denser rasters.</div>
     </div>
     <div class="card readout">
       <div class="card-title">Fig 15 · Readouts vs DFA size</div>
@@ -268,12 +268,12 @@ body {
     <div class="card geometry">
       <div class="card-title">Fig 16 · Geometry &amp; unit selectivity</div>
       <div class="figframe"><img src="../paper/figures/compare/fig_mixed_cosine_within.jpg" alt="Figure 16"></div>
-      <div class="cap">Within/between cosine and Euclidean distance, plus per-unit SI vs DFA size.</div>
+      <div class="cap">Within/between cosine similarity, plus per-unit SI vs DFA size.</div>
     </div>
     <div class="card weights">
       <div class="card-title">Fig 18 · Weight matrices vs DFA</div>
       <div class="figframe"><img src="../paper/figures/main/fig_weight_matrices_by_dfa.jpg" alt="Figure 18"></div>
-      <div class="cap">Clustered $W_{xh}$ / $W_{hh}$. Small DFAs: letter columns and local $W_{hh}$ clumps.</div>
+      <div class="cap">Init + DFA 8/9/13 matrices (shared symlog $w$ scale); bottom: $W_{xh}$ / $W_{hh}$ densities (color = DFA size).</div>
     </div>
     <div class="card motifs">
       <div class="card-title">Fig 19 · Weight graph motifs vs DFA</div>
@@ -286,7 +286,7 @@ body {
 
 <footer class="footer">
   <div class="footer-contact">
-    <b>Contact:</b> Toviah Moldwin — Edmond and Lily Safra Center for Brain Sciences, The Hebrew University of Jerusalem
+    <b>Contact:</b> Toviah Moldwin
   </div>
   <div class="footer-refs">
     <b>Key references:</b> Saffran, Aslin &amp; Newport (1996); Elman (1990); Aslin, Saffran &amp; Newport (1998); Goldwater et al. (2009); Perruchet &amp; Vinter (1998).

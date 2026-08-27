@@ -752,11 +752,12 @@ def plot_selectivity_si_on_ax(
     features: tuple[str, ...] = ANALYSIS_FEATURES,
     show_legend: bool = True,
     min_si: float = 1e-6,
+    fill: bool = True,
 ) -> None:
     """Overlapped smooth SI density curves (Gaussian KDE) for one unit population.
 
     Exact zeros (flat / gated units) are omitted so the density reflects the
-    distribution among units with peaked tuning.
+    distribution among units with peaked tuning. Set ``fill=False`` for line-only.
     """
     from scipy.stats import gaussian_kde
 
@@ -778,7 +779,8 @@ def plot_selectivity_si_on_ax(
             continue
         dens = kde(xs)
         dens = np.clip(dens, 0.0, None)
-        ax.fill_between(xs, dens, color=color, alpha=0.18, linewidth=0)
+        if fill:
+            ax.fill_between(xs, dens, color=color, alpha=0.18, linewidth=0)
         ax.plot(xs, dens, color=color, lw=1.8, label=FEATURE_DISPLAY.get(feat, feat))
         y_hi = max(y_hi, float(np.nanmax(dens)) if dens.size else 0.0)
     ax.set_xlim(0.0, 1.0)

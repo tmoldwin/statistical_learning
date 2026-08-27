@@ -814,7 +814,7 @@ def plot_mixed_fig15_geometry_and_selectivity(
     outfile: str | None = None,
     features: tuple[str, ...] = DEFAULT_FEATURES,
 ) -> Path:
-    """Figure 15: cosine/Euclidean within–between + unit SI panels."""
+    """Cosine within/between + unit SI panels (Euclidean omitted as redundant)."""
     from viz.compare.sweep_output import sweep_data_dir, sweep_decoding_dir
 
     si_path = Path(si_json or comparison_dir(COMPARISON_NAME, "unit_selectivity") / "mixed_dfa_unit_selectivity_pooled.json")
@@ -834,15 +834,13 @@ def plot_mixed_fig15_geometry_and_selectivity(
     within_panels = within_payload.get("panels", [])
     within_feats = tuple(within_payload.get("features", features[:4]))
 
-    fig, axes = plt.subplots(2, 3, figsize=(12.6, 6.4), squeeze=False)
-    ax_cw, ax_cb, ax_den = axes[0]
-    ax_ew, ax_eb, ax_sc = axes[1]
+    fig, axes = plt.subplots(2, 2, figsize=(10.4, 6.0), squeeze=False)
+    ax_cw, ax_cb = axes[0]
+    ax_den, ax_sc = axes[1]
 
     _plot_cosine_within_on_ax(ax_cw, within_panels, features=within_feats)
     _plot_cosine_between_on_ax(ax_cb, within_panels, features=within_feats)
     _plot_pooled_si_density_on_ax(ax_den, pooled_all, features=features)
-    _plot_euclidean_within_on_ax(ax_ew, within_panels, features=within_feats)
-    _plot_euclidean_between_on_ax(ax_eb, within_panels, features=within_feats)
     _plot_mean_si_scatter_on_ax(ax_sc, si_payload.get("per_run", []), features=features)
 
     handles, labels = ax_sc.get_legend_handles_labels()
@@ -858,7 +856,7 @@ def plot_mixed_fig15_geometry_and_selectivity(
         suptitle="Population geometry and unit selectivity vs DFA size (mixed vocabs)",
         top=0.90,
         bottom=0.10,
-        left=0.06,
+        left=0.07,
         right=0.99,
         wspace=0.34,
         hspace=0.42,

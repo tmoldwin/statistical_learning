@@ -727,9 +727,12 @@ def plot_spectra_vs_dfa(
         )
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax, pad=0.02)
-    cbar.set_label("DFA states", fontsize=8)
-    cbar.ax.tick_params(labelsize=7)
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+    cax = inset_axes(ax, width="3.2%", height="45%", loc="upper right", borderpad=0.6)
+    cbar = fig.colorbar(sm, cax=cax)
+    cbar.set_label("DFA states", fontsize=7)
+    cbar.ax.tick_params(labelsize=6)
     ax.set_xlabel("PC index", fontsize=9)
     ax.set_ylabel("% variance", fontsize=9)
     ax.set_xlim(1, max_pcs)
@@ -741,7 +744,7 @@ def plot_spectra_vs_dfa(
         suptitle="Closed-loop PC spectra (colored by DFA size)",
         bottom=0.16,
         left=0.14,
-        right=0.88,
+        right=0.97,
         top=0.86,
     )
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
@@ -1029,13 +1032,11 @@ def plot_mixed_dfa_scaling_overview(
     ]
 
     # Story: learning (CE → word-error) then summaries (iters → spectra).
-    # Colorbar columns sit with the panels that introduce each scale.
+    # DFA colorbar is inset in the PC-spectra panel (same scale as learning curves).
     fig = plt.figure(figsize=(10.5, 6.4))
     gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0])
     ax_ce = fig.add_subplot(gs[0, 0])
-    gs_we = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
-    ax_we = fig.add_subplot(gs_we[0, 0])
-    cax_dfa = fig.add_subplot(gs_we[0, 1])
+    ax_we = fig.add_subplot(gs[0, 1])
     gs_it = gs[1, 0].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
     ax_it = fig.add_subplot(gs_it[0, 0])
     cax_w = fig.add_subplot(gs_it[0, 1])
@@ -1158,14 +1159,20 @@ def plot_mixed_dfa_scaling_overview(
         cax_w.set_axis_off()
 
     if decode_panels:
+        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+        cax_dfa = inset_axes(
+            ax_sp, width="3.2%", height="42%", loc="upper right",
+            bbox_to_anchor=(0.0, 0.0, 0.90, 0.96),
+            bbox_transform=ax_sp.transAxes,
+            borderpad=0.4,
+        )
         cbar_dfa = fig.colorbar(
             plt.cm.ScalarMappable(cmap=cmap, norm=norm),
             cax=cax_dfa,
         )
-        cbar_dfa.set_label("DFA states", fontsize=7)
-        cbar_dfa.ax.tick_params(labelsize=6)
-    else:
-        cax_dfa.set_axis_off()
+        cbar_dfa.set_label("DFA states", fontsize=6.5)
+        cbar_dfa.ax.tick_params(labelsize=5.5)
 
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -1174,6 +1181,7 @@ def plot_mixed_dfa_scaling_overview(
 
 
 _WEIGHT_DFA_N_FINAL = 5
+_WEIGHT_MATRIX_TARGET_DFAS: tuple[int, ...] = (8, 9, 13)
 _WEIGHT_FIGURE_METRICS: tuple[tuple[str, str, bool], ...] = (
     ("weights.final.input_over_recurrent_norm", "input / recurrent Frobenius", False),
     ("weights.motif_final.hh_adjacent_corr", r"$W_{hh}$ adjacent |corr|", False),
@@ -1187,8 +1195,13 @@ def _pick_mixed_dfa_span_examples(
     n_final: int = _WEIGHT_DFA_N_FINAL,
     seed: int = 1,
     model_type: str = "rnn",
+    target_dfas: tuple[int, ...] | None = None,
 ) -> list[tuple[int, int, str]]:
-    """Pick the smallest available DFA sizes in ascending order."""
+    """Pick mixed-vocab checkpoints by DFA size.
+
+    Default: smallest available DFA sizes. With ``target_dfas``, pick the closest
+    available size to each target (no duplicates).
+    """
     by_dfa: dict[int, list[tuple[int, str]]] = {}
     for entry in iter_runs():
         task = entry["task"]
@@ -1201,13 +1214,54 @@ def _pick_mixed_dfa_span_examples(
     if not levels:
         raise FileNotFoundError(f"no mixed-dfa weight checkpoints for seed {seed}")
 
-    chosen = levels[: max(1, min(n_final, len(levels)))]
+    if target_dfas:
+        chosen: list[int] = []
+        used: set[int] = set()
+        for want in target_dfas:
+            cand = min(
+                (lv for lv in levels if lv not in used),
+                key=lambda lv: (abs(lv - want), lv),
+                default=None,
+            )
+            if cand is None:
+                break
+            chosen.append(cand)
+            used.add(cand)
+    else:
+        chosen = levels[: max(1, min(n_final, len(levels)))]
+
     out: list[tuple[int, int, str]] = []
     for lv in chosen:
         cands = sorted(by_dfa[lv], key=lambda t: (t[0], t[1]))
         n_words, task = cands[0]
         out.append((lv, n_words, task))
     return out
+
+
+def _iter_mixed_dfa_weight_flats(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+) -> list[tuple[int, np.ndarray, np.ndarray]]:
+    """Load clustered flat W_xh / W_hh for every available mixed-vocab run."""
+    from visualize import load_model_for_viz, weights_for_plot
+    from viz.weight_structure import _cluster_unit_order
+
+    rows: list[tuple[int, np.ndarray, np.ndarray]] = []
+    for entry in iter_runs():
+        task = entry["task"]
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        n_dfa = _dfa_states(list(entry["words"]))
+        model = load_model_for_viz(str(ckpt), model_type)
+        w_in, w_rec, _w_out, _dale = weights_for_plot(model)
+        order = _cluster_unit_order(w_in, w_rec)
+        xh = w_in[order].T.ravel()
+        hh = w_rec[np.ix_(order, order)].ravel()
+        rows.append((n_dfa, xh, hh))
+    rows.sort(key=lambda t: t[0])
+    return rows
 
 
 def plot_mixed_dfa_weight_matrices_by_dfa(
@@ -1217,17 +1271,25 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
     n_final: int = _WEIGHT_DFA_N_FINAL,
     model_type: str = "rnn",
     recompute_metrics: bool = False,
+    target_dfas: tuple[int, ...] | None = _WEIGHT_MATRIX_TARGET_DFAS,
 ) -> Path:
-    """Init/final weight matrices by DFA size, plus vs-DFA weight-structure scatters.
+    """Init/final weight matrices at selected DFAs + DFA-colored summary hists.
 
-    Top: clustered W_xh / W_hh (+ init) and signed-weight histograms.
-    Bottom: four weight metrics vs DFA over the full mixed sweep (color = # words).
+    Matrix columns: init plus a few small DFAs (default 8 / 9 / 13). Bottom:
+    two summary density panels (``W_xh``, ``W_hh``) over all mixed runs, curves
+    colored by DFA size with the same scale as the PC-spectra plots.
     """
     from visualize import load_model_for_viz, weights_for_plot
-    from viz.compare.pow2_sweep_metric_board import _fit_trend
     from viz.weight_structure import _cluster_unit_order, init_weights_for_model
 
-    examples = _pick_mixed_dfa_span_examples(n_final=n_final, seed=seed, model_type=model_type)
+    del recompute_metrics  # kept for call-site compatibility
+
+    examples = _pick_mixed_dfa_span_examples(
+        n_final=n_final,
+        seed=seed,
+        model_type=model_type,
+        target_dfas=target_dfas,
+    )
     _dfa_hi, _nw_hi, task_init = examples[-1]
     model0 = load_model_for_viz(str(checkpoint_path(task_init, model_type, seed=seed)), model_type)
     w_in_i, w_rec_i, w_out_i = init_weights_for_model(model0, seed)
@@ -1252,48 +1314,55 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
         finals.append((label, w_in_f[order_f].T, w_rec_f[np.ix_(order_f, order_f)]))
 
     n_cols = 1 + len(finals)
-    n_met = len(_WEIGHT_FIGURE_METRICS)
-    fig = plt.figure(figsize=(1.55 * n_cols + 0.85, 6.75))
+    fig = plt.figure(figsize=(1.7 * n_cols + 3.2, 5.1))
     outer = fig.add_gridspec(
-        2, 1, height_ratios=[2.55, 1.15], hspace=0.28,
-        left=0.08, right=0.90, top=0.84, bottom=0.07,
+        2, 1, height_ratios=[2.35, 1.05], hspace=0.32,
+        left=0.07, right=0.96, top=0.88, bottom=0.08,
     )
     gs_mat = outer[0].subgridspec(
-        3, n_cols, height_ratios=[0.55, 1.0, 0.58], wspace=0.22, hspace=0.38,
+        2, n_cols + 1,
+        height_ratios=[0.55, 1.0],
+        width_ratios=[*[1.0] * n_cols, 0.07],
+        wspace=0.22, hspace=0.28,
     )
-    gs_met = outer[1].subgridspec(1, n_met, wspace=0.30)
-    axes = np.array([[fig.add_subplot(gs_mat[r, c]) for c in range(n_cols)] for r in range(3)])
-    met_axes = [fig.add_subplot(gs_met[0, i]) for i in range(n_met)]
-    cmap = plt.cm.RdBu_r
+    gs_hist = outer[1].subgridspec(1, 2, wspace=0.28)
+    axes = np.array([[fig.add_subplot(gs_mat[r, c]) for c in range(n_cols)] for r in range(2)])
+    cax_mat = fig.add_subplot(gs_mat[:, -1])
+    ax_xh = fig.add_subplot(gs_hist[0, 0])
+    ax_hh = fig.add_subplot(gs_hist[0, 1])
+    mat_cmap = plt.cm.RdBu_r
 
     xh_panels = [init_xh] + [xh for _lab, xh, _hh in finals]
     hh_panels = [init_hh] + [hh for _lab, _xh, hh in finals]
     col_titles = ["Init"] + [lab.replace("\n", " · ") for lab, *_ in finals]
     row_panels = (xh_panels, hh_panels)
     row_ylabels = (r"$W_{xh}$", r"$W_{hh}$")
-    # Avoid red/blue (reserved for signed weight heatmaps / E–I).
-    xh_color = "#2ca02c"
-    hh_color = "#ff1493"
 
+    # Shared diverging scale across all matrix panels. SymLog keeps init
+    # structure visible while matching the large trained magnitudes.
+    from matplotlib.colors import SymLogNorm
+
+    abs_all = np.concatenate([np.abs(m).ravel() for m in (xh_panels + hh_panels)])
+    vmax = float(np.max(abs_all)) if abs_all.size else 1.0
+    vmax = max(vmax, 1e-6)
+    # Linear near zero ≈ init scale; log beyond so DFA=8 (±~3) doesn't wash out.
+    init_abs = np.concatenate([np.abs(init_xh).ravel(), np.abs(init_hh).ravel()])
+    linthresh = float(np.percentile(init_abs, 99.5)) if init_abs.size else 0.05
+    linthresh = float(np.clip(linthresh, 0.02, 0.15))
+    # More colormap mass near zero so init stripes stay visible vs trained peaks.
+    mat_norm = SymLogNorm(linthresh=linthresh, linscale=2.0, vmin=-vmax, vmax=vmax, base=10)
+
+    im = None
     for row in range(2):
         for col in range(n_cols):
             ax = axes[row, col]
             data = row_panels[row][col]
-            # Independent color scale per matrix panel (not shared across row/column).
-            vmax = max(float(np.max(np.abs(data))), 1e-9)
-            ax.imshow(
-                data, aspect="auto", cmap=cmap,
-                vmin=-vmax, vmax=vmax,
+            im = ax.imshow(
+                data, aspect="auto", cmap=mat_cmap, norm=mat_norm,
                 interpolation="nearest", origin="lower",
             )
             if row == 0:
-                ax.set_title(col_titles[col], fontsize=6.5, pad=3)
-            ax.text(
-                0.97, 0.97, f"±{vmax:.2g}",
-                transform=ax.transAxes, ha="right", va="top",
-                fontsize=5.5, color="0.2",
-                bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.75),
-            )
+                ax.set_title(col_titles[col], fontsize=7, pad=3)
             ny, nx = data.shape
             if row == 1:
                 ax.set_xticks([0, max(nx - 1, 0)])
@@ -1311,100 +1380,51 @@ def plot_mixed_dfa_weight_matrices_by_dfa(
     if n_cols > 1:
         axes[1, -1].set_xlabel("source h", fontsize=6)
 
-    xh_flat = [xh.ravel() for xh in xh_panels]
-    hh_flat = [hh.ravel() for hh in hh_panels]
-    w_min = min(
-        min(float(np.min(a)) for a in xh_flat),
-        min(float(np.min(a)) for a in hh_flat),
-    )
-    w_max = max(
-        max(float(np.max(a)) for a in xh_flat),
-        max(float(np.max(a)) for a in hh_flat),
-    )
-    if not np.isfinite(w_min) or not np.isfinite(w_max) or w_min == w_max:
-        w_min, w_max = -1e-3, 1e-3
-    bins = np.linspace(w_min, w_max, 41)
-    ymax = 0.0
-    for arr_xh, arr_hh in zip(xh_flat, hh_flat):
-        for arr in (arr_xh, arr_hh):
-            counts, _ = np.histogram(arr, bins=bins, density=True)
-            if counts.size:
-                ymax = max(ymax, float(np.max(counts)))
-    ymax = max(ymax * 1.05, 1e-9)
+    cbar_mat = fig.colorbar(im, cax=cax_mat)
+    cbar_mat.set_label(r"$w$", fontsize=8, labelpad=1)
+    cbar_mat.ax.tick_params(labelsize=5.5, pad=1)
 
-    for col in range(n_cols):
-        ax = axes[2, col]
-        ax.hist(
-            xh_flat[col], bins=bins, density=True, histtype="stepfilled",
-            alpha=0.45, color=xh_color, edgecolor=xh_color, linewidth=0.8,
-            label=r"$W_{xh}$",
-        )
-        ax.hist(
-            hh_flat[col], bins=bins, density=True, histtype="stepfilled",
-            alpha=0.45, color=hh_color, edgecolor=hh_color, linewidth=0.8,
-            label=r"$W_{hh}$",
-        )
+    # Summary densities across the full mixed sweep (color = DFA, like PC screes).
+    sweep = _iter_mixed_dfa_weight_flats(seed=seed, model_type=model_type)
+    if not sweep:
+        raise FileNotFoundError(f"no mixed-dfa weights for summary histograms (seed {seed})")
+    dfa_vals = [float(n) for n, _xh, _hh in sweep]
+    dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals) + 1e-6)
+    dfa_cmap = plt.get_cmap("viridis")
+    w_all = np.concatenate([xh for _n, xh, _hh in sweep] + [hh for _n, _xh, hh in sweep])
+    w_lo = float(np.percentile(w_all, 0.5))
+    w_hi = float(np.percentile(w_all, 99.5))
+    if not np.isfinite(w_lo) or not np.isfinite(w_hi) or w_lo == w_hi:
+        w_lo, w_hi = -1.0, 1.0
+    bins = np.linspace(w_lo, w_hi, 61)
+    centers = 0.5 * (bins[:-1] + bins[1:])
+    y_max = 0.0
+    for n_dfa, xh, hh in sweep:
+        color = dfa_cmap(dfa_norm(float(n_dfa)))
+        for ax, arr in ((ax_xh, xh), (ax_hh, hh)):
+            dens, _ = np.histogram(arr, bins=bins, density=True)
+            dens = np.asarray(dens, dtype=float)
+            ax.plot(centers, dens, color=color, lw=0.85, alpha=0.70)
+            if dens.size:
+                y_max = max(y_max, float(np.nanmax(dens)))
+    y_lim = max(y_max * 1.05, 1e-9)
+    for ax, title in ((ax_xh, r"$W_{xh}$ weight density"), (ax_hh, r"$W_{hh}$ weight density")):
         ax.axvline(0.0, color="0.5", linewidth=0.5, linestyle=":")
-        ax.set_xlim(w_min, w_max)
-        ax.set_ylim(0.0, ymax)
-        ax.tick_params(axis="both", labelsize=5)
-        ax.set_xlabel(r"$W$", fontsize=6)
-        if col == 0:
-            ax.set_ylabel("density", fontsize=7)
-            ax.legend(fontsize=5.5, frameon=False, loc="upper right", handlelength=1.0)
-        else:
-            ax.tick_params(axis="y", labelleft=False)
+        ax.set_xlim(w_lo, w_hi)
+        ax.set_ylim(0.0, y_lim)
+        ax.set_title(title, fontsize=8, pad=3)
+        ax.set_xlabel(r"$w$", fontsize=7)
+        ax.set_ylabel("density", fontsize=7)
+        ax.tick_params(labelsize=6)
+        ax.grid(True, alpha=0.22)
 
-    metric_path = collect_mixed_dfa_metric_board(recompute=recompute_metrics)
-    metric_panels = [
-        p for p in json.loads(metric_path.read_text(encoding="utf-8"))["panels"]
-        if "error" not in p
-    ]
-    words_cmap = plt.get_cmap("YlOrRd")
-    words_norm = plt.Normalize(vmin=1.0, vmax=25.0)
-    for ax, (path_key, title, log_y) in zip(met_axes, _WEIGHT_FIGURE_METRICS):
-        mx: list[float] = []
-        my: list[float] = []
-        mn: list[float] = []
-        for p in metric_panels:
-            y = _dig(p, path_key)
-            if y is None:
-                continue
-            mx.append(float(p["n_dfa_states"]))
-            my.append(y)
-            mn.append(float(p["n_words"]))
-        if len(mx) < 3:
-            ax.set_axis_off()
-            continue
-        x = np.asarray(mx, dtype=float)
-        y = np.asarray(my, dtype=float)
-        n_words = np.asarray(mn, dtype=float)
-        use_log = bool(log_y and np.all(y > 0))
-        y_plot = np.log10(np.clip(y, 1e-12, None)) if use_log else y
-        ax.scatter(
-            x, y_plot,
-            c=n_words, cmap=words_cmap, norm=words_norm,
-            s=16, alpha=0.75, linewidths=0.25, edgecolors="white", zorder=2,
-        )
-        x_fit, y_fit, r2, _model = _fit_trend(x, y_plot)
-        panel_title = title
-        if x_fit is not None and y_fit is not None and np.isfinite(r2):
-            ax.plot(x_fit, y_fit, color="#111111", lw=1.1, zorder=3)
-            panel_title = f"{title}\n$R^2$={r2:.2f}"
-        ax.set_title(panel_title, fontsize=7, pad=3)
-        ax.set_xlabel("DFA states", fontsize=6.5)
-        if use_log:
-            ax.set_ylabel("log10", fontsize=6.5)
-        ax.grid(True, alpha=0.25)
-        ax.tick_params(labelsize=5.5)
-
-    cax = fig.add_axes([0.915, 0.09, 0.015, 0.22])
-    cbar_w = fig.colorbar(
-        plt.cm.ScalarMappable(cmap=words_cmap, norm=words_norm),
-        cax=cax,
-    )
-    cbar_w.set_label("# words", fontsize=7)
-    cbar_w.ax.tick_params(labelsize=6)
+    sm = plt.cm.ScalarMappable(cmap=dfa_cmap, norm=dfa_norm)
+    sm.set_array([])
+    # Inset well inside the panel so the label/ticks are not clipped by save.
+    cax = ax_hh.inset_axes([0.58, 0.30, 0.055, 0.55])
+    cbar = fig.colorbar(sm, cax=cax)
+    cbar.set_label("DFA states", fontsize=6.5, labelpad=2)
+    cbar.ax.tick_params(labelsize=5.5)
 
     fig.suptitle(
         rf"Weight structure by DFA size (seed {seed})",
@@ -3510,8 +3530,13 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     n_panels: int = _TRAJECTORY_GRID_N * _TRAJECTORY_GRID_N,
     seed: int = _TRAJECTORY_GRID_SEED,
     model_type: str = "rnn",
+    unique_dfa: bool = False,
 ) -> list[tuple[int, int, str, tuple[str, ...]]]:
-    """Rank-uniform distinct vocabs across DFA size (seed-1 checkpoints)."""
+    """Rank-uniform distinct vocabs across DFA size (seed-1 checkpoints).
+
+    When ``unique_dfa`` is True, at most one vocab per minimized DFA size is kept
+    (smallest #words, then task name), then linspace-sampled across those sizes.
+    """
     ranked: list[tuple[int, int, str, tuple[str, ...]]] = []
     for entry in iter_runs():
         task = entry["task"]
@@ -3522,6 +3547,13 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     ranked.sort(key=lambda t: (t[0], t[1], t[2]))
     if not ranked:
         raise FileNotFoundError(f"no mixed-dfa checkpoints for seed {seed}")
+
+    if unique_dfa:
+        by_dfa: dict[int, tuple[int, int, str, tuple[str, ...]]] = {}
+        for item in ranked:
+            by_dfa.setdefault(item[0], item)
+        ranked = [by_dfa[k] for k in sorted(by_dfa)]
+
     n = max(1, min(int(n_panels), len(ranked)))
     if n == 1:
         return [ranked[0]]
@@ -3546,7 +3578,7 @@ def _pick_mixed_dfa_trajectory_span_tasks(
 
 def plot_mixed_dfa_activation_heatmap_grid(
     *,
-    n_rows: int = 4,
+    n_rows: int = 2,
     n_cols: int = 5,
     seed: int = 1,
     model_type: str = "rnn",
@@ -3577,6 +3609,7 @@ def plot_mixed_dfa_activation_heatmap_grid(
         n_panels=n_rows * n_cols,
         seed=seed,
         model_type=model_type,
+        unique_dfa=True,
     )
     fig, axes = plt.subplots(
         n_rows,

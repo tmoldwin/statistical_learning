@@ -124,7 +124,7 @@ def plot_closed_loop_run_seed_row(
 def plot_dfa_and_trajectory_seed_grid(
     task: str,
     *,
-    seeds: tuple[int, ...] = (1, 2, 3, 5, 7),
+    seeds: tuple[int, ...] = (1, 2, 7),
     out_path: Path | None = None,
     model_type: str = "rnn",
     embed_method: str = "pca",

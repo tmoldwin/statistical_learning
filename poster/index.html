@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fully Interpretable Minimal Transformers — Poster</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="vendor/katex.min.js"></script>
+<script defer src="vendor/auto-render.min.js"></script>
+<style>
+:root {
+  --navy: #1a3a6b;
+  --navy-2: #24518f;
+  --gold: #f2b632;
+  --text: #1c1c1c;
+  --text-light: #3d3d3d;
+  --bg: #eef0f3;
+  --card-bg: #fff;
+  --gap: 1mm;
+  --pad: 2.5mm;
+}
+@page { size: 838mm 965mm; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-family: 'Nunito', 'Segoe UI', sans-serif; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  width: 838mm;
+  height: 965mm;
+  background: var(--bg);
+  overflow: hidden;
+  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
+}
+@media screen {
+  html { background: #777; overflow: hidden; width: 100vw; height: 100vh; }
+  body { position: absolute; box-shadow: 0 4px 30px rgba(0,0,0,.35); }
+}
+@media print {
+  html { background: none; }
+  body { position: static; transform: none !important; box-shadow: none; }
+  .toolbar { display: none !important; }
+}
+
+/* ===== Header ===== */
+.header {
+  background: linear-gradient(120deg, #142e55, var(--navy) 55%, var(--navy-2));
+  padding: 4mm var(--pad) 3.5mm;
+  display: flex;
+  align-items: center;
+  gap: 8mm;
+  flex-shrink: 0;
+}
+.header-left { flex: 1; min-width: 0; }
+.header h1 { font-size: 42pt; font-weight: 900; line-height: 1.06; color: #fff; }
+.header h1 .accent { color: var(--gold); }
+.header .authors { font-size: 22pt; color: rgba(255,255,255,.95); font-weight: 700; margin-top: 2mm; }
+.header .aff { font-size: 16pt; color: rgba(255,255,255,.72); margin-top: 1mm; }
+.header-logos img { height: 26mm; object-fit: contain; background: #fff; padding: 2mm 2.5mm; border-radius: 2mm; display: block; }
+.header-right { text-align: center; }
+.header-right .qr img { width: 26mm; height: 26mm; border-radius: 2mm; background: #fff; padding: 1mm; display: block; margin: 0 auto; }
+.header-right .ql { font-size: 9pt; color: var(--gold); font-weight: 800; margin-top: 1.5mm; max-width: 32mm; line-height: 1.2; }
+
+/* ===== Columns ===== */
+.poster {
+  display: flex;
+  gap: var(--gap);
+  padding: var(--gap) var(--pad);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+  min-height: 0;
+  justify-content: flex-start;
+}
+.col-1 { flex: 2.35; }
+.col-2 { flex: 2.15; }
+.col-3 { flex: 2.05; }
+.col-4 { flex: 2.2; }
+
+/* ===== Card title bars ===== */
+.card .card-title {
+  background: var(--navy);
+  color: #fff;
+  font-size: 16.5pt;
+  font-weight: 800;
+  padding: 1.5mm 2.5mm;
+  border-left: 2.5mm solid var(--gold);
+  border-radius: 1.5mm 1.5mm 0 0;
+  margin: -1.5mm -1.5mm 0.8mm -1.5mm;
+  flex-shrink: 0;
+}
+
+/* ===== Cards: figures keep aspect ratio; architecture fills leftover height ===== */
+.card {
+  background: var(--card-bg);
+  border-radius: 2mm;
+  box-shadow: 0 1px 5px rgba(0,0,0,.12);
+  padding: 1.5mm;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.card img {
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  border-radius: 1mm;
+}
+.card.grow img {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.card.arch {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.card.arch img {
+  width: auto;
+  max-width: 100%;
+  height: 0;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.card .cap { font-size: 13pt; color: var(--text-light); line-height: 1.25; margin-top: 0.8mm; flex-shrink: 0; }
+.card .cap b { color: var(--navy); font-weight: 900; }
+
+/* Abstract */
+.abstract { background: var(--card-bg); border-radius: 2mm; box-shadow: 0 1px 5px rgba(0,0,0,.12); padding: 2mm 3mm; flex: 0 0 auto; }
+.abstract h2 { font-size: 16.5pt; font-weight: 900; color: var(--navy); margin-bottom: 1mm; border-bottom: 0.8mm solid var(--gold); display: inline-block; padding: 0 0 0.4mm; }
+.abstract p { font-size: 14pt; line-height: 1.22; color: var(--text-light); }
+
+/* ===== Footer ===== */
+.footer {
+  background: var(--navy);
+  color: rgba(255,255,255,.9);
+  padding: 2.5mm var(--pad);
+  display: flex;
+  gap: 12mm;
+  font-size: 14pt;
+  line-height: 1.35;
+  flex-shrink: 0;
+  align-items: center;
+}
+.footer b { color: var(--gold); }
+.footer-refs { flex: 1; font-size: 13pt; }
+
+/* ===== Toolbar (screen only) ===== */
+.toolbar { position: fixed; top: 8px; right: 8px; z-index: 1000; display: flex; gap: 6px; }
+.toolbar button { font-family: 'Nunito'; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; background: #eee; color: #555; }
+.toolbar button:hover { background: #ddd; }
+
+.katex { font-size: 1em !important; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button type="button" onclick="fitPoster()">Fit to screen</button>
+  <button type="button" onclick="window.print()">Print / PDF</button>
+</div>
+
+<header class="header">
+  <div class="header-left">
+    <h1>Fully Interpretable Minimal Transformers: <span class="accent">From Geometry to Algorithm</span></h1>
+    <div class="authors">Toviah Moldwin, Raneem Mahajne, and Idan Segev</div>
+    <div class="aff">Edmond and Lily Safra Center for Brain Sciences, The Hebrew University of Jerusalem</div>
+  </div>
+  <div class="header-logos">
+    <img src="logos/elsc.png" alt="ELSC">
+  </div>
+  <div class="header-right">
+    <div class="qr">
+      <img src="qr.png" alt="Project QR">
+      <div class="ql">Code &amp; training movies on GitHub</div>
+    </div>
+  </div>
+</header>
+
+<main class="poster">
+
+  <div class="col col-1">
+    <div class="abstract">
+      <h2>Abstract</h2>
+      <p>We present a framework for building and interpreting minimal transformer models trained on procedurally-generated integer sequences. As a pedagogical case study, we apply it to one minimal model on a single synthetic retrieval task. By constraining the embedding dimension and head size to $2$, we enable full two-dimensional visualization of every internal representation. Embeddings, query/key/value transforms, attention outputs, residual streams, and the language-model head's decision boundaries can all be seen directly. We argue that, in this setting, the learned geometry can be read as an algorithm. The arrangement of points and boundaries in $\mathbb{R}^2$ can be read as a step-by-step procedure. Using a simple task where the model must produce the most recent even number whenever it sees the '+' operator, we visually walk through every step of the transformer's computation. We show how the model embeds the tokens and their respective positions in the sequence, transforms them via the Q, K, and V matrices, uses the dot product between the Q and K representations to form the attention matrix, and uses the attention matrix to select values that move the representation of each input token to the region of the domain of the LM head that will correctly predict the next token. We introduce a suite of interpretability visualizations that make the algorithmic interpretation of this procedure explicit, and provide training evolution animations showing how the algorithmic geometry emerges during learning. The framework offers a pedagogical and experimental testbed to explore how transformers use informational geometry to solve tasks.</p>
+    </div>
+    <div class="card arch">
+      <div class="card-title">Model Architecture</div>
+      <img src="fig01.png" alt="Figure 1">
+      <div class="cap"><b>Figure 1.</b> Architecture of the minimal transformer. Every component operates entirely in $\mathbb{R}^2$.</div>
+    </div>
+    <div class="card grow">
+      <div class="card-title">Training Data</div>
+      <img src="fig02.png" alt="Figure 2">
+      <div class="cap"><b>Figure 2.</b> Sample training sequences as heatmaps. Green: constrained position (immediately after <code>+</code>) with the correct next token (the most recent even number). Gray: unconstrained position (any token is valid).</div>
+    </div>
+    <div class="card grow">
+      <div class="card-title">Learning Curve</div>
+      <img src="fig03.png" alt="Figure 3">
+      <div class="cap"><b>Figure 3.</b> Training dynamics over 20,000 steps. Left axis: cross-entropy loss. Right axis: rule error — the fraction of constrained positions (tokens immediately following <code>+</code>) where the model's top predicted token is not the target (the most recent even number). Rule error near 90% is chance level; near 0% indicates the rule is learned.</div>
+    </div>
+    <div class="card grow">
+      <div class="card-title">Generated Sequences</div>
+      <img src="fig04.png" alt="Figure 4">
+      <div class="cap"><b>Figure 4.</b> Model-generated sequences at initialization (top) vs. after training (bottom). Green = correct at constrained positions (after <code>+</code>), red = wrong at constrained positions, gray = unconstrained. Top: at step 0, constrained positions are mostly red (random predictions). Bottom: after training, constrained positions are mostly green (correct "last even" outputs).</div>
+    </div>
+  </div>
+
+  <div class="col col-2">
+    <div class="card">
+      <div class="card-title">Learned Embeddings</div>
+      <img src="fig05.png" alt="Figure 5">
+      <div class="cap"><b>Figure 5.</b> Learned embeddings. (a) Token embeddings $\mathbf{x}_i$ shown as heatmap. (b) Position embeddings $\mathbf{p}_i$ shown as heatmap. (c) Combined token+position embeddings shown as scatterplot. (d) Positions $\mathbf{p}_i$ shown as scatterplot. (e) Token+position embeddings $\mathbf{e}_i$ shown as scatterplot. Positions are indicated as subscripts next to each token e.g. $+_5$ is the <code>+</code> token at position 5.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Q, K, V Projections</div>
+      <img src="fig06.png" alt="Figure 6">
+      <div class="cap"><b>Figure 6.</b> QKV projections. (a) Original combined token+position embeddings (as in Figure 5e). (b) Query-space (blue), with $W_Q$ inset. (c) Key-space (red), with $W_K$ inset. (d) Value-space (green), with $W_V$ inset. All 96 token+position points in each panel.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Who Attends to Whom: Query–Key Geometry</div>
+      <img src="fig07.png" alt="Figure 7">
+      <div class="cap"><b>Figure 7.</b> Query–key geometry in Q/K space. <b>Top:</b> joint query–key space (blue: queries; red: keys; labels show token and position). <b>Bottom:</b> Focus on the query $+_5$ (blue); background color indicates the dot product of the $+_5$ query with every point in space. Keys with position $\geq 5$ are grayed due to the causal mask.</div>
+    </div>
+  </div>
+
+  <div class="col col-3">
+    <div class="card">
+      <div class="card-title">QK Scores for <code>+</code> Queries</div>
+      <img src="fig08.png" alt="Figure 8">
+      <div class="cap"><b>Figure 8.</b> Pre-softmax query–key scores $QK^\top$, restricted to <code>+</code> queries. Each subplot shows an 8×8 matrix of dot products: <code>+</code> query positions (rows) vs. key positions (columns) for a particular key token.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Output Probability Landscape</div>
+      <img src="fig09.png" alt="Figure 9">
+      <div class="cap"><b>Figure 9.</b> Output probability landscape (per-unit view). Each subplot shows the softmax probability $P(\text{next} = \text{token})$ over the 2D plane for one output token (digits 0–10 and the <code>+</code> operator).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Output Landscape Summary</div>
+      <img src="fig10.png" alt="Figure 10">
+      <div class="cap"><b>Figure 10.</b> Output landscape summary (summary of Figure 9). (a) Entropy of the output distribution (nats); high in the indifference region (top half), near zero in even-number target zones (bottom half). (b) Argmax prediction map: color and annotation indicate which token has the highest predicted probability at each point. (c) Argmax map with combined embeddings $\mathbf{e}_i$ overlaid. (d) Argmax map with value-transformed vectors $\mathbf{v}_j$ overlaid.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tracing a Sequence <code>4 1 + 4 6 9 5 +</code>: Embeddings</div>
+      <img src="fig11.png" alt="Figure 11">
+      <div class="cap"><b>Figure 11.</b> Embeddings for the demo sequence <code>4 1 + 4 6 9 5 +</code>. <b>a-c:</b> Embedding heatmaps for tokens, positions and token+position. <b>d–f:</b> 2D scatter plot views of tokens, positions, and token+position combinations, shown over a backdrop of all possible tokens, positions, and token+position embeddings (light gray).</div>
+    </div>
+  </div>
+
+  <div class="col col-4">
+    <div class="card">
+      <div class="card-title">Tracing: Q &amp; K</div>
+      <img src="fig12.png" alt="Figure 12">
+      <div class="cap"><b>Figure 12.</b> Q and K for the demo sequence. (a) Q heatmap, (b) K heatmap, (c) scatterplot of queries (blue), and keys (red) for tokens within our test sequence against a backdrop of all 96 possible queries and keys (gray).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tracing: Attention Computation</div>
+      <img src="fig13.png" alt="Figure 13">
+      <div class="cap"><b>Figure 13.</b> Attention computation for the demo sequence. (a) The background of each panel displays the dot product of a specific query (blue) in the test sequence with every point in space (green = high, white = low). The unmasked (red) and masked (gray) keys are overlaid on this space to show their dot products with the selected query. (b) The masked $Q \cdot K^\top$ matrix, (c) the attention matrix after normalization by $\sqrt{d_k}$ and applying softmax.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tracing: Values &amp; Attention Output</div>
+      <img src="fig14.png" alt="Figure 14">
+      <div class="cap"><b>Figure 14.</b> Values and attention output for the demo sequence. (a) Attention weight matrix as in Figure 13c, (b) Values for each digit shown as heatmaps. (c) Attention outputs shown as heatmaps. (d) Values shown as scatter plot. (e) Attention output shown as scatter plot.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tracing: Next-Token Prediction</div>
+      <img src="fig15.png" alt="Figure 15">
+      <div class="cap"><b>Figure 15.</b> Predicting the next token by summing the input embeddings and attention vectors. (a) Top: Heatmaps illustrating the 2D values for the input embeddings ($\mathbf{e}$) for each token in the test sequence. Bottom: Input embeddings in the 2D output space, where the background colors represent the most likely next-token prediction. (b) Top: The attention vectors ($\mathrm{Attn}(\mathbf{e})$). Bottom: The attention weights shown as arrows from the origin. (c) Top: The sum of the input embeddings and the attention vectors ($\mathbf{z}$) as heatmap. Bottom: Input embeddings (white annotations) are moved by the attention vectors (arrows) to the correct region for predicting the next token.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-contact">
+    <b>Contact:</b> Raneem Mahajne — Edmond and Lily Safra Center for Brain Sciences, The Hebrew University of Jerusalem
+  </div>
+  <div class="footer-refs">
+    <b>Key references:</b> Vaswani et al. (2017); Radford et al. (2018); Elhage et al. (2021); Nanda et al. (2023); Weiss et al. (2021). Full list in paper.
+  </div>
+</footer>
+
+<script>
+const MM = 3.7795275591;
+const POSTER_W_MM = 838;
+const POSTER_H_MM = 965;
+
+function fitPoster() {
+  if (window.matchMedia('print').matches) return;
+  const pW = POSTER_W_MM * MM;
+  const pH = POSTER_H_MM * MM;
+  const scale = Math.min(window.innerWidth / pW, window.innerHeight / pH);
+  const left = (window.innerWidth - pW * scale) / 2;
+  const top = (window.innerHeight - pH * scale) / 2;
+  document.body.style.transform = 'translate(' + left + 'px,' + top + 'px) scale(' + scale + ')';
+}
+
+function renderMath() {
+  if (typeof renderMathInElement === 'function') {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false }
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+window.addEventListener('load', function () {
+  fitPoster();
+  renderMath();
+});
+window.addEventListener('resize', fitPoster);
+</script>
+</body>
+</html>

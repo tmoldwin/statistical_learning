@@ -603,13 +603,14 @@ def plot_aggregated_seed_decode_curves(
     if legend_handles:
         fig.legend(
             legend_handles, legend_labels,
-            loc="upper center", bbox_to_anchor=(0.5, 0.98),
+            loc="upper center", bbox_to_anchor=(0.5, 0.995),
             ncol=min(len(legend_handles), 6), fontsize=8, frameon=False, columnspacing=1.2,
         )
+    # No figure-level title: the legend already names the series (avoids overlap).
     finalize_grid_figure(
         fig,
-        suptitle=f"Linear readout decoding · mean ± std across {len(seeds)} seeds",
-        top=0.80,
+        suptitle=None,
+        top=0.88,
         bottom=0.18,
         left=0.08,
         right=0.99,

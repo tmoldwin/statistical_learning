@@ -50,7 +50,7 @@ body {
   flex-shrink: 0;
 }
 .header-left { flex: 1; min-width: 0; }
-.header h1 { font-size: 36pt; font-weight: 900; line-height: 1.06; color: #fff; }
+.header h1 { font-size: 22pt; font-weight: 900; line-height: 1.12; color: #fff; }
 .header h1 .accent { color: var(--gold); }
 .header .authors { font-size: 20pt; color: rgba(255,255,255,.95); font-weight: 700; margin-top: 1.5mm; }
 .header .aff { font-size: 14pt; color: rgba(255,255,255,.72); margin-top: 0.8mm; }
@@ -115,20 +115,20 @@ body {
 }
 .card .cap { font-size: 10.5pt; color: var(--text-light); line-height: 1.18; margin-top: 0.5mm; flex-shrink: 0; }
 .card .cap b { color: var(--navy); font-weight: 900; }
-.card.setup { flex: 1.38 1 0; }
-.card.schem-train { flex: 1.82 1 0; }
-.card.schem-learn { flex: 1.32 1 0; }
-.card.probs { flex: 1.08 1 0; }
-.card.heat { flex: 1.65 1 0; }
-.card.prefix { flex: 1.52 1 0; }
+.card.setup { flex: 1.45 1 0; }
+.card.schem-train { flex: 1.70 1 0; }
+.card.schem-learn { flex: 1.28 1 0; }
+.card.probs { flex: 1.05 1 0; }
+.card.heat { flex: 1.85 1 0; }
+.card.prefix { flex: 1.45 1 0; }
 .col-mid .card { flex: 1.00 1 0; }
-.col-mid .card.corr { flex: 1.72 1 0; }
+.col-mid .card.corr { flex: 1.90 1 0; }
 .col-mid .card.geom { flex: 1.35 1 0; }
-.col-mid .card.units { flex: 1.68 1 0; }
-.col-mid .card.decode { flex: 0.86 1 0; }
-.col-mid .card.traj { flex: 1.20 1 0; }
+.col-mid .card.units { flex: 1.55 1 0; }
+.col-mid .card.decode { flex: 0.82 1 0; }
+.col-mid .card.traj { flex: 1.45 1 0; }
 .col .card.scale { flex: 1.22 1 0; }
-.col .card.actdfa { flex: 1.18 1 0; }
+.col .card.actdfa { flex: 1.45 1 0; }
 .col .card.readout { flex: 1.38 1 0; }
 .col .card.geometry { flex: 1.10 1 0; }
 .col .card.weights { flex: 1.15 1 0; }
@@ -136,7 +136,8 @@ body {
 
 .abstract { background: var(--card-bg); border-radius: 1.8mm; box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 1.8mm 2.5mm; flex: 0 0 auto; }
 .abstract h2 { font-size: 14pt; font-weight: 900; color: var(--navy); margin-bottom: 0.8mm; border-bottom: 0.7mm solid var(--gold); display: inline-block; padding: 0 0 0.3mm; }
-.abstract p { font-size: 11.5pt; line-height: 1.16; color: var(--text-light); }
+.abstract ul.aims { font-size: 11.5pt; line-height: 1.22; color: var(--text-light); margin: 0; padding-left: 5mm; }
+.abstract ul.aims li { margin-bottom: 1.2mm; }
 
 .footer {
   background: var(--navy);
@@ -167,7 +168,7 @@ body {
 
 <header class="header">
   <div class="header-left">
-    <h1>Statistical Word Segmentation: <span class="accent">Emergent Structure in a Next-Character RNN</span></h1>
+    <h1>Emergent lexical features and network structural remodeling <span class="accent">in a recurrent neural network trained on next-token prediction for a statistical learning task</span></h1>
     <div class="authors">Toviah Moldwin, Raneem Mahajne, and Idan Segev</div>
     <div class="aff">Edmond and Lily Safra Center for Brain Sciences, The Hebrew University of Jerusalem</div>
   </div>
@@ -186,13 +187,17 @@ body {
 
   <div class="col">
     <div class="abstract">
-      <h2>Abstract</h2>
-      <p>Eight-month-old infants can segment continuous speech by tracking transitional probabilities (Saffran, Aslin &amp; Newport, 1996). We ask whether a vanilla Elman RNN trained only on next-character prediction develops internal representations aligned with word structure. After learning, the network generates legal vocabulary items, and its hidden states become a continuous embedding of the vocabulary's minimal DFA. On an eight-word <em>-ate/-at</em> demo, DFA state explains $\eta^2 \approx 0.88$ of condensed hidden variance; word identity is much weaker ($\eta^2 \approx 0.06$). Fifty mixed-length English vocab runs ($H{=}100$) show that dimensionality, training cost, and readouts track minimized DFA size. Weight matrices become letter-columnar in $W_{xh}$ and locally clumped in $W_{hh}$, most clearly for small automata.</p>
+      <h2>Aims</h2>
+      <ul class="aims">
+        <li>How is lexical information (word position, character, etc.) represented in a recurrent network that learns to produce words?</li>
+        <li>How does the network’s representation of information change with vocabulary complexity?</li>
+        <li>How do the network’s weights differ as a function of the complexity of the learned vocabulary (function&nbsp;→&nbsp;structure)?</li>
+      </ul>
     </div>
     <div class="card setup">
       <div class="card-title">Fig 1 · Mixed vocabularies &amp; minimal DFAs</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_mixed_vocab_dfa_examples.jpg" alt="Figure 1"></div>
-      <div class="cap">Two ≤3-word conditions. Word chips, one unsegmented stream, then the prefix-labeled minimal DFA (6 vs 8 states), laid out left to right.</div>
+      <div class="cap">Two ≤3-word conditions. Vocabulary words (bold), one unsegmented stream, then the prefix-labeled minimal DFA (6 vs 8 states).</div>
     </div>
     <div class="card schem-train">
       <div class="card-title">Fig 2 · Training the RNN</div>
@@ -202,7 +207,7 @@ body {
     <div class="card schem-learn">
       <div class="card-title">Fig 3 · Learning &amp; generation</div>
       <div class="figframe"><img src="../paper/figures/demo/fig03_learning_with_samples.jpg" alt="Figure 3"></div>
-      <div class="cap">Loss and OOV collapse together; rollouts become legal vocabulary words.</div>
+      <div class="cap">Loss and OOV collapse together; rollouts become legal vocabulary words. Demo lexicon listed above the panels.</div>
     </div>
     <div class="card probs">
       <div class="card-title">Fig 4 · Next-character probabilities</div>
@@ -245,7 +250,7 @@ body {
     <div class="card traj">
       <div class="card-title">Fig 11 · Word trajectories</div>
       <div class="figframe"><img src="../paper/figures/demo/fig_word_trajectories.jpg" alt="Figure 11"></div>
-      <div class="cap">DFA-labeled PCA (top) and closed-loop trajectories (bottom) across three seeds.</div>
+      <div class="cap">DFA-labeled prefixes with closed-loop trajectories overlaid. Columns: 2–5 word mixed vocabs (DFA ≤12 where available); rows: two seeds.</div>
     </div>
   </div>
 

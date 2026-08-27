@@ -1426,42 +1426,24 @@ def plot_example_units_combined(
 
         if row == 0:
             if n_examples == 1:
-                headers = ("example", "category mean")
+                headers = ("example", "")
             else:
                 headers = tuple(
                     h for i in range(n_examples)
                     for h in (f"ex {i + 1}", f"ex {i + 1} mean")
                 )
             for col, hdr in enumerate(headers):
+                if not hdr:
+                    continue
                 axes[row, col].text(
                     0.5, 1.08, hdr, transform=axes[row, col].transAxes,
                     ha="center", va="bottom", fontsize=7, color="0.35",
                 )
 
-    if n_rows > 0:
-        axes[-1, 0].set_xlabel(
-            "input character (shared corpus window)", fontsize=7,
-        )
-        axes[-1, 0].xaxis.label.set_clip_on(False)
-        if n_examples > 1 and len(feature_rows[-1][1]) > 1:
-            axes[-1, 2].set_xlabel(
-                "input character (shared corpus window)", fontsize=7,
-            )
-            axes[-1, 2].xaxis.label.set_clip_on(False)
-
-    if n_examples == 1:
-        suptitle = (
-            "Top unit per feature on one corpus window "
-            "(lollipop color = feature category; peak SI)"
-        )
-    else:
-        suptitle = (
-            f"Top-{n_examples} units per feature on one corpus window "
-            "(lollipop color = feature category; peak SI)"
-        )
-    fig.suptitle(suptitle, fontsize=10, y=0.995)
-    fig.subplots_adjust(left=0.07, right=0.99, top=0.90, bottom=0.04)
-    fig.savefig(save_path, dpi=150)
+    # No bottom corpus-window xlabel / figure title: poster crops them, and
+    # panel titles already identify the feature + unit.
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.92, bottom=0.06)
+    fig.savefig(save_path, dpi=150, bbox_inches="tight", pad_inches=0.08)
     plt.close(fig)
     print(f"wrote {save_path}")
     del result

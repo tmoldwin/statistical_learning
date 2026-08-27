@@ -227,8 +227,8 @@ def plot_mixed_vocab_dfa_examples(
             raise ValueError(f"DFA has {n_states} states (>10) for {words}")
         examples.append((words, aut))
 
-    fig = plt.figure(figsize=(12.2, 5.6))
-    outer = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.0], hspace=0.08)
+    fig = plt.figure(figsize=(12.2, 7.2))
+    outer = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.0], hspace=0.12)
     palette = list(WORD_STYLE.values())
     stream_patterns = (
         (0, 1, 2, 0, 2, 1, 0, 1, 2, 1, 0, 2),
@@ -236,7 +236,7 @@ def plot_mixed_vocab_dfa_examples(
     )
 
     for row, (words, aut) in enumerate(examples):
-        inner = outer[row].subgridspec(3, 1, height_ratios=[0.28, 0.24, 1.85], hspace=0.04)
+        inner = outer[row].subgridspec(3, 1, height_ratios=[0.30, 0.18, 2.55], hspace=0.04)
 
         ax_vocab = fig.add_subplot(inner[0])
         ax_vocab.set_axis_off()
@@ -244,30 +244,31 @@ def plot_mixed_vocab_dfa_examples(
         ax_vocab.set_ylim(0, 1)
         letter = "A" if row == 0 else "B"
         ax_vocab.text(
-            0.0, 0.52,
-            f"Vocabulary {letter}  ·  {', '.join(str(len(w)) for w in words)} letters  ·  "
-            f"DFA={int(aut.dfa._n)}",
-            fontsize=11, fontweight="bold", va="center",
+            0.0, 0.72,
+            f"Vocabulary {letter}  ·  DFA={int(aut.dfa._n)}",
+            fontsize=12, fontweight="bold", va="center",
             transform=ax_vocab.transAxes,
         )
-        chip_w, gap, x0 = 0.09, 0.012, 0.58
+        # Plain bold colored words under the heading (no chip boxes).
+        x = 0.0
         for i, word in enumerate(words):
-            stroke, fill = palette[i % len(palette)]
-            x = x0 + i * (chip_w + gap)
-            ax_vocab.add_patch(
-                FancyBboxPatch(
-                    (x, 0.22), chip_w, 0.56,
-                    boxstyle="round,pad=0.008,rounding_size=0.08",
-                    facecolor=fill, edgecolor=stroke, linewidth=1.1,
+            stroke, _fill = palette[i % len(palette)]
+            if i > 0:
+                ax_vocab.text(
+                    x, 0.22, " · ",
+                    ha="left", va="center", fontsize=13, color="0.45",
                     transform=ax_vocab.transAxes,
                 )
-            )
-            ax_vocab.text(
-                x + chip_w / 2, 0.50, word,
-                ha="center", va="center", fontsize=11,
-                color=stroke, fontfamily="monospace", fontweight="700",
+                x += 0.035
+            t = ax_vocab.text(
+                x, 0.22, word,
+                ha="left", va="center", fontsize=14,
+                color=stroke, fontfamily="monospace", fontweight="800",
                 transform=ax_vocab.transAxes,
             )
+            # Advance x roughly by rendered width in axes fraction.
+            x += 0.018 * max(len(word), 3) + 0.01
+            del t
 
         pattern = stream_patterns[row % len(stream_patterns)]
         stream_words: list[str] = []
@@ -295,14 +296,16 @@ def plot_mixed_vocab_dfa_examples(
         draw_minimized_dfa_on_axes(
             ax_dfa, aut, words,
             compact=True,
-            label_fontsize=10.0,
+            label_fontsize=13.0,
             node_scale=1.0,
             circle_scale=1.0,
             shortest_prefix_labels=True,
             fit_labels=True,
             horizontal=True,
-            fixed_radius=36.0,
-            view_span=(1600.0, 560.0),
+            # Larger equal nodes; pack layers tighter so circles dominate over long edges.
+            fixed_radius=82.0,
+            arrow_mutation_scale=5.5,
+            horizontal_stretch=0.78,
         )
 
     finalize_grid_figure(

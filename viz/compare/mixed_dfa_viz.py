@@ -1032,14 +1032,14 @@ def plot_mixed_dfa_scaling_overview(
     ]
 
     # Story: learning (CE → word-error) then summaries (iters → spectra).
-    # DFA colorbar is inset in the PC-spectra panel (same scale as learning curves).
+    # Matching inset colorbars on the bottom-row panels.
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
     fig = plt.figure(figsize=(10.5, 6.4))
     gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0])
     ax_ce = fig.add_subplot(gs[0, 0])
     ax_we = fig.add_subplot(gs[0, 1])
-    gs_it = gs[1, 0].subgridspec(1, 2, width_ratios=[1.0, 0.055], wspace=0.12)
-    ax_it = fig.add_subplot(gs_it[0, 0])
-    cax_w = fig.add_subplot(gs_it[0, 1])
+    ax_it = fig.add_subplot(gs[1, 0])
     ax_sp = fig.add_subplot(gs[1, 1])
 
     max_pcs = int(decode_payload.get("max_k", _DEFAULT_MAX_PCS))
@@ -1141,38 +1141,32 @@ def plot_mixed_dfa_scaling_overview(
         suptitle="Mixed-vocab scaling with DFA size",
         bottom=0.08,
         left=0.08,
-        right=0.94,
+        right=0.97,
         top=0.90,
         wspace=0.28,
         hspace=0.32,
     )
 
+    # Matched inset colorbars (same physical size) inside bottom panels.
+    _cbar_kw = dict(width="4.5%", height="48%", loc="upper right", borderpad=0.55)
     if words_cbar_spec is not None:
         w_cmap, w_norm = words_cbar_spec
+        cax_w = inset_axes(ax_it, **_cbar_kw)
         cbar_w = fig.colorbar(
             plt.cm.ScalarMappable(cmap=w_cmap, norm=w_norm),
             cax=cax_w,
         )
-        cbar_w.set_label("# words", fontsize=7)
-        cbar_w.ax.tick_params(labelsize=6)
-    else:
-        cax_w.set_axis_off()
+        cbar_w.set_label("# words", fontsize=7.5)
+        cbar_w.ax.tick_params(labelsize=6.5)
 
     if decode_panels:
-        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-
-        cax_dfa = inset_axes(
-            ax_sp, width="3.2%", height="42%", loc="upper right",
-            bbox_to_anchor=(0.0, 0.0, 0.90, 0.96),
-            bbox_transform=ax_sp.transAxes,
-            borderpad=0.4,
-        )
+        cax_dfa = inset_axes(ax_sp, **_cbar_kw)
         cbar_dfa = fig.colorbar(
             plt.cm.ScalarMappable(cmap=cmap, norm=norm),
             cax=cax_dfa,
         )
-        cbar_dfa.set_label("DFA states", fontsize=6.5)
-        cbar_dfa.ax.tick_params(labelsize=5.5)
+        cbar_dfa.set_label("DFA states", fontsize=7.5)
+        cbar_dfa.ax.tick_params(labelsize=6.5)
 
     out = sweep_figures_dir(COMPARISON_NAME) / outfile
     save_figure(fig, out)
@@ -2176,15 +2170,15 @@ def plot_mixed_dfa_weight_graph_metrics_paper(
 ) -> Path:
     """Paper board: curated lettered grid; always show the curated panel set.
 
-    ``min_r2`` is ignored for inclusion (panels always kept); fits still report
-    R^2 on each panel. Pass a float only if a future caller wants filtering.
+    Fits use the best of linear / sigmoid / exp-asymptote / hyperbola (adjusted R²).
+    ``min_r2`` is ignored for inclusion (panels always kept); R² still reported.
     """
     del min_r2  # curated set is fixed for the paper figure
     return plot_mixed_dfa_weight_graph_metrics_vs_dfa(
         outfile=outfile,
         seed=seed,
         recompute=recompute,
-        linear_only=True,
+        linear_only=False,
         min_r2=None,
         lettered=True,
         metric_specs=_PAPER_WEIGHT_METRICS,
@@ -3531,11 +3525,16 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     seed: int = _TRAJECTORY_GRID_SEED,
     model_type: str = "rnn",
     unique_dfa: bool = False,
+    max_dfa: int | None = None,
+    target_n_words: tuple[int, ...] | None = None,
 ) -> list[tuple[int, int, str, tuple[str, ...]]]:
     """Rank-uniform distinct vocabs across DFA size (seed-1 checkpoints).
 
     When ``unique_dfa`` is True, at most one vocab per minimized DFA size is kept
     (smallest #words, then task name), then linspace-sampled across those sizes.
+
+    ``target_n_words`` (e.g. ``(2, 3, 4, 5)``) picks one vocab per word count,
+    preferring DFA size ≤ ``max_dfa`` when set, else the smallest available DFA.
     """
     ranked: list[tuple[int, int, str, tuple[str, ...]]] = []
     for entry in iter_runs():
@@ -3548,6 +3547,32 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     if not ranked:
         raise FileNotFoundError(f"no mixed-dfa checkpoints for seed {seed}")
 
+    if target_n_words is not None:
+        out: list[tuple[int, int, str, tuple[str, ...]]] = []
+        seen: set[str] = set()
+        for nw in target_n_words:
+            cands = [item for item in ranked if item[1] == int(nw)]
+            if max_dfa is not None:
+                under = [item for item in cands if item[0] <= int(max_dfa)]
+                if under:
+                    cands = under
+            if not cands:
+                continue
+            # Prefer smaller DFA, then smaller task id.
+            pick = min(cands, key=lambda t: (t[0], t[2]))
+            if pick[2] in seen:
+                continue
+            seen.add(pick[2])
+            out.append(pick)
+        return out
+
+    if max_dfa is not None:
+        ranked = [item for item in ranked if item[0] <= int(max_dfa)]
+        if not ranked:
+            raise FileNotFoundError(
+                f"no mixed-dfa checkpoints for seed {seed} with DFA ≤ {max_dfa}"
+            )
+
     if unique_dfa:
         by_dfa: dict[int, tuple[int, int, str, tuple[str, ...]]] = {}
         for item in ranked:
@@ -3558,8 +3583,8 @@ def _pick_mixed_dfa_trajectory_span_tasks(
     if n == 1:
         return [ranked[0]]
     idxs = np.linspace(0, len(ranked) - 1, n).round().astype(int)
-    out: list[tuple[int, int, str, tuple[str, ...]]] = []
-    seen: set[str] = set()
+    out = []
+    seen = set()
     for i in idxs:
         item = ranked[int(i)]
         if item[2] in seen:
@@ -3614,7 +3639,7 @@ def plot_mixed_dfa_activation_heatmap_grid(
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(2.05 * n_cols, 1.75 * n_rows),
+        figsize=(2.55 * n_cols, 2.15 * n_rows),
         squeeze=False,
     )
     for ax, (n_dfa, _n_words, task, _words) in zip(axes.ravel(), panels):
@@ -3639,9 +3664,9 @@ def plot_mixed_dfa_activation_heatmap_grid(
             rasterized=True,
         )
         if np.isfinite(unit_coh):
-            ax.set_title(f"DFA={n_dfa}  ⟨|r|⟩={unit_coh:.2f}", fontsize=6.5, pad=2)
+            ax.set_title(f"DFA={n_dfa}  ⟨|r|⟩={unit_coh:.2f}", fontsize=8, pad=2)
         else:
-            ax.set_title(f"DFA={n_dfa}", fontsize=6.5, pad=2)
+            ax.set_title(f"DFA={n_dfa}", fontsize=8, pad=2)
         ax.set_axis_off()
 
     for ax in axes.ravel()[len(panels):]:

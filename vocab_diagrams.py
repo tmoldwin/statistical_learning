@@ -1307,6 +1307,8 @@ def draw_minimized_dfa_on_axes(
     horizontal: bool = False,
     fixed_radius: float | None = None,
     view_span: tuple[float, float] | None = None,
+    arrow_mutation_scale: float = 10.0,
+    horizontal_stretch: float = 1.8,
 ) -> None:
     """Matplotlib rendering of the same layout as `vocabulary_min_dfa.svg`.
 
@@ -1316,6 +1318,9 @@ def draw_minimized_dfa_on_axes(
     each circle, so node text is never clipped in multipanel figures.
     ``horizontal`` lays BFS layers left-to-right instead of top-to-bottom.
     ``fixed_radius`` / ``view_span`` keep node size identical across panels.
+    ``arrow_mutation_scale`` controls arrowhead size; ``horizontal_stretch``
+    widens layer spacing when ``horizontal`` is True (lower → larger nodes
+    relative to edges).
     """
     from matplotlib.patches import Circle, FancyArrowPatch, PathPatch
     from matplotlib.path import Path
@@ -1375,7 +1380,7 @@ def draw_minimized_dfa_on_axes(
         xs = [xy[0] for xy in coords.values()]
         min_x = min(xs)
         span = max(max(xs) - min_x, 1.0)
-        stretch = 1.8
+        stretch = float(horizontal_stretch)
         coords = {
             k: (min_x + (x - min_x) * stretch, y)
             for k, (x, y) in coords.items()
@@ -1390,6 +1395,12 @@ def draw_minimized_dfa_on_axes(
         radii = {key: float(fixed_radius) for key in radii}
     elif fit_labels:
         radii = _uniform_node_radii(coords, radii)
+    # Grow crowded accept / multi-line nodes so every label stays readable.
+    for s, lines in lines_by_state.items():
+        n_lines = max(1, len(lines))
+        if n_lines <= 1:
+            continue
+        radii[s] = float(radii.get(s, MIN_NODE_R)) * (1.0 + 0.42 * (n_lines - 1))
     width, height = _canvas_size(coords, radii)
 
     ax.set_facecolor(BG_COLOR)
@@ -1464,7 +1475,7 @@ def draw_minimized_dfa_on_axes(
                     (ex - dx / norm * 8, ey - dy / norm * 8),
                     (ex, ey),
                     arrowstyle="-|>",
-                    mutation_scale=10,
+                    mutation_scale=float(arrow_mutation_scale),
                     color="#444444",
                     linewidth=1.2,
                     zorder=2,
@@ -1491,7 +1502,7 @@ def draw_minimized_dfa_on_axes(
             (rx - rr - 10, ry),
             (rx - rr - 2, ry),
             arrowstyle="-|>",
-            mutation_scale=10,
+            mutation_scale=float(arrow_mutation_scale),
             color="#444444",
             linewidth=1.2,
             zorder=2,
@@ -1518,30 +1529,36 @@ def draw_minimized_dfa_on_axes(
             )
         )
         wrapped = lines_by_state.get(s) or _fit_state(prefix_set, compact=compact)[0]
-        # Matplotlib fonts don't scale with data coords; keep them smaller so labels
-        # stay inside nodes when this DFA is embedded in a compact multipanel figure.
+        n_lines = max(1, len(wrapped))
+        # Ensure transforms are current before measuring fonts in data space.
+        try:
+            ax.figure.canvas.draw()
+        except Exception:  # noqa: BLE001
+            pass
         if fit_labels:
-            fs, line_step = _fitted_font_size(
+            fs, _fitted_step = _fitted_font_size(
                 ax, wrapped, r, float(label_fontsize or 10.0),
             )
+            del _fitted_step
         elif label_fontsize is not None:
             fs = float(label_fontsize)
-            line_step = max(fs * 1.45, 9.0)
         elif compact:
-            base = 5 if len(wrapped) > 1 else 6
+            base = 5 if n_lines > 1 else 6
             fs = base + (1.5 if node_scale >= 1.4 else 0.0)
-            line_step = max(fs * 1.55, 9.0)
         else:
-            fs = max(5, min(8, _state_font_size(r, len(wrapped)) - 2))
-            line_step = max(_state_line_step(len(wrapped)), fs * 1.45)
-        if len(wrapped) == 1:
+            fs = max(5, min(8, _state_font_size(r, n_lines) - 2))
+        # Stack in data units from the circle radius. Cap multi-line fonts so
+        # point-sized glyphs cannot overflow the per-line data slot.
+        line_step = (1.7 * r) / n_lines
+        if n_lines > 1:
+            fs = min(fs, max(5.5, 11.0 - 1.5 * (n_lines - 1)))
+        if n_lines == 1:
             ax.text(
                 cx, cy, wrapped[0],
                 fontsize=fs, ha="center", va="center", color="#1a1a1a", zorder=6,
             )
         else:
-            block_h = (len(wrapped) - 1) * line_step
-            y0 = cy - block_h / 2
+            y0 = cy - 0.5 * (n_lines - 1) * line_step
             for i, line in enumerate(wrapped):
                 ax.text(
                     cx, y0 + i * line_step, line,

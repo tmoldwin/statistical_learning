@@ -104,6 +104,10 @@ def paper_manifest() -> list[FigureRef]:
                   _demo("decoding/decoding_by_position_word_length.png"),
                   max_w=1100),
         FigureRef("demo", "fig_word_trajectories.jpg",
+                  ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
+                  / "trajectories" / "prefix_traj_by_vocab_seed_grid.png",
+                  max_w=1600),
+        FigureRef("demo", "fig_word_trajectories_by_seed.jpg",
                   _demo("trajectories/dfa_and_trajectory_by_seed.png"),
                   max_w=1600),
         # Leftovers / alt copies still useful for supplements.

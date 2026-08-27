@@ -356,9 +356,9 @@ def plot_hidden_states_heatmap(
         default_title += " · units clustered"
 
     axis_ylabel = "h" if y_label == "hidden unit" else y_label
-    # Keep paper heatmaps short; row labels stay readable at ~0.09"/unit.
+    # Wider heatmap so x-axis letters stay readable on the poster.
     heat_h = float(min(7.2, max(4.8, hidden_size * 0.12)))
-    heat_w = float(max(8.0, min(11.5, length * 0.12)))
+    heat_w = float(max(11.0, min(15.0, length * 0.18)))
 
     if cluster_units:
         unit_labels = [
@@ -403,7 +403,7 @@ def plot_hidden_states_heatmap(
         # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title
         # that seaborn places to the right and can collide with the colorbar.
         grid.ax_heatmap.set_ylabel("")
-        grid.ax_heatmap.tick_params(axis="x", labelsize=7)
+        grid.ax_heatmap.tick_params(axis="x", labelsize=10)
         grid.ax_heatmap.tick_params(axis="y", labelsize=5)
         # Avoid overlapping unit tick labels when H is large.
         step = 3 if hidden_size >= 40 else 2 if hidden_size >= 24 else 1
@@ -2027,7 +2027,7 @@ def plot_hidden_states_correlation_clustermap(
     corr = np.nan_to_num(corr, nan=0.0)
     data = pd.DataFrame(corr, index=labels, columns=labels)
 
-    panel = max(10.0, n * 0.2)
+    panel = max(12.0, n * 0.24)
     grid = sns.clustermap(
         data,
         method="average",
@@ -2055,11 +2055,11 @@ def plot_hidden_states_correlation_clustermap(
         )
 
     axis_label = prefix_axis_label(spaced=spaced, text=text, words=words)
-    grid.ax_heatmap.set_xlabel(axis_label, fontsize=12)
-    grid.ax_heatmap.set_ylabel(axis_label, fontsize=12)
-    grid.ax_heatmap.tick_params(axis="both", labelsize=12, length=3)
+    grid.ax_heatmap.set_xlabel(axis_label, fontsize=14)
+    grid.ax_heatmap.set_ylabel(axis_label, fontsize=14)
+    grid.ax_heatmap.tick_params(axis="both", labelsize=14, length=3)
     plt.setp(grid.ax_heatmap.get_xticklabels(), rotation=90, ha="center")
-    plt.setp(grid.ax_heatmap.get_yticklabels(), fontsize=12)
+    plt.setp(grid.ax_heatmap.get_yticklabels(), fontsize=14)
 
     title = f"{repr_label} correlation"
     if automaton is not None:
@@ -2951,7 +2951,7 @@ def _draw_pairwise_within_between_panel(
         yerr=sw_errs if n_seeds > 1 else None, capsize=2.0, error_kw=err_kw,
     )
     if show_tick_labels:
-        apply_category_tick_labels(ax, tick_labels, fontsize=7)
+        apply_category_tick_labels(ax, tick_labels, fontsize=10)
     else:
         ax.set_xticks(x)
         ax.set_xticklabels([])
@@ -4027,7 +4027,7 @@ def _draw_before_after_generation_panel(ax, model, *, max_len: int = 42) -> bool
     )
     ax.text(
         0.06, 0.84, vocab_label,
-        transform=ax.transAxes, fontsize=11, color="0.35", va="top",
+        transform=ax.transAxes, fontsize=12.5, color="0.25", fontweight="700", va="top",
     )
 
     ax.text(

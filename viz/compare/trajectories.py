@@ -469,3 +469,176 @@ def plot_closed_loop_trajectories(
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     return out_path
+
+
+def plot_vocab_complexity_prefix_traj_grid(
+    *,
+    n_vocabs: int = 4,
+    seeds: tuple[int, ...] = (1, 2),
+    out_path: Path | None = None,
+    model_type: str = "rnn",
+    embed_method: str = "pca",
+    rollout_seed: int = 0,
+    text_chars: int = 100,
+    panel_inches: float = 2.35,
+    max_dfa: int = 12,
+    target_n_words: tuple[int, ...] = (2, 3, 4, 5),
+) -> Path:
+    """2×K grid: rows = seeds, columns = small mixed vocabs (~2–5 words).
+
+    Prefers DFA size ≤ ``max_dfa``; if a target word count has no such run,
+    falls back to the smallest-DFA vocab at that word count. Each panel overlays
+    closed-loop word trajectories on DFA-labeled prefix PCA (same plane).
+    """
+    from experiment import TASKS, comparison_dir
+    from viz.compare.mixed_dfa_viz import _pick_mixed_dfa_trajectory_span_tasks
+    from viz.plot_layout import finalize_grid_figure, save_figure
+    from visualize import (
+        _dfa_automaton_state_colors,
+        add_dfa_state_annotations,
+    )
+    from vocab_mixed_dfa import COMPARISON_NAME
+
+    run_seeds = tuple(seeds)
+    if len(run_seeds) < 1:
+        raise ValueError("need at least one seed")
+    vocabs = _pick_mixed_dfa_trajectory_span_tasks(
+        n_panels=n_vocabs,
+        seed=run_seeds[0],
+        model_type=model_type,
+        unique_dfa=True,
+        max_dfa=max_dfa,
+        target_n_words=target_n_words,
+    )
+    if not vocabs:
+        raise FileNotFoundError("no mixed-vocab checkpoints for trajectory grid")
+
+    n_rows = len(run_seeds)
+    n_cols = len(vocabs)
+    panel = float(panel_inches)
+    fig_w = panel * n_cols + 0.85
+    fig_h = panel * n_rows + 0.95
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_w, fig_h), squeeze=False)
+
+    for col, (n_dfa, n_words, task, words_t) in enumerate(vocabs):
+        words = list(words_t)
+        automaton = build_minimized_vocabulary_automaton(words)
+        state_colors = _dfa_automaton_state_colors(automaton)
+        cap = min(int(TASKS.get(task, {}).get("viz_length", 80)), text_chars)
+        for row, seed in enumerate(run_seeds):
+            ax = axes[row, col]
+            try:
+                ctx = load_task_viz_context(
+                    task, model_type=model_type, seed=seed, text_chars=cap,
+                )
+            except Exception as exc:  # noqa: BLE001
+                ax.set_visible(False)
+                ax.text(
+                    0.5, 0.5, f"missing\n{exc.__class__.__name__}",
+                    ha="center", va="center", fontsize=7, transform=ax.transAxes,
+                )
+                continue
+
+            fit_states, trajs = _states_after_first_word(
+                ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+            )
+            _proj, mean, components, evr = fit_embed_2d_with_evr(
+                fit_states, method=embed_method, trajectories=trajs,
+            )
+            del _proj, evr
+
+            condensed = condense_hidden_states_by_prefix(
+                ctx.text, ctx.hidden_states, spaced=ctx.spaced, words=ctx.words,
+            )
+            z_dfa = _project_hidden_to_pca(condensed.hidden_states, mean, components)
+
+            vocab_words = list(ctx.words)
+            seed_letters = _trajectory_seed_letters(ctx.model, vocab_words)
+            summary_seed = _closed_loop_summary_seed(
+                vocab_words, seed_letters, spaced=ctx.spaced,
+            )
+            summary_steps = _one_vocab_cycle_steps(vocab_words, spaced=ctx.spaced)
+            if vocab_words:
+                summary_steps += max(len(w) for w in vocab_words)
+            word_colors = _vocab_word_colors(vocab_words)
+            limit_arrays: list = [np.asarray(z_dfa, dtype=float)]
+
+            # Trajectories first (under), then prefix labels on top.
+            _plot_trajectory_closed_loop_panel(
+                ax, ctx.model, [summary_seed], summary_steps, rollout_seed,
+                mean, components, limit_arrays,
+                vocab_words=vocab_words, word_colors=word_colors,
+                spaced=ctx.spaced, is_3d=False,
+                average_trials=1,
+                annotate=False,
+                annotate_fontsize=5.0,
+                linewidth=1.05,
+                arrow_mutation_scale=7.0,
+            )
+            add_dfa_state_annotations(
+                ax,
+                ctx.text,
+                z_dfa,
+                automaton,
+                spaced=ctx.spaced,
+                state_colors=state_colors,
+                annot_style="leaders",
+                point_size=28,
+                label_fontsize=5.5,
+                leader_linewidth=0.35,
+                prefix_labels=list(condensed.labels),
+                show_legend=False,
+            )
+            xlim, ylim = _square_data_limits(*limit_arrays, padding_frac=0.12)
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.set_aspect("equal", adjustable="box")
+            if row == 0:
+                ax.set_title(f"DFA={n_dfa} · {n_words}w", fontsize=8.5, pad=2)
+            if col == 0:
+                ax.set_ylabel(f"seed {seed}", fontsize=8, labelpad=2)
+            else:
+                ax.set_ylabel("")
+            ax.tick_params(
+                labelsize=5,
+                left=(col == 0),
+                bottom=(row == n_rows - 1),
+                labelleft=(col == 0),
+                labelbottom=(row == n_rows - 1 and col == n_cols // 2),
+                length=2, pad=1,
+            )
+            if row == n_rows - 1 and col == n_cols // 2:
+                ax.set_xlabel("PC1", fontsize=7.5, labelpad=1)
+            else:
+                ax.set_xlabel("")
+            ax.grid(True, linestyle=":", alpha=0.28)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+    word_note = "–".join(str(nw) for _, nw, _, _ in vocabs) + "w"
+    dfa_note = f"DFA {min(d for d, *_ in vocabs)}–{max(d for d, *_ in vocabs)}"
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"Prefixes + closed-loop trajectories · {word_note} · "
+            f"{dfa_note} · {n_rows} seeds"
+        ),
+        suptitle_fontsize=11,
+        top=0.90,
+        bottom=0.08,
+        left=0.06,
+        right=0.995,
+        hspace=0.16,
+        wspace=0.10,
+    )
+
+    if out_path is None:
+        out_path = (
+            Path(comparison_dir(COMPARISON_NAME, "trajectories"))
+            / "prefix_traj_by_vocab_seed_grid.png"
+        )
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_figure(fig, out_path, dpi=160)
+    print(f"wrote {out_path}")
+    return out_path

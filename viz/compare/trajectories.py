@@ -473,6 +473,21 @@ def plot_closed_loop_trajectories(
     return out_path
 
 
+def _grid_word_colors(words: list[str]) -> dict[str, tuple]:
+    """Bright per-word colors for poster trajectory grids (no black default)."""
+    import matplotlib.pyplot as plt
+    from visualize import _DIVERGENT_WORD_PALETTE, _TRAJECTORY_RETURN_COLOR
+
+    unique = sorted(set(words))
+    colors = {
+        w: plt.matplotlib.colors.to_rgba(_DIVERGENT_WORD_PALETTE[i % len(_DIVERGENT_WORD_PALETTE)])
+        for i, w in enumerate(unique)
+    }
+    colors["␣"] = plt.matplotlib.colors.to_rgba(_TRAJECTORY_RETURN_COLOR)
+    colors["?"] = plt.matplotlib.colors.to_rgba(_TRAJECTORY_RETURN_COLOR)
+    return colors
+
+
 def _plot_open_loop_word_trajectories_on_ax(
     ax,
     text: str,
@@ -533,8 +548,9 @@ def _plot_open_loop_word_trajectories_on_ax(
             annotate_fontsize=5.0,
             is_3d=False,
             linewidth=linewidth,
-            alpha=0.85,
+            alpha=0.95,
             unique_word_labels=False,
+            solid_lines=True,
             arrow_mutation_scale=arrow_mutation_scale,
         )
         seen_words.add(str(word))
@@ -555,9 +571,10 @@ def plot_vocab_complexity_prefix_traj_grid(
     embed_method: str = "pca",
     rollout_seed: int = 0,
     text_chars: int = 100,
-    panel_inches: float = 3.15,
+    panel_inches: float = 3.75,
     max_dfa: int = 12,
     target_n_words: tuple[int, ...] = (2, 3, 4),
+    traj_linewidth: float = 1.65,
 ) -> Path:
     """2×K grid: rows = seeds, columns = small mixed vocabs (~2–4 words).
 
@@ -628,7 +645,7 @@ def plot_vocab_complexity_prefix_traj_grid(
             del condensed  # means collapse to center; annotate first visits instead
 
             vocab_words = list(ctx.words)
-            word_colors = _vocab_word_colors(vocab_words)
+            word_colors = _grid_word_colors(vocab_words)
             limit_arrays: list = []
 
             z_dfa, prefix_labels = _plot_open_loop_word_trajectories_on_ax(
@@ -642,8 +659,8 @@ def plot_vocab_complexity_prefix_traj_grid(
                 vocab_words=vocab_words,
                 word_colors=word_colors,
                 max_segments=max(8, 2 * len(vocab_words)),
-                linewidth=1.05,
-                arrow_mutation_scale=7.0,
+                linewidth=traj_linewidth,
+                arrow_mutation_scale=8.0,
                 one_per_word=True,
             )
             if len(z_dfa) == 0:
@@ -658,9 +675,9 @@ def plot_vocab_complexity_prefix_traj_grid(
                 spaced=ctx.spaced,
                 state_colors=state_colors,
                 annot_style="leaders",
-                point_size=28,
-                label_fontsize=5.5,
-                leader_linewidth=0.35,
+                point_size=34,
+                label_fontsize=9.5,
+                leader_linewidth=0.45,
                 prefix_labels=list(prefix_labels),
                 show_legend=False,
             )
@@ -669,21 +686,21 @@ def plot_vocab_complexity_prefix_traj_grid(
             ax.set_ylim(ylim)
             ax.set_aspect("equal", adjustable="box")
             if row == 0:
-                ax.set_title(f"DFA={n_dfa} · {n_words}w", fontsize=8.5, pad=2)
+                ax.set_title(f"DFA={n_dfa} · {n_words}w", fontsize=11, pad=3)
             if col == 0:
-                ax.set_ylabel(f"seed {seed}", fontsize=8, labelpad=2)
+                ax.set_ylabel(f"seed {seed}", fontsize=10.5, labelpad=3)
             else:
                 ax.set_ylabel("")
             ax.tick_params(
-                labelsize=5,
+                labelsize=10,
                 left=(col == 0),
                 bottom=(row == n_rows - 1),
                 labelleft=(col == 0),
                 labelbottom=(row == n_rows - 1 and col == n_cols // 2),
-                length=2, pad=1,
+                length=3, pad=2,
             )
             if row == n_rows - 1 and col == n_cols // 2:
-                ax.set_xlabel("PC1", fontsize=7.5, labelpad=1)
+                ax.set_xlabel("PC1", fontsize=10.5, labelpad=2)
             else:
                 ax.set_xlabel("")
             ax.grid(True, linestyle=":", alpha=0.28)
@@ -698,12 +715,12 @@ def plot_vocab_complexity_prefix_traj_grid(
             f"Prefixes + open-loop word trajectories · {word_note} · "
             f"{dfa_note} · {n_rows} seeds"
         ),
-        suptitle_fontsize=11,
-        top=0.92,
-        bottom=0.06,
+        suptitle_fontsize=13,
+        top=0.90,
+        bottom=0.08,
         left=0.05,
         right=0.995,
-        hspace=0.12,
+        hspace=0.22,
         wspace=0.08,
     )
 

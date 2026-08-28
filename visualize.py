@@ -360,7 +360,7 @@ def plot_hidden_states_heatmap(
 
     axis_ylabel = "h" if y_label == "hidden unit" else y_label
     # Wider heatmap so x-axis letters stay readable on the poster.
-    heat_h = float(min(7.6, max(5.2, hidden_size * 0.13)))
+    heat_h = float(min(8.8, max(6.4, hidden_size * 0.16)))
     heat_w = float(max(12.2, min(15.0, length * 0.38)))
 
     if cluster_units:
@@ -384,7 +384,8 @@ def plot_hidden_states_heatmap(
             vmin=vmin,
             vmax=vmax,
             center=None if use_relu or use_raw else 0.0,
-            figsize=(heat_w + 1.2, heat_h),
+            # No right-side colorbar: compact horizontal bar on top frees width.
+            figsize=(heat_w, heat_h + 0.35),
             dendrogram_ratio=(0.06, 0.0),
             cbar=False,
             cbar_pos=None,
@@ -403,29 +404,33 @@ def plot_hidden_states_heatmap(
             _color_tick_labels_by_state_ids(grid.ax_heatmap.get_xticklabels(), state_ids)
             x_axis += " · tick color = min DFA state"
         grid.ax_heatmap.set_xlabel(x_axis)
-        # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title
-        # that seaborn places to the right and can collide with the colorbar.
+        # Unit ids are already on tick labels (h0, h1, ...); skip a redundant axis title.
         grid.ax_heatmap.set_ylabel("")
-        grid.ax_heatmap.tick_params(axis="x", labelsize=10)
-        grid.ax_heatmap.tick_params(axis="y", labelsize=6.5)
+        grid.ax_heatmap.tick_params(axis="x", labelsize=13)
+        grid.ax_heatmap.tick_params(axis="y", labelsize=11)
         # Avoid overlapping unit tick labels when H is large.
-        step = 3 if hidden_size >= 40 else 2 if hidden_size >= 24 else 1
+        step = 5 if hidden_size >= 40 else 3 if hidden_size >= 24 else 2 if hidden_size >= 12 else 1
         for i, tick in enumerate(grid.ax_heatmap.get_yticklabels()):
             tick.set_visible(i % step == 0)
-            tick.set_fontsize(6.5)
+            tick.set_fontsize(11)
         for tick in grid.ax_heatmap.get_xticklabels():
             tick.set_fontweight("bold")
-        # Compact colorbar to the right of y tick labels (pad clears them).
         mappable = grid.ax_heatmap.collections[0]
         cbar = grid.fig.colorbar(
-            mappable, ax=grid.ax_heatmap,
-            fraction=0.025, pad=0.08, shrink=0.55,
+            mappable,
+            ax=grid.ax_heatmap,
+            orientation="horizontal",
+            location="top",
+            fraction=0.05,
+            pad=0.06,
+            aspect=18,
+            shrink=0.38,
         )
-        cbar.set_label(cb_label, fontsize=8)
-        cbar.ax.tick_params(labelsize=7)
+        cbar.set_label(cb_label, fontsize=10)
+        cbar.ax.tick_params(labelsize=11)
         grid.fig.suptitle(
             _condensed_plot_title(title or default_title, condensed),
-            y=1.01,
+            y=1.05,
             fontsize=11,
         )
         grid.savefig(save_path, dpi=150, bbox_inches="tight")
@@ -1916,7 +1921,7 @@ def plot_hidden_states_clustermap(
     # Flip orientation: units on rows, timesteps on columns (makes long sequences readable).
     data = pd.DataFrame(hidden_states, index=row_labels, columns=col_labels).T
     heat_w = float(max(8.5, n_rows * 0.16))
-    heat_h = float(min(4.6, max(3.2, n_cols * 0.075)))
+    heat_h = float(min(6.4, max(4.4, n_cols * 0.105)))
 
     grid = sns.clustermap(
         data,
@@ -1950,17 +1955,21 @@ def plot_hidden_states_clustermap(
         xlabel += " · tick color = min DFA state"
     grid.ax_heatmap.set_xlabel(xlabel)
     grid.ax_heatmap.set_ylabel("")
-    grid.ax_heatmap.tick_params(axis="y", labelsize=6)
-    grid.ax_heatmap.tick_params(axis="x", labelsize=8)
+    grid.ax_heatmap.tick_params(axis="y", labelsize=8.5)
+    grid.ax_heatmap.tick_params(axis="x", labelsize=10)
+    step = 5 if n_cols >= 40 else 3 if n_cols >= 24 else 2 if n_cols >= 12 else 1
+    for i, tick in enumerate(grid.ax_heatmap.get_yticklabels()):
+        tick.set_visible(i % step == 0)
+        tick.set_fontsize(8.5)
     for tick in grid.ax_heatmap.get_xticklabels():
         tick.set_fontweight("bold")
     mappable = grid.ax_heatmap.collections[0]
     cbar = grid.fig.colorbar(
         mappable, ax=grid.ax_heatmap,
-        fraction=0.025, pad=0.08, shrink=0.55,
+        fraction=0.03, pad=0.08, shrink=0.55,
     )
-    cbar.set_label("activation (tanh)", fontsize=8)
-    cbar.ax.tick_params(labelsize=7)
+    cbar.set_label("activation (tanh)", fontsize=10)
+    cbar.ax.tick_params(labelsize=9)
     short_title = (
         f"{'h' if repr_label == 'hidden state' else repr_label} clustered by prefix"
         if condensed is not None

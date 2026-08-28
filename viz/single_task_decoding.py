@@ -717,7 +717,7 @@ def plot_aggregated_seed_decode_curves(
     n_cols = 2 + int(si_learn is not None) + int(si_by_feat is not None)
     fig, axes = plt.subplots(
         1, n_cols,
-        figsize=(4.15 * n_cols + 0.4, 3.6),
+        figsize=(4.15 * n_cols + 0.4, 3.95),
         sharey=False,
     )
     axes = np.atleast_1d(axes)
@@ -842,25 +842,25 @@ def plot_aggregated_seed_decode_curves(
             Line2D([0], [0], color="0.45", ls="--", lw=1.1, alpha=0.85),
         ]
         legend_labels = list(legend_labels) + ["word err"]
-    if legend_handles:
-        fig.legend(
-            legend_handles, legend_labels,
-            loc="upper center", bbox_to_anchor=(0.5, 0.995),
-            ncol=min(len(legend_handles), 7), fontsize=8, frameon=False, columnspacing=1.2,
-        )
     # No figure-level title: the legend already names the series (avoids overlap).
     finalize_grid_figure(
         fig,
         suptitle=None,
-        top=0.88,
+        top=0.74,
         bottom=0.18,
         left=0.06,
         right=0.97,
         wspace=0.38 if (si_learn is not None or si_by_feat is not None) else 0.18,
     )
+    if legend_handles:
+        fig.legend(
+            legend_handles, legend_labels,
+            loc="upper center", bbox_to_anchor=(0.5, 0.995),
+            ncol=min(len(legend_handles), 7), fontsize=11.5, frameon=False, columnspacing=1.4,
+        )
     # finalize_grid_figure / tight packing can hide y labels on non-left panels.
     for ax in axes[:2]:
-        ax.tick_params(axis="y", which="both", labelleft=True, labelsize=8)
+        ax.tick_params(axis="y", which="both", labelleft=True, labelsize=9)
     save_figure(fig, save_path, dpi=150)
     print(f"wrote {save_path}")
     return save_path

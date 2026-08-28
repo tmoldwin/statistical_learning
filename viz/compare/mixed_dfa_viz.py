@@ -444,6 +444,7 @@ def _draw_decoding_curves_on_axes(
     max_k: int,
     set_col_titles: bool = True,
     label_features: bool = True,
+    tick_labelsize: float = 6,
 ) -> None:
     """Fill a (2 × n_bins) axes grid: PCA then random-neuron readout curves."""
     ks = np.arange(1, max_k + 1, dtype=float)
@@ -488,7 +489,7 @@ def _draw_decoding_curves_on_axes(
             ax.set_xlim(1, max_k)
             ax.set_ylim(-0.05, 1.05)
             ax.grid(True, alpha=0.25)
-            ax.tick_params(labelsize=6)
+            ax.tick_params(labelsize=tick_labelsize)
             if col_i == 0:
                 ax.set_ylabel(f"{basis_label}\nchance-corr. acc.", fontsize=7, labelpad=6)
             if ri == 1:
@@ -1057,11 +1058,13 @@ def plot_mixed_dfa_scaling_overview(
     n_scale = 4
     n_cols = max(n_heat, n_scale) if n_heat else n_scale
     n_rows = 2 if n_heat else 1
-    fig_h = 1.95 * n_rows + 0.38
+    row_gap = 0.48 if n_heat else 0.0
+    fig_h = 1.95 * n_rows + 0.38 + row_gap
     fig = plt.figure(figsize=(2.45 * n_cols + 0.30, fig_h))
     gs = fig.add_gridspec(
         n_rows, n_cols,
         height_ratios=([1.12, 1.0] if n_heat else [1.0]),
+        hspace=0.42 if n_heat else 0.08,
     )
 
     # --- optional activation heatmaps (bottom row) ---
@@ -1216,7 +1219,7 @@ def plot_mixed_dfa_scaling_overview(
         right=0.995,
         top=0.90,
         wspace=0.20,
-        hspace=0.18,
+        hspace=0.36 if n_heat else 0.18,
     )
 
     # One DFA colorbar, CE panel upper-right (curves have dropped there).
@@ -3223,6 +3226,7 @@ def _draw_learning_decode_on_axes(
     x0: float,
     x1: float,
     xlabel_on_last: bool = True,
+    tick_labelsize: float = 5.5,
 ) -> Any:
     """Fill a (n_basis × n_bins) axes grid; return word-err line handle if drawn."""
     n_basis = len(basis_keys)
@@ -3290,7 +3294,7 @@ def _draw_learning_decode_on_axes(
             ax.set_ylim(-0.05, 1.05)
             ax.axhline(0.0, color="0.7", lw=0.6, ls=":")
             ax.grid(True, alpha=0.25)
-            ax.tick_params(labelsize=5.5)
+            ax.tick_params(labelsize=tick_labelsize)
             if bi == 0:
                 ax.set_ylabel(f"{blabel}\nchance-corr. acc.", fontsize=6.5, labelpad=4)
             if np.any(np.isfinite(we_mean)):
@@ -3308,7 +3312,7 @@ def _draw_learning_decode_on_axes(
                         linewidth=0,
                     )
                 ax2.set_ylim(-0.02, 1.05)
-                ax2.tick_params(labelsize=5, colors="0.45")
+                ax2.tick_params(labelsize=max(tick_labelsize - 0.5, 5), colors="0.45")
                 if bi == n_bins - 1:
                     ax2.set_ylabel("word err", fontsize=6, color="0.45")
                 else:
@@ -3482,14 +3486,14 @@ def plot_decoding_and_learning_combined(
     ax_ban_a.text(
         0.0, 0.35,
         "A. Final readout vs # dimensions (PCA / random neurons)",
-        fontsize=9, fontweight="bold", va="center",
+        fontsize=10, fontweight="bold", va="center",
     )
     ax_ban_b = fig.add_subplot(gs[0, n_bin_cols:])
     ax_ban_b.set_axis_off()
     ax_ban_b.text(
         0.0, 0.35,
         "B. Readout over learning (3 / 15 PCs)",
-        fontsize=9, fontweight="bold", va="center",
+        fontsize=10, fontweight="bold", va="center",
     )
 
     curve_axes = np.empty((2, n_bin_cols), dtype=object)
@@ -3508,6 +3512,7 @@ def plot_decoding_and_learning_combined(
         max_k=max_k,
         set_col_titles=True,
         label_features=True,
+        tick_labelsize=9,
     )
     word_err_line = _draw_learning_decode_on_axes(
         learn_axes,
@@ -3516,6 +3521,7 @@ def plot_decoding_and_learning_combined(
         basis_keys=basis_keys,
         x0=0.0,
         x1=float(xlim),
+        tick_labelsize=9,
     )
 
     handles, labels = curve_axes[0, 0].get_legend_handles_labels()
@@ -3529,11 +3535,11 @@ def plot_decoding_and_learning_combined(
     fig.legend(
         handles, labels,
         loc="lower center",
-        bbox_to_anchor=(0.5, 0.01),
+        bbox_to_anchor=(0.5, 0.035),
         ncol=min(len(labels), 8),
-        fontsize=6.5,
+        fontsize=9.5,
         frameon=False,
-        columnspacing=0.9,
+        columnspacing=1.1,
         handletextpad=0.35,
     )
 
@@ -3546,7 +3552,7 @@ def plot_decoding_and_learning_combined(
             f"({n_vocabs} mixed vocabs; dashed = DFA-state oracle)"
         ),
         top=0.93,
-        bottom=0.12,
+        bottom=0.17,
         left=0.06,
         right=0.97,
         wspace=0.32,

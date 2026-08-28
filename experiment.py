@@ -566,7 +566,8 @@ def seeds_for_task(name: str, model_type: str = "rnn") -> set[int]:
     else:
         pattern = "model_seed*.pt"
     for path in model_dir(name, model_type).glob(pattern):
-        found.add(int(path.stem.removeprefix("model_seed")))
+        stem = path.stem.removeprefix("model_seed")
+        found.add(int(stem.split("_")[0]))
     return found
 
 

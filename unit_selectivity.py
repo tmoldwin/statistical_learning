@@ -1016,16 +1016,16 @@ def _example_panel_figsize(
     *,
     compact: bool = False,
 ) -> tuple[float, float]:
-    if n_cols == 4:
-        trace_w = max(2.8, 0.11 * n_timesteps + 1.0)
-        width = 2 * trace_w + 2 * 1.45 + 0.6
+    if compact:
+        trace_w = max(4.0, 0.17 * n_timesteps + 1.6)
+        width = trace_w + 2.05 + 0.35
     elif n_cols == 2:
         trace_w = max(3.4, 0.12 * n_timesteps + 1.2)
         width = trace_w + 1.6 + 0.4
     else:
         width = max(7.2, 0.10 * n_timesteps + 2.0) * (n_cols / 2)
     if compact:
-        row_h = max(1.25, 0.95 + 0.004 * n_timesteps)
+        row_h = max(1.55, 1.05 + 0.012 * n_timesteps)
     else:
         row_h = max(1.7, 1.2 + 0.012 * n_timesteps)
     height = row_h * n_rows
@@ -1081,14 +1081,14 @@ def _plot_unit_timestep_trace(
     ax.set_xlim(-0.6, len(trace_indices) - 0.4)
     if ylim is not None:
         ax.set_ylim(*ylim)
-    ax.set_ylabel("activation", fontsize=7 if compact else 9)
+    ax.set_ylabel("activation", fontsize=11 if compact else 9)
     if compact:
-        ax.set_title(unit_label, fontsize=8, loc="left")
+        ax.set_title(unit_label, fontsize=11, loc="left")
         _set_all_timestep_xticks(
             ax, labels, trace_indices, x_positions=xs, feature=None,
-            automaton=None, show_labels=show_xticks, show_xlabel=False, fontsize=4.8,
+            automaton=None, show_labels=show_xticks, show_xlabel=False, fontsize=12,
         )
-        ax.tick_params(axis="both", labelsize=6, labelbottom=show_xticks)
+        ax.tick_params(axis="both", labelsize=12, labelbottom=show_xticks)
     else:
         ax.set_title(
             f"{unit_label} — chronological input\n"
@@ -1120,8 +1120,8 @@ def _plot_unit_timestep_trace(
             xs, [target_prob[i] for i in trace_indices],
             color="0.55", linewidth=0.8, linestyle="--", alpha=0.8,
         )
-        ax2.set_ylabel("P(correct next char)", fontsize=7 if compact else 8, color="0.45")
-        ax2.tick_params(axis="y", labelsize=6 if compact else 7, colors="0.45")
+        ax2.set_ylabel("P(correct next char)", fontsize=10 if compact else 8, color="0.45")
+        ax2.tick_params(axis="y", labelsize=10 if compact else 7, colors="0.45")
         ax2.set_ylim(0, 1)
 
 
@@ -1147,23 +1147,40 @@ def _plot_unit_category_bars(
     ax.bar(x, means, yerr=sems, color=colors, capsize=cap, edgecolor="white", linewidth=0.6)
     ax.set_xticks(x)
     if show_xticks:
-        rot = 45 if compact and len(bar_cats) > 4 else 30
-        fs = 5.5 if compact else 8
-        labels = [legend_labels.get(c, str(c)) for c in bar_cats]
+        rot = 0 if compact else (45 if len(bar_cats) > 4 else 30)
+        fs = 11.5 if compact else 8
+        if compact and feature == "dfa":
+            labels = [f"s{int(c)}" for c in bar_cats]
+        elif compact and feature == "word" and len(bar_cats) > 5:
+            fs = 10.0
+            labels = [legend_labels.get(c, str(c)) for c in bar_cats]
+        else:
+            labels = [legend_labels.get(c, str(c)) for c in bar_cats]
         if len(labels) > 10:
             labels = [lab if i % 2 == 0 else "" for i, lab in enumerate(labels)]
-        ax.set_xticklabels(labels, rotation=rot, ha="right", fontsize=fs)
+        ax.set_xticklabels(
+            labels,
+            rotation=rot,
+            ha="center" if compact else "right",
+            va="top" if compact else "baseline",
+            fontsize=fs,
+        )
+        if compact:
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(0)
+                tick.set_ha("center")
+                tick.set_va("top")
     else:
         ax.set_xticklabels([])
-    ax.set_ylabel("mean" if compact else "mean activation", fontsize=7 if compact else 9)
+    ax.set_ylabel("mean" if compact else "mean activation", fontsize=11 if compact else 9)
     if compact:
-        ax.set_title(bar_title or "mean by category", fontsize=7)
+        ax.set_title(bar_title or "mean by category", fontsize=11)
     else:
         ax.set_title("average over timesteps in each category")
     ax.axhline(0, color="0.8", linewidth=0.5)
     ax.grid(True, axis="y", linestyle=":", alpha=0.35)
     if compact:
-        ax.tick_params(axis="y", labelsize=6)
+        ax.tick_params(axis="y", labelsize=11)
 
 
 def _plot_unit_example_panel(
@@ -1309,6 +1326,7 @@ def plot_example_units_combined(
     features: tuple[str, ...] = WORD_ANALYSIS_FEATURES,
     k: int | dict[str, int] = 1,
     rank_si: dict[str, np.ndarray] | None = None,
+    trace_max_timesteps: int | None = 28,
 ) -> None:
     """One figure: one row per feature; each example is (lollipop, category mean).
 
@@ -1346,19 +1364,22 @@ def plot_example_units_combined(
     ylim = (y_lo - pad, y_hi + pad)
 
     n_timesteps = activations.shape[0]
-    trace_indices = list(range(n_timesteps))
+    if trace_max_timesteps is not None:
+        trace_indices = list(range(min(n_timesteps, int(trace_max_timesteps))))
+    else:
+        trace_indices = list(range(n_timesteps))
     target_prob = _target_prob_array(
         model, activations, text, next_chars=labels.next_char,
     )
 
     n_rows = len(feature_rows)
-    width_ratios = [2.2, 1.0] * n_examples
+    width_ratios = [2.0, 1.45] * n_examples
     fig, axes = plt.subplots(
         n_rows, n_cols,
         figsize=_example_panel_figsize(
             len(trace_indices), n_rows, n_cols=n_cols, compact=True,
         ),
-        gridspec_kw={"width_ratios": width_ratios, "wspace": 0.34, "hspace": 0.92},
+        gridspec_kw={"width_ratios": width_ratios, "wspace": 0.34, "hspace": 1.05},
     )
     if n_rows == 1:
         axes = axes[np.newaxis, :]
@@ -1407,18 +1428,22 @@ def plot_example_units_combined(
             )
             for col in (trace_col, bar_col):
                 axes[row, col].tick_params(
-                    axis="x", which="both", labelbottom=True, labelsize=5.5,
+                    axis="both", which="both", labelbottom=True, labelsize=12,
                 )
                 for tick in axes[row, col].get_xticklabels():
                     tick.set_clip_on(False)
                     tick.set_zorder(10)
+                    if col == bar_col:
+                        tick.set_rotation(0)
+                        tick.set_ha("center")
+                        tick.set_va("top")
                 if col in (bar_col,):
                     axes[row, col].set_ylabel("")
             if ex_i == 0:
                 short = feat_short.get(feat, FEATURE_DISPLAY[feat])
                 axes[row, trace_col].set_ylabel(
                     f"{short}\nact.",
-                    fontsize=7,
+                    fontsize=10,
                     color=FEATURE_COLORS.get(feat, "#333"),
                 )
             else:
@@ -1442,7 +1467,7 @@ def plot_example_units_combined(
 
     # No bottom corpus-window xlabel / figure title: poster crops them, and
     # panel titles already identify the feature + unit.
-    fig.subplots_adjust(left=0.07, right=0.99, top=0.92, bottom=0.06)
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.92, bottom=0.10)
     fig.savefig(save_path, dpi=150, bbox_inches="tight", pad_inches=0.08)
     plt.close(fig)
     print(f"wrote {save_path}")

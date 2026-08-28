@@ -37,16 +37,42 @@ R43_RNN_OUT = MOTIF_DIR / "r43_rnn_motif_counts_raw_over_learning.png"
 R43_RNN_UNSIGNED_JSON = MOTIF_DIR / "r43_rnn_motif_unsigned_all.json"
 R43_RNN_UNSIGNED_OUT = MOTIF_DIR / "r43_rnn_motif_unsigned_over_learning.png"
 R43_RNN_LOLLIPOP_OUT = MOTIF_DIR / "r43_rnn_motif_lollipop_before_after.png"
+R43_RNN_SUMMARY_OUT = MOTIF_DIR / "r43_rnn_motif_homogenization_summary.png"
+R43_RNN_BOARD_OUT = MOTIF_DIR / "r43_rnn_motif_board.png"
 R43_RNN_DYAD_OUT = MOTIF_DIR / "r43_rnn_dyad_counts_raw_over_learning.png"
 R43_RNN_DYAD_LOLLIPOP_OUT = MOTIF_DIR / "r43_rnn_dyad_lollipop_before_after.png"
+R43_RNN_DYAD_SUMMARY_OUT = MOTIF_DIR / "r43_rnn_dyad_homogenization_summary.png"
 ALL_RUNS_DYAD_CACHE = MOTIF_DIR / "mixed_dfa_rnn_dyad_fold_all_runs.json"
 ALL_RUNS_DYAD_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_counts_raw_over_learning.png"
 ALL_RUNS_DYAD_BETA_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_fold_beta_vs_dfa.png"
+ALL_RUNS_SUMMARY_OUT = MOTIF_DIR / "mixed_dfa_rnn_motif_homogenization_summary.png"
+ALL_RUNS_DYAD_SUMMARY_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_homogenization_summary.png"
 MODEL = "rnn"
 COLORING = "edge_sign"
 SEED = 1
 MAX_SNAPS_PER_RUN = 8
 SINGLE_RUN_ID = 43
+
+
+def _single_run_paths(run_id: int) -> tuple[Path, Path, Path, Path, Path, Path]:
+    """Census JSON, edges JSON, board, factor panels, factor & pattern regressions."""
+    stem = f"r{run_id:02d}_rnn"
+    return (
+        MOTIF_DIR / f"{stem}_motif_edge_signed_all.json",
+        MOTIF_DIR / f"{stem}_motif_counts_over_learning.json",
+        MOTIF_DIR / f"{stem}_motif_board.png",
+        MOTIF_DIR / f"{stem}_motif_factor_panels.png",
+        MOTIF_DIR / f"{stem}_motif_factor_regressions.png",
+        MOTIF_DIR / f"{stem}_motif_pattern_regressions.png",
+    )
+
+
+def _hypothesis_out_path(run_id: int) -> Path:
+    return MOTIF_DIR / f"r{run_id:02d}_rnn_motif_hypothesis_regressions.png"
+
+
+def _story_board_out_path(run_id: int) -> Path:
+    return MOTIF_DIR / f"r{run_id:02d}_rnn_motif_story_board.png"
 
 
 def _ols(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
@@ -346,6 +372,283 @@ def plot_raw_counts_over_learning(
     )
     print(f"sd log start/end {float(sd[0]):.2f} {float(sd[-1]):.2f}")
     return out_path
+
+
+def plot_single_run_homogenization_summary(
+    json_path: Path = R43_RNN_JSON,
+    out_path: Path = R43_RNN_SUMMARY_OUT,
+    *,
+    min_start: int = MIN_START,
+    title: str | None = None,
+    motif_prefix: str = "T|",
+) -> Path:
+    """Compact single-run homogenization summary from edge-sign census JSON."""
+    snaps = json.loads(json_path.read_text(encoding="utf-8"))
+    c0, c1 = snaps[0]["cnt"], snaps[-1]["cnt"]
+    keys = [k for k in c0 if str(k).startswith(motif_prefix)]
+    rows: list[tuple[float, float, int]] = []
+    for key in keys:
+        v0 = float(c0.get(key, 0.0))
+        if v0 < min_start:
+            continue
+        v1 = float(c1.get(key, 0.0))
+        rows.append((
+            float(np.log(v0 + EPS)),
+            float(np.log((v1 + EPS) / (v0 + EPS))),
+            int(mar._n_edges_from_key(key)),
+        ))
+    if not rows:
+        raise ValueError(f"no motifs with start>={min_start} in {json_path}")
+    log_c0 = np.array([r[0] for r in rows], dtype=float)
+    log_fold = np.array([r[1] for r in rows], dtype=float)
+    n_edges = np.array([r[2] for r in rows], dtype=int)
+    kind = "dyad" if motif_prefix.startswith("D") else "triad"
+    min_fit = 3 if kind == "dyad" else 8
+    return mar.plot_homogenization_summary(
+        log_c0, log_fold, n_edges, out_path,
+        title=title or (
+            f"r{SINGLE_RUN_ID:02d} rnn (edge-sign, {kind}): homogenization summary "
+            f"(iter {int(snaps[0]['it'])}→{int(snaps[-1]['it'])}, start>={min_start})"
+        ),
+        min_fit=min_fit,
+    )
+
+
+def plot_r43_single_run_board(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """Single-run motif board; defaults to highest-DFA exemplar from the fold cache."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"board exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, default_board, _, _ = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or default_board
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_single_run_motif_board(
+        json_path,
+        cache_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
+
+
+def plot_single_run_factor_panels(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+    min_cell: int = 8,
+) -> Path:
+    """Structural factor panels; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"factor-panel exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, _board, default_factors, _, _ = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or default_factors
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_factor_panel_analysis(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+        min_cell=min_cell,
+    )
+
+
+def plot_single_run_factor_regressions(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """log fold ~ #inh / #exc / inh fraction; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"factor-regression exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, _board, _factors, default_regressions, _ = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or default_regressions
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_factor_regressions(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
+
+
+def plot_single_run_pattern_regressions(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """Edge-pattern regressions stratified by #edges; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"pattern-regression exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, _b, _f, _r, default_patterns = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or default_patterns
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_pattern_regressions(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
+
+
+def plot_single_run_hypothesis_regressions(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """~14-hypothesis regression battery; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"hypothesis-battery exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, *_rest = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or _hypothesis_out_path(run_id)
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_hypothesis_regressions(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
+
+
+def plot_single_run_story_board(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """Four-panel compression story board; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"story-board exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, *_rest = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or _story_board_out_path(run_id)
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_story_board(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
 
 
 def plot_lollipop_before_after(
@@ -676,8 +979,18 @@ def main() -> None:
             "raw-over-learning",
             "all-runs-over-learning",
             "all-runs-dyad-over-learning",
+            "all-runs-homogenization-summary",
+            "all-runs-dyad-homogenization-summary",
             "r43-rnn-over-learning",
             "r43-rnn-dyad-over-learning",
+            "r43-rnn-homogenization-summary",
+            "r43-rnn-board",
+            "r43-rnn-factor-panels",
+            "r43-rnn-factor-regressions",
+            "r43-rnn-pattern-regressions",
+            "r43-rnn-hypothesis-regressions",
+            "r43-rnn-story-board",
+            "r43-rnn-dyad-homogenization-summary",
             "r43-rnn-unsigned",
             "r43-rnn-lollipop",
             "r43-rnn-dyad-lollipop",
@@ -690,6 +1003,12 @@ def main() -> None:
     p.add_argument("--cache", type=Path, default=ALL_RUNS_CACHE)
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--min-start", type=int, default=MIN_START)
+    p.add_argument(
+        "--run-id",
+        type=int,
+        default=None,
+        help="single-run board exemplar (default: highest DFA states in fold cache)",
+    )
     p.add_argument("--rebuild-cache", action="store_true")
     p.add_argument("--model", default=MODEL, choices=("rnn", "rnn_dale"))
     p.add_argument(
@@ -746,6 +1065,75 @@ def main() -> None:
             min_start=args.min_start,
             motif_prefix="T|",
         )
+    elif args.only == "r43-rnn-homogenization-summary":
+        plot_single_run_homogenization_summary(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_SUMMARY_OUT,
+            min_start=args.min_start,
+            motif_prefix="T|",
+        )
+    elif args.only == "r43-rnn-board":
+        plot_r43_single_run_board(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-factor-panels":
+        plot_single_run_factor_panels(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-factor-regressions":
+        plot_single_run_factor_regressions(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-pattern-regressions":
+        plot_single_run_pattern_regressions(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-hypothesis-regressions":
+        plot_single_run_hypothesis_regressions(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-story-board":
+        plot_single_run_story_board(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-dyad-homogenization-summary":
+        plot_single_run_homogenization_summary(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_DYAD_SUMMARY_OUT,
+            min_start=args.min_start,
+            motif_prefix="D|",
+            title="r43 rnn (edge-sign, dyad): homogenization summary",
+        )
     elif args.only == "r43-rnn-unsigned":
         collect_r43_rnn_unsigned_census(run_id=SINGLE_RUN_ID, model="rnn", seed=SEED)
         plot_unsigned_motifs_over_learning(
@@ -787,6 +1175,30 @@ def main() -> None:
             beta_out_path=ALL_RUNS_BETA_OUT,
             coloring=coloring,
             motif_prefix="T|",
+        )
+    elif args.only == "all-runs-homogenization-summary":
+        mar.plot_all_runs_homogenization_summary(
+            args.cache,
+            args.out or ALL_RUNS_SUMMARY_OUT,
+            min_start=args.min_start,
+            rebuild_cache=args.rebuild_cache,
+            model=args.model,
+            seed=SEED,
+            max_snaps_per_run=MAX_SNAPS_PER_RUN,
+            coloring=args.coloring,
+            motif_prefix="T|",
+        )
+    elif args.only == "all-runs-dyad-homogenization-summary":
+        mar.plot_all_runs_homogenization_summary(
+            ALL_RUNS_DYAD_CACHE,
+            args.out or ALL_RUNS_DYAD_SUMMARY_OUT,
+            min_start=args.min_start,
+            rebuild_cache=args.rebuild_cache or not ALL_RUNS_DYAD_CACHE.is_file(),
+            model=args.model,
+            seed=SEED,
+            max_snaps_per_run=MAX_SNAPS_PER_RUN,
+            coloring=args.coloring,
+            motif_prefix="D|",
         )
 
 

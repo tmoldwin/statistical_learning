@@ -251,7 +251,7 @@ def main() -> None:
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
             "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness",
-            "spectra-by-letters", "activation-grid",
+            "spectra-by-letters", "activation-grid", "motif-folds",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -259,7 +259,19 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "auto", "gpu"))
     parser.add_argument("--runs", type=int, nargs="+", default=None, help="subset of run ids")
-    parser.add_argument("--replot-only", action="store_true")
+    parser.add_argument(
+        "--replot-only", action="store_true",
+    )
+    parser.add_argument(
+        "--ei-motifs-only",
+        action="store_true",
+        help="weight-layeredness: refresh Dale typed ei_motif bag only, then replot",
+    )
+    parser.add_argument(
+        "--rebuild-motif-cache",
+        action="store_true",
+        help="motif-folds: rebuild learning-snap HL census cache before plotting",
+    )
     parser.add_argument("--run-id", type=int, default=HARD_RUN_ID, help="run id for learning-decode")
     parser.add_argument(
         "--retrain", action="store_true",
@@ -316,12 +328,16 @@ def main() -> None:
         from viz.compare.mixed_dfa_viz import (
             plot_mixed_dfa_weight_graph_metrics_paper,
             plot_mixed_dfa_weight_graph_metrics_vs_dfa,
+            refresh_mixed_dfa_ei_motifs,
         )
 
         seed = args.seeds[0] if args.seeds else 1
+        model_type = "rnn"
+        if args.ei_motifs_only:
+            refresh_mixed_dfa_ei_motifs(seed=seed, model_type=model_type)
         out = plot_mixed_dfa_weight_graph_metrics_vs_dfa(
             seed=seed,
-            recompute=not args.replot_only,
+            recompute=not args.replot_only and not args.ei_motifs_only,
         )
         print(f"wrote {out}", flush=True)
         out_paper = plot_mixed_dfa_weight_graph_metrics_paper(
@@ -329,6 +345,43 @@ def main() -> None:
             recompute=False,
         )
         print(f"wrote {out_paper}", flush=True)
+    elif args.command == "motif-folds":
+        import subprocess
+        import sys
+
+        seed = args.seeds[0] if args.seeds else 1
+        cmd = [
+            sys.executable,
+            str(Path(__file__).resolve().parents[1] / "scripts" / "r43_motif_figs.py"),
+            "--only", "all-runs-over-learning",
+            "--model", "rnn",
+            "--coloring", "edge_sign",
+        ]
+        if args.rebuild_motif_cache:
+            cmd.append("--rebuild-cache")
+        subprocess.run(cmd, check=True)
+        cmd_dyad = [
+            sys.executable,
+            str(Path(__file__).resolve().parents[1] / "scripts" / "r43_motif_figs.py"),
+            "--only", "all-runs-dyad-over-learning",
+            "--model", "rnn",
+            "--coloring", "edge_sign",
+        ]
+        if args.rebuild_motif_cache:
+            cmd_dyad.append("--rebuild-cache")
+        subprocess.run(cmd_dyad, check=True)
+        for only in ("all-runs-homogenization-summary", "all-runs-dyad-homogenization-summary"):
+            cmd_sum = [
+                sys.executable,
+                str(Path(__file__).resolve().parents[1] / "scripts" / "r43_motif_figs.py"),
+                "--only", only,
+                "--model", "rnn",
+                "--coloring", "edge_sign",
+            ]
+            if args.rebuild_motif_cache:
+                cmd_sum.append("--rebuild-cache")
+            subprocess.run(cmd_sum, check=True)
+        print(f"motif fold boards written under experiments/comparisons/mixed_vocab_dfa_ns/motifs (seed {seed})", flush=True)
     elif args.command == "weight-spikiness":
         from viz.compare.mixed_dfa_viz import _dfa_states
         from viz.compare.weight_spikiness import (

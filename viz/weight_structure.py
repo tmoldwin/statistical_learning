@@ -1124,6 +1124,89 @@ def draw_unsigned_hl_motif(
     )
 
 
+def parse_edge_signed_hl_motif(key: str) -> tuple[tuple[int, int, int], ...] | None:
+    """Parse ``D|01,10|+-`` / ``T|01,12,20|++-`` into signed directed edges."""
+    if not (key.startswith("T|") or key.startswith("D|")):
+        return None
+    parts = str(key).split("|")
+    if len(parts) != 3 or not parts[1] or not parts[2]:
+        return None
+    edge_codes = parts[1].split(",")
+    signs = parts[2]
+    if len(edge_codes) != len(signs):
+        return None
+    edges: list[tuple[int, int, int]] = []
+    for ec, s in zip(edge_codes, signs):
+        if len(ec) != 2 or s not in "+-":
+            return None
+        edges.append((int(ec[0]), int(ec[1]), +1 if s == "+" else -1))
+    return tuple(edges) if edges else None
+
+
+def edge_signed_hl_schema_pseudo(key: str) -> str:
+    """Schema base key for ``motif_schema_box`` sizing of edge-sign HL keys."""
+    edges = parse_edge_signed_hl_motif(key)
+    if edges is None:
+        return "dyad_asym_frac"
+    max_node = max(i for e in edges for i in e[:2])
+    if max_node <= 1:
+        return "dyad_mutual_frac" if len(edges) > 1 else "dyad_asym_frac"
+    return "motif_feedforward_rate"
+
+
+def draw_edge_signed_hl_motif(
+    ax,
+    key: str,
+    *,
+    box: tuple[float, float, float, float] | None = None,
+) -> bool:
+    """Draw edge-sign HL motif glyph for keys ``D|…`` / ``T|…``."""
+    edges = parse_edge_signed_hl_motif(key)
+    if edges is None:
+        ax.axis("off")
+        return False
+
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_aspect("auto")
+    ax.axis("off")
+    ax.set_clip_on(False)
+
+    if box is None:
+        box = motif_schema_box(
+            ax, edge_signed_hl_schema_pseudo(key),
+            center_x=0.50, height_frac=0.98, max_width=0.98,
+        )
+    bx0, bx1, by0, by1 = box
+    sx = float(bx1 - bx0)
+    sy = float(by1 - by0)
+    ax_pos = ax.get_position()
+    fw, fh = ax.figure.get_size_inches()
+    w_in = max(1e-6, float(ax_pos.width) * float(fw))
+    h_in = max(1e-6, float(ax_pos.height) * float(fh))
+    sn = sy * h_in / w_in
+
+    def fit(p: dict[int, tuple[float, float]]) -> dict[int, tuple[float, float]]:
+        return {k: (bx0 + sx * x, by0 + sy * y) for k, (x, y) in p.items()}
+
+    active = sorted({i for e in edges for i in e[:2]})
+    tri_pos = _triangle_node_xy()
+    if len(active) == 3:
+        pos = tri_pos
+    elif len(active) == 2:
+        # Dyad or 2-node induced subgraph — two nodes only (1-edge dyads are legit).
+        pos = {active[0]: (0.20, 0.50), active[1]: (0.80, 0.50)}
+    else:
+        pos = {0: (0.50, 0.50)}
+    _draw_signed_motif_edges(
+        ax, fit(pos), edges,
+        node_r=(0.10 if len(active) <= 2 else 0.095) * sn,
+        rad=0.24 if len(active) <= 2 else 0.0,
+        mutual_rad=0.24 if len(active) <= 2 else 0.14,
+    )
+    return True
+
+
 _DYAD_COLORINGS: tuple[str, ...] = ("ee", "ei", "ie", "ii")
 # Mutual dyads are unordered for type; mixed E–I is stored as ``ei`` only.
 _MUTUAL_COLORINGS: tuple[str, ...] = ("ee", "ei", "ii")

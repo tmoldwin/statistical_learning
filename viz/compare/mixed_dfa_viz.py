@@ -1666,6 +1666,7 @@ def collect_mixed_dfa_weight_layeredness(
     from visualize import load_model_for_viz, weights_for_plot
     from viz.weight_structure import (
         compute_weight_directionality_metrics,
+        compute_weight_digraph_motifs_by_ei,
         compute_weight_graph_metrics,
         compute_weight_layeredness_metrics,
         compute_weight_motif_metrics,
@@ -1689,8 +1690,8 @@ def collect_mixed_dfa_weight_layeredness(
         print(f"weight-graph {task} seed {seed} dfa={n_dfa}", flush=True)
         try:
             model = load_model_for_viz(str(ckpt), model_type)
-            w_in, w_rec, w_out, _dale = weights_for_plot(model)
-            panels.append({
+            w_in, w_rec, w_out, dale = weights_for_plot(model)
+            panel: dict[str, Any] = {
                 "task": task,
                 "seed": seed,
                 "run_id": int(entry["run_id"]),
@@ -1703,7 +1704,12 @@ def collect_mixed_dfa_weight_layeredness(
                 "motif": compute_weight_motif_metrics(w_in, w_rec),
                 "direction": compute_weight_directionality_metrics(w_in, w_rec),
                 "structure": compute_weight_structure_metrics(w_in, w_rec, w_out),
-            })
+            }
+            if dale is not None and len(dale) == w_rec.shape[0]:
+                panel["ei_motif"] = compute_weight_digraph_motifs_by_ei(
+                    w_rec, dale, mode="quantile", q=0.75,
+                )
+            panels.append(panel)
         except Exception as exc:  # noqa: BLE001
             panels.append({
                 "task": task, "seed": seed, "n_dfa_states": n_dfa,
@@ -1719,6 +1725,55 @@ def collect_mixed_dfa_weight_layeredness(
     }
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"wrote {out}", flush=True)
+    return out
+
+
+def refresh_mixed_dfa_ei_motifs(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+) -> Path:
+    """Recompute only the Dale-typed ``ei_motif`` bag; leave other metrics intact."""
+    from visualize import load_model_for_viz, weights_for_plot
+    from viz.weight_structure import compute_weight_digraph_motifs_by_ei
+
+    out = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_weight_graph_metrics.json"
+    if not out.is_file():
+        return collect_mixed_dfa_weight_layeredness(
+            seed=seed, model_type=model_type, recompute=True,
+        )
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    if payload.get("model_type", "rnn") != model_type or int(payload.get("seed", seed)) != int(seed):
+        return collect_mixed_dfa_weight_layeredness(
+            seed=seed, model_type=model_type, recompute=True,
+        )
+
+    by_task = {
+        p["task"]: p for p in payload.get("panels", []) if "error" not in p and "task" in p
+    }
+    n_ok = 0
+    for entry in iter_runs():
+        task = entry["task"]
+        panel = by_task.get(task)
+        if panel is None:
+            continue
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        print(f"ei-motif {task} seed {seed}", flush=True)
+        model = load_model_for_viz(str(ckpt), model_type)
+        _w_in, w_rec, _w_out, dale = weights_for_plot(model)
+        if dale is None or len(dale) != w_rec.shape[0]:
+            panel.pop("ei_motif", None)
+            continue
+        panel["ei_motif"] = compute_weight_digraph_motifs_by_ei(
+            w_rec, dale, mode="quantile", q=0.75,
+        )
+        n_ok += 1
+
+    payload["ei_motif_version"] = "typed_colorings_v2"
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out} (ei_motif refreshed on {n_ok} panels)", flush=True)
     return out
 
 

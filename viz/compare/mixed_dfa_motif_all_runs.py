@@ -385,6 +385,40 @@ def _ols(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     return beta, pred, r2
 
 
+def _ols_slope_stats(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float, int]:
+    """Return (slope, R^2, two-sided p-value for slope, n)."""
+    from scipy import stats as scipy_stats
+
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n = int(len(y))
+    if n < 3 or float(np.std(x)) < 1e-12:
+        return float("nan"), float("nan"), float("nan"), n
+    beta, pred, r2 = _ols(y, x)
+    slope = float(beta[1])
+    resid = y - pred
+    dof = max(n - 2, 1)
+    ss_xx = float(np.sum((x - x.mean()) ** 2))
+    if ss_xx < 1e-18:
+        return slope, float(r2), float("nan"), n
+    se = float(np.sqrt(np.sum(resid ** 2) / dof / ss_xx))
+    if se < 1e-18:
+        return slope, float(r2), 0.0, n
+    t_stat = slope / se
+    p = float(2.0 * scipy_stats.t.sf(abs(t_stat), dof))
+    return slope, float(r2), p, n
+
+
+def _format_p_value(p: float) -> str:
+    if not np.isfinite(p):
+        return "p=—"
+    if p < 0.001:
+        return "p<.001"
+    if p < 0.01:
+        return f"p={p:.3f}"
+    return f"p={p:.2f}"
+
+
 def _outlined_regression_line(
     ax,
     x_line: np.ndarray,
@@ -427,6 +461,26 @@ def _start_quintile_summary(
     return labels, np.array(medians), np.array(q25), np.array(q75)
 
 
+def _robust_axis_limits(
+    values: np.ndarray,
+    *,
+    lo_pct: float = 0.5,
+    hi_pct: float = 99.5,
+    pad_frac: float = 0.08,
+) -> tuple[float, float]:
+    """Mild percentile window so rare extremes don't squash the bulk of the cloud."""
+    vals = np.asarray(values, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    if vals.size == 0:
+        return 0.0, 1.0
+    lo = float(np.percentile(vals, lo_pct))
+    hi = float(np.percentile(vals, hi_pct))
+    if hi <= lo:
+        lo, hi = float(vals.min()), float(vals.max())
+    pad = pad_frac * max(hi - lo, 1e-6)
+    return lo - pad, hi + pad
+
+
 def plot_homogenization_summary(
     log_c0: np.ndarray,
     log_fold: np.ndarray,
@@ -439,13 +493,17 @@ def plot_homogenization_summary(
     beta_vs_dfa: list[dict] | None = None,
     target_we: float = TARGET_WE,
 ) -> Path:
-    """Compact homogenization summary: scatter, start-quintile compression, tier β or β vs DFA."""
+    """Homogenization summary: one log-fold scatter per #edges tier + β bars / β vs DFA.
+
+    ``n_quintiles`` is retained for call-site compatibility but unused (quintile
+    abundance panel removed — it pooled across density tiers and misled).
+    """
+    del n_quintiles  # unused; kept in signature for callers
     log_c0 = np.asarray(log_c0, dtype=float)
     log_fold = np.asarray(log_fold, dtype=float)
     n_edges = np.asarray(n_edges, dtype=int)
     tiers = sorted(set(int(v) for v in n_edges))
-    rng = np.random.default_rng(0)
-    x_disp = log_c0 + rng.normal(0.0, 0.025, size=len(log_c0))
+    preferred = [ne for ne in (2, 3, 4, 5) if ne in tiers] or tiers[:4]
 
     beta, _, r2 = _ols(log_fold, log_c0)
     beta_tiers: list[tuple[int, float, float, int]] = []
@@ -456,62 +514,46 @@ def plot_homogenization_summary(
         b_e, _, r2_e = _ols(log_fold[mask], log_c0[mask])
         beta_tiers.append((ne, float(b_e[1]), r2_e, int(mask.sum())))
 
-    q_labels, q_med, q25, q75 = _start_quintile_summary(log_c0, log_fold, n_bins=n_quintiles)
-    xs = np.arange(len(q_med))
+    n_panels = len(preferred) + 1
+    fig = plt.figure(figsize=(max(11.2, 2.4 * n_panels + 0.6), 3.9))
+    gs = fig.add_gridspec(1, n_panels, wspace=0.28)
+    x_disp, y_disp = _jitter_display_coords(log_c0, log_fold, seed=0)
 
-    third_ratio = 1.05 if beta_vs_dfa is not None else 0.95
-    fig = plt.figure(figsize=(11.2, 3.9))
-    gs = fig.add_gridspec(1, 3, width_ratios=[1.55, 1.0, third_ratio], wspace=0.34)
-    ax_sc = fig.add_subplot(gs[0, 0])
-    ax_q = fig.add_subplot(gs[0, 1])
-    ax_third = fig.add_subplot(gs[0, 2])
-
-    for ne in tiers:
+    for j, ne in enumerate(preferred):
+        ax = fig.add_subplot(gs[0, j])
         mask = n_edges == ne
         col = _EDGE_COUNT_COLORS.get(ne, "#888888")
-        alpha = 0.35 if beta_vs_dfa is not None else 0.55
-        size = 10 if beta_vs_dfa is not None else 14
-        ax_sc.scatter(
-            x_disp[mask], log_fold[mask], s=size, c=col, alpha=alpha,
-            edgecolors="none", zorder=3, label=f"{ne}e",
+        x_lo, x_hi = _robust_axis_limits(log_c0[mask])
+        y_lo, y_hi = _robust_axis_limits(log_fold[mask])
+        in_view = mask & (log_c0 >= x_lo) & (log_c0 <= x_hi) & (log_fold >= y_lo) & (log_fold <= y_hi)
+        ax.scatter(
+            x_disp[in_view], y_disp[in_view], s=14, c=col, alpha=0.55,
+            edgecolors="0.15", linewidths=0.2, zorder=3,
         )
-        if beta_vs_dfa is None and int(mask.sum()) >= min_fit and float(np.std(log_c0[mask])) > 1e-9:
-            b_e, _, _ = _ols(log_fold[mask], log_c0[mask])
-            x0, x1 = float(log_c0[mask].min()), float(log_c0[mask].max())
-            x_line = np.linspace(x0, x1, 40)
-            _outlined_regression_line(ax_sc, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.25)
+        b1, r2_e = float("nan"), float("nan")
+        if int(mask.sum()) >= min_fit and float(np.std(log_c0[mask])) > 1e-9:
+            b_e, _, r2_e = _ols(log_fold[mask], log_c0[mask])
+            b1 = float(b_e[1])
+            x_line = np.linspace(x_lo, x_hi, 40)
+            _outlined_regression_line(ax, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.35)
+        ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
+        ax.set_xlim(x_lo, x_hi)
+        ax.set_ylim(y_lo, y_hi)
+        ax.set_xlabel("log start count", fontsize=8)
+        if j == 0:
+            ax.set_ylabel("log fold (end / start)", fontsize=8)
+        else:
+            ax.tick_params(labelleft=False)
+        ax.set_title(
+            rf"{ne}e  ($\beta={b1:+.2f}$, $R^2={r2_e:.2f}$)",
+            fontsize=8.5, pad=4, color=col,
+        )
+        ax.tick_params(labelsize=7)
+        ax.grid(True, alpha=0.22)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
 
-    if len(log_c0) >= 3 and float(np.std(log_c0)) > 1e-12:
-        x_line = np.linspace(float(log_c0.min()), float(log_c0.max()), 60)
-        _outlined_regression_line(ax_sc, x_line, beta[0] + beta[1] * x_line, "0.12", lw=2.0)
-
-    ax_sc.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
-    ax_sc.set_xlabel("log start count", fontsize=9)
-    ax_sc.set_ylabel("log fold (end / start)", fontsize=9)
-    ax_sc.set_title(
-        rf"pooled $\beta={beta[1]:+.2f}$, $R^2={r2:.2f}$, n={len(log_c0)}",
-        fontsize=9, pad=4,
-    )
-    ax_sc.tick_params(labelsize=8)
-    ax_sc.grid(True, alpha=0.22)
-    ax_sc.spines["top"].set_visible(False)
-    ax_sc.spines["right"].set_visible(False)
-    if beta_vs_dfa is None:
-        ax_sc.legend(loc="lower left", fontsize=7, frameon=True, fancybox=False, edgecolor="0.8")
-
-    ax_q.fill_between(xs, q25, q75, color="#4C78A8", alpha=0.22, zorder=1)
-    ax_q.plot(xs, q_med, color="#4C78A8", lw=2.0, marker="o", ms=6, zorder=3)
-    ax_q.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
-    ax_q.set_xticks(xs)
-    ax_q.set_xticklabels(q_labels, fontsize=7.5)
-    ax_q.set_xlabel("start quintile (log count range)", fontsize=9)
-    ax_q.set_ylabel("median log fold", fontsize=9)
-    ax_q.set_title("compression by initial abundance", fontsize=9, pad=4)
-    ax_q.tick_params(labelsize=8)
-    ax_q.grid(True, alpha=0.22)
-    ax_q.spines["top"].set_visible(False)
-    ax_q.spines["right"].set_visible(False)
-
+    ax_third = fig.add_subplot(gs[0, len(preferred)])
     if beta_vs_dfa is not None:
         dfa_vals = [float(r["n_dfa_states"]) for r in beta_vs_dfa if np.isfinite(r.get("beta", float("nan")))]
         dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals)) if dfa_vals else plt.Normalize(0, 1)
@@ -549,12 +591,12 @@ def plot_homogenization_summary(
 
     finalize_grid_figure(
         fig,
-        suptitle=title,
+        suptitle=title + rf"  (pooled $\beta={beta[1]:+.2f}$, $R^2={r2:.2f}$)",
         top=0.88,
         bottom=0.16,
         left=0.06,
         right=0.98,
-        wspace=0.34,
+        wspace=0.28,
     )
     save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
@@ -700,11 +742,13 @@ def _pick_demo_trajectories(
         )
         best: dict | None = None
         best_score = float("-inf")
-        for cand in pool[:12]:
-            for run_id in _top_runs_for_key(rows, cand["key"], n=8):
+        # Few loads: top motif keys × top run only (full search was ~hundreds of snap loads).
+        for cand in pool[:4]:
+            top_runs = _top_runs_for_key(rows, cand["key"], n=2)
+            for run_id in top_runs:
                 iters, counts = _load_motif_trajectory(
                     run_id, cand["key"],
-                    model=model, seed=seed, coloring=coloring, max_snaps=60,
+                    model=model, seed=seed, coloring=coloring, max_snaps=40,
                 )
                 score = _trajectory_monotonic_score(counts, want_down=want_down)
                 if score > best_score:
@@ -721,6 +765,11 @@ def _pick_demo_trajectories(
         if best is not None:
             used.add(best["key"])
             chosen.append(best)
+            print(
+                f"  demo {label}: {best['key']} r{int(best['run_id']):02d} "
+                f"score={best['score']:.3f}",
+                flush=True,
+            )
     return chosen
 
 
@@ -1042,6 +1091,35 @@ def _fold_arrays_from_snaps(
     )
 
 
+def _raw_fold_arrays_from_snaps(
+    snaps: list[dict],
+    *,
+    motif_prefix: str,
+    min_start: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Raw start count and end/start fold (not log-transformed)."""
+    c0, c1 = snaps[0]["cnt"], snaps[-1]["cnt"]
+    keys = [k for k in c0 if str(k).startswith(motif_prefix)]
+    starts: list[float] = []
+    folds: list[float] = []
+    tiers: list[int] = []
+    for key in keys:
+        v0 = float(c0.get(key, 0.0))
+        if v0 < min_start:
+            continue
+        v1 = float(c1.get(key, 0.0))
+        starts.append(v0)
+        folds.append((v1 + EPS) / (v0 + EPS))
+        tiers.append(int(_n_edges_from_key(key)))
+    if not starts:
+        raise ValueError(f"no motifs with start>={min_start}")
+    return (
+        np.array(starts, dtype=float),
+        np.array(folds, dtype=float),
+        np.array(tiers, dtype=int),
+    )
+
+
 def _load_all_runs_fold_context(
     cache_path: Path,
     *,
@@ -1150,6 +1228,111 @@ def _draw_tier_fold_scatter(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     return float(beta[1]), float(r2), beta_tiers
+
+
+def _draw_tier_fold_scatter_raw(
+    ax,
+    start: np.ndarray,
+    fold: np.ndarray,
+    n_edges: np.ndarray,
+    *,
+    min_fit: int,
+    title: str = "",
+    subsample: int | None = None,
+) -> tuple[float, float, list[tuple[int, float, float, int]]]:
+    """Scatter end/start vs start count on linear axes, colored by #edges tier."""
+    tiers = sorted(set(int(v) for v in n_edges))
+    beta, _, r2 = _ols(fold, start)
+    beta_tiers: list[tuple[int, float, float, int]] = []
+    idx = np.arange(len(start))
+    if subsample is not None and len(idx) > subsample:
+        idx = _subsample_stratified_indices(n_edges, max_pts=subsample, seed=0)
+
+    rng = np.random.default_rng(0)
+    x_disp = start + rng.normal(0.0, 0.012 * max(float(start.max()), 1.0), size=len(start))
+    y_disp = fold + rng.normal(0.0, 0.012, size=len(fold))
+
+    for ne in tiers:
+        mask = n_edges == ne
+        col = _EDGE_COUNT_COLORS.get(ne, "#888888")
+        show = mask.copy()
+        if subsample is not None:
+            show = mask & np.isin(np.arange(len(mask)), idx)
+        ax.scatter(
+            x_disp[show], y_disp[show], s=14 if subsample is None else 10,
+            c=col, alpha=0.55 if subsample is None else 0.40,
+            edgecolors="0.15" if subsample else "none",
+            linewidths=0.25 if subsample else 0.0,
+            zorder=3, label=f"{ne}e",
+        )
+        if int(mask.sum()) >= min_fit and float(np.std(start[mask])) > 1e-9:
+            b_e, _, r2_e = _ols(fold[mask], start[mask])
+            beta_tiers.append((ne, float(b_e[1]), r2_e, int(mask.sum())))
+            x0, x1 = float(start[mask].min()), float(start[mask].max())
+            x_line = np.linspace(x0, x1, 50)
+            _outlined_regression_line(ax, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.35)
+
+    if len(start) >= 3 and float(np.std(start)) > 1e-12:
+        x_line = np.linspace(float(start.min()), float(start.max()), 60)
+        _outlined_regression_line(ax, x_line, beta[0] + beta[1] * x_line, "0.12", lw=1.9)
+
+    ax.axhline(1.0, color="0.55", lw=0.7, ls="--", zorder=1)
+    ax.set_xlabel("start count", fontsize=8.0)
+    ax.set_ylabel("end / start", fontsize=8.0)
+    if title:
+        ax.set_title(title, fontsize=8.2, pad=4)
+    ax.tick_params(labelsize=7.0)
+    ax.grid(True, alpha=0.25)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(fontsize=6.5, frameon=True, fancybox=False, edgecolor="0.8", loc="best")
+    return float(beta[1]), float(r2), beta_tiers
+
+
+def plot_motif_fold_scatter_raw(
+    json_path: Path,
+    out_path: Path,
+    *,
+    run_id: int,
+    min_start: int,
+    motif_prefix: str = "T|",
+    n_dfa_states: int | None = None,
+) -> Path:
+    """Linear scatter: end/start vs start count, tier-colored (no log axes)."""
+    snaps = json.loads(json_path.read_text(encoding="utf-8"))
+    it0, it1 = int(snaps[0]["it"]), int(snaps[-1]["it"])
+    start, fold, n_edges = _raw_fold_arrays_from_snaps(
+        snaps, motif_prefix=motif_prefix, min_start=min_start,
+    )
+
+    fig, ax = plt.subplots(figsize=(5.8, 4.8))
+    pooled_slope, r2, beta_tiers = _draw_tier_fold_scatter_raw(
+        ax, start, fold, n_edges, min_fit=8, title="",
+    )
+    ax.set_title(
+        f"r{run_id:02d}: end/start vs start count  "
+        f"(pooled slope={pooled_slope:+.4f}, $R^2$={r2:.2f}, n={len(start)})",
+        fontsize=8.2, pad=4,
+    )
+    dfa_tag = f"{n_dfa_states} DFA states; " if n_dfa_states is not None else ""
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"r{run_id:02d} motif fold vs start (linear axes)  "
+            f"({dfa_tag}iter {it0}\u2192{it1}; start>={min_start})"
+        ),
+        suptitle_fontsize=10,
+        top=0.88,
+        bottom=0.12,
+        left=0.12,
+        right=0.97,
+    )
+    save_figure(fig, out_path, dpi=150)
+    print(f"wrote {out_path}")
+    print(f"  pooled slope={pooled_slope:+.5f}  R2={r2:.3f}  n={len(start)}")
+    for ne, b, r2_e, n in beta_tiers:
+        print(f"  {ne}e: slope={b:+.5f}  R2={r2_e:.3f}  n={n}")
+    return out_path
 
 
 def _draw_tier_beta_bars(
@@ -2485,6 +2668,118 @@ def _load_motif_trajectory(
     return np.array(iters, dtype=float), np.array(counts, dtype=float)
 
 
+def _pick_demo_from_fold_rows(
+    rows: list[dict],
+    *,
+    motif_prefix: str,
+    n_demos: int = 4,
+    min_runs: int = 8,
+) -> list[dict]:
+    """Pick demo motifs from fold cache only — no checkpoint reloads.
+
+    Each demo is a start→end pair (two points) for one run×class, chosen for
+    clear compression or growth within its #edges tier.
+    """
+    from collections import defaultdict
+
+    by_key: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        key = str(r["key"])
+        if not key.startswith(motif_prefix):
+            continue
+        by_key[key].append(r)
+
+    stats: list[dict] = []
+    for key, pts in by_key.items():
+        if len(pts) < min_runs:
+            continue
+        log_fold = np.array([p["log_fold"] for p in pts], dtype=float)
+        stats.append({
+            "key": key,
+            "n_edges": _n_edges_from_key(key),
+            "n_runs": len(pts),
+            "med_log_fold": float(np.median(log_fold)),
+            "pts": pts,
+        })
+    if not stats:
+        return []
+
+    is_dyad = motif_prefix.startswith("D")
+    if is_dyad:
+        slots = [(2, True, "2-edge down"), (2, False, "2-edge up"), (1, True, "1-edge down"), (1, False, "1-edge up")]
+    else:
+        slots = [
+            (5, True, "5-edge down"), (4, True, "4-edge down"),
+            (3, True, "3-edge down"), (2, False, "2-edge up"),
+        ]
+
+    chosen: list[dict] = []
+    used: set[str] = set()
+    for ne_target, want_down, label in slots[:n_demos]:
+        pool = [
+            s for s in stats
+            if s["n_edges"] == ne_target and s["key"] not in used
+        ]
+        if not pool:
+            continue
+        pool = sorted(pool, key=lambda s: s["med_log_fold"], reverse=not want_down)
+        best = None
+        best_score = float("-inf")
+        for cand in pool[:8]:
+            for p in sorted(cand["pts"], key=lambda q: float(q["log_c0"]), reverse=True)[:3]:
+                c0 = float(np.exp(float(p["log_c0"])) - EPS)
+                fold = float(np.exp(float(p["log_fold"])))
+                c1 = c0 * fold
+                if want_down and fold > 0.85:
+                    continue
+                if (not want_down) and fold < 1.10:
+                    continue
+                score = abs(float(np.log(max(fold, 1e-9)))) * float(p["log_c0"])
+                if score > best_score:
+                    best_score = score
+                    best = {
+                        "key": cand["key"],
+                        "n_edges": cand["n_edges"],
+                        "run_id": int(p["run_id"]),
+                        "label": label,
+                        "want_down": want_down,
+                        "score": score,
+                        "iters": np.array([0.0, 1.0], dtype=float),
+                        "counts": np.array([max(c0, EPS), max(c1, EPS)], dtype=float),
+                        "start_end_only": True,
+                    }
+        if best is not None:
+            used.add(best["key"])
+            chosen.append(best)
+    return chosen
+
+
+def _attach_demo_trajectories(
+    demos: list[dict],
+    *,
+    model: str,
+    seed: int,
+    coloring: str,
+    max_snaps: int = 40,
+) -> list[dict]:
+    """Load full learning curves for already-chosen demos only (one load each)."""
+    out: list[dict] = []
+    for demo in demos:
+        rid = int(demo["run_id"])
+        key = str(demo["key"])
+        print(f"  loading trajectory r{rid:02d} {demo['label']} ...", flush=True)
+        iters, counts = _load_motif_trajectory(
+            rid, key, model=model, seed=seed, coloring=coloring, max_snaps=max_snaps,
+        )
+        out.append({
+            **demo,
+            "iters": iters,
+            "counts": counts,
+            "start_end_only": False,
+        })
+    return out
+
+
 def plot_all_runs_homogenization_board(
     cache_path: Path,
     out_path: Path,
@@ -2498,7 +2793,7 @@ def plot_all_runs_homogenization_board(
     motif_prefix: str = "T|",
     n_demos: int = 4,
 ) -> Path:
-    """Multi-run homogenization board: demo trajectories + tier regressions."""
+    """Homogenization board: one exemplar run for demos/tier fits; all-runs beta vs DFA."""
     from viz.weight_structure import (
         draw_edge_signed_hl_motif,
         edge_signed_hl_schema_pseudo,
@@ -2523,7 +2818,6 @@ def plot_all_runs_homogenization_board(
     color_tag = "edge-sign" if payload.get("coloring") == "edge_sign" else "Dale-node"
     motif_tag = "dyad" if str(payload.get("motif_prefix", motif_prefix)).startswith("D") else "triad"
     min_fit = 3 if motif_tag == "dyad" else 8
-    min_demo_runs = 3 if motif_tag == "dyad" else 8
 
     by_run: dict[int, list[dict]] = {}
     for r in rows:
@@ -2533,92 +2827,108 @@ def plot_all_runs_homogenization_board(
     for run in series:
         rid = int(run["run_id"])
         pts = by_run.get(rid, [])
-        beta_val, r2 = float("nan"), float("nan")
+        beta_val = r2 = p_val = float("nan")
         if len(pts) >= 3:
             x = np.array([p["log_c0"] for p in pts], dtype=float)
             y = np.array([p["log_fold"] for p in pts], dtype=float)
-            if float(np.std(x)) > 1e-12:
-                b, _, r2 = _ols(y, x)
-                beta_val = float(b[1])
+            beta_val, r2, p_val, _n = _ols_slope_stats(y, x)
         per_run.append({
             "run_id": rid,
             "n_dfa_states": int(run["n_dfa_states"]),
             "solved": bool(run.get("solved", False)),
             "beta": beta_val,
             "r2": r2,
+            "p": p_val,
+            "neglog10_p": (
+                float(-np.log10(max(p_val, 1e-300))) if np.isfinite(p_val) else float("nan")
+            ),
             "n": len(pts),
         })
 
-    log_c0 = np.array([r["log_c0"] for r in rows], dtype=float)
-    log_fold = np.array([r["log_fold"] for r in rows], dtype=float)
-    n_edges = np.array([_n_edges_from_key(r["key"]) for r in rows], dtype=int)
-    tiers = sorted(set(int(v) for v in n_edges))
+    exempl_id, exempl_dfa = pick_highest_dfa_exemplar(cache_path)
+    exempl_rows = [
+        r for r in by_run.get(exempl_id, [])
+        if str(r["key"]).startswith(motif_prefix)
+    ]
+    print(
+        f"exemplar r{exempl_id:02d} ({exempl_dfa} DFA states, n={len(exempl_rows)} motifs)",
+        flush=True,
+    )
 
-    beta, _, r2_pool = _ols(log_fold, log_c0)
-    beta_tiers: list[tuple[int, float, float, int]] = []
+    log_c0 = np.array([r["log_c0"] for r in exempl_rows], dtype=float)
+    log_fold = np.array([r["log_fold"] for r in exempl_rows], dtype=float)
+    n_edges = np.array([_n_edges_from_key(r["key"]) for r in exempl_rows], dtype=int)
+    tiers = sorted(set(int(v) for v in n_edges)) if len(n_edges) else []
+
+    beta_tiers: list[tuple[int, float, float, float, int]] = []
     for ne in tiers:
         mask = n_edges == ne
-        if int(mask.sum()) < min_fit or float(np.std(log_c0[mask])) < 1e-9:
+        if int(mask.sum()) < min_fit:
             continue
-        b_e, _, r2_e = _ols(log_fold[mask], log_c0[mask])
-        beta_tiers.append((ne, float(b_e[1]), r2_e, int(mask.sum())))
+        b1, r2_e, p_e, n_e = _ols_slope_stats(log_fold[mask], log_c0[mask])
+        if np.isfinite(b1):
+            beta_tiers.append((ne, b1, r2_e, p_e, n_e))
 
-    demos = _pick_demo_trajectories(
-        rows,
-        motif_prefix=motif_prefix,
-        model=model,
-        seed=seed,
-        coloring=coloring,
-        n_demos=n_demos,
-        min_runs=min_demo_runs,
-    )
-    n_demo = max(1, len(demos))
+    exempl_json = cache_path.parent / f"r{exempl_id:02d}_{model}_motif_edge_signed_all.json"
+    demos: list[dict] = []
+    if exempl_json.is_file():
+        snaps = json.loads(exempl_json.read_text(encoding="utf-8"))
+        demos = _pick_single_run_demos(
+            snaps, motif_prefix=motif_prefix, min_start=min_start, n_demos=n_demos,
+        )
+        for d in demos:
+            d["run_id"] = exempl_id
+            d["start_end_only"] = False
+    else:
+        print(f"  missing {exempl_json.name}; loading 4 trajectories", flush=True)
+        demos = _pick_demo_from_fold_rows(
+            exempl_rows, motif_prefix=motif_prefix, n_demos=n_demos, min_runs=1,
+        )
+        demos = _attach_demo_trajectories(
+            demos, model=model, seed=seed, coloring=coloring, max_snaps=40,
+        )
 
-    fig = plt.figure(figsize=(13.4, 6.6))
-    outer = fig.add_gridspec(2, 1, height_ratios=[0.88, 1.22], hspace=0.44)
-    demo_row = outer[0].subgridspec(1, n_demo, wspace=0.32)
-    stat_row = outer[1].subgridspec(1, 2, width_ratios=[1.72, 1.0], wspace=0.28)
+    n_demo = max(1, len(demos)) if demos else 1
+    preferred_tiers = [ne for ne in (2, 3, 4, 5) if ne in tiers] or tiers[:4]
+    n_tier = max(1, len(preferred_tiers))
+    n_meta = 3
 
+    fig = plt.figure(figsize=(max(13.4, 2.55 * max(n_tier, n_meta) + 0.8), 9.2))
+    outer = fig.add_gridspec(3, 1, height_ratios=[0.78, 1.05, 1.05], hspace=0.42)
+    demo_row = outer[0].subgridspec(1, max(n_demo, 1), wspace=0.32)
+    tier_row = outer[1].subgridspec(1, n_tier, wspace=0.30)
+    meta_row = outer[2].subgridspec(1, n_meta, wspace=0.30)
     schema_insets: list[tuple[Any, str, bool]] = []
-    demo_axes: list[Any] = []
 
-    # --- demo panels (fig 19-style: trajectory + corner inset glyph) ---
+    if not demos:
+        ax = fig.add_subplot(demo_row[0, 0])
+        ax.text(0.5, 0.5, "no demos", ha="center", va="center", transform=ax.transAxes)
+        ax.axis("off")
     for j, demo in enumerate(demos):
         key = demo["key"]
         ne = int(demo["n_edges"])
         col = _EDGE_COUNT_COLORS.get(ne, "#888888")
         iters = demo["iters"]
         counts = demo["counts"]
-        run_id = int(demo["run_id"])
         fold = float(counts[-1] / max(counts[0], EPS))
         rising = bool(counts[-1] >= counts[0])
-
         ax = fig.add_subplot(demo_row[0, j])
         ax.plot(iters, counts, color=col, lw=1.25, zorder=2)
         lo, hi = ax.get_ylim()
         ax.set_ylim(lo, hi + 0.34 * (hi - lo))
-        ax.set_title(
-            f"{demo['label']}  r{run_id:02d}",
-            fontsize=7.4, pad=3.5, color=col,
-        )
+        ax.set_title(demo["label"], fontsize=7.4, pad=3.5, color=col)
         ax.grid(True, alpha=0.25)
         ax.tick_params(labelsize=6.0)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
+        ax.set_xlabel("iteration", fontsize=7.0)
         if j == 0:
             ax.set_ylabel("count", fontsize=7.0)
-        ax.set_xlabel("iteration", fontsize=7.0)
         ax.text(
-            0.97 if rising else 0.03,
-            0.035,
-            rf"$\times${fold:.2f}",
-            transform=ax.transAxes,
-            ha="right" if rising else "left",
-            va="bottom",
-            fontsize=6.4,
-            color="0.20",
-            bbox=dict(facecolor="white", edgecolor="none", alpha=0.80, pad=0.8),
-            zorder=6,
+            0.97 if rising else 0.03, 0.035, rf"$\times${fold:.2f}",
+            transform=ax.transAxes, ha="right" if rising else "left", va="bottom",
+            fontsize=6.4, color="0.20",
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.80, pad=0.8), zorder=6,
         )
         inset = ax.inset_axes(
             [0.035, 0.58, 0.34, 0.36] if rising else [0.625, 0.58, 0.34, 0.36],
@@ -2626,100 +2936,109 @@ def plot_all_runs_homogenization_board(
         inset.set_axis_off()
         inset.patch.set_visible(False)
         schema_insets.append((inset, key, rising))
-        demo_axes.append(ax)
 
-    # --- scatter with per-tier regression lines ---
-    ax_sc = fig.add_subplot(stat_row[0, 0])
-    disp_idx = _subsample_stratified_indices(n_edges, max_pts=3500, seed=0)
-    x_disp, y_disp = _jitter_display_coords(log_c0, log_fold, seed=0)
-    for ne in tiers:
+    if len(log_c0):
+        x_disp, y_disp = _jitter_display_coords(log_c0, log_fold, seed=0)
+    else:
+        x_disp = y_disp = np.array([])
+    for j, ne in enumerate(preferred_tiers):
+        ax = fig.add_subplot(tier_row[0, j])
         mask = n_edges == ne
         col = _EDGE_COUNT_COLORS.get(ne, "#888888")
-        show = mask & np.isin(np.arange(len(mask)), disp_idx)
-        ax_sc.scatter(
-            x_disp[show], y_disp[show], s=12, c=col, alpha=0.45,
+        x_lo, x_hi = _robust_axis_limits(log_c0[mask])
+        y_lo, y_hi = _robust_axis_limits(log_fold[mask])
+        in_view = (
+            mask & (log_c0 >= x_lo) & (log_c0 <= x_hi)
+            & (log_fold >= y_lo) & (log_fold <= y_hi)
+        )
+        ax.scatter(
+            x_disp[in_view], y_disp[in_view], s=16, c=col, alpha=0.55,
             edgecolors="0.15", linewidths=0.25, zorder=3,
         )
+        b1 = r2_e = p_e = float("nan")
         if int(mask.sum()) >= min_fit and float(np.std(log_c0[mask])) > 1e-9:
-            b_e, _, _r2_e = _ols(log_fold[mask], log_c0[mask])
-            x0, x1 = float(log_c0[mask].min()), float(log_c0[mask].max())
-            x_line = np.linspace(x0, x1, 50)
-            _outlined_regression_line(
-                ax_sc, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.45,
-            )
-
-    for i, (ne, b1, _r2_e, _n) in enumerate(beta_tiers):
-        col = _EDGE_COUNT_COLORS.get(ne, "#888888")
-        ax_sc.text(
-            0.02,
-            0.97 - 0.08 * i,
-            rf"{ne}e $\beta={b1:+.2f}$",
-            transform=ax_sc.transAxes,
-            ha="left", va="top", fontsize=6.2, color=col,
-            bbox=dict(boxstyle="round,pad=0.12", fc="white", ec=col, alpha=0.92, lw=0.5),
-            zorder=8,
+            b1, r2_e, p_e, _n = _ols_slope_stats(log_fold[mask], log_c0[mask])
+            b_e, _, _ = _ols(log_fold[mask], log_c0[mask])
+            x_line = np.linspace(x_lo, x_hi, 50)
+            _outlined_regression_line(ax, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.55)
+        ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
+        ax.set_xlim(x_lo, x_hi)
+        ax.set_ylim(y_lo, y_hi)
+        ax.set_xlabel("log start count", fontsize=7.0)
+        if j == 0:
+            ax.set_ylabel("log fold (end / start)", fontsize=7.0)
+        else:
+            ax.tick_params(labelleft=False)
+        ax.set_title(
+            rf"{ne}-edge  ($\beta={b1:+.2f}$, $R^2={r2_e:.2f}$, {_format_p_value(p_e)})",
+            fontsize=7.2, pad=3.5, color=col,
         )
+        ax.tick_params(labelsize=6.0)
+        ax.grid(True, alpha=0.25)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
 
-    if len(log_c0) >= 3 and float(np.std(log_c0)) > 1e-12:
-        x_line = np.linspace(float(log_c0.min()), float(log_c0.max()), 60)
-        _outlined_regression_line(ax_sc, x_line, beta[0] + beta[1] * x_line, "0.12", lw=2.0)
-
-    ax_sc.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
-    ax_sc.set_xlabel("log start count", fontsize=7.0)
-    ax_sc.set_ylabel("log fold (end / start)", fontsize=7.0)
-    ax_sc.set_title(
-        rf"log fold vs log start  (pooled $\beta={beta[1]:+.2f}$, $R^2={r2_pool:.2f}$)",
-        fontsize=7.4, pad=3.5,
+    dfa_vals = [
+        float(r["n_dfa_states"]) for r in per_run
+        if np.isfinite(r.get("beta", float("nan")))
+    ]
+    dfa_norm = (
+        plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals))
+        if dfa_vals else plt.Normalize(0, 1)
     )
-    ax_sc.tick_params(labelsize=6.0)
-    ax_sc.grid(True, alpha=0.25)
-    ax_sc.spines["top"].set_visible(False)
-    ax_sc.spines["right"].set_visible(False)
-
-    # --- beta vs DFA ---
-    ax_dfa = fig.add_subplot(stat_row[0, 1])
-    dfa_vals = [float(r["n_dfa_states"]) for r in per_run if np.isfinite(r.get("beta", float("nan")))]
-    dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals)) if dfa_vals else plt.Normalize(0, 1)
-    _plot_beta_vs_dfa(
-        per_run, ax=ax_dfa, dfa_cmap=plt.get_cmap("viridis"),
-        dfa_norm=dfa_norm, target_we=target_we,
-    )
-    ax_dfa.set_title("per-run slope vs DFA", fontsize=7.4, pad=3.5)
-    ax_dfa.tick_params(labelsize=6.0)
-    ax_dfa.grid(True, alpha=0.25)
+    dfa_cmap = plt.get_cmap("viridis")
+    meta_specs = [
+        ("beta", r"$\beta$ (log fold ~ log start)", r"$\beta$", 0.0, True),
+        ("r2", r"$R^2$ (log fold ~ log start)", r"$R^2$", None, False),
+        ("neglog10_p", r"$-\log_{10}(p)$ (slope)", r"$-\log_{10}p$", None, False),
+    ]
+    for j, (key, ylabel, symbol, href, show_leg) in enumerate(meta_specs):
+        ax = fig.add_subplot(meta_row[0, j])
+        _plot_metric_vs_dfa(
+            per_run,
+            ax=ax,
+            value_key=key,
+            ylabel=ylabel,
+            title_symbol=symbol,
+            dfa_cmap=dfa_cmap,
+            dfa_norm=dfa_norm,
+            target_we=target_we,
+            highlight_run_id=exempl_id,
+            ref_hline=href,
+            show_legend=show_leg,
+        )
+        ax.tick_params(labelsize=6.0)
 
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"Weight motifs vs learning ({color_tag}, {motif_tag}; "
-            f"start>={min_start}, n={len(series)} runs, {n_solved} solved)"
+            f"r{exempl_id:02d} exemplar ({exempl_dfa} DFA states)  ·  "
+            f"{color_tag}, {motif_tag}; start>={min_start}  ·  "
+            f"meta vs DFA: n={len(series)} runs, {n_solved} solved"
         ),
         suptitle_fontsize=10,
-        top=0.90,
-        bottom=0.09,
+        top=0.94,
+        bottom=0.06,
         left=0.06,
         right=0.98,
-        hspace=0.44,
-        wspace=0.28,
+        hspace=0.42,
+        wspace=0.30,
     )
     for inset, key, _rising in schema_insets:
-        pseudo = edge_signed_hl_schema_pseudo(key)
         draw_edge_signed_hl_motif(
             inset, key,
-            box=motif_schema_box(inset, pseudo, center_x=0.5, max_width=0.98),
+            box=motif_schema_box(
+                inset, edge_signed_hl_schema_pseudo(key), center_x=0.5, max_width=0.98,
+            ),
         )
 
     save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
-    print(f"  pooled beta={beta[1]:+.3f}  R2={r2_pool:.3f}  n={len(log_c0)}")
-    for ne, b, r2_e, n in beta_tiers:
-        print(f"  {ne}e  beta={b:+.3f}  R2={r2_e:.3f}  n={n}")
+    for ne, b, r2_e, p_e, n in beta_tiers:
+        print(f"  {ne}e  beta={b:+.3f}  R2={r2_e:.3f}  {_format_p_value(p_e)}  n={n}")
     for demo in demos:
         fold = float(demo["counts"][-1] / max(demo["counts"][0], EPS))
-        print(
-            f"  demo {demo['label']}  {demo['key']}  r{demo['run_id']:02d}  "
-            f"x{fold:.2f}  score={demo['score']:.3f}",
-        )
+        print(f"  demo {demo['label']}  {demo['key']}  x{fold:.2f}")
     return out_path
 
 
@@ -2748,36 +3067,41 @@ def plot_all_runs_homogenization_summary(
     )
 
 
-def _plot_beta_vs_dfa(
+def _plot_metric_vs_dfa(
     per_run: list[dict],
     *,
     ax: plt.Axes,
+    value_key: str,
+    ylabel: str,
+    title_symbol: str,
     dfa_cmap,
     dfa_norm,
     target_we: float,
     highlight_run_id: int | None = None,
+    ref_hline: float | None = 0.0,
+    show_legend: bool = True,
 ) -> None:
+    """Scatter a per-run statistic vs DFA size, with meta OLS title."""
     from matplotlib.lines import Line2D
 
     xs, ys, cs, solved_flags, rids = [], [], [], [], []
     for row in per_run:
-        beta = row.get("beta")
-        if beta is None or not np.isfinite(beta):
+        val = row.get(value_key)
+        if val is None or not np.isfinite(val):
             continue
         xs.append(float(row["n_dfa_states"]))
-        ys.append(float(beta))
+        ys.append(float(val))
         cs.append(dfa_cmap(dfa_norm(float(row["n_dfa_states"]))))
         solved_flags.append(bool(row.get("solved", False)))
         rids.append(int(row["run_id"]))
 
     if not xs:
-        ax.text(0.5, 0.5, "no per-run slopes", ha="center", va="center", transform=ax.transAxes)
+        ax.text(0.5, 0.5, f"no per-run {value_key}", ha="center", va="center", transform=ax.transAxes)
         return
 
     x_arr = np.array(xs, dtype=float)
     y_arr = np.array(ys, dtype=float)
     rid_arr = np.array(rids, dtype=int)
-    # x jitter so runs that share a DFA size are readable (fit uses true x).
     rng = np.random.default_rng(0)
     x_plot = x_arr + rng.uniform(-0.9, 0.9, size=len(x_arr))
 
@@ -2804,48 +3128,71 @@ def _plot_beta_vs_dfa(
             )
 
     if len(x_arr) >= 3 and np.std(x_arr) > 1e-12:
-        X = np.column_stack([np.ones(len(x_arr)), x_arr])
-        b, *_ = np.linalg.lstsq(X, y_arr, rcond=None)
+        b, _, _ = _ols(y_arr, x_arr)
+        _slope, meta_r2, meta_p, _n = _ols_slope_stats(y_arr, x_arr)
         x_line = np.linspace(float(x_arr.min()), float(x_arr.max()), 100)
         y_line = b[0] + b[1] * x_line
         ax.plot(x_line, y_line, color="white", lw=3.4, zorder=1.9, solid_capstyle="round")
         ax.plot(x_line, y_line, color="#c0392b", lw=1.45, zorder=2, solid_capstyle="round")
-        ss_res = float(np.sum((y_arr - (b[0] + b[1] * x_arr)) ** 2))
-        ss_tot = float(np.sum((y_arr - y_arr.mean()) ** 2))
-        meta_r2 = 1.0 - ss_res / ss_tot if ss_tot else float("nan")
-        # Avoid "+ +" when the DFA slope is positive: use signed terms only.
         ax.set_title(
-            rf"meta: $\beta$ = ${b[0]:+.2f}{b[1]:+.3f}\cdot\mathrm{{DFA}}$"
-            rf"  ($R^2$={meta_r2:.2f})",
-            fontsize=8, pad=4,
+            rf"{title_symbol} = ${b[0]:+.2f}{b[1]:+.3f}\cdot\mathrm{{DFA}}$"
+            rf"  ($R^2$={meta_r2:.2f}, {_format_p_value(meta_p)})",
+            fontsize=7.2, pad=4,
         )
+    else:
+        ax.set_title(title_symbol, fontsize=7.2, pad=4)
 
-    ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
+    if ref_hline is not None:
+        ax.axhline(float(ref_hline), color="0.55", lw=0.7, ls="--", zorder=1)
     ax.set_xlabel("DFA states", fontsize=8)
-    ax.set_ylabel(r"$\beta$ (log fold ~ log start)", fontsize=8)
+    ax.set_ylabel(ylabel, fontsize=8)
     ax.tick_params(labelsize=7)
     ax.grid(True, alpha=0.22)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     x_pad = max(1.0, 0.04 * (float(x_arr.max()) - float(x_arr.min()) + 1.0))
     ax.set_xlim(float(x_arr.min()) - x_pad, float(x_arr.max()) + x_pad)
-    # Keep legend clear of the cloud (low-DFA / near-zero β corner is crowded).
-    handles = [
-        Line2D(
-            [0], [0], marker="o", color="w",
-            markerfacecolor="0.35", markeredgecolor="0.15", markersize=7,
-            label=rf"solved (best WE $\leq$ {100 * target_we:.0f}%)",
-        ),
-        Line2D(
-            [0], [0], marker="o", color="w",
-            markerfacecolor="none", markeredgecolor="0.35",
-            markeredgewidth=1.4, markersize=7,
-            label="unsolved",
-        ),
-    ]
-    ax.legend(
-        handles=handles, loc="upper left", fontsize=6.5, frameon=True,
-        fancybox=False, edgecolor="0.8", framealpha=0.92,
+    if show_legend:
+        handles = [
+            Line2D(
+                [0], [0], marker="o", color="w",
+                markerfacecolor="0.35", markeredgecolor="0.15", markersize=7,
+                label=rf"solved (best WE $\leq$ {100 * target_we:.0f}%)",
+            ),
+            Line2D(
+                [0], [0], marker="o", color="w",
+                markerfacecolor="none", markeredgecolor="0.35",
+                markeredgewidth=1.4, markersize=7,
+                label="unsolved",
+            ),
+        ]
+        ax.legend(
+            handles=handles, loc="upper left", fontsize=6.5, frameon=True,
+            fancybox=False, edgecolor="0.8", framealpha=0.92,
+        )
+
+
+def _plot_beta_vs_dfa(
+    per_run: list[dict],
+    *,
+    ax: plt.Axes,
+    dfa_cmap,
+    dfa_norm,
+    target_we: float,
+    highlight_run_id: int | None = None,
+) -> None:
+    _plot_metric_vs_dfa(
+        per_run,
+        ax=ax,
+        value_key="beta",
+        ylabel=r"$\beta$ (log fold ~ log start)",
+        title_symbol=r"meta: $\beta$",
+        dfa_cmap=dfa_cmap,
+        dfa_norm=dfa_norm,
+        target_we=target_we,
+        highlight_run_id=highlight_run_id,
+        ref_hline=0.0,
+        show_legend=True,
     )
 
 

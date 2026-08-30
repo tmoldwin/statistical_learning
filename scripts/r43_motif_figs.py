@@ -75,6 +75,10 @@ def _story_board_out_path(run_id: int) -> Path:
     return MOTIF_DIR / f"r{run_id:02d}_rnn_motif_story_board.png"
 
 
+def _fold_scatter_raw_out_path(run_id: int) -> Path:
+    return MOTIF_DIR / f"r{run_id:02d}_rnn_motif_fold_scatter_raw.png"
+
+
 def _ols(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     x = np.asarray(x, float)
     y = np.asarray(y, float)
@@ -651,6 +655,45 @@ def plot_single_run_story_board(
     )
 
 
+def plot_single_run_fold_scatter_raw(
+    json_path: Path | None = None,
+    cache_path: Path = ALL_RUNS_CACHE,
+    out_path: Path | None = None,
+    *,
+    min_start: int = MIN_START,
+    motif_prefix: str = "T|",
+    run_id: int | None = None,
+) -> Path:
+    """Linear end/start vs start scatter; defaults to highest-DFA exemplar."""
+    if run_id is None:
+        run_id, n_dfa = mar.pick_highest_dfa_exemplar(cache_path)
+        print(f"fold-scatter-raw exemplar: r{run_id:02d} ({n_dfa} DFA states)", flush=True)
+    else:
+        n_dfa = mar.lookup_run_dfa(cache_path, run_id)
+
+    default_json, default_edges, *_rest = _single_run_paths(run_id)
+    json_path = json_path or default_json
+    out_path = out_path or _fold_scatter_raw_out_path(run_id)
+
+    if not json_path.is_file():
+        colored, _edges = collect_single_run_edge_signed_census(
+            run_id=run_id,
+            model="rnn",
+            seed=SEED,
+            colored_json=json_path,
+            edges_json=default_edges,
+        )
+        json_path = colored
+    return mar.plot_motif_fold_scatter_raw(
+        json_path,
+        out_path,
+        run_id=run_id,
+        min_start=min_start,
+        motif_prefix=motif_prefix,
+        n_dfa_states=n_dfa,
+    )
+
+
 def plot_lollipop_before_after(
     json_path: Path = R43_RNN_JSON,
     out_path: Path = R43_RNN_LOLLIPOP_OUT,
@@ -990,6 +1033,7 @@ def main() -> None:
             "r43-rnn-pattern-regressions",
             "r43-rnn-hypothesis-regressions",
             "r43-rnn-story-board",
+            "r43-rnn-fold-scatter-raw",
             "r43-rnn-dyad-homogenization-summary",
             "r43-rnn-unsigned",
             "r43-rnn-lollipop",
@@ -1119,6 +1163,15 @@ def main() -> None:
         )
     elif args.only == "r43-rnn-story-board":
         plot_single_run_story_board(
+            None if args.json == DEFAULT_JSON else args.json,
+            args.cache,
+            args.out,
+            min_start=args.min_start,
+            motif_prefix="T|",
+            run_id=args.run_id,
+        )
+    elif args.only == "r43-rnn-fold-scatter-raw":
+        plot_single_run_fold_scatter_raw(
             None if args.json == DEFAULT_JSON else args.json,
             args.cache,
             args.out,

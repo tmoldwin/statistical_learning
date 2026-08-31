@@ -1746,6 +1746,241 @@ def collect_mixed_dfa_weight_layeredness(
     return out
 
 
+# Weight metrics with meaningful learning dynamics (flat / redundant panels dropped).
+_OVER_LEARNING_METRIC_SPECS: tuple[tuple[str, str, str], ...] = (
+    ("graph", "reciprocity", "reciprocity"),
+    ("graph", "degree_assortativity", "degree assortativity"),
+    ("graph", "out_degree_cv", "out-degree CV"),
+    ("graph", "modularity", "modularity"),
+    ("direction", "hh_asymmetry", r"$W_{hh}$ asymmetry"),
+    ("direction", "hh_mean_path_q75", "mean path (strong |W|, q=0.75)"),
+    ("structure", "spectral_radius_hh", r"$\rho(W_{hh})$"),
+    ("structure", "input_over_recurrent_norm", r"$||W_{xh}||/||W_{hh}||$"),
+    ("structure", "recurrent_frobenius", r"$||W_{hh}||_F$"),
+    ("layeredness", "motif_reciprocal_frac", "reciprocal edge frac"),
+    ("layeredness", "dyad_mutual_frac", "mutual dyad frac"),
+    ("layeredness", "dyad_asym_frac", "asymmetric dyad frac"),
+)
+
+
+def _compute_snap_weight_metrics(
+    w_in: np.ndarray,
+    w_rec: np.ndarray,
+    w_out: np.ndarray,
+) -> dict[str, dict[str, float]]:
+    from viz.weight_structure import (
+        compute_weight_directionality_metrics,
+        compute_weight_graph_metrics,
+        compute_weight_layeredness_metrics,
+        compute_weight_rank_metrics,
+        compute_weight_structure_metrics,
+    )
+
+    return {
+        "graph": compute_weight_graph_metrics(w_rec),
+        "direction": compute_weight_directionality_metrics(w_in, w_rec),
+        "structure": compute_weight_structure_metrics(w_in, w_rec, w_out),
+        "rank": compute_weight_rank_metrics(w_rec),
+        "layeredness": compute_weight_layeredness_metrics(w_in, w_rec),
+    }
+
+
+def _lookup_weight_metric(metrics: dict[str, dict[str, float]], bag: str, key: str) -> float:
+    v = metrics.get(bag, {}).get(key)
+    if v is None:
+        return float("nan")
+    try:
+        fv = float(v)
+    except (TypeError, ValueError):
+        return float("nan")
+    return fv if np.isfinite(fv) else float("nan")
+
+
+def collect_weight_metrics_over_learning(
+    *,
+    seed: int = 1,
+    model_type: str = "rnn",
+    max_snaps: int = 10,
+    recompute: bool = False,
+    run_ids: tuple[int, ...] | None = None,
+) -> Path:
+    """Weight graph metrics at learning snaps for every mixed run."""
+    from rnn.learning_snaps import list_learning_snaps
+    from viz.compare.mixed_dfa_motif_all_runs import _dominant_session, _subsample_snaps
+
+    out = sweep_data_dir(COMPARISON_NAME) / "mixed_dfa_weight_metrics_over_learning.json"
+    if out.is_file() and not recompute:
+        return out
+
+    runs_out: list[dict[str, Any]] = []
+    for entry in iter_runs():
+        rid = int(entry["run_id"])
+        if run_ids is not None and rid not in run_ids:
+            continue
+        task = str(entry["task"])
+        ckpt = checkpoint_path(task, model_type, seed=seed)
+        if not ckpt.is_file():
+            continue
+        snaps = [
+            p for p in _dominant_session(list_learning_snaps(ckpt))
+            if int(p.stem.split("_")[1]) > 0
+        ]
+        if len(snaps) < 2:
+            print(f"  skip {task}: need >=2 learning snaps", flush=True)
+            continue
+        snaps = _subsample_snaps(snaps, max_snaps)
+        words = list(entry["words"])
+        n_dfa = _dfa_states(words)
+        print(f"weight-metrics-over-learning {task} seed {seed} dfa={n_dfa} snaps={len(snaps)}", flush=True)
+
+        series: list[dict[str, Any]] = []
+        stop_iter = 0
+        for snap in snaps:
+            d = np.load(snap, allow_pickle=True)
+            w_in = np.asarray(d["weights_input_to_hidden"], dtype=float)
+            w_rec = np.asarray(d["weights_hidden_to_hidden"], dtype=float)
+            w_out = np.asarray(d["weights_hidden_to_output"], dtype=float)
+            it = (
+                int(d["learning_snap_iteration"])
+                if "learning_snap_iteration" in d.files
+                else int(snap.stem.split("_")[1])
+            )
+            we = (
+                float(d["learning_snap_word_err"])
+                if "learning_snap_word_err" in d.files
+                else float("nan")
+            )
+            stop_iter = max(stop_iter, it)
+            series.append({
+                "it": it,
+                "we": we,
+                **_compute_snap_weight_metrics(w_in, w_rec, w_out),
+            })
+
+        runs_out.append({
+            "run_id": rid,
+            "task": task,
+            "seed": int(seed),
+            "n_words": int(entry["n_words"]),
+            "n_dfa_states": n_dfa,
+            "stop_iter": int(stop_iter),
+            "series": series,
+        })
+
+    if not runs_out:
+        raise FileNotFoundError("no weight-metrics-over-learning curves (missing snaps?)")
+
+    payload = {
+        "comparison": COMPARISON_NAME,
+        "seed": int(seed),
+        "model_type": model_type,
+        "max_snaps": int(max_snaps),
+        "metric_specs": [
+            {"bag": bag, "key": key, "title": title}
+            for bag, key, title in _OVER_LEARNING_METRIC_SPECS
+        ],
+        "n_runs": len(runs_out),
+        "runs": runs_out,
+    }
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out} ({len(runs_out)} runs)", flush=True)
+    return out
+
+
+def plot_weight_metrics_over_learning(
+    *,
+    json_path: Path | None = None,
+    outfile: str = "weight_metrics_over_learning.png",
+    seed: int = 1,
+    recompute: bool = False,
+    max_snaps: int = 10,
+    run_ids: tuple[int, ...] | None = None,
+    metric_specs: tuple[tuple[str, str, str], ...] | None = None,
+    n_cols: int = 4,
+) -> Path:
+    """Grid of metric trajectories over training; line color = DFA state count."""
+    path = json_path or collect_weight_metrics_over_learning(
+        seed=seed,
+        recompute=recompute,
+        max_snaps=max_snaps,
+        run_ids=run_ids,
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    runs = [r for r in payload.get("runs", []) if r.get("series")]
+    if not runs:
+        raise FileNotFoundError(f"no runs in {path}")
+
+    specs = metric_specs or _OVER_LEARNING_METRIC_SPECS
+    n_metrics = len(specs)
+    n_rows = int(np.ceil(n_metrics / n_cols))
+
+    dfa_vals = [float(r["n_dfa_states"]) for r in runs]
+    vmin = min(dfa_vals)
+    vmax = max(dfa_vals)
+    cmap = plt.get_cmap("viridis")
+    norm = plt.Normalize(vmin=vmin, vmax=max(vmax, vmin + 1e-6))
+
+    fig = plt.figure(figsize=(2.35 * n_cols + 0.55, 2.05 * n_rows + 0.85))
+    outer = fig.add_gridspec(n_rows, n_cols, hspace=0.52, wspace=0.38)
+
+    for idx, (bag, key, title) in enumerate(specs):
+        ri, ci = divmod(idx, n_cols)
+        ax = fig.add_subplot(outer[ri, ci])
+        any_line = False
+        for run in runs:
+            xs, ys = [], []
+            for pt in run["series"]:
+                y = _lookup_weight_metric(pt, bag, key)
+                if not np.isfinite(y):
+                    continue
+                xs.append(float(pt["it"]))
+                ys.append(y)
+            if len(xs) < 2:
+                continue
+            any_line = True
+            col = cmap(norm(float(run["n_dfa_states"])))
+            ax.plot(xs, ys, color=col, lw=1.05, alpha=0.78, zorder=2)
+        if not any_line:
+            ax.text(0.5, 0.5, "no data", ha="center", va="center", transform=ax.transAxes)
+        ax.set_title(title, fontsize=7.2, pad=3.0)
+        ax.set_xlabel("iteration", fontsize=6.4)
+        if ci == 0:
+            ax.set_ylabel("value", fontsize=6.4)
+        else:
+            ax.tick_params(labelleft=False)
+        ax.tick_params(labelsize=6.0)
+        ax.grid(True, alpha=0.22)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cax = fig.add_axes([0.92, 0.18, 0.015, 0.62])
+    cbar = fig.colorbar(sm, cax=cax)
+    cbar.set_label("DFA states", fontsize=7.5)
+    cbar.ax.tick_params(labelsize=6.5)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"Weight graph metrics over learning ({payload.get('n_runs', len(runs))} runs, "
+            f"≤{payload.get('max_snaps', max_snaps)} snaps/run)"
+        ),
+        suptitle_fontsize=10,
+        top=0.94,
+        bottom=0.07,
+        left=0.07,
+        right=0.90,
+        hspace=0.52,
+        wspace=0.38,
+    )
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
 def refresh_mixed_dfa_ei_motifs(
     *,
     seed: int = 1,

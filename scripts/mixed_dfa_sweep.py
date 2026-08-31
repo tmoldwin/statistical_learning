@@ -250,8 +250,9 @@ def main() -> None:
             "plan", "train", "plot", "all",
             "learning-decode", "learning-decode-bins", "trajectory-grid", "within-corr",
             "train-h-ablation", "plot-h-ablation", "hard-dfa-geometry",
-            "linear-vs-nonlinear", "weight-layeredness", "weight-spikiness",
+            "linear-vs-nonlinear",             "weight-layeredness", "weight-spikiness",
             "spectra-by-letters", "activation-grid", "motif-folds",
+            "weight-metrics-over-learning",
         ),
     )
     parser.add_argument("--seeds", type=int, nargs="+", default=None)
@@ -345,6 +346,18 @@ def main() -> None:
             recompute=False,
         )
         print(f"wrote {out_paper}", flush=True)
+    elif args.command == "weight-metrics-over-learning":
+        from viz.compare.mixed_dfa_viz import plot_weight_metrics_over_learning
+
+        seed = args.seeds[0] if args.seeds else 1
+        run_ids = tuple(args.runs) if args.runs else None
+        out = plot_weight_metrics_over_learning(
+            seed=seed,
+            recompute=not args.replot_only,
+            max_snaps=10,
+            run_ids=run_ids,
+        )
+        print(f"wrote {out}", flush=True)
     elif args.command == "motif-folds":
         import subprocess
         import sys

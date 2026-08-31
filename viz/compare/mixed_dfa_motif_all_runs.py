@@ -2831,10 +2831,11 @@ def _draw_hh_before_after_row(
     *,
     run_id: int,
 ) -> None:
-    """Four heatmaps: raw W_hh and mean-|W| trinary (+/−/0), start vs end.
+    """Four heatmaps plus overlapping before/after W_hh density.
 
-    Unit order is hierarchical clustering of the *final* weights, applied to
-    both snapshots so before/after panels are comparable.
+    Each snapshot is hierarchically clustered on its own W_xh / W_hh (same
+    unit permutation on rows and columns). Before and after use independent
+    orders.
     """
     from matplotlib.colors import BoundaryNorm, ListedColormap
     from viz.weight_structure import (
@@ -2845,7 +2846,7 @@ def _draw_hh_before_after_row(
         symmetric_abs_vmax,
     )
 
-    # Three groups: (W0+cbar) | (W1+cbar) | (T0, T1, cbarT)
+    # Four groups: (W0+cbar) | (W1+cbar) | (T0, T1, cbarT) | density overlay
     gs_w0 = gs[0, 0].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
     gs_w1 = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
     gs_t = gs[0, 2].subgridspec(1, 3, width_ratios=[1.0, 1.0, 0.08], wspace=0.10)
@@ -2856,11 +2857,12 @@ def _draw_hh_before_after_row(
     ax_t0 = fig.add_subplot(gs_t[0, 0])
     ax_t1 = fig.add_subplot(gs_t[0, 1])
     cax_t = fig.add_subplot(gs_t[0, 2])
+    ax_h = fig.add_subplot(gs[0, 3])
     axes_w = (ax_w0, ax_w1)
     axes_t = (ax_t0, ax_t1)
 
     if payload is None:
-        for ax in (*axes_w, *axes_t):
+        for ax in (*axes_w, *axes_t, ax_h):
             ax.axis("off")
         ax_w0.text(
             0.5, 0.5, "no learning snaps", ha="center", va="center",
@@ -2872,13 +2874,16 @@ def _draw_hh_before_after_row(
 
     w0 = np.asarray(payload["W0"], dtype=float)
     w1 = np.asarray(payload["W1"], dtype=float)
+    xin0 = payload.get("Xin0")
     xin1 = payload.get("Xin1")
-    if xin1 is not None:
-        order = _cluster_unit_order(np.asarray(xin1, dtype=float), w1)
-    else:
-        order = _cluster_unit_order(w1, w1)
-    w0c = w0[np.ix_(order, order)]
-    w1c = w1[np.ix_(order, order)]
+    order0 = _cluster_unit_order(
+        np.asarray(xin0, dtype=float) if xin0 is not None else w0, w0,
+    )
+    order1 = _cluster_unit_order(
+        np.asarray(xin1, dtype=float) if xin1 is not None else w1, w1,
+    )
+    w0c = w0[np.ix_(order0, order0)]
+    w1c = w1[np.ix_(order1, order1)]
     s0, thr0 = _signed_threshold_adj(w0c, mode="mean")
     s1, thr1 = _signed_threshold_adj(w1c, mode="mean")
     n = w0c.shape[0]
@@ -2945,6 +2950,50 @@ def _draw_hh_before_after_row(
     cbar_t.ax.set_yticklabels(["-", "0", "+"])
     cbar_t.ax.tick_params(labelsize=6.0, pad=1)
     cbar_t.set_label("sign", fontsize=6.5, labelpad=1)
+
+    eye = np.eye(n, dtype=bool)
+    flat0 = w0c[~eye]
+    flat1 = w1c[~eye]
+    both = np.concatenate([flat0, flat1])
+    finite = both[np.isfinite(both)]
+    if finite.size == 0:
+        ax_h.text(0.5, 0.5, "no weights", ha="center", va="center",
+                  transform=ax_h.transAxes, fontsize=8)
+        ax_h.axis("off")
+        return
+    w_lo = float(np.percentile(finite, 0.5))
+    w_hi = float(np.percentile(finite, 99.5))
+    if not np.isfinite(w_lo) or not np.isfinite(w_hi) or w_lo == w_hi:
+        w_lo, w_hi = -1.0, 1.0
+    bins = np.linspace(w_lo, w_hi, 73)
+    centers = 0.5 * (bins[:-1] + bins[1:])
+    dens0, _ = np.histogram(flat0, bins=bins, density=True)
+    dens1, _ = np.histogram(flat1, bins=bins, density=True)
+    ax_h.plot(centers, dens0, color="0.35", lw=1.35, label="before", zorder=3)
+    ax_h.fill_between(centers, dens0, color="0.72", alpha=0.40, zorder=1)
+    ax_h.plot(centers, dens1, color="#2166ac", lw=1.50, label="after", zorder=4)
+    ax_h.axvline(0.0, color="0.55", lw=0.6, ls=":", zorder=2)
+    y_max = max(float(np.nanmax(dens0)), float(np.nanmax(dens1)), 1e-9)
+    ax_h.set_xlim(w_lo, w_hi)
+    ax_h.set_ylim(0.0, y_max * 1.12)
+    ax_h.set_title(r"$W_{hh}$ density", fontsize=7.2, pad=3.0)
+    ax_h.set_xlabel(r"$w$", fontsize=6.5)
+    ax_h.set_ylabel("density", fontsize=6.5)
+    ax_h.tick_params(labelsize=5.5)
+    ax_h.grid(True, alpha=0.22)
+    ax_h.spines["top"].set_visible(False)
+    ax_h.spines["right"].set_visible(False)
+    ax_h.legend(
+        fontsize=5.8, loc="upper left", frameon=True, fancybox=False,
+        edgecolor="0.8", borderpad=0.25, handlelength=1.4,
+    )
+    sd0, sd1 = float(np.std(flat0)), float(np.std(flat1))
+    ax_h.text(
+        0.97, 0.97, rf"$\sigma$: {sd0:.3g}$\rightarrow${sd1:.3g}",
+        transform=ax_h.transAxes, ha="right", va="top", fontsize=5.6, color="0.25",
+        bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.6),
+        zorder=5,
+    )
 
 
 def plot_all_runs_homogenization_board(
@@ -3061,10 +3110,10 @@ def plot_all_runs_homogenization_board(
     n_meta = 3
     hh_pair = _load_run_hh_before_after(exempl_id, model=model, seed=seed)
 
-    fig = plt.figure(figsize=(max(13.6, 2.55 * max(n_tier, n_meta) + 0.8), 12.6))
+    fig = plt.figure(figsize=(max(15.2, 2.55 * max(n_tier, n_meta) + 2.2), 12.6))
     outer = fig.add_gridspec(4, 1, height_ratios=[1.22, 0.82, 1.05, 1.05], hspace=0.48)
     mat_row = outer[0].subgridspec(
-        1, 3, width_ratios=[1.12, 1.12, 2.20], wspace=0.22,
+        1, 4, width_ratios=[1.05, 1.05, 2.00, 1.22], wspace=0.22,
     )
     demo_row = outer[1].subgridspec(1, max(n_demo, 1), wspace=0.32)
     tier_row = outer[2].subgridspec(1, n_tier, wspace=0.30)

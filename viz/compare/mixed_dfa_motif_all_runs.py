@@ -89,6 +89,55 @@ def _subsample_snaps(snaps: list[Path], max_snaps: int) -> list[Path]:
     return [snaps[int(i)] for i in idx]
 
 
+def collect_task_edge_signed_census(
+    *,
+    task: str,
+    model: str,
+    seed: int,
+    max_snaps: int,
+    colored_json: Path,
+    edges_json: Path,
+) -> tuple[Path, Path]:
+    """Edge-sign HL motif census over learning snaps for one task checkpoint."""
+    from experiment import checkpoint_path
+    from rnn.learning_snaps import list_learning_snaps
+
+    ckpt = checkpoint_path(task, model, seed=seed)
+    if not ckpt.is_file():
+        raise FileNotFoundError(ckpt)
+    snaps = [
+        p for p in _dominant_session(list_learning_snaps(ckpt))
+        if _snap_iteration(p) > 0
+    ]
+    if len(snaps) < 2:
+        raise RuntimeError(f"{task}: need >=2 post-init learning snaps")
+    snaps = _subsample_snaps(snaps, max_snaps)
+
+    colored_rows: list[dict] = []
+    edge_rows: list[dict] = []
+    for snap in snaps:
+        out = _snap_census(snap, coloring="edge_sign", dale_sign=None)
+        it = int(out["it"]) if int(out["it"]) >= 0 else _snap_iteration(snap)
+        we = float(out.get("we", float("nan")))
+        colored_rows.append({
+            "it": it,
+            "we": we,
+            "dyads_conn": float(out["dyads_conn"]),
+            "triples_conn": float(out["triples_conn"]),
+            "cnt": out["cnt"],
+        })
+        edge_rows.append({"it": it, "edges": float(out["edges"])})
+        n_t = sum(1 for k in out["cnt"] if k.startswith("T|"))
+        print(f"  snap it={it}  edges={int(out['edges'])}  T-classes={n_t}", flush=True)
+
+    colored_json.parent.mkdir(parents=True, exist_ok=True)
+    colored_json.write_text(json.dumps(colored_rows, indent=2), encoding="utf-8")
+    edges_json.write_text(json.dumps(edge_rows, indent=2), encoding="utf-8")
+    print(f"wrote {colored_json}")
+    print(f"wrote {edges_json}")
+    return colored_json, edges_json
+
+
 def collect_all_runs_motif_cache(
     cache_path: Path,
     *,
@@ -2452,12 +2501,52 @@ def plot_motif_factor_panel_analysis(
     return out_path
 
 
+def _draw_single_run_we_curve(ax, snaps: list[dict]) -> None:
+    xs = [int(s["it"]) for s in snaps]
+    ys = [100.0 * float(s.get("we", float("nan"))) for s in snaps]
+    ax.plot(xs, ys, color="0.25", lw=1.25)
+    ax.axhline(100.0 * TARGET_WE, color="0.55", ls="--", lw=0.8)
+    ax.set_xlabel("iteration", fontsize=7.0)
+    ax.set_ylabel("word error %", fontsize=7.0)
+    ax.set_title("word error", fontsize=7.4, pad=3.5)
+    ax.grid(True, alpha=0.25)
+    ax.tick_params(labelsize=6.0)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+
+def _draw_single_run_fold_hist(ax, log_fold: np.ndarray, n_edges: np.ndarray) -> None:
+    if len(log_fold) == 0:
+        ax.axis("off")
+        return
+    folds = np.exp(np.asarray(log_fold, float))
+    for ne in sorted(set(int(v) for v in n_edges)):
+        vals = folds[np.asarray(n_edges) == ne]
+        if len(vals) == 0:
+            continue
+        ax.hist(
+            vals, bins=18, range=(0.0, max(2.5, float(np.percentile(folds, 98)))),
+            histtype="step", color=_EDGE_COUNT_COLORS.get(ne, "#888888"),
+            lw=1.15, label=f"{ne}e",
+        )
+    ax.axvline(1.0, color="0.45", ls="--", lw=0.8)
+    ax.set_xlabel("end / start fold", fontsize=7.0)
+    ax.set_ylabel("motifs", fontsize=7.0)
+    ax.set_title("fold histogram by #edges", fontsize=7.4, pad=3.5)
+    ax.legend(fontsize=5.5, frameon=False, loc="upper right")
+    ax.grid(True, alpha=0.25)
+    ax.tick_params(labelsize=6.0)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+
 def plot_single_run_motif_board(
     json_path: Path,
-    cache_path: Path,
+    cache_path: Path | None,
     out_path: Path,
     *,
-    run_id: int,
+    run_id: int | None = None,
+    run_label: str | None = None,
     min_start: int,
     motif_prefix: str = "T|",
     n_demos: int = 4,
@@ -2473,7 +2562,8 @@ def plot_single_run_motif_board(
 
     if not json_path.is_file():
         raise FileNotFoundError(json_path)
-    if not cache_path.is_file():
+    standalone = cache_path is None or not cache_path.is_file()
+    if not standalone and cache_path is not None and not cache_path.is_file():
         raise FileNotFoundError(
             f"missing {cache_path}; run motif-folds or all-runs-over-learning first"
         )
@@ -2483,6 +2573,7 @@ def plot_single_run_motif_board(
     it0, it1 = int(snaps[0]["it"]), int(snaps[-1]["it"])
     kind = "dyad" if motif_prefix.startswith("D") else "triad"
     min_fit = 3 if kind == "dyad" else 8
+    tag = run_label or (f"r{run_id:02d}" if run_id is not None else "run")
 
     demos = _pick_single_run_demos(
         snaps, motif_prefix=motif_prefix, min_start=min_start, n_demos=n_demos,
@@ -2503,17 +2594,23 @@ def plot_single_run_motif_board(
     sr_log_c0, sr_log_fold, sr_n_edges = _fold_arrays_from_snaps(
         snaps, motif_prefix=motif_prefix, min_start=min_start,
     )
-    mr_log_c0, mr_log_fold, mr_n_edges, per_run, payload = _load_all_runs_fold_context(
-        cache_path, motif_prefix=motif_prefix,
-    )
-    if n_dfa_states is None:
-        try:
-            n_dfa_states = lookup_run_dfa(cache_path, run_id)
-        except KeyError:
-            n_dfa_states = None
-    target_we = float(payload.get("target_we", TARGET_WE))
-    n_solved = int(payload.get("n_solved", 0))
-    n_runs = int(payload.get("n_runs", len(per_run)))
+    mr_log_c0 = mr_log_fold = mr_n_edges = None
+    per_run: list[dict] = []
+    target_we = TARGET_WE
+    n_solved = 0
+    n_runs = 0
+    if not standalone and cache_path is not None:
+        mr_log_c0, mr_log_fold, mr_n_edges, per_run, payload = _load_all_runs_fold_context(
+            cache_path, motif_prefix=motif_prefix,
+        )
+        if n_dfa_states is None and run_id is not None:
+            try:
+                n_dfa_states = lookup_run_dfa(cache_path, run_id)
+            except KeyError:
+                n_dfa_states = None
+        target_we = float(payload.get("target_we", TARGET_WE))
+        n_solved = int(payload.get("n_solved", 0))
+        n_runs = int(payload.get("n_runs", len(per_run)))
 
     panel_w, panel_h = 2.75, 2.55
     fig = plt.figure(figsize=(n_cols * panel_w + 0.45, 3 * panel_h + 0.85))
@@ -2576,45 +2673,52 @@ def plot_single_run_motif_board(
     ax_sr = fig.add_subplot(gs[2, 0])
     sr_beta, sr_r2, sr_tiers = _draw_tier_fold_scatter(
         ax_sr, sr_log_c0, sr_log_fold, sr_n_edges, min_fit=min_fit,
-        title=f"r{run_id:02d}: log fold vs log start",
+        title=f"{tag}: log fold vs log start",
         jitter_y=True, subsample=None,
     )
     ax_sr.set_title(
-        rf"r{run_id:02d}: log fold vs log start ($\beta={sr_beta:+.2f}$, $R^2={sr_r2:.2f}$)",
+        rf"{tag}: log fold vs log start ($\beta={sr_beta:+.2f}$, $R^2={sr_r2:.2f}$)",
         fontsize=7.4, pad=3.5,
     )
 
     ax_bb = fig.add_subplot(gs[2, 1])
-    _draw_tier_beta_bars(ax_bb, sr_tiers, title=rf"r{run_id:02d}: $\beta$ by #edges")
+    _draw_tier_beta_bars(ax_bb, sr_tiers, title=rf"{tag}: $\beta$ by #edges")
 
     ax_mr = fig.add_subplot(gs[2, 2])
-    mr_beta, mr_r2, _mr_tiers = _draw_tier_fold_scatter(
-        ax_mr, mr_log_c0, mr_log_fold, mr_n_edges, min_fit=min_fit,
-        title="all runs pooled",
-        jitter_y=True, subsample=3500,
-    )
-    ax_mr.set_title(
-        rf"all runs pooled ($\beta={mr_beta:+.2f}$, $R^2={mr_r2:.2f}$, n={len(mr_log_c0)})",
-        fontsize=7.4, pad=3.5,
-    )
-
     ax_dfa = fig.add_subplot(gs[2, 3])
-    dfa_vals = [float(r["n_dfa_states"]) for r in per_run if np.isfinite(r.get("beta", float("nan")))]
-    dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals)) if dfa_vals else plt.Normalize(0, 1)
-    _plot_beta_vs_dfa(
-        per_run, ax=ax_dfa, dfa_cmap=plt.get_cmap("viridis"),
-        dfa_norm=dfa_norm, target_we=target_we, highlight_run_id=run_id,
-    )
-    ax_dfa.set_title(
-        f"per-run slope vs DFA (n={n_runs}, {n_solved} solved)",
-        fontsize=7.4, pad=3.5,
-    )
+    mr_beta = mr_r2 = float("nan")
+    if standalone:
+        _draw_single_run_we_curve(ax_mr, snaps)
+        _draw_single_run_fold_hist(ax_dfa, sr_log_fold, sr_n_edges)
+    else:
+        mr_beta, mr_r2, _mr_tiers = _draw_tier_fold_scatter(
+            ax_mr, mr_log_c0, mr_log_fold, mr_n_edges, min_fit=min_fit,
+            title="all runs pooled",
+            jitter_y=True, subsample=3500,
+        )
+        ax_mr.set_title(
+            rf"all runs pooled ($\beta={mr_beta:+.2f}$, $R^2={mr_r2:.2f}$, n={len(mr_log_c0)})",
+            fontsize=7.4, pad=3.5,
+        )
+        dfa_vals = [
+            float(r["n_dfa_states"]) for r in per_run
+            if np.isfinite(r.get("beta", float("nan")))
+        ]
+        dfa_norm = plt.Normalize(vmin=min(dfa_vals), vmax=max(dfa_vals)) if dfa_vals else plt.Normalize(0, 1)
+        _plot_beta_vs_dfa(
+            per_run, ax=ax_dfa, dfa_cmap=plt.get_cmap("viridis"),
+            dfa_norm=dfa_norm, target_we=target_we, highlight_run_id=run_id,
+        )
+        ax_dfa.set_title(
+            f"per-run slope vs DFA (n={n_runs}, {n_solved} solved)",
+            fontsize=7.4, pad=3.5,
+        )
 
     dfa_tag = f"{n_dfa_states} DFA states; " if n_dfa_states is not None else ""
     finalize_grid_figure(
         fig,
         suptitle=(
-            f"r{run_id:02d} rnn edge-sign {kind} motifs  "
+            f"{tag} rnn edge-sign {kind} motifs  "
             f"({dfa_tag}start>={min_start}; blue/red edges = excitatory/inhibitory)"
         ),
         suptitle_fontsize=10,
@@ -2635,8 +2739,9 @@ def plot_single_run_motif_board(
 
     save_figure(fig, out_path, dpi=150)
     print(f"wrote {out_path}")
-    print(f"  r{run_id:02d} pooled beta={sr_beta:+.3f}  R2={sr_r2:.3f}  n={len(sr_log_c0)}")
-    print(f"  all-runs pooled beta={mr_beta:+.3f}  R2={mr_r2:.3f}  n={len(mr_log_c0)}")
+    print(f"  {tag} pooled beta={sr_beta:+.3f}  R2={sr_r2:.3f}  n={len(sr_log_c0)}")
+    if not standalone:
+        print(f"  all-runs pooled beta={mr_beta:+.3f}  R2={mr_r2:.3f}  n={len(mr_log_c0)}")
     for demo in demos:
         fold = float(demo["counts"][-1] / max(demo["counts"][0], EPS))
         print(f"  demo {demo['label']}  {demo['key']}  x{fold:.2f}  score={demo['score']:.3f}")

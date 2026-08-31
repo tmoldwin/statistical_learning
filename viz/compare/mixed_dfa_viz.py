@@ -61,7 +61,12 @@ from viz.compare.geometry import _GEOMETRY_TRIALS, _ROLLOUT_SEED, _mean_closed_l
 from viz.compare.pow2_sweep_heatmap import _training_panel_from_checkpoint
 from viz.compare.state_space_metrics import pc_variance_percent
 from viz.compare.sweep_output import sweep_data_dir, sweep_decoding_dir, sweep_figures_dir
-from viz.plot_layout import finalize_grid_figure, hide_x_tick_labels, save_figure
+from viz.plot_layout import (
+    finalize_grid_figure,
+    hide_x_tick_labels,
+    save_figure,
+    set_ylabel_multiline,
+)
 from visualize import (
     _closed_loop_summary_seed,
     _one_vocab_cycle_steps,
@@ -1060,11 +1065,12 @@ def plot_mixed_dfa_scaling_overview(
     n_rows = 2 if n_heat else 1
     row_gap = 0.48 if n_heat else 0.0
     fig_h = 1.95 * n_rows + 0.38 + row_gap
-    fig = plt.figure(figsize=(2.45 * n_cols + 0.30, fig_h))
+    fig = plt.figure(figsize=(2.85 * n_cols + 1.05, fig_h))
     gs = fig.add_gridspec(
         n_rows, n_cols,
         height_ratios=([1.12, 1.0] if n_heat else [1.0]),
         hspace=0.42 if n_heat else 0.08,
+        wspace=0.58,
     )
 
     # --- optional activation heatmaps (bottom row) ---
@@ -1136,7 +1142,7 @@ def plot_mixed_dfa_scaling_overview(
             lw=1.0, alpha=0.75,
         )
     ax_sp.set_xlabel("PC index", fontsize=8)
-    ax_sp.set_ylabel("% variance", fontsize=8)
+    set_ylabel_multiline(ax_sp, "% variance", fontsize=7, labelpad=4)
     ax_sp.set_title("closed-loop PC spectra", fontsize=9, pad=3)
     ax_sp.set_xlim(1, max_pcs)
     ax_sp.grid(True, alpha=0.25)
@@ -1173,7 +1179,7 @@ def plot_mixed_dfa_scaling_overview(
                 )
         ax_it.set_xlabel("DFA states", fontsize=8)
         if use_log:
-            ax_it.set_ylabel("log10 iters", fontsize=8)
+            set_ylabel_multiline(ax_it, "log10 iters", fontsize=7, labelpad=4)
         ax_it.grid(True, alpha=0.25)
         ax_it.tick_params(labelsize=7)
     else:
@@ -1193,13 +1199,13 @@ def plot_mixed_dfa_scaling_overview(
         ax_we.plot(curves["we_iters"], curves["word_err"], color=color, lw=1.0, alpha=0.75)
         n_curves += 1
     ax_ce.set_xlabel("iteration", fontsize=8)
-    ax_ce.set_ylabel("val CE / char", fontsize=8)
+    set_ylabel_multiline(ax_ce, "val CE / char", fontsize=7, labelpad=4)
     ax_ce.set_title("cross-entropy learning", fontsize=9, pad=3)
     ax_ce.grid(True, alpha=0.25)
     ax_ce.tick_params(labelsize=7)
     ax_we.axhline(0.03, color="0.45", ls="--", lw=0.9, zorder=1)
     ax_we.set_xlabel("iteration", fontsize=8)
-    ax_we.set_ylabel("word error frac", fontsize=8)
+    set_ylabel_multiline(ax_we, "word error", fontsize=7, labelpad=4)
     ax_we.set_title("word-error learning", fontsize=9, pad=3)
     ax_we.set_ylim(0.0, 1.05)
     ax_we.grid(True, alpha=0.25)
@@ -1215,18 +1221,25 @@ def plot_mixed_dfa_scaling_overview(
             if n_heat else "Mixed-vocab scaling with DFA size"
         ),
         bottom=0.10,
-        left=0.05,
-        right=0.995,
+        left=0.09,
+        right=0.93,
         top=0.90,
-        wspace=0.20,
+        wspace=0.58,
         hspace=0.36 if n_heat else 0.18,
     )
 
-    # One DFA colorbar, CE panel upper-right (curves have dropped there).
+    # Stub colorbar right of the spectra panel — never inside a data axes.
     if n_curves and decode_panels:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-        cax = ax_ce.inset_axes([0.80, 0.50, 0.045, 0.42])
+        pos = ax_sp.get_position()
+        cbar_h = pos.height * 0.62
+        cax = fig.add_axes([
+            min(pos.x1 + 0.010, 0.955),
+            pos.y0 + (pos.height - cbar_h) * 0.5,
+            0.012,
+            cbar_h,
+        ])
         cbar = fig.colorbar(sm, cax=cax)
         cbar.set_label("DFA", fontsize=6.5)
         cbar.ax.tick_params(labelsize=5.5)
@@ -1567,6 +1580,11 @@ _PAPER_MOTIF_SCHEMA_KEYS: frozenset[str] = frozenset({
     "motif_feedforward_rate",
     "motif_cycle_rate",
 })
+
+def _weight_metric_ylabel(title: str) -> str:
+    """Single-line ylabel (rotated text gets *wider* if wrapped)."""
+    return title
+
 
 _WEIGHT_METRIC_SECTIONS: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...] = (
     (
@@ -1993,8 +2011,8 @@ def _draw_lettered_weight_metric_grid(
         rows.append(cur)
 
     n_rows = len(rows)
-    fig = plt.figure(figsize=(2.45 * n_wrap + 1.05, 2.05 * n_rows + 0.95))
-    outer = fig.add_gridspec(n_rows, n_wrap, hspace=0.52, wspace=0.32)
+    fig = plt.figure(figsize=(2.90 * n_wrap + 1.35, 2.15 * n_rows + 1.05))
+    outer = fig.add_gridspec(n_rows, n_wrap, hspace=0.58, wspace=0.62)
     scatter_axes: list[Any] = []
     anchor_axes: dict[tuple[int, int], Any] = {}
     schema_insets: list[tuple[Any, str]] = []
@@ -2046,6 +2064,9 @@ def _draw_lettered_weight_metric_grid(
                 schema_insets.append((inset, key))
 
             ax.set_title(title, fontsize=7.4, pad=3.5)
+            set_ylabel_multiline(
+                ax, _weight_metric_ylabel(title), fontsize=6.5, labelpad=4.0,
+            )
             if ri == n_rows - 1:
                 ax.set_xlabel("DFA states", fontsize=7.0)
             ax.grid(True, alpha=0.25)
@@ -2058,12 +2079,12 @@ def _draw_lettered_weight_metric_grid(
     finalize_grid_figure(
         fig,
         suptitle=f"Weight structure + motifs vs DFA ({subtitle})",
-        top=0.885,
+        top=0.875,
         bottom=0.075,
-        left=0.045,
-        right=0.905,
-        wspace=0.32,
-        hspace=0.52,
+        left=0.09,
+        right=0.90,
+        wspace=0.62,
+        hspace=0.58,
     )
     # Glyphs need final axes geometry to pick an aspect-correct drawing box.
     from viz.weight_structure import motif_schema_box
@@ -2202,7 +2223,7 @@ def _draw_sectioned_weight_metric_grid(
             continue
         metrics, _has_schema = payload
         n_here = len(metrics)
-        inner = gs[gs_i, 0].subgridspec(1, n_here, wspace=0.30)
+        inner = gs[gs_i, 0].subgridspec(1, n_here, wspace=0.42)
         for c, (bag, key, title) in enumerate(metrics):
             cell = inner[0, c]
             if key in _MOTIF_SCHEMA_KEYS:
@@ -2228,6 +2249,9 @@ def _draw_sectioned_weight_metric_grid(
                     ax.set_title(title, fontsize=7, pad=2)
             else:
                 ax.set_title(title, fontsize=7, pad=2)
+            set_ylabel_multiline(
+                ax, _weight_metric_ylabel(title), fontsize=6.0, labelpad=2.0,
+            )
             ax.set_xlabel("DFA states", fontsize=6.5)
             ax.grid(True, alpha=0.25)
             ax.tick_params(labelsize=5.5)
@@ -2240,9 +2264,9 @@ def _draw_sectioned_weight_metric_grid(
         suptitle=f"$|W_{{hh}}|$ structure + motifs vs DFA ({subtitle})",
         top=0.955,
         bottom=0.055,
-        left=0.07,
+        left=0.10,
         right=0.88,
-        wspace=0.30,
+        wspace=0.42,
         hspace=0.50,
     )
     from viz.weight_structure import motif_schema_box

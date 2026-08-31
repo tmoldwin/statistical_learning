@@ -102,61 +102,15 @@ def collect_single_run_edge_signed_census(
     edges_json: Path = R43_RNN_EDGES_JSON,
 ) -> tuple[Path, Path]:
     """Build edge-sign HL motif census over learning for one unconstrained run."""
-    from experiment import checkpoint_path
-    from rnn.learning_snaps import list_learning_snaps
-    from viz.compare.mixed_dfa_motif_all_runs import (
-        _dominant_session,
-        _snap_iteration,
-        _subsample_snaps,
-    )
-    from viz.weight_structure import compute_weight_edge_signed_hl_motif_counts
-
     task = f"mixeddfa_r{run_id:02d}_ns"
-    ckpt = checkpoint_path(task, model, seed=seed)
-    if not ckpt.is_file():
-        raise FileNotFoundError(ckpt)
-    snaps = [
-        p for p in _dominant_session(list_learning_snaps(ckpt))
-        if _snap_iteration(p) > 0
-    ]
-    if len(snaps) < 2:
-        raise RuntimeError(f"r{run_id:02d}: need >=2 post-init learning snaps")
-    snaps = _subsample_snaps(snaps, max_snaps)
-
-    colored_rows: list[dict] = []
-    edge_rows: list[dict] = []
-    for snap in snaps:
-        d = np.load(snap, allow_pickle=True)
-        out = compute_weight_edge_signed_hl_motif_counts(
-            d["weights_hidden_to_hidden"], mode="mean",
-        )
-        it = (
-            int(d["learning_snap_iteration"])
-            if "learning_snap_iteration" in d.files
-            else _snap_iteration(snap)
-        )
-        we = (
-            float(d["learning_snap_word_err"])
-            if "learning_snap_word_err" in d.files
-            else float("nan")
-        )
-        colored_rows.append({
-            "it": it,
-            "we": we,
-            "dyads_conn": float(out["dyads_conn"]),
-            "triples_conn": float(out["triples_conn"]),
-            "cnt": out["cnt"],
-        })
-        edge_rows.append({"it": it, "edges": float(out["edges"])})
-        n_t = sum(1 for k in out["cnt"] if k.startswith("T|"))
-        print(f"  snap it={it}  edges={int(out['edges'])}  T-classes={n_t}", flush=True)
-
-    colored_json.parent.mkdir(parents=True, exist_ok=True)
-    colored_json.write_text(json.dumps(colored_rows, indent=2), encoding="utf-8")
-    edges_json.write_text(json.dumps(edge_rows, indent=2), encoding="utf-8")
-    print(f"wrote {colored_json}")
-    print(f"wrote {edges_json}")
-    return colored_json, edges_json
+    return mar.collect_task_edge_signed_census(
+        task=task,
+        model=model,
+        seed=seed,
+        max_snaps=max_snaps,
+        colored_json=colored_json,
+        edges_json=edges_json,
+    )
 
 
 def plot_raw_counts_over_learning(

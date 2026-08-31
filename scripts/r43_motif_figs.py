@@ -703,7 +703,7 @@ def plot_lollipop_before_after(
     title: str | None = None,
     motif_prefix: str = "T|",
 ) -> Path:
-    """Per-motif start / end / Δ lollipops, ordered by #edges then end−start."""
+    """Per-motif start / end / Δ lollipops, ordered by #edges then start count."""
     snaps = json.loads(json_path.read_text(encoding="utf-8"))
     c0 = snaps[0]["cnt"]
     c1 = snaps[-1]["cnt"]
@@ -719,7 +719,7 @@ def plot_lollipop_before_after(
         end = float(c1.get(key, 0.0))
         ne = int(mar._n_edges_from_key(key))
         rows.append((ne, start, end, end - start, key))
-    rows.sort(key=lambda r: (r[0], -r[3], -r[1], r[4]))
+    rows.sort(key=lambda r: (r[0], -r[1], -r[3], r[4]))
 
     tiers = sorted({r[0] for r in rows})
     by_ne: dict[int, list[tuple[int, float, float, float, str]]] = {ne: [] for ne in tiers}
@@ -810,7 +810,7 @@ def plot_lollipop_before_after(
         suptitle=title or (
             f"r{SINGLE_RUN_ID:02d} rnn (edge-sign): {kind} lollipops  "
             f"iter {it0}→{it1}, start>={min_start}, n={len(rows)}  "
-            f"(order: #edges, end−start)"
+            f"(order: #edges, start count)"
         ),
         top=0.94 if is_dyad else 0.965,
         bottom=0.08 if is_dyad else 0.035,

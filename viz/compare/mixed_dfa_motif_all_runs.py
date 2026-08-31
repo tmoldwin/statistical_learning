@@ -988,6 +988,89 @@ def _draw_tier_kde_before_after(
     ax.legend(fontsize=5.5, frameon=True, fancybox=False, edgecolor="0.8", loc="upper left")
 
 
+def _draw_tier_count_kde_overlay(
+    ax,
+    rows: list[dict],
+    *,
+    n_edges: int,
+    show_legend: bool = False,
+    ylabel: bool = False,
+) -> None:
+    """Overlapping KDE of log motif-class counts: before vs after, one #edges tier."""
+    from scipy.stats import gaussian_kde
+
+    v0 = np.array(
+        [float(r["log_c0"]) for r in rows if _n_edges_from_key(r["key"]) == n_edges],
+        dtype=float,
+    )
+    v1 = np.array(
+        [
+            float(r["log_c0"]) + float(r["log_fold"])
+            for r in rows if _n_edges_from_key(r["key"]) == n_edges
+        ],
+        dtype=float,
+    )
+    v0 = v0[np.isfinite(v0)]
+    v1 = v1[np.isfinite(v1)]
+    col = _EDGE_COUNT_COLORS.get(n_edges, "#888888")
+    ax.set_title(f"{n_edges}-edge count KDE", fontsize=7.2, pad=3.5, color=col)
+
+    if len(v0) < 2 and len(v1) < 2:
+        ax.text(
+            0.5, 0.5, "insufficient\nmotif classes", ha="center", va="center",
+            transform=ax.transAxes, fontsize=7,
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        return
+
+    parts = [v for v in (v0, v1) if len(v)]
+    x_lo = float(min(v.min() for v in parts)) - 0.15
+    x_hi = float(max(v.max() for v in parts)) + 0.15
+    xs = np.linspace(x_lo, x_hi, 220)
+    y_max = 0.0
+
+    def _kde_line(
+        vals: np.ndarray, *, color: str, fill: bool, ls: str, lw: float, label: str, z: int,
+    ):
+        nonlocal y_max
+        if len(vals) < 2 or float(np.std(vals)) < 1e-9:
+            return
+        kde = gaussian_kde(vals, bw_method=lambda k: max(float(k.scotts_factor()), 0.06))
+        ys = np.asarray(kde(xs), dtype=float)
+        y_max = max(y_max, float(np.nanmax(ys)))
+        if fill:
+            ax.fill_between(xs, ys, color=color, alpha=0.18, zorder=z - 1)
+        ax.plot(xs, ys, color=color, lw=lw, ls=ls, label=label, zorder=z)
+
+    _kde_line(v0, color=col, fill=True, ls="-", lw=1.45, label="before", z=3)
+    _kde_line(v1, color=col, fill=False, ls="--", lw=1.65, label="after", z=4)
+    ax.set_xlim(x_lo, x_hi)
+    ax.set_ylim(0.0, y_max * 1.18 if y_max > 0 else 1.0)
+    ax.set_xlabel("log count", fontsize=7.0)
+    if ylabel:
+        ax.set_ylabel("density", fontsize=7.0)
+    else:
+        ax.tick_params(labelleft=False)
+    ax.tick_params(labelsize=6.0)
+    ax.grid(True, alpha=0.25)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if len(v0) >= 2 and len(v1) >= 2:
+        ax.text(
+            0.97, 0.97,
+            rf"med {float(np.median(v0)):.2f}$\rightarrow${float(np.median(v1)):.2f}",
+            transform=ax.transAxes, ha="right", va="top", fontsize=6.0, color="0.25",
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.6),
+            zorder=5,
+        )
+    if show_legend:
+        ax.legend(
+            fontsize=5.6, loc="upper left", frameon=True, fancybox=False,
+            edgecolor="0.8", borderpad=0.25, handlelength=1.6,
+        )
+
+
 def _draw_motif_distribution_hist(
     ax,
     cnt: dict,
@@ -2831,7 +2914,7 @@ def _draw_hh_before_after_row(
     *,
     run_id: int,
 ) -> None:
-    """Four heatmaps plus overlapping before/after W_hh density.
+    """Four heatmaps: raw W_hh and mean-|W| trinary (+/−/0), start vs end.
 
     Each snapshot is hierarchically clustered on its own W_xh / W_hh (same
     unit permutation on rows and columns). Before and after use independent
@@ -2846,7 +2929,7 @@ def _draw_hh_before_after_row(
         symmetric_abs_vmax,
     )
 
-    # Four groups: (W0+cbar) | (W1+cbar) | (T0, T1, cbarT) | density overlay
+    # Three groups: (W0+cbar) | (W1+cbar) | (T0, T1, cbarT)
     gs_w0 = gs[0, 0].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
     gs_w1 = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
     gs_t = gs[0, 2].subgridspec(1, 3, width_ratios=[1.0, 1.0, 0.08], wspace=0.10)
@@ -2857,12 +2940,11 @@ def _draw_hh_before_after_row(
     ax_t0 = fig.add_subplot(gs_t[0, 0])
     ax_t1 = fig.add_subplot(gs_t[0, 1])
     cax_t = fig.add_subplot(gs_t[0, 2])
-    ax_h = fig.add_subplot(gs[0, 3])
     axes_w = (ax_w0, ax_w1)
     axes_t = (ax_t0, ax_t1)
 
     if payload is None:
-        for ax in (*axes_w, *axes_t, ax_h):
+        for ax in (*axes_w, *axes_t):
             ax.axis("off")
         ax_w0.text(
             0.5, 0.5, "no learning snaps", ha="center", va="center",
@@ -2950,50 +3032,6 @@ def _draw_hh_before_after_row(
     cbar_t.ax.set_yticklabels(["-", "0", "+"])
     cbar_t.ax.tick_params(labelsize=6.0, pad=1)
     cbar_t.set_label("sign", fontsize=6.5, labelpad=1)
-
-    eye = np.eye(n, dtype=bool)
-    flat0 = w0c[~eye]
-    flat1 = w1c[~eye]
-    both = np.concatenate([flat0, flat1])
-    finite = both[np.isfinite(both)]
-    if finite.size == 0:
-        ax_h.text(0.5, 0.5, "no weights", ha="center", va="center",
-                  transform=ax_h.transAxes, fontsize=8)
-        ax_h.axis("off")
-        return
-    w_lo = float(np.percentile(finite, 0.5))
-    w_hi = float(np.percentile(finite, 99.5))
-    if not np.isfinite(w_lo) or not np.isfinite(w_hi) or w_lo == w_hi:
-        w_lo, w_hi = -1.0, 1.0
-    bins = np.linspace(w_lo, w_hi, 73)
-    centers = 0.5 * (bins[:-1] + bins[1:])
-    dens0, _ = np.histogram(flat0, bins=bins, density=True)
-    dens1, _ = np.histogram(flat1, bins=bins, density=True)
-    ax_h.plot(centers, dens0, color="0.35", lw=1.35, label="before", zorder=3)
-    ax_h.fill_between(centers, dens0, color="0.72", alpha=0.40, zorder=1)
-    ax_h.plot(centers, dens1, color="#2166ac", lw=1.50, label="after", zorder=4)
-    ax_h.axvline(0.0, color="0.55", lw=0.6, ls=":", zorder=2)
-    y_max = max(float(np.nanmax(dens0)), float(np.nanmax(dens1)), 1e-9)
-    ax_h.set_xlim(w_lo, w_hi)
-    ax_h.set_ylim(0.0, y_max * 1.12)
-    ax_h.set_title(r"$W_{hh}$ density", fontsize=7.2, pad=3.0)
-    ax_h.set_xlabel(r"$w$", fontsize=6.5)
-    ax_h.set_ylabel("density", fontsize=6.5)
-    ax_h.tick_params(labelsize=5.5)
-    ax_h.grid(True, alpha=0.22)
-    ax_h.spines["top"].set_visible(False)
-    ax_h.spines["right"].set_visible(False)
-    ax_h.legend(
-        fontsize=5.8, loc="upper left", frameon=True, fancybox=False,
-        edgecolor="0.8", borderpad=0.25, handlelength=1.4,
-    )
-    sd0, sd1 = float(np.std(flat0)), float(np.std(flat1))
-    ax_h.text(
-        0.97, 0.97, rf"$\sigma$: {sd0:.3g}$\rightarrow${sd1:.3g}",
-        transform=ax_h.transAxes, ha="right", va="top", fontsize=5.6, color="0.25",
-        bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.6),
-        zorder=5,
-    )
 
 
 def plot_all_runs_homogenization_board(
@@ -3110,14 +3148,17 @@ def plot_all_runs_homogenization_board(
     n_meta = 3
     hh_pair = _load_run_hh_before_after(exempl_id, model=model, seed=seed)
 
-    fig = plt.figure(figsize=(max(15.2, 2.55 * max(n_tier, n_meta) + 2.2), 12.6))
-    outer = fig.add_gridspec(4, 1, height_ratios=[1.22, 0.82, 1.05, 1.05], hspace=0.48)
+    fig = plt.figure(figsize=(max(13.6, 2.55 * max(n_tier, n_meta) + 0.8), 14.6))
+    outer = fig.add_gridspec(
+        5, 1, height_ratios=[1.18, 0.78, 0.90, 1.02, 1.00], hspace=0.50,
+    )
     mat_row = outer[0].subgridspec(
-        1, 4, width_ratios=[1.05, 1.05, 2.00, 1.22], wspace=0.22,
+        1, 3, width_ratios=[1.12, 1.12, 2.20], wspace=0.22,
     )
     demo_row = outer[1].subgridspec(1, max(n_demo, 1), wspace=0.32)
-    tier_row = outer[2].subgridspec(1, n_tier, wspace=0.30)
-    meta_row = outer[3].subgridspec(1, n_meta, wspace=0.30)
+    kde_row = outer[2].subgridspec(1, n_tier, wspace=0.30)
+    tier_row = outer[3].subgridspec(1, n_tier, wspace=0.30)
+    meta_row = outer[4].subgridspec(1, n_meta, wspace=0.30)
     schema_insets: list[tuple[Any, str, bool]] = []
     _draw_hh_before_after_row(fig, mat_row, hh_pair, run_id=exempl_id)
 
@@ -3162,6 +3203,12 @@ def plot_all_runs_homogenization_board(
         x_disp, y_disp = _jitter_display_coords(log_c0, log_fold, seed=0)
     else:
         x_disp = y_disp = np.array([])
+    for j, ne in enumerate(preferred_tiers):
+        ax_k = fig.add_subplot(kde_row[0, j])
+        _draw_tier_count_kde_overlay(
+            ax_k, exempl_rows, n_edges=ne,
+            show_legend=(j == 0), ylabel=(j == 0),
+        )
     for j, ne in enumerate(preferred_tiers):
         ax = fig.add_subplot(tier_row[0, j])
         mask = n_edges == ne
@@ -3242,7 +3289,7 @@ def plot_all_runs_homogenization_board(
         bottom=0.045,
         left=0.05,
         right=0.98,
-        hspace=0.48,
+        hspace=0.52,
         wspace=0.30,
     )
     for inset, key, _rising in schema_insets:

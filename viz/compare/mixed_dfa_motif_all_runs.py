@@ -2973,16 +2973,15 @@ def _attach_demo_trajectories(
 
 
 def _load_run_hh_before_after(
-    run_id: int,
     *,
+    task: str,
     model: str,
     seed: int,
 ) -> dict[str, Any] | None:
-    """First and last learning-snap W_hh for one mixed-DFA run (iter 0 = init)."""
+    """First and last learning-snap W_hh for one task (iter 0 = init)."""
     from experiment import checkpoint_path
     from rnn.learning_snaps import list_learning_snaps
 
-    task = f"mixeddfa_r{run_id:02d}_ns"
     ckpt = checkpoint_path(task, model, seed=seed)
     snaps = _dominant_session(list_learning_snaps(ckpt))
     if len(snaps) < 2:
@@ -3017,7 +3016,8 @@ def _draw_hh_before_after_row(
     gs,
     payload: dict[str, Any] | None,
     *,
-    run_id: int,
+    run_id: int | None = None,
+    run_label: str | None = None,
 ) -> None:
     """Four heatmaps: raw W_hh and mean-|W| trinary (+/−/0), start vs end.
 
@@ -3081,8 +3081,9 @@ def _draw_hh_before_after_row(
     cmap_t = ListedColormap([_SIGNED_NEG_COLOR, "#f2f2f2", _SIGNED_POS_COLOR])
     norm_t = BoundaryNorm([-1.5, -0.5, 0.5, 1.5], cmap_t.N)
 
+    tag = run_label or (f"r{run_id:02d}" if run_id is not None else "run")
     w_specs = (
-        (ax_w0, cax_w0, w0c, it0, f"r{run_id:02d}  $W_{{hh}}$ before"),
+        (ax_w0, cax_w0, w0c, it0, f"{tag}  $W_{{hh}}$ before"),
         (ax_w1, cax_w1, w1c, it1, r"$W_{hh}$ after"),
     )
     last_ticks = [0, max(n - 1, 0)]
@@ -3137,6 +3138,205 @@ def _draw_hh_before_after_row(
     cbar_t.ax.set_yticklabels(["-", "0", "+"])
     cbar_t.ax.tick_params(labelsize=6.0, pad=1)
     cbar_t.set_label("sign", fontsize=6.5, labelpad=1)
+
+
+def _fold_row_dicts_from_snaps(
+    snaps: list[dict],
+    *,
+    motif_prefix: str,
+    min_start: int,
+) -> list[dict]:
+    c0, c1 = snaps[0]["cnt"], snaps[-1]["cnt"]
+    rows: list[dict] = []
+    for key, v0_raw in c0.items():
+        if not str(key).startswith(motif_prefix):
+            continue
+        v0 = float(v0_raw)
+        if v0 < min_start:
+            continue
+        v1 = float(c1.get(key, 0.0))
+        rows.append({
+            "key": str(key),
+            "log_c0": float(np.log(v0 + EPS)),
+            "log_fold": float(np.log((v1 + EPS) / (v0 + EPS))),
+        })
+    return rows
+
+
+def plot_task_homogenization_board(
+    json_path: Path,
+    out_path: Path,
+    *,
+    task: str,
+    run_label: str,
+    n_dfa_states: int | None,
+    min_start: int,
+    motif_prefix: str = "T|",
+    model: str = "rnn",
+    seed: int = 1,
+    n_demos: int = 4,
+) -> Path:
+    """Single-task copy of the mixed-DFA homogenization board (mats, demos, KDEs, tier fits)."""
+    from viz.weight_structure import (
+        draw_edge_signed_hl_motif,
+        edge_signed_hl_schema_pseudo,
+        motif_schema_box,
+    )
+
+    if not json_path.is_file():
+        raise FileNotFoundError(json_path)
+    snaps = json.loads(json_path.read_text(encoding="utf-8"))
+    if len(snaps) < 2:
+        raise ValueError(f"{json_path}: need >=2 snaps")
+    exempl_rows = _fold_row_dicts_from_snaps(
+        snaps, motif_prefix=motif_prefix, min_start=min_start,
+    )
+    demos = _pick_single_run_demos(
+        snaps, motif_prefix=motif_prefix, min_start=min_start, n_demos=n_demos,
+    )
+    log_c0 = np.array([r["log_c0"] for r in exempl_rows], dtype=float)
+    log_fold = np.array([r["log_fold"] for r in exempl_rows], dtype=float)
+    n_edges = np.array([_n_edges_from_key(r["key"]) for r in exempl_rows], dtype=int)
+    tiers = sorted(set(int(v) for v in n_edges)) if len(n_edges) else []
+    preferred_tiers = [ne for ne in (2, 3, 4, 5) if ne in tiers] or tiers[:4]
+    n_demo = max(1, len(demos)) if demos else 1
+    n_tier = max(1, len(preferred_tiers))
+    min_fit = 3 if motif_prefix.startswith("D") else 8
+    motif_tag = "dyad" if motif_prefix.startswith("D") else "triad"
+    hh_pair = _load_run_hh_before_after(task=task, model=model, seed=seed)
+
+    fig = plt.figure(figsize=(max(13.6, 2.55 * n_tier + 0.8), 12.4))
+    outer = fig.add_gridspec(
+        4, 1, height_ratios=[1.18, 0.78, 0.90, 1.02], hspace=0.48,
+    )
+    mat_row = outer[0].subgridspec(
+        1, 3, width_ratios=[1.12, 1.12, 2.20], wspace=0.22,
+    )
+    demo_row = outer[1].subgridspec(1, max(n_demo, 1), wspace=0.32)
+    kde_row = outer[2].subgridspec(1, n_tier, wspace=0.30)
+    tier_row = outer[3].subgridspec(1, n_tier, wspace=0.30)
+    schema_insets: list[tuple[Any, str, bool]] = []
+    _draw_hh_before_after_row(fig, mat_row, hh_pair, run_label=run_label)
+
+    if not demos:
+        ax = fig.add_subplot(demo_row[0, 0])
+        ax.text(0.5, 0.5, "no demos", ha="center", va="center", transform=ax.transAxes)
+        ax.axis("off")
+    for j, demo in enumerate(demos):
+        key = demo["key"]
+        ne = int(demo["n_edges"])
+        col = _EDGE_COUNT_COLORS.get(ne, "#888888")
+        iters = demo["iters"]
+        counts = demo["counts"]
+        fold = float(counts[-1] / max(counts[0], EPS))
+        rising = bool(counts[-1] >= counts[0])
+        ax = fig.add_subplot(demo_row[0, j])
+        ax.plot(iters, counts, color=col, lw=1.25, zorder=2)
+        lo, hi = ax.get_ylim()
+        ax.set_ylim(lo, hi + 0.34 * (hi - lo))
+        ax.set_title(demo["label"], fontsize=7.4, pad=3.5, color=col)
+        ax.grid(True, alpha=0.25)
+        ax.tick_params(labelsize=6.0)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set_xlabel("iteration", fontsize=7.0)
+        if j == 0:
+            ax.set_ylabel("count", fontsize=7.0)
+        ax.text(
+            0.97 if rising else 0.03, 0.035, rf"$\times${fold:.2f}",
+            transform=ax.transAxes, ha="right" if rising else "left", va="bottom",
+            fontsize=6.4, color="0.20",
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.80, pad=0.8), zorder=6,
+        )
+        inset = ax.inset_axes(
+            [0.035, 0.58, 0.34, 0.36] if rising else [0.625, 0.58, 0.34, 0.36],
+        )
+        inset.set_axis_off()
+        inset.patch.set_visible(False)
+        schema_insets.append((inset, key, rising))
+
+    if len(log_c0):
+        x_disp, y_disp = _jitter_display_coords(log_c0, log_fold, seed=0)
+    else:
+        x_disp = y_disp = np.array([])
+    for j, ne in enumerate(preferred_tiers):
+        ax_k = fig.add_subplot(kde_row[0, j])
+        _draw_tier_count_kde_overlay(
+            ax_k, exempl_rows, n_edges=ne,
+            show_legend=(j == 0), ylabel=(j == 0),
+        )
+    for j, ne in enumerate(preferred_tiers):
+        ax = fig.add_subplot(tier_row[0, j])
+        mask = n_edges == ne
+        col = _EDGE_COUNT_COLORS.get(ne, "#888888")
+        x_lo, x_hi = _robust_axis_limits(log_c0[mask]) if int(mask.sum()) else (0.0, 1.0)
+        y_lo, y_hi = _robust_axis_limits(log_fold[mask]) if int(mask.sum()) else (-1.0, 1.0)
+        in_view = (
+            mask & (log_c0 >= x_lo) & (log_c0 <= x_hi)
+            & (log_fold >= y_lo) & (log_fold <= y_hi)
+        ) if len(log_c0) else mask
+        if len(x_disp):
+            ax.scatter(
+                x_disp[in_view], y_disp[in_view], s=16, c=col, alpha=0.55,
+                edgecolors="0.15", linewidths=0.25, zorder=3,
+            )
+        b1 = r2_e = p_e = float("nan")
+        if int(mask.sum()) >= min_fit and float(np.std(log_c0[mask])) > 1e-9:
+            b1, r2_e, p_e, _n = _ols_slope_stats(log_fold[mask], log_c0[mask])
+            b_e, _, _ = _ols(log_fold[mask], log_c0[mask])
+            x_line = np.linspace(x_lo, x_hi, 50)
+            _outlined_regression_line(ax, x_line, b_e[0] + b_e[1] * x_line, col, lw=1.55)
+        ax.axhline(0.0, color="0.55", lw=0.7, ls="--", zorder=1)
+        ax.set_xlim(x_lo, x_hi)
+        ax.set_ylim(y_lo, y_hi)
+        ax.set_xlabel("log start count", fontsize=7.0)
+        if j == 0:
+            ax.set_ylabel("log fold (end / start)", fontsize=7.0)
+        else:
+            ax.tick_params(labelleft=False)
+        ax.set_title(
+            rf"{ne}-edge  ($\beta={b1:+.2f}$, $R^2={r2_e:.2f}$, {_format_p_value(p_e)})",
+            fontsize=7.2, pad=3.5, color=col,
+        )
+        ax.tick_params(labelsize=6.0)
+        ax.grid(True, alpha=0.25)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    dfa_tag = f"{n_dfa_states} DFA states" if n_dfa_states is not None else "DFA n/a"
+    it0, it1 = int(snaps[0]["it"]), int(snaps[-1]["it"])
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"{run_label} ({dfa_tag})  ·  edge-sign, {motif_tag}; "
+            f"start>={min_start}  ·  iter {it0}→{it1}"
+        ),
+        suptitle_fontsize=10,
+        top=0.93,
+        bottom=0.055,
+        left=0.05,
+        right=0.98,
+        hspace=0.48,
+        wspace=0.30,
+    )
+    for inset, key, _rising in schema_insets:
+        draw_edge_signed_hl_motif(
+            inset, key,
+            box=motif_schema_box(
+                inset, edge_signed_hl_schema_pseudo(key), center_x=0.5, max_width=0.98,
+            ),
+        )
+    save_figure(fig, out_path, dpi=150)
+    print(f"wrote {out_path}")
+    for j, ne in enumerate(preferred_tiers):
+        mask = n_edges == ne
+        if int(mask.sum()) >= min_fit and float(np.std(log_c0[mask])) > 1e-9:
+            b1, r2_e, p_e, n = _ols_slope_stats(log_fold[mask], log_c0[mask])
+            print(f"  {ne}e  beta={b1:+.3f}  R2={r2_e:.3f}  {_format_p_value(p_e)}  n={n}")
+    for demo in demos:
+        fold = float(demo["counts"][-1] / max(demo["counts"][0], EPS))
+        print(f"  demo {demo['label']}  {demo['key']}  x{fold:.2f}")
+    return out_path
 
 
 def plot_all_runs_homogenization_board(
@@ -3251,7 +3451,9 @@ def plot_all_runs_homogenization_board(
     preferred_tiers = [ne for ne in (2, 3, 4, 5) if ne in tiers] or tiers[:4]
     n_tier = max(1, len(preferred_tiers))
     n_meta = 3
-    hh_pair = _load_run_hh_before_after(exempl_id, model=model, seed=seed)
+    hh_pair = _load_run_hh_before_after(
+        task=f"mixeddfa_r{exempl_id:02d}_ns", model=model, seed=seed,
+    )
 
     fig = plt.figure(figsize=(max(13.6, 2.55 * max(n_tier, n_meta) + 0.8), 14.6))
     outer = fig.add_gridspec(

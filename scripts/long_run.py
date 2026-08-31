@@ -33,6 +33,8 @@ CURVE_DIR = COMPARISONS_ROOT / COMPARISON_NAME / "learning_curves"
 CENSUS_JSON = MOTIF_DIR / "long_run_rnn_motif_edge_signed_all.json"
 EDGES_JSON = MOTIF_DIR / "long_run_rnn_motif_counts_over_learning.json"
 BOARD_OUT = MOTIF_DIR / "long_run_rnn_motif_board.png"
+SUMMARY_OUT = MOTIF_DIR / "long_run_rnn_motif_homogenization_summary.png"
+LOLLIPOP_OUT = MOTIF_DIR / "long_run_rnn_motif_lollipop_before_after.png"
 CURVE_OUT = CURVE_DIR / "live_curve.png"
 METRICS_JSON = sweep_data_dir(COMPARISON_NAME) / "live_metrics.json"
 
@@ -203,29 +205,57 @@ def cmd_curve(args: argparse.Namespace) -> None:
 
 
 def cmd_motif_board(args: argparse.Namespace) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
     from viz.compare import mixed_dfa_motif_all_runs as mar
+
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import r43_motif_figs as r43
+    plot_lollipop_before_after = r43.plot_lollipop_before_after
 
     seed = (args.seeds[0] if args.seeds else DEFAULT_SEEDS[0])
     n_dfa = n_dfa_states()
     MOTIF_DIR.mkdir(parents=True, exist_ok=True)
-    colored, _edges = mar.collect_task_edge_signed_census(
-        task=TASK,
-        model="rnn",
-        seed=seed,
-        max_snaps=int(args.max_snaps),
-        colored_json=CENSUS_JSON,
-        edges_json=EDGES_JSON,
-    )
-    out = mar.plot_single_run_motif_board(
+    if CENSUS_JSON.is_file() and EDGES_JSON.is_file():
+        colored = CENSUS_JSON
+        print(f"reusing census {CENSUS_JSON}", flush=True)
+    else:
+        colored, _edges = mar.collect_task_edge_signed_census(
+            task=TASK,
+            model="rnn",
+            seed=seed,
+            max_snaps=int(args.max_snaps),
+            colored_json=CENSUS_JSON,
+            edges_json=EDGES_JSON,
+        )
+    summary = args.out or SUMMARY_OUT
+    out = mar.plot_task_homogenization_board(
         colored,
-        None,
-        args.out or BOARD_OUT,
+        summary,
+        task=TASK,
         run_label="long_run",
+        n_dfa_states=n_dfa,
         min_start=int(args.min_start),
         motif_prefix="T|",
-        n_dfa_states=n_dfa,
+        model="rnn",
+        seed=seed,
     )
-    print(f"motif board: {out}", flush=True)
+    if summary.resolve() != BOARD_OUT.resolve():
+        BOARD_OUT.write_bytes(summary.read_bytes())
+        print(f"copied board {BOARD_OUT}", flush=True)
+    title = (
+        f"long_run ({n_dfa} DFA states)  ?  edge-sign triad; "
+        f"start>={int(args.min_start)}"
+    )
+    lollipop = plot_lollipop_before_after(
+        colored,
+        LOLLIPOP_OUT,
+        min_start=int(args.min_start),
+        motif_prefix="T|",
+        title=title,
+    )
+    print(f"homogenization board: {out}", flush=True)
+    print(f"lollipop: {lollipop}", flush=True)
 
 
 def main() -> None:

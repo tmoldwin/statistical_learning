@@ -333,6 +333,8 @@ def _add_trajectory_inset(
     average_trials: int = 8,
 ) -> None:
     ctx = load_task_viz_context(task, model_type=model_type, seed=seed)
+    if str(ctx.model.get("objective", "next_char")) == "word":
+        return
     inset = inset_axes(
         ax, width="42%", height="42%", loc="lower right",
         borderpad=0.45,

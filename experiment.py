@@ -42,7 +42,7 @@ EXPERIMENTS_ROOT = REPO_ROOT / "experiments"
 COMPARISONS_ROOT = EXPERIMENTS_ROOT / "comparisons"
 OLD_EXPERIMENTS_ROOT = EXPERIMENTS_ROOT / "old"
 
-MODEL_TYPES = ("rnn", "rnn_dale", "transformer")
+MODEL_TYPES = ("rnn", "rnn_dale", "transformer", "rnn_word")
 
 # Default seed for single-run workflows (input.txt + model.npz).
 DEFAULT_SEED = 42
@@ -541,7 +541,7 @@ def model_dir(name: str, model_type: str = "rnn") -> Path:
 
 
 def model_path(name: str, model_type: str = "rnn", *, seed: int | None = None) -> Path:
-    if model_type in ("rnn", "rnn_dale"):
+    if model_type in ("rnn", "rnn_dale", "rnn_word"):
         fname = f"model_seed{seed}.npz" if seed is not None else "model.npz"
         return model_dir(name, model_type) / fname
     fname = f"model_seed{seed}.pt" if seed is not None else "model.pt"
@@ -561,7 +561,7 @@ def seeds_for_task(name: str, model_type: str = "rnn") -> set[int]:
     found: set[int] = set()
     if model_path(name, model_type).is_file():
         found.add(DEFAULT_SEED)
-    if model_type in ("rnn", "rnn_dale"):
+    if model_type in ("rnn", "rnn_dale", "rnn_word"):
         pattern = "model_seed*.npz"
     else:
         pattern = "model_seed*.pt"

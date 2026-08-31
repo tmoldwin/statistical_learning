@@ -518,25 +518,67 @@ def compute_unit_selectivity_matrix(
     return si, peak_gap, eta2, gap, peak_label
 
 
+def _readout_class_names(model: dict) -> list[str]:
+    if str(model.get("objective", "next_char")) == "word" and model.get("output_classes"):
+        return [str(w) for w in model["output_classes"]]
+    return list(model["chars"])
+
+
+def _readout_target_indices(
+    model: dict,
+    n: int,
+    text: str,
+    *,
+    next_chars: list[str] | None = None,
+    word_labels: list[str | None] | None = None,
+) -> np.ndarray:
+    """Column index into the model's softmax for the supervised target at each step."""
+    names = _readout_class_names(model)
+    name_to_ix = {c: i for i, c in enumerate(names)}
+    if str(model.get("objective", "next_char")) == "word":
+        if word_labels is not None and len(word_labels) == n:
+            labels = list(word_labels)
+        else:
+            from vocab_diagrams import word_identity_at_index
+
+            vocab = set(str(w) for w in (model.get("vocab_words") or names))
+            spaced = " " in text
+            labels = [
+                word_identity_at_index(text, t, spaced=spaced, vocab=vocab)
+                for t in range(n)
+            ]
+        return np.array([
+            name_to_ix[w] if w is not None and w in name_to_ix else -1
+            for w in labels
+        ], dtype=int)
+    if next_chars is not None and len(next_chars) == n:
+        targets = list(next_chars)
+    else:
+        targets = [text[(t + 1) % len(text)] for t in range(n)]
+    return np.array([name_to_ix.get(c, -1) for c in targets], dtype=int)
+
+
 def compute_prediction_correlation_scores(
     activations: np.ndarray,
     model: dict,
     text: str,
     *,
     next_chars: list[str] | None = None,
+    word_labels: list[str | None] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
     n_units = activations.shape[1]
     n = activations.shape[0]
     probs = _next_char_probabilities(model, activations)
     logits = _next_char_logits(model, activations)
-    chars = model["chars"]
+    class_names = _readout_class_names(model)
 
-    if next_chars is not None and len(next_chars) == n:
-        targets = list(next_chars)
-    else:
-        targets = [text[(t + 1) % len(text)] for t in range(n)]
-    target_idx = np.array([chars.index(c) for c in targets])
-    target_prob = probs[np.arange(n), target_idx]
+    target_idx = _readout_target_indices(
+        model, n, text, next_chars=next_chars, word_labels=word_labels,
+    )
+    valid = target_idx >= 0
+    target_prob = np.full(n, np.nan, dtype=float)
+    if np.any(valid):
+        target_prob[valid] = probs[np.arange(n)[valid], target_idx[valid]]
 
     from visualize import prediction_entropy
 
@@ -547,10 +589,11 @@ def compute_prediction_correlation_scores(
     max_logit_r = np.full(n_units, np.nan)
     best_char: list[str] = [""] * n_units
 
+    finite_tp = np.isfinite(target_prob)
     for u in range(n_units):
         h = activations[:, u]
-        if np.std(h) > 1e-12 and np.std(target_prob) > 1e-12:
-            target_prob_r[u] = float(np.corrcoef(h, target_prob)[0, 1])
+        if np.std(h[finite_tp]) > 1e-12 and np.std(target_prob[finite_tp]) > 1e-12:
+            target_prob_r[u] = float(np.corrcoef(h[finite_tp], target_prob[finite_tp])[0, 1])
         if np.std(h) > 1e-12 and np.std(entropy) > 1e-12:
             entropy_r[u] = abs(float(np.corrcoef(h, entropy)[0, 1]))
         corrs = []
@@ -562,7 +605,7 @@ def compute_prediction_correlation_scores(
         corrs_arr = np.array(corrs)
         best_ix = int(np.argmax(np.abs(corrs_arr)))
         max_logit_r[u] = corrs_arr[best_ix]
-        best_char[u] = chars[best_ix] if best_ix < len(chars) else ""
+        best_char[u] = class_names[best_ix] if best_ix < len(class_names) else ""
 
     return target_prob_r, max_logit_r, entropy_r, best_char
 
@@ -616,7 +659,7 @@ def compute_selectivity(
         activations, labels,
     )
     target_prob_r, max_logit_r, entropy_r, best_char = compute_prediction_correlation_scores(
-        activations, model, text, next_chars=labels.next_char,
+        activations, model, text, next_chars=labels.next_char, word_labels=labels.word,
     )
     primary, categories, groups, mixed = _assign_primary_features(si, peak_label)
     return SelectivityResult(
@@ -1232,15 +1275,18 @@ def _target_prob_array(
     text: str,
     *,
     next_chars: list[str] | None = None,
+    word_labels: list[str | None] | None = None,
 ) -> np.ndarray:
     probs = _next_char_probabilities(model, activations)
     n = activations.shape[0]
-    if next_chars is not None and len(next_chars) == n:
-        targets = list(next_chars)
-    else:
-        targets = [text[(t + 1) % len(text)] for t in range(n)]
-    target_idx = [model["chars"].index(c) for c in targets]
-    return probs[np.arange(n), target_idx]
+    target_idx = _readout_target_indices(
+        model, n, text, next_chars=next_chars, word_labels=word_labels,
+    )
+    out = np.full(n, np.nan, dtype=float)
+    valid = target_idx >= 0
+    if np.any(valid):
+        out[valid] = probs[np.arange(n)[valid], target_idx[valid]]
+    return out
 
 
 def plot_example_units_for_feature(
@@ -1263,7 +1309,7 @@ def plot_example_units_for_feature(
     target_prob = None
     if model is not None and activations.shape[1] == int(model.get("hidden_size", -1)):
         target_prob = _target_prob_array(
-            model, activations, text, next_chars=labels.next_char,
+            model, activations, text, next_chars=labels.next_char, word_labels=labels.word,
         )
 
     fig, axes = plt.subplots(
@@ -1369,7 +1415,7 @@ def plot_example_units_combined(
     else:
         trace_indices = list(range(n_timesteps))
     target_prob = _target_prob_array(
-        model, activations, text, next_chars=labels.next_char,
+        model, activations, text, next_chars=labels.next_char, word_labels=labels.word,
     )
 
     n_rows = len(feature_rows)
@@ -1490,7 +1536,7 @@ def plot_example_predictor_units(
     if not units:
         return
     target_prob = _target_prob_array(
-        model, activations, text, next_chars=labels.next_char,
+        model, activations, text, next_chars=labels.next_char, word_labels=labels.word,
     )
 
     fig, axes = plt.subplots(

@@ -43,6 +43,10 @@ def _demo(subpath: str) -> Path:
     return ROOT / "experiments" / DEMO / "rnn" / "plots" / subpath
 
 
+def _demo_word(subpath: str) -> Path:
+    return ROOT / "experiments" / DEMO / "rnn_word" / "plots" / subpath
+
+
 def _demo_shared(name: str) -> Path:
     return ROOT / "experiments" / DEMO / "shared" / name
 
@@ -185,6 +189,29 @@ def paper_manifest() -> list[FigureRef]:
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "weight_graph_metrics_vs_dfa_paper.png",
                   max_w=1400),
+        # Word-classification objective (same demo vocab; per-token word labels).
+        FigureRef("word_cls", "fig03_learning_with_samples.jpg",
+                  _demo_word("training/learning_curve_with_samples.png")),
+        FigureRef("word_cls", "fig_word_class_probs.jpg",
+                  _demo_word("activations/word_class_prob_sequence_heatmap_condensed.png"),
+                  max_w=2800),
+        FigureRef("word_cls", "fig_activation_heatmap.jpg",
+                  _demo_word("activations/7_activation_heatmap.png")),
+        FigureRef("word_cls", "fig_activation_clustered.jpg",
+                  _demo_word("activations/10_activation_clustered_heatmap.png")),
+        FigureRef("word_cls", "fig_state_correlation.jpg",
+                  _demo_word("correlation/17_state_correlation_clustered_condensed.png")),
+        FigureRef("word_cls", "fig_dfa_pca_geometry.jpg",
+                  _demo_word("separation/dfa_pca_geometry_and_separation.png"),
+                  max_w=1200),
+        FigureRef("word_cls", "fig_example_units.jpg",
+                  _demo_word("unit_selectivity/example_units_combined.png")),
+        FigureRef("word_cls", "fig_decoding_with_word.jpg",
+                  _demo_word("decoding/decoding_with_word_seed_mean.png"),
+                  max_w=1400),
+        FigureRef("word_cls", "fig_word_trajectories.jpg",
+                  _demo_word("trajectories/16_word_trajectories_pca_condensed.png"),
+                  max_w=1600),
     ]
 
 

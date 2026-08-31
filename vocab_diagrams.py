@@ -13,6 +13,8 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from experiment import shared_dir as experiment_shared_dir
 from task import REGIMES
 
@@ -627,6 +629,39 @@ def word_identity_at_index(
             if start <= index <= end:
                 return word
     return None
+
+
+def word_index_array(
+    text: str,
+    words: list[str],
+    *,
+    spaced: bool = False,
+) -> np.ndarray:
+    """Per-character index into ``words`` (-1 if unlabeled / space / OOV)."""
+    ids = np.full(len(text), -1, dtype=np.int32)
+    if not text or not words:
+        return ids
+    word_to_ix = {w: i for i, w in enumerate(words)}
+    if spaced:
+        i = 0
+        n = len(text)
+        while i < n:
+            if text[i] == " ":
+                i += 1
+                continue
+            j = i
+            while j < n and text[j] != " ":
+                j += 1
+            ix = word_to_ix.get(text[i:j], -1)
+            if ix >= 0:
+                ids[i:j] = ix
+            i = j
+        return ids
+    for start, end, word in segment_corpus_by_words(text, set(words)):
+        ix = word_to_ix.get(word)
+        if ix is not None:
+            ids[start : end + 1] = ix
+    return ids
 
 
 def word_length_at_index(

@@ -122,6 +122,8 @@ from vocab_diagrams import (
     segment_corpus_by_words,
     trie_prefix_display_order,
     vocabulary_for_experiment,
+    word_identity_at_index,
+    word_index_array,
     write_vocabulary_diagrams,
 )
 
@@ -205,14 +207,40 @@ def load_model(path: str = "model.npz"):
         model["timestep_noise_std"] = float(data["timestep_noise_std"])
     else:
         model["timestep_noise_std"] = 0.0
+    if "l2_on" in data.files:
+        model["l2_on"] = str(data["l2_on"])
+    if "objective" in data.files:
+        model["objective"] = str(data["objective"])
+    else:
+        model["objective"] = "next_char"
+    if "output_size" in data.files:
+        model["output_size"] = int(data["output_size"])
+    else:
+        model["output_size"] = int(data["weights_hidden_to_output"].shape[0])
+    if "output_classes" in data.files:
+        model["output_classes"] = [str(c) for c in data["output_classes"]]
+    if "demo_pred_before" in data.files:
+        model["demo_pred_before"] = [str(w) for w in data["demo_pred_before"]]
+    if "demo_pred_after" in data.files:
+        model["demo_pred_after"] = [str(w) for w in data["demo_pred_after"]]
     return model
+
+
+def is_word_objective(model: dict) -> bool:
+    return str(model.get("objective", "next_char")) == "word"
+
+
+def output_class_names(model: dict) -> list[str]:
+    if is_word_objective(model) and model.get("output_classes"):
+        return [str(w) for w in model["output_classes"]]
+    return list(model["chars"])
 
 
 def forward_pass(model, text: str):
     """Run the trained RNN over `text` and return per-timestep states + probs."""
     hidden_size = model["hidden_size"]
-    vocab_size  = model["vocab_size"]
     chars       = model["chars"]
+    n_input     = len(chars)
     char_to_index = {c: i for i, c in enumerate(chars)}
 
     weights_input_to_hidden  = model["weights_input_to_hidden"]
@@ -220,15 +248,16 @@ def forward_pass(model, text: str):
     weights_hidden_to_output = model["weights_hidden_to_output"]
     bias_hidden              = model["bias_hidden"]
     bias_output              = model["bias_output"]
+    n_output = int(weights_hidden_to_output.shape[0])
     noise_std = float(model.get("timestep_noise_std", 0.0))
     noise_rng = np.random.default_rng()
 
     hidden_state = np.zeros((hidden_size, 1))
     hidden_states = np.zeros((len(text), hidden_size))
-    output_probs  = np.zeros((len(text), vocab_size))
+    output_probs  = np.zeros((len(text), n_output))
 
     for t, char in enumerate(text):
-        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot = np.zeros((n_input, 1))
         input_one_hot[char_to_index[char]] = 1
         hidden_state, _ = rnn_hidden_step(
             hidden_state,
@@ -1590,6 +1619,8 @@ def rnn_closed_loop_rollout(
     rng: np.random.Generator,
 ) -> tuple[np.ndarray, list[str]]:
     """Autoregressive RNN rollout; returns hidden states (T, hidden_size) and char list."""
+    if str(model.get("objective", "next_char")) == "word":
+        raise ValueError("closed-loop char rollout is undefined for word-classification models")
     chars = list(model["chars"])
     char_to_index = {c: i for i, c in enumerate(chars)}
     vocab_size = len(chars)
@@ -1673,6 +1704,7 @@ class CondensedView:
     output_probs: np.ndarray | None = None
     counts: list[int] = field(default_factory=list)
     next_chars: list[str] = field(default_factory=list)
+    target_labels: list[str] = field(default_factory=list)
     label_to_index: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -1725,7 +1757,9 @@ def condense_hidden_states_by_prefix(
     repr_indices: list[int] = []
     counts: list[int] = []
     next_chars: list[str] = []
+    target_labels: list[str] = []
     n_text = len(text)
+    vocab = set(words) if words else None
 
     for label in order:
         idxs = groups[label]
@@ -1743,6 +1777,14 @@ def condense_hidden_states_by_prefix(
         counts.append(len(idxs))
         targets = [text[(t + 1) % n_text] for t in idxs]
         next_chars.append(max(set(targets), key=targets.count))
+        if vocab is not None:
+            words_at = [
+                word_identity_at_index(text, t, spaced=spaced, vocab=vocab) or "?"
+                for t in idxs
+            ]
+            target_labels.append(max(set(words_at), key=words_at.count))
+        else:
+            target_labels.append(next_chars[-1])
 
     return CondensedView(
         hidden_states=np.vstack(hs_rows) if hs_rows else hidden_states[:0],
@@ -1754,6 +1796,7 @@ def condense_hidden_states_by_prefix(
         output_probs=np.vstack(prob_rows) if prob_rows else None,
         counts=counts,
         next_chars=next_chars,
+        target_labels=target_labels,
     )
 
 
@@ -3846,11 +3889,12 @@ def _learning_curve_series(
         return iters, ce, label
     else:
         return None
-    label = "cross-entropy / char"
+    token = "token" if is_word_objective(model) else "char"
+    label = f"cross-entropy / {token}"
     if seq_len and seq_len > 0:
         ce = ce / seq_len
     if "metric_val_ce" in model and "metric_iterations" in model:
-        label = "train cross-entropy / char"
+        label = f"train cross-entropy / {token}"
     return iters, ce, label
 
 
@@ -3910,13 +3954,15 @@ def plot_learning_curve_on_axes(
                 color="seagreen",
                 linewidth=lw,
                 alpha=0.9,
-                label="val cross-entropy / char",
+                label="val cross-entropy / token" if is_word_objective(model) else "val cross-entropy / char",
             )
             legend_lines.append(val_line)
             legend_labels.append(val_line.get_label())
     ax.set_xlabel("iteration", fontsize=fs)
     if show_ylabel:
-        ylabel = "cross-entropy / char" if val_line is not None else ce_label
+        ylabel = ce_label if val_line is None else (
+            "cross-entropy / token" if is_word_objective(model) else "cross-entropy / char"
+        )
         ax.set_ylabel(ylabel, fontsize=fs)
     if title is not None:
         ax.set_title(title, fontsize=fs + 1)
@@ -3954,7 +4000,7 @@ def plot_learning_curve_on_axes(
             linewidth=lw,
             linestyle="--",
             alpha=0.9,
-            label="% chars outside vocab (avg)",
+            label="% word-class error" if is_word_objective(model) else "% chars outside vocab (avg)",
         )
     elif "metric_iterations" in model and "metric_valid_vocab_letter_frac" in model:
         ax2 = ax.twinx()
@@ -3999,7 +4045,11 @@ def plot_learning_curve(model, save_path, *, loss_only: bool = False):
         return
 
     fig, ax = plt.subplots(figsize=(6.5, 3.0), constrained_layout=True)
-    title = "Training loss" if loss_only else "Training: cross-entropy vs word-validity rollout"
+    title = "Training loss" if loss_only else (
+        "Training: cross-entropy vs word-class error"
+        if is_word_objective(model)
+        else "Training: cross-entropy vs word-validity rollout"
+    )
     if not plot_learning_curve_on_axes(
         ax, model, title=title, loss_only=loss_only, truncate_to_plateau=True,
     ):
@@ -4082,12 +4132,106 @@ def _draw_before_after_generation_panel(ax, model, *, max_len: int = 42) -> bool
     return True
 
 
+def _word_color_map(words: list[str]) -> dict[str, tuple]:
+    unique = list(dict.fromkeys(words))
+    cmap = plt.get_cmap("tab10", max(len(unique), 1))
+    return {w: cmap(i % 10) for i, w in enumerate(unique)}
+
+
+def _draw_predicted_word_row(
+    ax,
+    snippet: str,
+    pred_words: list[str],
+    true_words: list[str],
+    y: float,
+    *,
+    fontsize: float = 13,
+    x0: float = 0.06,
+    x_span: float = 0.88,
+) -> None:
+    n = min(len(snippet), len(pred_words), len(true_words))
+    if n <= 0:
+        return
+    colors = _word_color_map(true_words[:n] + pred_words[:n])
+    x_step = min(0.022, x_span / max(n - 1, 1))
+    for i in range(n):
+        ok = pred_words[i] == true_words[i]
+        ax.text(
+            x0 + i * x_step, y, snippet[i],
+            transform=ax.transAxes, fontfamily="monospace", fontsize=fontsize,
+            color=colors.get(pred_words[i], "0.3"),
+            va="center", ha="left",
+            fontweight="700" if ok else "400",
+            bbox=None if ok else dict(
+                boxstyle="square,pad=0.05", facecolor="#ffcccc", edgecolor="none",
+            ),
+        )
+
+
+def _draw_before_after_classification_panel(ax, model, *, max_len: int = 42) -> bool:
+    """Before/after argmax word labels on a fixed corpus snippet."""
+    snippet = str(model.get("demo_snippet", ""))[:max_len]
+    pred_before = list(model.get("demo_pred_before") or [])[:max_len]
+    pred_after = list(model.get("demo_pred_after") or [])[:max_len]
+    if not snippet or not pred_before or not pred_after:
+        return False
+    n = min(len(snippet), len(pred_before), len(pred_after))
+    snippet = snippet[:n]
+    pred_before = pred_before[:n]
+    pred_after = pred_after[:n]
+    vocab_list = [str(w) for w in model.get("output_classes") or model.get("vocab_words") or []]
+    vocab = set(vocab_list)
+    spaced = " " in snippet
+    true_words: list[str] = []
+    for i in range(n):
+        w = word_identity_at_index(snippet, i, spaced=spaced, vocab=vocab)
+        true_words.append(w if w is not None else "?")
+
+    ax.set_axis_off()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    vocab_label = ", ".join(vocab_list) if vocab_list else "(vocab unknown)"
+    ax.text(
+        0.06, 0.93, "Predicted word before vs after learning",
+        transform=ax.transAxes, fontsize=13, fontweight="600", va="top",
+    )
+    ax.text(
+        0.06, 0.84, vocab_label,
+        transform=ax.transAxes, fontsize=11, color="0.25", fontweight="700", va="top",
+    )
+    ax.text(
+        0.06, 0.70, "Before training",
+        transform=ax.transAxes, fontsize=12, fontweight="600", va="top",
+    )
+    ax.text(
+        0.06, 0.62, "argmax word (red box = error)",
+        transform=ax.transAxes, fontsize=10, color="0.45", va="top",
+    )
+    _draw_predicted_word_row(ax, snippet, pred_before, true_words, 0.48)
+    ax.text(
+        0.06, 0.34, "After training",
+        transform=ax.transAxes, fontsize=12, fontweight="600", va="top",
+    )
+    n_ok = sum(p == t for p, t in zip(pred_after, true_words))
+    ax.text(
+        0.06, 0.26, f"{n_ok}/{n} tokens correct on this snippet",
+        transform=ax.transAxes, fontsize=10, color="0.45", va="top",
+    )
+    _draw_predicted_word_row(ax, snippet, pred_after, true_words, 0.12)
+    return True
+
+
 def plot_learning_curve_with_samples(model, save_path: str) -> None:
-    """Learning curve (left) beside before/after generation from the same checkpoint."""
+    """Learning curve (left) beside before/after generation or word-class predictions."""
     if _learning_curve_series(model) is None:
         print(f"skip {save_path}: re-run training to record loss history")
         return
-    if "sample_before" not in model or "sample_after" not in model:
+    word_obj = is_word_objective(model)
+    if word_obj:
+        if not model.get("demo_pred_before") or not model.get("demo_pred_after"):
+            print(f"skip {save_path}: re-run training to record word-class predictions")
+            return
+    elif "sample_before" not in model or "sample_after" not in model:
         print(f"skip {save_path}: re-run min-char-rnn.py to record samples")
         return
 
@@ -4096,15 +4240,23 @@ def plot_learning_curve_with_samples(model, save_path: str) -> None:
     ax_curve = fig.add_subplot(gs[0, 0])
     ax_samples = fig.add_subplot(gs[0, 1])
 
+    curve_title = (
+        "Training: cross-entropy vs word-class error"
+        if word_obj
+        else "Training: cross-entropy vs word-validity rollout"
+    )
     ok_curve = plot_learning_curve_on_axes(
         ax_curve,
         model,
-        title="Training: cross-entropy vs word-validity rollout",
+        title=curve_title,
         truncate_to_plateau=True,
         legend_loc="upper right",
         fontsize=11,
     )
-    ok_samples = _draw_before_after_generation_panel(ax_samples, model, max_len=42)
+    if word_obj:
+        ok_samples = _draw_before_after_classification_panel(ax_samples, model, max_len=42)
+    else:
+        ok_samples = _draw_before_after_generation_panel(ax_samples, model, max_len=42)
     if not ok_curve or not ok_samples:
         plt.close(fig)
         print(f"skip {save_path}: missing curve or samples")
@@ -7762,7 +7914,7 @@ def plot_space_to_space_trajectories(
     )
     word_colors = _vocab_word_colors(vocab_words)
 
-    if model is not None and seed_letters:
+    if model is not None and seed_letters and not is_word_objective(model):
         n_random_seeds = _INTERNAL_RANDOM_HIDDEN_SEED_COUNT
         random_hidden_seeds = _random_hidden_seeds(
             hidden_states.shape[1], n_random_seeds,
@@ -8057,7 +8209,7 @@ def plot_space_to_space_trajectories_3d(
 
     rollout_paths: list[np.ndarray] = []
 
-    if model is not None and seed_letters:
+    if model is not None and seed_letters and not is_word_objective(model):
         # --- Figure 1: internal dynamics (main panel only) ---
         fig_main = plt.figure(figsize=(12, 10))
         ax_free = fig_main.add_subplot(111, projection="3d")
@@ -8564,7 +8716,7 @@ def plot_pca_prediction_regions(
     repr_name: str | None = None,
     embed_method: str = "pca",
 ):
-    """Embedding panels: argmax next-char regions and softmax entropy, with context labels."""
+    """Embedding panels: argmax output-class regions and softmax entropy, with context labels."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -8572,7 +8724,9 @@ def plot_pca_prediction_regions(
     else:
         prefix_labels = None
     n_points, hidden_size = hidden_states.shape
-    vocab_size = len(chars)
+    class_names = output_class_names(model)
+    n_classes = len(class_names)
+    pred_kind = "word" if is_word_objective(model) else "next-char"
     if n_points < 2 or hidden_size < 1 or (len(text) == 0 and prefix_labels is None):
         return
 
@@ -8584,7 +8738,7 @@ def plot_pca_prediction_regions(
     probs = next_char_probabilities(model, grid_hidden)
     grid_pred = np.argmax(probs, axis=1).reshape(grid_resolution, grid_resolution)
     grid_entropy = prediction_entropy(probs).reshape(grid_resolution, grid_resolution)
-    max_entropy = float(np.log(vocab_size))
+    max_entropy = float(np.log(max(n_classes, 1)))
     avoid_xy = trigram_avoidance_points(
         text, projected, spaced=spaced, automaton=automaton, prefix_labels=prefix_labels,
     )
@@ -8597,19 +8751,19 @@ def plot_pca_prediction_regions(
     )
     avoid_radius = plane_span * 0.12
 
-    pred_cmap = plt.get_cmap("tab10", vocab_size)
+    pred_cmap = plt.get_cmap("tab10", n_classes)
     fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.8), constrained_layout=True)
     panel_specs = [
         (
             axes[0],
             grid_pred,
             dict(
-                levels=np.arange(-0.5, vocab_size, 1),
+                levels=np.arange(-0.5, n_classes, 1),
                 cmap=pred_cmap,
                 vmin=None,
                 vmax=None,
             ),
-            "Argmax next-char (2D-reconstructed "
+            f"Argmax {pred_kind} (2D-reconstructed "
             f"{representation_label(model, prob_grid=True, repr_name=repr_name)})",
         ),
         (
@@ -8622,7 +8776,7 @@ def plot_pca_prediction_regions(
                 vmin=0.0,
                 vmax=max_entropy,
             ),
-            f"Prediction entropy (max = ln {vocab_size} ≈ {max_entropy:.2f} nats)",
+            f"Prediction entropy (max = ln {n_classes} ≈ {max_entropy:.2f} nats)",
         ),
     ]
 
@@ -8632,7 +8786,7 @@ def plot_pca_prediction_regions(
         im = ax.contourf(grid_x, grid_y, field, antialiased=True, zorder=1, **contour_kw)
         if ax is axes[0]:
             add_argmax_region_labels(
-                ax, grid_x, grid_y, grid_pred, chars,
+                ax, grid_x, grid_y, grid_pred, class_names,
                 avoid_xy=avoid_xy, avoid_radius=avoid_radius,
                 xlim=xlim, ylim=ylim,
             )
@@ -8681,7 +8835,7 @@ def plot_pca_next_char_probability_panels(
     condensed: CondensedView | None = None,
     embed_method: str = "pca",
 ):
-    """One panel per vocab char: P(next = char) over the embedding plane (from softmax)."""
+    """One panel per output class: softmax probability over the embedding plane."""
     if condensed is not None:
         hidden_states = condensed.hidden_states
         prefix_labels = condensed.labels
@@ -8689,7 +8843,9 @@ def plot_pca_next_char_probability_panels(
     else:
         prefix_labels = None
     n_points, hidden_size = hidden_states.shape
-    vocab_size = len(chars)
+    class_names = output_class_names(model)
+    n_classes = len(class_names)
+    pred_kind = "word" if is_word_objective(model) else "next char"
     if n_points < 2 or hidden_size < 1:
         return
 
@@ -8700,8 +8856,8 @@ def plot_pca_next_char_probability_panels(
     )
     probs = next_char_probabilities(model, grid_hidden)
 
-    ncols = min(3, vocab_size)
-    nrows = (vocab_size + ncols - 1) // ncols
+    ncols = min(3, n_classes)
+    nrows = (n_classes + ncols - 1) // ncols
     fig, axes = plt.subplots(
         nrows, ncols,
         figsize=(3.0 * ncols, 2.6 * nrows),
@@ -8711,8 +8867,8 @@ def plot_pca_next_char_probability_panels(
     axes = np.atleast_1d(axes).ravel()
     last_im = None
 
-    for char_index, (ax, char) in enumerate(zip(axes, chars)):
-        field = probs[:, char_index].reshape(grid_resolution, grid_resolution)
+    for class_index, (ax, name) in enumerate(zip(axes, class_names)):
+        field = probs[:, class_index].reshape(grid_resolution, grid_resolution)
         last_im = ax.contourf(
             grid_x, grid_y, field,
             levels=np.linspace(0, 1, 21),
@@ -8720,14 +8876,14 @@ def plot_pca_next_char_probability_panels(
         )
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
-        ax.set_title(f"P(next = {display_char(char)!r})")
+        ax.set_title(f"P({pred_kind} = {display_char(name)!r})")
         ax.set_aspect("equal", adjustable="box")
         add_pca_point_annotations(
             ax, text, projected, spaced=spaced, automaton=automaton,
             prefix_labels=prefix_labels,
         )
 
-    for ax in axes[vocab_size:]:
+    for ax in axes[n_classes:]:
         ax.axis("off")
 
     axis_x, axis_y = embed_axis_labels_2d(evr, embed_method)
@@ -8737,14 +8893,14 @@ def plot_pca_next_char_probability_panels(
         for row in range(1, nrows):
             axes[row * ncols].set_ylabel(axis_y)
         for col in range(1, ncols):
-            bottom = min((nrows - 1) * ncols + col, vocab_size - 1)
-            if bottom < vocab_size:
+            bottom = min((nrows - 1) * ncols + col, n_classes - 1)
+            if bottom < n_classes:
                 axes[bottom].set_xlabel(axis_x)
 
-    fig.colorbar(last_im, ax=axes[:vocab_size], label="probability", shrink=0.92)
+    fig.colorbar(last_im, ax=axes[:n_classes], label="probability", shrink=0.92)
     fig.suptitle(
         _condensed_plot_title(
-            f"P(next char | {representation_label(model, prob_grid=True)}) · "
+            f"P({pred_kind} | {representation_label(model, prob_grid=True)}) · "
             f"{original_vocabulary_title(chars, text)}",
             condensed,
         ),
@@ -9199,8 +9355,11 @@ def plot_output_probs(
     automaton: MinimizedVocabAutomaton | None = None,
     spaced: bool = False,
     words: list[str] | None = None,
+    class_names: list[str] | None = None,
+    seq_targets: list[str] | None = None,
+    target_kind: str = "next char",
 ):
-    """Heatmap of P(next char); overlay true next char.
+    """Heatmap of output-class probabilities; overlay true target.
 
     With ``condensed``, draws two rows: sequential teacher-forced timesteps
     (top) and prefix-averaged (bottom). Otherwise sequential only.
@@ -9208,7 +9367,9 @@ def plot_output_probs(
     from viz.plot_layout import apply_category_tick_labels, finalize_grid_figure, save_figure
 
     del exp_name  # reserved for callers; title stays self-contained
-    vocab_size = len(chars)
+    names = list(class_names) if class_names is not None else list(chars)
+    n_classes = len(names)
+    name_to_ix = {c: i for i, c in enumerate(names)}
     panels: list[tuple[np.ndarray, list[str], list[str], str, list[str] | None, bool]] = []
     # Each: probs, x_labels, targets, x_axis, prefix_keys_or_None, is_sequence
 
@@ -9216,14 +9377,18 @@ def plot_output_probs(
     seq_text = _clip_next_char_sequence(text, words=words, spaced=spaced)
     seq_n = len(seq_text)
     seq_probs = np.asarray(output_probs[:seq_n], dtype=float)
-    if seq_n < len(text):
-        seq_targets = list(text[1:seq_n]) + [text[seq_n]]
+    if seq_targets is not None:
+        seq_tgt = list(seq_targets[:seq_n])
+        if len(seq_tgt) < seq_n:
+            seq_tgt = seq_tgt + ["?"] * (seq_n - len(seq_tgt))
+    elif seq_n < len(text):
+        seq_tgt = list(text[1:seq_n]) + [text[seq_n]]
     else:
-        seq_targets = list(text[1:]) + [text[0]]
+        seq_tgt = list(text[1:]) + [text[0]]
     panels.append((
         seq_probs,
         list(seq_text),
-        seq_targets,
+        seq_tgt,
         "timestep / input character",
         None,
         True,
@@ -9232,10 +9397,13 @@ def plot_output_probs(
     if condensed is not None:
         if condensed.output_probs is None:
             return
+        cond_targets = list(condensed.target_labels) if (
+            target_kind != "next char" and condensed.target_labels
+        ) else list(condensed.next_chars)
         panels.append((
             np.asarray(condensed.output_probs, dtype=float),
             [_display_prefix_label(l) for l in condensed.labels],
-            list(condensed.next_chars),
+            cond_targets,
             prefix_axis_label(
                 spaced=condensed.spaced, text=text, words=condensed.words,
             ),
@@ -9249,7 +9417,7 @@ def plot_output_probs(
     max_len = max(p[0].shape[0] for p in panels)
     # Wide banner: two stacked heatmaps, not a tall empty canvas.
     fig_w = float(max(12.5, min(18.0, max_len * 0.32 + 2.0)))
-    row_h = float(max(2.35, min(2.85, vocab_size * 0.19 + 0.75)))
+    row_h = float(max(2.35, min(2.85, n_classes * 0.19 + 0.75)))
     fig_h = row_h * n_rows + (0.55 if n_rows > 1 else 0.10)
     fig, axes = plt.subplots(
         n_rows, 1, figsize=(fig_w, fig_h), squeeze=False, sharey=True,
@@ -9257,17 +9425,22 @@ def plot_output_probs(
 
     last_im = None
     bottom_need = 0.18
+    ylabel = f"predicted {target_kind}"
+    title_core = f"P({target_kind} | input so far)  —  red dots = true {target_kind}"
     for ri, (probs, x_labels, targets, x_axis, prefix_keys, is_sequence) in enumerate(panels):
         ax = axes[ri, 0]
         length = probs.shape[0]
-        target_indices = np.array([chars.index(c) for c in targets], dtype=int)
+        target_indices = np.array([
+            name_to_ix.get(c, 0) for c in targets
+        ], dtype=int)
         last_im = ax.imshow(
             probs.T,
             aspect="auto", cmap="viridis", vmin=0, vmax=1,
             interpolation="nearest", origin="lower",
         )
-        ax.set_yticks(range(vocab_size))
-        ax.set_yticklabels(chars, fontsize=14)
+        ax.set_yticks(range(n_classes))
+        ytick_fs = 11 if n_classes > 12 else 14
+        ax.set_yticklabels(names, fontsize=ytick_fs)
         short_seq = is_sequence and all(len(str(lab)) <= 1 for lab in x_labels)
         if short_seq:
             # Every timestep labeled, upright only on the bottom edge.
@@ -9302,7 +9475,7 @@ def plot_output_probs(
         # Only the last row keeps the x-axis label (avoids colliding with the
         # next panel when both rows have dense ticks).
         ax.set_xlabel(axis_label if ri == n_rows - 1 else "", fontsize=13)
-        ax.set_ylabel("predicted next char", fontsize=13)
+        ax.set_ylabel(ylabel, fontsize=13)
         if n_rows > 1:
             row_title = (
                 "sequential timesteps"
@@ -9314,10 +9487,7 @@ def plot_output_probs(
             )
             ax.set_title(row_title, fontsize=14, pad=3)
         else:
-            ax.set_title(
-                "P(next char | input so far)  —  red dots = actual next char",
-                fontsize=12,
-            )
+            ax.set_title(title_core, fontsize=12)
         ax.scatter(
             np.arange(length), target_indices,
             color="red", s=22 if is_sequence else 26,
@@ -9328,7 +9498,7 @@ def plot_output_probs(
         finalize_grid_figure(
             fig,
             # Sequence (top) + condensed prefixes (bottom).
-            suptitle="P(next char | input so far)  —  red dots = actual next char",
+            suptitle=title_core,
             top=0.91,
             bottom=0.14,
             left=0.05,
@@ -9402,7 +9572,7 @@ def main() -> None:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--exp", default=None,
                         help="experiment name under experiments/<exp>/")
-    parser.add_argument("--model-type", default="rnn", choices=["rnn", "rnn_dale", "transformer"],
+    parser.add_argument("--model-type", default="rnn", choices=["rnn", "rnn_dale", "transformer", "rnn_word"],
                         help="which model subdirectory to visualize (default: rnn)")
     parser.add_argument(
         "--seed",
@@ -9520,6 +9690,7 @@ def main() -> None:
                 plot_weight_matrices_by_seed(
                     args.exp,
                     Path(out_dir) / "weights" / "weight_matrices_by_seed.png",
+                    model_type=model_type,
                 )
     if want("learning") and not args.trajectories_only:
         with timer.section("learning_curve"):
@@ -9528,10 +9699,13 @@ def main() -> None:
                 save_path=str(numbered_plot_path(out_dir, "learning_curve.png")),
             )
         with timer.section("samples_before_after"):
-            plot_sample_before_after(
-                model,
-                save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
-            )
+            if is_word_objective(model):
+                print("skip samples_before_after: word-classification models do not generate text")
+            else:
+                plot_sample_before_after(
+                    model,
+                    save_path=str(numbered_plot_path(out_dir, "samples_before_after.png")),
+                )
         with timer.section("learning_curve_with_samples"):
             plot_learning_curve_with_samples(
                 model,
@@ -9672,12 +9846,35 @@ def main() -> None:
 
                 plot_output_probs(
                     text, output_probs, model["chars"],
-                    save_path=plot_path("next_char_prob_sequence_heatmap.png"),
-                    condensed=cv,
+                    save_path=plot_path(
+                        "word_class_prob_sequence_heatmap.png"
+                        if is_word_objective(model)
+                        else "next_char_prob_sequence_heatmap.png"
+                    ),
+                    condensed=(
+                        cv if cv is not None else (
+                            condense_hidden_states_by_prefix(
+                                text, hidden_states, output_probs,
+                                spaced=spaced, words=words,
+                            ) if words else None
+                        )
+                    ),
                     exp_name=args.exp,
                     automaton=automaton,
                     spaced=spaced,
                     words=words,
+                    class_names=output_class_names(model) if is_word_objective(model) else None,
+                    seq_targets=(
+                        [
+                            word_identity_at_index(
+                                text, t, spaced=spaced, vocab=set(words),
+                            ) or "?"
+                            for t in range(len(text))
+                        ]
+                        if is_word_objective(model) and words
+                        else None
+                    ),
+                    target_kind="word" if is_word_objective(model) else "next char",
                 )
 
                 plot_per_char_hidden_state_heatmaps(
@@ -9757,20 +9954,21 @@ def main() -> None:
                     spaced=spaced, automaton=automaton,
                     annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,
                 )
-                _plot_embed_variants(
-                    plot_closed_loop_trajectory_panel,
-                    plot_path("word_trajectories_closed_loop.png"),
-                    text=text, hidden_states=hidden_states, model=model,
-                    spaced=spaced, automaton=automaton,
-                    annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,
-                )
+                if not is_word_objective(model):
+                    _plot_embed_variants(
+                        plot_closed_loop_trajectory_panel,
+                        plot_path("word_trajectories_closed_loop.png"),
+                        text=text, hidden_states=hidden_states, model=model,
+                        spaced=spaced, automaton=automaton,
+                        annot_style=args.dfa_annot_style, condensed=cv, words=traj_words,
+                    )
                 _plot_embed_variants(
                     plot_space_to_space_trajectories_3d,
                     plot_path("word_trajectories_pca_3d.png"),
                     text=text, hidden_states=hidden_states, model=model,
                     spaced=spaced, automaton=automaton, condensed=cv, words=traj_words,
                 )
-                if args.closed_loop_video:
+                if args.closed_loop_video and not is_word_objective(model):
                     traj_dir = plot_path("word_trajectories_pca.png")
                     traj_dir = os.path.dirname(traj_dir)
                     write_closed_loop_trajectory_video(
@@ -10027,10 +10225,27 @@ def main() -> None:
                     condensed=cv,
                 )
 
-    correct = np.sum(np.argmax(output_probs, axis=1) ==
-                     np.array([model["chars"].index(c) for c in targets]))
-    print(f"top-1 next-char accuracy over the {len(text)}-char window: "
-          f"{correct}/{len(text)} = {100*correct/len(text):.1f}%")
+    if is_word_objective(model) and words:
+        vocab = set(words)
+        true_ix = []
+        class_to_ix = {w: i for i, w in enumerate(output_class_names(model))}
+        for t in range(len(text)):
+            w = word_identity_at_index(text, t, spaced=spaced, vocab=vocab)
+            true_ix.append(class_to_ix.get(w, -1) if w is not None else -1)
+        true_ix = np.asarray(true_ix, dtype=int)
+        pred_ix = np.argmax(output_probs, axis=1)
+        valid = true_ix >= 0
+        n_valid = int(np.sum(valid))
+        correct = int(np.sum(pred_ix[valid] == true_ix[valid])) if n_valid else 0
+        print(
+            f"top-1 word-class accuracy over the {n_valid}-token window: "
+            f"{correct}/{n_valid} = {100 * correct / max(n_valid, 1):.1f}%"
+        )
+    else:
+        correct = np.sum(np.argmax(output_probs, axis=1) ==
+                         np.array([model["chars"].index(c) for c in targets]))
+        print(f"top-1 next-char accuracy over the {len(text)}-char window: "
+              f"{correct}/{len(text)} = {100*correct/len(text):.1f}%")
 
     if words and args.exp and (want("setup") or not args.only):
         with timer.section("vocab_diagrams"):

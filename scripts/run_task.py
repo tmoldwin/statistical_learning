@@ -60,7 +60,7 @@ def train_task(
         "--out", str(corpus_out),
     ])
 
-    if model_type in ("rnn", "rnn_dale"):
+    if model_type in ("rnn", "rnn_dale", "rnn_word"):
         if model_out is not None:
             out_path = Path(model_out)
         else:
@@ -68,8 +68,11 @@ def train_task(
         out_path.parent.mkdir(parents=True, exist_ok=True)
         use_dale = model_uses_dale(model_type) or bool(cfg.get("dale"))
         use_gpu = device in ("cuda", "gpu", "auto")
-        if use_gpu and use_dale:
-            print("warning: Dale training has no GPU trainer; using CPU (min_char_rnn.py)")
+        if use_gpu and (use_dale or model_type == "rnn_word"):
+            if model_type == "rnn_word":
+                print("warning: word-classification training is CPU-only; using min_char_rnn.py")
+            else:
+                print("warning: Dale training has no GPU trainer; using CPU (min_char_rnn.py)")
             use_gpu = False
         if use_gpu and save_snapshots:
             raise ValueError("GPU trainer does not support --save-snapshots")
@@ -107,6 +110,8 @@ def train_task(
             train_cmd.append("--save-snapshots")
         if save_learning_snaps:
             train_cmd.append("--save-learning-snaps")
+        if model_type == "rnn_word":
+            train_cmd.extend(["--objective", "word"])
         if model_uses_dale(model_type) and "dale_steps" in cfg:
             steps = 500 if smoke else int(cfg["dale_steps"])
         else:
@@ -157,7 +162,7 @@ def visualize_task(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("task", choices=list(TASKS.keys()), help="task folder name")
-    parser.add_argument("--models", nargs="+", default=["rnn"], choices=["rnn", "rnn_dale", "transformer"])
+    parser.add_argument("--models", nargs="+", default=["rnn"], choices=["rnn", "rnn_dale", "transformer", "rnn_word"])
     parser.add_argument("--skip-train", action="store_true")
     parser.add_argument("--skip-viz", action="store_true")
     parser.add_argument("--smoke", action="store_true")

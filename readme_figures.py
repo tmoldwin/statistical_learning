@@ -225,6 +225,7 @@ PLOT_SUBDIR: dict[str, str] = {
     "weight_input_drive_fraction.png": "weights",
     "activation_heatmap.png": "activations",
     "next_char_prob_sequence_heatmap.png": "activations",
+    "word_class_prob_sequence_heatmap.png": "activations",
     "activation_by_input_char.png": "activations",
     "activation_clustered_heatmap.png": "activations",
     "embedding_panels_context.png": "embeddings",

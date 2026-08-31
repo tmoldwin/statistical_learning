@@ -108,6 +108,7 @@ def compute_weight_spikiness_pair(
 def init_weights_for_model(model: dict, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     hidden_size = int(model["hidden_size"])
     vocab_size = int(model["vocab_size"])
+    output_size = int(model.get("output_size", model["weights_hidden_to_output"].shape[0]))
     dale_law = bool(model.get("dale_law", False))
     e_fraction = float(model.get("e_fraction", 0.8))
     raw_scale = model.get("dale_init_scale")
@@ -118,7 +119,7 @@ def init_weights_for_model(model: dict, seed: int) -> tuple[np.ndarray, np.ndarr
             dale_init_scale = scale
     return reconstruct_init_weights(
         hidden_size, vocab_size, seed, dale_law=dale_law, e_fraction=e_fraction,
-        dale_init_scale=dale_init_scale,
+        dale_init_scale=dale_init_scale, output_size=output_size,
     )
 
 

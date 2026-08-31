@@ -93,9 +93,11 @@ def init_dale_weights(
     *,
     scale: float = 0.01,
     rng: np.random.Generator | None = None,
+    output_size: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Init W_xh rows, W_hh/W_ho columns with magnitudes × neuron Dale sign."""
     rng = rng or np.random.default_rng()
+    n_out = int(vocab_size if output_size is None else output_size)
     row_sign = dale_sign.reshape(-1, 1)
     col_sign = dale_sign.reshape(1, -1)
     weights_input_to_hidden = (
@@ -105,7 +107,7 @@ def init_dale_weights(
         np.abs(rng.standard_normal((hidden_size, hidden_size))) * scale * col_sign
     )
     weights_hidden_to_output = (
-        np.abs(rng.standard_normal((vocab_size, hidden_size))) * scale * col_sign
+        np.abs(rng.standard_normal((n_out, hidden_size))) * scale * col_sign
     )
     enforce_dale_weights(
         weights_input_to_hidden,
@@ -135,20 +137,26 @@ def reconstruct_init_weights(
     *,
     dale_law: bool = False,
     e_fraction: float = 0.8,
+    dale_init_scale: float | None = None,
+    output_size: int | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reproduce min_char_rnn weight initialization for a given RNG seed."""
     init_rng = np.random.default_rng(seed)
+    n_out = int(vocab_size if output_size is None else output_size)
     if dale_law:
         dale_sign = sample_dale_signs(hidden_size, e_fraction, init_rng)
-        dale_init_scale = 0.01 if hidden_size <= 32 else 0.005
+        scale = 0.01 if hidden_size <= 32 else 0.005
+        if dale_init_scale is not None:
+            scale = float(dale_init_scale)
         return init_dale_weights(
-            hidden_size, vocab_size, dale_sign, scale=dale_init_scale, rng=init_rng,
+            hidden_size, vocab_size, dale_sign, scale=scale, rng=init_rng,
+            output_size=n_out,
         )
     scale = 0.01
     return (
         init_rng.standard_normal((hidden_size, vocab_size)) * scale,
         init_rng.standard_normal((hidden_size, hidden_size)) * scale,
-        init_rng.standard_normal((vocab_size, hidden_size)) * scale,
+        init_rng.standard_normal((n_out, hidden_size)) * scale,
     )
 
 

@@ -55,6 +55,7 @@ from vocab_diagrams import (
     oov_char_fraction,
     segment_corpus_by_words,
     split_corpus_train_val,
+    word_index_array,
 )
 
 parser = argparse.ArgumentParser()
@@ -89,6 +90,12 @@ parser.add_argument(
 )
 parser.add_argument('--seed', type=int, default=42,
                     help='RNG seed for weight initialization (default: 42)')
+parser.add_argument(
+    '--objective',
+    default='next_char',
+    choices=('next_char', 'word'),
+    help='next_char: predict the following letter; word: classify the current word at each token',
+)
 parser.add_argument(
     '--target-word-error', type=float, default=None,
     help='stop once mean word error is at or below this fraction (e.g. 0.03 = 3%%)',
@@ -141,6 +148,34 @@ elif corpus_has_spaces:
 else:
     vocab_words = set()
 use_word_segmentation = bool(vocab_words) and not corpus_has_spaces
+
+word_objective = str(args.objective) == "word"
+output_classes: list[str] = list(unique_chars)
+n_output = vocab_size
+train_word_ids = None
+val_word_ids = None
+if word_objective:
+    if not vocab_words:
+        raise ValueError(
+            "word objective requires --exp with a vocabulary, or a spaced corpus"
+        )
+    output_classes = sorted(vocab_words)
+    n_output = len(output_classes)
+    train_word_ids = word_index_array(
+        train_text, output_classes, spaced=corpus_has_spaces,
+    )
+    val_word_ids = word_index_array(
+        val_text, output_classes, spaced=corpus_has_spaces,
+    )
+    n_labeled = int(np.sum(train_word_ids >= 0))
+    print(
+        f"objective: word classification ({n_output} words); "
+        f"labeled {n_labeled}/{len(train_text)} train chars"
+    )
+    if n_labeled == 0:
+        raise ValueError("word objective: no labeled characters in the training split")
+else:
+    print("objective: next-character prediction")
 
 # ----- hyperparameters --------------------------------------------------------
 hidden_size = args.hidden_size  # number of recurrent units in the hidden layer
@@ -215,6 +250,7 @@ if dale_law:
      weights_hidden_to_hidden,
      weights_hidden_to_output) = init_dale_weights(
         hidden_size, vocab_size, dale_sign, scale=dale_init_scale, rng=init_rng,
+        output_size=n_output,
     )
     n_exc = int(np.sum(dale_sign > 0))
     exc_range = f"h0..h{n_exc - 1}" if n_exc > 0 else "(none)"
@@ -225,7 +261,7 @@ if dale_law:
 else:
     weights_input_to_hidden = init_rng.standard_normal((hidden_size, vocab_size)) * 0.01
     weights_hidden_to_hidden = init_rng.standard_normal((hidden_size, hidden_size)) * 0.01
-    weights_hidden_to_output = init_rng.standard_normal((vocab_size, hidden_size)) * 0.01
+    weights_hidden_to_output = init_rng.standard_normal((n_output, hidden_size)) * 0.01
 
 if timestep_noise_std > 0:
     print(f"timestep noise std: {timestep_noise_std}")
@@ -237,7 +273,7 @@ elif l2_lambda > 0:
     print(f"L2 lambda: {l2_lambda} (no matrices selected)")
 
 bias_hidden = np.zeros((hidden_size, 1))
-bias_output = np.zeros((vocab_size, 1))
+bias_output = np.zeros((n_output, 1))
 
 
 def compute_loss_and_gradients(input_indices, target_indices, previous_hidden_state):
@@ -642,6 +678,62 @@ def validation_ce_per_char() -> float:
     return (total_loss / n_chars) if n_chars else float("nan")
 
 
+def teacher_forced_class_metrics(
+    text: str,
+    word_ids: np.ndarray,
+) -> tuple[float, float]:
+    """Teacher-forced CE/token and classification error on ``text``."""
+    if not text:
+        return float("nan"), float("nan")
+    hidden = np.zeros((hidden_size, 1))
+    total_loss = 0.0
+    n_valid = 0
+    n_err = 0
+    eval_noise = 0.0
+    for t, ch in enumerate(text):
+        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot[char_to_index[ch]] = 1
+        hidden, _ = rnn_hidden_step(
+            hidden, input_one_hot,
+            weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
+            use_relu=use_relu,
+            timestep_noise_std=eval_noise,
+            noise_rng=None,
+        )
+        logits = np.dot(weights_hidden_to_output, hidden) + bias_output
+        probs = stable_softmax(logits)
+        tid = int(word_ids[t])
+        if tid < 0:
+            continue
+        p = float(probs[tid, 0])
+        total_loss += -np.log(max(p, 1e-12))
+        n_err += int(int(np.argmax(probs)) != tid)
+        n_valid += 1
+    if n_valid == 0:
+        return float("nan"), float("nan")
+    return total_loss / n_valid, n_err / n_valid
+
+
+def predict_class_names(text: str) -> list[str]:
+    """Argmax output class at each teacher-forced timestep."""
+    hidden = np.zeros((hidden_size, 1))
+    preds: list[str] = []
+    for ch in text:
+        input_one_hot = np.zeros((vocab_size, 1))
+        input_one_hot[char_to_index[ch]] = 1
+        hidden, _ = rnn_hidden_step(
+            hidden, input_one_hot,
+            weights_input_to_hidden, weights_hidden_to_hidden, bias_hidden,
+            use_relu=use_relu,
+            timestep_noise_std=0.0,
+            noise_rng=None,
+        )
+        logits = np.dot(weights_hidden_to_output, hidden) + bias_output
+        ix = int(np.argmax(stable_softmax(logits)))
+        preds.append(output_classes[ix])
+    return preds
+
+
 def invalid_word_fraction(sampled_text: str, vocab: set[str]) -> float:
     """Fraction of in-vocab words; first/last tokens per rollout are dropped (edge trim)."""
     from vocab_diagrams import invalid_word_fraction as _invalid_word_fraction
@@ -685,7 +777,7 @@ mem_bias_output = np.zeros_like(bias_output)
 # A reasonable starting value: -log(1 / vocab_size) * sequence_length is the expected
 # cross-entropy if the model is uniform over the vocab and we sum over the BPTT window.
 # We track an exponential moving average so the printed loss isn't noisy window-to-window.
-smooth_loss = -np.log(1.0 / vocab_size) * sequence_length
+smooth_loss = -np.log(1.0 / n_output) * sequence_length
 max_iterations = args.steps
 loss_iterations = []
 loss_smooth = []
@@ -777,8 +869,9 @@ stall_evals_since_progress = 0
 _legacy_zero_stop = target_word_error is None
 _stop_threshold = 0.0 if _legacy_zero_stop else target_word_error
 if not _legacy_zero_stop:
+    metric_label = "word-class error" if word_objective else "word error"
     print(
-        f"early stop target: {100.0 * _stop_threshold:.2f}% word error "
+        f"early stop target: {100.0 * _stop_threshold:.2f}% {metric_label} "
         f"({early_stop_patience} consecutive evals)",
     )
 if stall_patience_evals > 0:
@@ -822,6 +915,8 @@ if args.exp:
 demo_snippet = corpus_middle_snippet(train_text, DEMO_SNIPPET_LEN)
 demo_before = None
 demo_after = None
+demo_pred_before = None
+demo_pred_after = None
 demo_word_error_frac = float("nan")
 demo_rng_seed = 0
 demo_seed_char = " " if (" " in char_to_index) else train_text[0]
@@ -835,36 +930,52 @@ while iteration < max_iterations:
 
   # Step the data pointer through the corpus in chunks of `sequence_length`.
   # If we run off the end (or we're on iteration 0), reset the hidden state and wrap to the start.
-  if data_pointer + sequence_length + 1 >= len(train_text) or iteration == 0:
+  if word_objective:
+    wrap = data_pointer + sequence_length > len(train_text)
+  else:
+    wrap = data_pointer + sequence_length + 1 >= len(train_text)
+  if wrap or iteration == 0:
     previous_hidden_state = np.zeros((hidden_size, 1))   # reset RNN memory across wraps
     data_pointer = 0
 
-  # For each t in [0, sequence_length), the model sees train_text[data_pointer + t]
-  # and must predict train_text[data_pointer + t + 1].
+  # For each t in [0, sequence_length), the model sees train_text[data_pointer + t].
+  # next_char: predict the following letter. word: classify the current word.
   input_indices  = [char_to_index[char] for char in train_text[data_pointer    : data_pointer + sequence_length    ]]
-  target_indices = [char_to_index[char] for char in train_text[data_pointer + 1: data_pointer + sequence_length + 1]]
+  if word_objective:
+    target_indices = [int(i) for i in train_word_ids[data_pointer: data_pointer + sequence_length]]
+  else:
+    target_indices = [char_to_index[char] for char in train_text[data_pointer + 1: data_pointer + sequence_length + 1]]
 
-  # Periodic rollout metrics for early stopping and learning-curve logging.
+  # Periodic metrics for early stopping and learning-curve logging.
   if iteration % eval_interval == 0:
-    sampled_indices = sample(previous_hidden_state, input_indices[0], 50)
-    sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
-    print('----\n %s \n----' % (sampled_text,))
+    letter_frac = float("nan")
+    rollout_text = ""
+    if word_objective:
+      val_ce, word_err = teacher_forced_class_metrics(val_text, val_word_ids)
+      print(
+          f"metric iter {iteration}, word-class err: {100.0 * word_err:.2f}%, "
+          f"val CE: {val_ce:.3f}/token",
+      )
+    else:
+      sampled_indices = sample(previous_hidden_state, input_indices[0], 50)
+      sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
+      print('----\n %s \n----' % (sampled_text,))
 
-    metric_seed = char_to_index[demo_seed_char]
-    metric_rng = np.random.default_rng(METRIC_RNG_BASE + iteration)
-    word_err, letter_frac, rollout_text = stochastic_word_validity_metrics(
-        metric_seed, vocab_words, rng=metric_rng,
-    )
-    val_ce = validation_ce_per_char()
+      metric_seed = char_to_index[demo_seed_char]
+      metric_rng = np.random.default_rng(METRIC_RNG_BASE + iteration)
+      word_err, letter_frac, rollout_text = stochastic_word_validity_metrics(
+          metric_seed, vocab_words, rng=metric_rng,
+      )
+      val_ce = validation_ce_per_char()
+      print(
+          f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%, "
+          f"val CE: {val_ce:.3f}/char",
+      )
     metric_iters.append(iteration)
     metric_valid_letter_frac.append(letter_frac)
     metric_word_error_frac.append(word_err)
     metric_val_ce.append(val_ce)
     metric_rollout_samples.append(rollout_text[:METRIC_ROLLOUT_LEN])
-    print(
-        f"metric iter {iteration}, word_err: {100.0 * word_err:.2f}%, "
-        f"val CE: {val_ce:.3f}/char",
-    )
     progress_path = Path(args.model).parent / f"{Path(args.model).stem}.progress"
     progress_path.write_text(
         f"{iteration}\t{word_err:.6f}\t{smooth_loss:.6f}\n",
@@ -884,6 +995,16 @@ while iteration < max_iterations:
             already_saved=_learning_saved_iters,
             iter_every=max(1, int(args.learning_snap_every)),
         ):
+            extra = {
+                "sequence_length": np.array(sequence_length, dtype=np.int32),
+                "vocab_words": np.array(sorted(vocab_words)),
+                "dale_law": np.array(dale_law),
+                "use_relu": np.array(use_relu),
+                "objective": np.array(args.objective),
+                "output_size": np.array(n_output, dtype=np.int32),
+            }
+            if word_objective:
+                extra["output_classes"] = np.array(output_classes)
             save_learning_snap(
                 args.model,
                 iteration=iteration,
@@ -893,12 +1014,7 @@ while iteration < max_iterations:
                 vocab_size=vocab_size,
                 word_err=float(word_err),
                 smooth_loss=float(smooth_loss),
-                extra={
-                    "sequence_length": np.array(sequence_length, dtype=np.int32),
-                    "vocab_words": np.array(sorted(vocab_words)),
-                    "dale_law": np.array(dale_law),
-                    "use_relu": np.array(use_relu),
-                },
+                extra=extra,
             )
             _learning_saved_iters.add(iteration)
         mark_crossings(float(word_err), _learning_crossed)
@@ -909,14 +1025,18 @@ while iteration < max_iterations:
         and np.isfinite(word_err)
     ):
         if word_err < best_word_err:
-            # Confirm with an independent eval before trusting a new best: the
-            # rollout metric is noisy/bimodal mid-training and a single lucky
-            # eval must not decide which weights get checkpointed.
-            confirm_rng = np.random.default_rng(METRIC_RNG_BASE + iteration + 1_000_003)
-            confirm_err, _, _ = stochastic_word_validity_metrics(
-                metric_seed, vocab_words, rng=confirm_rng,
-            )
-            confirmed_err = max(word_err, confirm_err)
+            if word_objective:
+                # Val classification error is teacher-forced (deterministic).
+                confirmed_err = word_err
+            else:
+                # Confirm with an independent eval before trusting a new best: the
+                # rollout metric is noisy/bimodal mid-training and a single lucky
+                # eval must not decide which weights get checkpointed.
+                confirm_rng = np.random.default_rng(METRIC_RNG_BASE + iteration + 1_000_003)
+                confirm_err, _, _ = stochastic_word_validity_metrics(
+                    metric_seed, vocab_words, rng=confirm_rng,
+                )
+                confirmed_err = max(word_err, confirm_err)
             if confirmed_err < best_word_err:
                 best_word_err = confirmed_err
                 best_valid_letter_frac = letter_frac
@@ -940,9 +1060,10 @@ while iteration < max_iterations:
                     "0 invalid vocabulary words for 300 iterations",
                 )
             else:
+                stop_name = "word-class error" if word_objective else "word error"
                 print(
                     f"early stop at iter {iteration}: "
-                    f"word error <= {100.0 * _stop_threshold:.2f}% "
+                    f"{stop_name} <= {100.0 * _stop_threshold:.2f}% "
                     f"for {early_stop_patience * eval_interval} training steps",
                 )
             break
@@ -958,9 +1079,20 @@ while iteration < max_iterations:
             break
 
     if iteration == 0:
-      sample_before_text = rollout_text[:DEMO_SNIPPET_LEN]
-      demo_rng_seed = METRIC_RNG_BASE
-      demo_before = rollout_text[:DEMO_SNIPPET_LEN]
+      if word_objective:
+        demo_pred_before = predict_class_names(demo_snippet)
+        sample_before_text = demo_snippet
+        demo_before = demo_snippet
+        demo_rng_seed = METRIC_RNG_BASE
+      else:
+        sample_before_text = rollout_text[:DEMO_SNIPPET_LEN]
+        demo_rng_seed = METRIC_RNG_BASE
+        demo_before = rollout_text[:DEMO_SNIPPET_LEN]
+
+  if word_objective and any(t < 0 for t in target_indices):
+    data_pointer += sequence_length
+    iteration += 1
+    continue
 
   # Forward + backward over the window. previous_hidden_state is updated to the last
   # hidden state of *this* window, so the next iteration continues the recurrence smoothly.
@@ -1022,11 +1154,12 @@ while iteration < max_iterations:
   if iteration > 0 and _should_record_weight_snapshot(iteration):
     _append_weight_snapshot(iteration)
 
-# Final sample after training finishes, plus the last smoothed loss.
-sampled_indices = sample(previous_hidden_state, char_to_index[train_text[0]], 50)
-sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
-print('----\n %s \n----' % (sampled_text,))
+# Final eval after training finishes, plus the last smoothed loss.
 print('iter %d, loss: %f (done)' % (iteration, smooth_loss))
+if not word_objective:
+    sampled_indices = sample(previous_hidden_state, char_to_index[train_text[0]], 50)
+    sampled_text = ''.join(index_to_char[i] for i in sampled_indices)
+    print('----\n %s \n----' % (sampled_text,))
 
 if args.save_learning_snaps:
     from rnn.learning_snaps import save_learning_snap
@@ -1046,6 +1179,8 @@ if args.save_learning_snaps:
                 "vocab_words": np.array(sorted(vocab_words)),
                 "dale_law": np.array(dale_law),
                 "use_relu": np.array(use_relu),
+                "objective": np.array(args.objective),
+                "output_size": np.array(n_output, dtype=np.int32),
             },
         )
         _learning_saved_iters.add(iteration)
@@ -1061,14 +1196,16 @@ if best_state is not None and best_iter >= MIN_CHECKPOINT_ITER:
         if _legacy_zero_stop:
             print(f"using checkpoint from iter {best_iter} (0% invalid vocabulary words)")
         elif best_word_err <= _stop_threshold:
+            stop_name = "word-class error" if word_objective else "word error"
             print(
                 f"using checkpoint from iter {best_iter} "
-                f"({100.0 * best_word_err:.2f}% word error, target met)",
+                f"({100.0 * best_word_err:.2f}% {stop_name}, target met)",
             )
         else:
+            stop_name = "word-class error" if word_objective else "word error"
             print(
                 f"using checkpoint from iter {best_iter} "
-                f"({100.0 * best_word_err:.2f}% word error, best seen)",
+                f"({100.0 * best_word_err:.2f}% {stop_name}, best seen)",
             )
         restore_params(best_state)
     elif _legacy_zero_stop:
@@ -1086,25 +1223,36 @@ else:
         "was not reached)",
     )
 
-final_rng = np.random.default_rng(METRIC_RNG_BASE + iteration)
-final_word_err, final_letter_valid, rollout_text = stochastic_word_validity_metrics(
-    char_to_index[demo_seed_char], vocab_words, rng=final_rng,
-)
-sample_after_text = rollout_text[:DEMO_SNIPPET_LEN]
-demo_rng_seed = METRIC_RNG_BASE + iteration
-demo_after = rollout_text[:DEMO_SNIPPET_LEN]
-demo_word_error_frac = invalid_word_fraction(rollout_text, vocab_words)
+if word_objective:
+    demo_pred_after = predict_class_names(demo_snippet)
+    sample_after_text = demo_snippet
+    demo_after = demo_snippet
+    final_ce, final_word_err = teacher_forced_class_metrics(val_text, val_word_ids)
+    demo_word_error_frac = final_word_err
+    print(
+        f"final word-class error (val, teacher-forced): {100.0 * final_word_err:.2f}% "
+        f"(CE {final_ce:.3f}/token)"
+    )
+else:
+    final_rng = np.random.default_rng(METRIC_RNG_BASE + iteration)
+    final_word_err, final_letter_valid, rollout_text = stochastic_word_validity_metrics(
+        char_to_index[demo_seed_char], vocab_words, rng=final_rng,
+    )
+    sample_after_text = rollout_text[:DEMO_SNIPPET_LEN]
+    demo_rng_seed = METRIC_RNG_BASE + iteration
+    demo_after = rollout_text[:DEMO_SNIPPET_LEN]
+    demo_word_error_frac = invalid_word_fraction(rollout_text, vocab_words)
 
-print(
-    f"final OOV-char rate (mean over {METRIC_NUM_ROLLOUTS} stochastic rollouts × "
-    f"{METRIC_ROLLOUT_LEN} chars, corpus-conditioned; boundary chars trimmed): "
-    f"{100.0 * final_word_err:.2f}%",
-)
-print(
-    f"final demo rollout ({len(rollout_text)} chars, seed {demo_rng_seed}; "
-    f"edge tokens trimmed): {100.0 * demo_word_error_frac:.2f}% invalid words",
-)
-print(f"final in-vocab letter fraction: {100.0 * final_letter_valid:.2f}%")
+    print(
+        f"final OOV-char rate (mean over {METRIC_NUM_ROLLOUTS} stochastic rollouts × "
+        f"{METRIC_ROLLOUT_LEN} chars, corpus-conditioned; boundary chars trimmed): "
+        f"{100.0 * final_word_err:.2f}%",
+    )
+    print(
+        f"final demo rollout ({len(rollout_text)} chars, seed {demo_rng_seed}; "
+        f"edge tokens trimmed): {100.0 * demo_word_error_frac:.2f}% invalid words",
+    )
+    print(f"final in-vocab letter fraction: {100.0 * final_letter_valid:.2f}%")
 if dale_law:
     viol = dale_violation_fraction(
         weights_input_to_hidden,
@@ -1170,6 +1318,11 @@ np.savez(
     dropout_rate=np.array(dropout_rate, dtype=np.float64),
     l2_lambda=np.array(l2_lambda, dtype=np.float64),
     l2_on=np.array(",".join(sorted(l2_matrices)) if l2_matrices else "none"),
+    objective=np.array(args.objective),
+    output_size=np.array(n_output, dtype=np.int32),
+    output_classes=np.array(output_classes),
+    demo_pred_before=np.array(demo_pred_before if demo_pred_before is not None else []),
+    demo_pred_after=np.array(demo_pred_after if demo_pred_after is not None else []),
     **snapshot_arrays,
 )
 print(f'saved trained model to {model_out}')

@@ -8,10 +8,13 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from viz.plot_layout import finalize_grid_figure, save_figure
+from viz.plot_layout import finalize_grid_figure, hide_x_tick_labels, save_figure
 from viz.weight_structure import (
+    compute_sparse_edge_signed_triad_iso_counts,
     compute_weight_colored_hl_motif_counts,
     compute_weight_edge_signed_hl_motif_counts,
+    collapse_edge_signed_counts_to_iso,
+    enumerate_edge_signed_triad_iso_keys,
     parse_edge_signed_hl_motif,
 )
 
@@ -350,6 +353,7 @@ _HYPOTHESIS_SPECS: list[tuple[str, str]] = [
 
 
 _EDGE_COUNT_COLORS: dict[int, str] = {
+    0: "#9AA0A6",
     1: "#72B7B2",
     2: "#4C78A8",
     3: "#F58518",
@@ -2780,6 +2784,169 @@ def _attach_demo_trajectories(
     return out
 
 
+def _load_run_hh_before_after(
+    run_id: int,
+    *,
+    model: str,
+    seed: int,
+) -> dict[str, Any] | None:
+    """First and last learning-snap W_hh for one mixed-DFA run (iter 0 = init)."""
+    from experiment import checkpoint_path
+    from rnn.learning_snaps import list_learning_snaps
+
+    task = f"mixeddfa_r{run_id:02d}_ns"
+    ckpt = checkpoint_path(task, model, seed=seed)
+    snaps = _dominant_session(list_learning_snaps(ckpt))
+    if len(snaps) < 2:
+        return None
+    d0 = np.load(snaps[0], allow_pickle=True)
+    d1 = np.load(snaps[-1], allow_pickle=True)
+    w0 = np.asarray(d0["weights_hidden_to_hidden"], dtype=float)
+    w1 = np.asarray(d1["weights_hidden_to_hidden"], dtype=float)
+    xin0 = (
+        np.asarray(d0["weights_input_to_hidden"], dtype=float)
+        if "weights_input_to_hidden" in d0.files else None
+    )
+    xin1 = (
+        np.asarray(d1["weights_input_to_hidden"], dtype=float)
+        if "weights_input_to_hidden" in d1.files else None
+    )
+    it0 = (
+        int(d0["learning_snap_iteration"])
+        if "learning_snap_iteration" in d0.files else _snap_iteration(snaps[0])
+    )
+    it1 = (
+        int(d1["learning_snap_iteration"])
+        if "learning_snap_iteration" in d1.files else _snap_iteration(snaps[-1])
+    )
+    return {
+        "W0": w0, "W1": w1, "Xin0": xin0, "Xin1": xin1, "it0": it0, "it1": it1,
+    }
+
+
+def _draw_hh_before_after_row(
+    fig: plt.Figure,
+    gs,
+    payload: dict[str, Any] | None,
+    *,
+    run_id: int,
+) -> None:
+    """Four heatmaps: raw W_hh and mean-|W| trinary (+/−/0), start vs end.
+
+    Unit order is hierarchical clustering of the *final* weights, applied to
+    both snapshots so before/after panels are comparable.
+    """
+    from matplotlib.colors import BoundaryNorm, ListedColormap
+    from viz.weight_structure import (
+        _SIGNED_NEG_COLOR,
+        _SIGNED_POS_COLOR,
+        _cluster_unit_order,
+        _signed_threshold_adj,
+        symmetric_abs_vmax,
+    )
+
+    # Three groups: (W0+cbar) | (W1+cbar) | (T0, T1, cbarT)
+    gs_w0 = gs[0, 0].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
+    gs_w1 = gs[0, 1].subgridspec(1, 2, width_ratios=[1.0, 0.07], wspace=0.06)
+    gs_t = gs[0, 2].subgridspec(1, 3, width_ratios=[1.0, 1.0, 0.08], wspace=0.10)
+    ax_w0 = fig.add_subplot(gs_w0[0, 0])
+    cax_w0 = fig.add_subplot(gs_w0[0, 1])
+    ax_w1 = fig.add_subplot(gs_w1[0, 0])
+    cax_w1 = fig.add_subplot(gs_w1[0, 1])
+    ax_t0 = fig.add_subplot(gs_t[0, 0])
+    ax_t1 = fig.add_subplot(gs_t[0, 1])
+    cax_t = fig.add_subplot(gs_t[0, 2])
+    axes_w = (ax_w0, ax_w1)
+    axes_t = (ax_t0, ax_t1)
+
+    if payload is None:
+        for ax in (*axes_w, *axes_t):
+            ax.axis("off")
+        ax_w0.text(
+            0.5, 0.5, "no learning snaps", ha="center", va="center",
+            transform=ax_w0.transAxes, fontsize=8,
+        )
+        for cax in (cax_w0, cax_w1, cax_t):
+            cax.axis("off")
+        return
+
+    w0 = np.asarray(payload["W0"], dtype=float)
+    w1 = np.asarray(payload["W1"], dtype=float)
+    xin1 = payload.get("Xin1")
+    if xin1 is not None:
+        order = _cluster_unit_order(np.asarray(xin1, dtype=float), w1)
+    else:
+        order = _cluster_unit_order(w1, w1)
+    w0c = w0[np.ix_(order, order)]
+    w1c = w1[np.ix_(order, order)]
+    s0, thr0 = _signed_threshold_adj(w0c, mode="mean")
+    s1, thr1 = _signed_threshold_adj(w1c, mode="mean")
+    n = w0c.shape[0]
+    it0, it1 = int(payload["it0"]), int(payload["it1"])
+
+    # RdBu: low=red=negative, high=blue=positive — matches motif glyphs.
+    cmap_w = plt.cm.RdBu
+    cmap_t = ListedColormap([_SIGNED_NEG_COLOR, "#f2f2f2", _SIGNED_POS_COLOR])
+    norm_t = BoundaryNorm([-1.5, -0.5, 0.5, 1.5], cmap_t.N)
+
+    w_specs = (
+        (ax_w0, cax_w0, w0c, it0, f"r{run_id:02d}  $W_{{hh}}$ before"),
+        (ax_w1, cax_w1, w1c, it1, r"$W_{hh}$ after"),
+    )
+    last_ticks = [0, max(n - 1, 0)]
+    im_t1 = None
+    for j, (ax, cax, data, it, title) in enumerate(w_specs):
+        vmax = max(symmetric_abs_vmax(data), 1e-9)
+        im = ax.imshow(
+            data, aspect="auto", cmap=cmap_w, vmin=-vmax, vmax=vmax,
+            interpolation="nearest", origin="lower",
+        )
+        ax.set_title(f"{title}  it={it}", fontsize=7.2, pad=3.0)
+        ax.set_xticks(last_ticks)
+        ax.set_yticks(last_ticks)
+        ax.tick_params(labelsize=5.5)
+        if j == 0:
+            ax.set_ylabel("target h", fontsize=6.5)
+        else:
+            ax.tick_params(labelleft=False)
+        ax.set_xlabel("source h", fontsize=6.5)
+        cbar = fig.colorbar(im, cax=cax)
+        cbar.set_label(r"$w$", fontsize=6.5, labelpad=1)
+        cbar.ax.tick_params(labelsize=5.0, pad=1)
+
+    t_specs = (
+        (ax_t0, s0, thr0, it0, "+/-/0 before"),
+        (ax_t1, s1, thr1, it1, "+/-/0 after"),
+    )
+    for j, (ax, data, thr, it, title) in enumerate(t_specs):
+        n_edge = int(np.sum(data != 0))
+        n_pos = int(np.sum(data > 0))
+        n_neg = int(np.sum(data < 0))
+        im_t1 = ax.imshow(
+            data, aspect="auto", cmap=cmap_t, norm=norm_t,
+            interpolation="nearest", origin="lower",
+        )
+        ax.set_title(f"{title}  it={it}", fontsize=7.2, pad=3.0)
+        ax.set_xticks(last_ticks)
+        ax.set_yticks(last_ticks)
+        ax.tick_params(labelsize=5.5, labelleft=False)
+        ax.set_xlabel("source h", fontsize=6.5)
+        thr_s = f"{thr:.2g}" if np.isfinite(thr) else "nan"
+        ax.text(
+            0.03, 0.03,
+            f"{n_edge} edges  ({n_pos}+ / {n_neg}-)\nthr={thr_s}",
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=5.4,
+            color="0.15",
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.82, pad=0.7),
+            zorder=5,
+        )
+
+    cbar_t = fig.colorbar(im_t1, cax=cax_t, ticks=[-1, 0, 1])
+    cbar_t.ax.set_yticklabels(["-", "0", "+"])
+    cbar_t.ax.tick_params(labelsize=6.0, pad=1)
+    cbar_t.set_label("sign", fontsize=6.5, labelpad=1)
+
+
 def plot_all_runs_homogenization_board(
     cache_path: Path,
     out_path: Path,
@@ -2892,13 +3059,18 @@ def plot_all_runs_homogenization_board(
     preferred_tiers = [ne for ne in (2, 3, 4, 5) if ne in tiers] or tiers[:4]
     n_tier = max(1, len(preferred_tiers))
     n_meta = 3
+    hh_pair = _load_run_hh_before_after(exempl_id, model=model, seed=seed)
 
-    fig = plt.figure(figsize=(max(13.4, 2.55 * max(n_tier, n_meta) + 0.8), 9.2))
-    outer = fig.add_gridspec(3, 1, height_ratios=[0.78, 1.05, 1.05], hspace=0.42)
-    demo_row = outer[0].subgridspec(1, max(n_demo, 1), wspace=0.32)
-    tier_row = outer[1].subgridspec(1, n_tier, wspace=0.30)
-    meta_row = outer[2].subgridspec(1, n_meta, wspace=0.30)
+    fig = plt.figure(figsize=(max(13.6, 2.55 * max(n_tier, n_meta) + 0.8), 12.6))
+    outer = fig.add_gridspec(4, 1, height_ratios=[1.22, 0.82, 1.05, 1.05], hspace=0.48)
+    mat_row = outer[0].subgridspec(
+        1, 3, width_ratios=[1.12, 1.12, 2.20], wspace=0.22,
+    )
+    demo_row = outer[1].subgridspec(1, max(n_demo, 1), wspace=0.32)
+    tier_row = outer[2].subgridspec(1, n_tier, wspace=0.30)
+    meta_row = outer[3].subgridspec(1, n_meta, wspace=0.30)
     schema_insets: list[tuple[Any, str, bool]] = []
+    _draw_hh_before_after_row(fig, mat_row, hh_pair, run_id=exempl_id)
 
     if not demos:
         ax = fig.add_subplot(demo_row[0, 0])
@@ -3017,11 +3189,11 @@ def plot_all_runs_homogenization_board(
             f"meta vs DFA: n={len(series)} runs, {n_solved} solved"
         ),
         suptitle_fontsize=10,
-        top=0.94,
-        bottom=0.06,
-        left=0.06,
+        top=0.93,
+        bottom=0.045,
+        left=0.05,
         right=0.98,
-        hspace=0.42,
+        hspace=0.48,
         wspace=0.30,
     )
     for inset, key, _rising in schema_insets:
@@ -3436,4 +3608,224 @@ def plot_all_runs_over_learning(
         tag = "ok" if row["solved"] else "unsolved"
         print(f"  r{rid:02d} DFA={n_dfa:3d}  n={n:3d}  beta={beta_val:+.3f}  R2={r2:.3f}  {tag}")
     print(f"median per-run R2={med_r2:.3f}  runs={len(series)}  points={len(rows)}")
+    return out_path
+
+
+def collect_iso_counts_over_learning(
+    labeled_json: Path,
+    out_json: Path,
+    *,
+    run_id: int,
+    model: str,
+    seed: int,
+    rebuild: bool = False,
+) -> Path:
+    """Collapse labeled census to 138 iso classes; fill 003/012/102 from snaps."""
+    if out_json.is_file() and not rebuild:
+        payload = json.loads(out_json.read_text(encoding="utf-8"))
+        n_iso = len(payload.get("iso_keys", []))
+        print(f"reuse {out_json}  iso={n_iso}  snaps={len(payload.get('snaps', []))}")
+        return out_json
+
+    from experiment import checkpoint_path
+    from rnn.learning_snaps import list_learning_snaps
+
+    labeled = json.loads(labeled_json.read_text(encoding="utf-8"))
+    iso_keys = list(enumerate_edge_signed_triad_iso_keys())
+    if len(iso_keys) != 138:
+        raise RuntimeError(f"expected 138 iso classes, got {len(iso_keys)}")
+
+    ckpt = checkpoint_path(f"mixeddfa_r{run_id:02d}_ns", model, seed=seed)
+    if not ckpt.is_file():
+        raise FileNotFoundError(ckpt)
+    snap_by_it = {
+        _snap_iteration(p): p
+        for p in _dominant_session(list_learning_snaps(ckpt))
+    }
+
+    rows: list[dict] = []
+    for snap in labeled:
+        it = int(snap["it"])
+        collapsed = collapse_edge_signed_counts_to_iso(snap["cnt"])
+        path = snap_by_it.get(it)
+        if path is None:
+            raise FileNotFoundError(f"no learning snap for iteration {it} (r{run_id:02d})")
+        d = np.load(path, allow_pickle=True)
+        sparse = compute_sparse_edge_signed_triad_iso_counts(
+            d["weights_hidden_to_hidden"],
+            mode="mean",
+            triples_conn=float(snap.get("triples_conn", 0.0)),
+        )
+        collapsed.update(sparse)
+        cnt = {k: float(collapsed.get(k, 0.0)) for k in iso_keys}
+        rows.append({
+            "it": it,
+            "we": float(snap.get("we", float("nan"))),
+            "cnt": cnt,
+            "triples_conn": float(snap.get("triples_conn", float("nan"))),
+        })
+        print(f"  iso it={it}  003={cnt.get('T||', 0):.0f}", flush=True)
+
+    payload = {
+        "run_id": int(run_id),
+        "model": model,
+        "seed": int(seed),
+        "coloring": "edge_sign",
+        "iso": True,
+        "n_iso": len(iso_keys),
+        "iso_keys": iso_keys,
+        "snaps": rows,
+    }
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"wrote {out_json}  snaps={len(rows)}  iso={len(iso_keys)}")
+    return out_json
+
+
+def plot_iso_counts_over_learning(
+    labeled_json: Path,
+    out_path: Path,
+    *,
+    run_id: int,
+    model: str = "rnn",
+    seed: int = 1,
+    rebuild: bool = False,
+    ncol: int = 12,
+) -> Path:
+    """One count-vs-iteration panel per signed triad iso class (n=138)."""
+    from viz.weight_structure import (
+        draw_edge_signed_hl_motif,
+        edge_signed_hl_schema_pseudo,
+        motif_schema_box,
+    )
+
+    cache = labeled_json.with_name(f"r{run_id:02d}_{model}_motif_iso_over_learning.json")
+    collect_iso_counts_over_learning(
+        labeled_json, cache,
+        run_id=run_id, model=model, seed=seed, rebuild=rebuild,
+    )
+    payload = json.loads(cache.read_text(encoding="utf-8"))
+    iso_keys: list[str] = list(payload["iso_keys"])
+    snaps: list[dict] = payload["snaps"]
+    iters = np.array([s["it"] for s in snaps], dtype=float)
+    counts = np.array(
+        [[float(s["cnt"].get(k, 0.0)) for k in iso_keys] for s in snaps],
+        dtype=float,
+    )
+
+    by_ne: dict[int, list[tuple[str, int]]] = {}
+    for j, key in enumerate(iso_keys):
+        ne = _n_edges_from_key(key)
+        by_ne.setdefault(ne, []).append((key, j))
+    groups = sorted(by_ne.items())
+
+    row_spec: list[tuple[str, int, list[tuple[str, int]] | None]] = []
+    height_ratios: list[float] = []
+    for ne, items in groups:
+        row_spec.append(("banner", ne, None))
+        height_ratios.append(0.22)
+        for i0 in range(0, len(items), ncol):
+            row_spec.append(("data", ne, items[i0:i0 + ncol]))
+            height_ratios.append(1.28)
+    n_data = sum(1 for kind, _, _ in row_spec if kind == "data")
+    n_banner = sum(1 for kind, _, _ in row_spec if kind == "banner")
+
+    fig_w = 1.18 * ncol + 0.7
+    fig_h = 0.34 * n_banner + 1.78 * n_data + 0.60
+    fig = plt.figure(figsize=(fig_w, fig_h))
+    gs = fig.add_gridspec(
+        len(row_spec), ncol, height_ratios=height_ratios, hspace=0.38, wspace=0.22,
+    )
+    schema_axes: list[tuple[Any, str]] = []
+    last_data_row = max(i for i, (kind, _, _) in enumerate(row_spec) if kind == "data")
+
+    for r, (kind, ne, items) in enumerate(row_spec):
+        col = _EDGE_COUNT_COLORS.get(ne, "#888888")
+        if kind == "banner":
+            ax_b = fig.add_subplot(gs[r, :])
+            ax_b.set_xlim(0.0, 1.0)
+            ax_b.set_ylim(0.0, 1.0)
+            ax_b.axis("off")
+            n_cls = len(by_ne[ne])
+            ax_b.text(
+                0.0, 0.42,
+                f"{ne}-edge   {n_cls} iso class{'es' if n_cls != 1 else ''}",
+                fontsize=9.0, color=col, fontweight="bold", va="center",
+                transform=ax_b.transAxes, clip_on=False,
+            )
+            continue
+        assert items is not None
+        for c in range(ncol):
+            if c >= len(items):
+                fig.add_subplot(gs[r, c]).axis("off")
+                continue
+            key, j = items[c]
+            cell = gs[r, c].subgridspec(2, 1, height_ratios=[0.55, 1.0], hspace=0.08)
+            ax_s = fig.add_subplot(cell[0, 0])
+            ax = fig.add_subplot(cell[1, 0])
+            ax_s.set_axis_off()
+            ax_s.set_xlim(0.0, 1.0)
+            ax_s.set_ylim(0.0, 1.0)
+            schema_axes.append((ax_s, key))
+
+            y = counts[:, j]
+            ax.plot(iters, y, color=col, lw=1.15, zorder=2)
+            ax.grid(True, alpha=0.22)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.tick_params(labelsize=5.2, pad=0.6)
+            ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=4, min_n_ticks=3))
+            ax.ticklabel_format(axis="y", style="plain", useOffset=False)
+            y0, y1 = float(y[0]), float(y[-1])
+            fold = float(y1 / max(y0, EPS))
+            lo, hi = float(np.min(y)), float(np.max(y))
+            pad = 0.12 * max(hi - lo, max(hi, 1.0) * 0.04)
+            ax.set_ylim(max(0.0, lo - pad), hi + pad)
+            ax.text(
+                0.97, 0.06, rf"$\times${fold:.2f}",
+                transform=ax.transAxes, ha="right", va="bottom",
+                fontsize=5.4, color="0.20", zorder=6,
+                bbox=dict(facecolor="white", edgecolor="none", alpha=0.82, pad=0.5),
+            )
+            if c == 0:
+                ax.set_ylabel("count", fontsize=6.0, labelpad=1.0)
+            if r == last_data_row:
+                ax.set_xlabel("iteration", fontsize=6.0, labelpad=1.0)
+            else:
+                hide_x_tick_labels(ax)
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"r{run_id:02d} {model}: 138 edge-sign triad motifs "
+            f"(unique up to isomorphism, including empty / 1-edge / one-mutual)"
+        ),
+        suptitle_fontsize=11,
+        top=0.975,
+        bottom=0.018,
+        left=0.035,
+        right=0.992,
+        hspace=0.38,
+        wspace=0.22,
+    )
+    for ax_s, key in schema_axes:
+        draw_edge_signed_hl_motif(
+            ax_s, key,
+            box=motif_schema_box(
+                ax_s, edge_signed_hl_schema_pseudo(key),
+                center_x=0.50, height_frac=0.98, max_width=0.98,
+            ),
+        )
+    save_figure(fig, out_path, dpi=140)
+    print(f"wrote {out_path}  panels={len(iso_keys)}")
+    for ne, items in groups:
+        folds = []
+        for key, j in items:
+            y = counts[:, j]
+            folds.append(float(y[-1] / max(y[0], EPS)))
+        print(
+            f"  {ne}e  n={len(items):3d}  "
+            f"med ×{float(np.median(folds)):.2f}  "
+            f"min ×{float(np.min(folds)):.2f}  max ×{float(np.max(folds)):.2f}"
+        )
     return out_path

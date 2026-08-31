@@ -47,6 +47,7 @@ ALL_RUNS_DYAD_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_counts_raw_over_learning.png
 ALL_RUNS_DYAD_BETA_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_fold_beta_vs_dfa.png"
 ALL_RUNS_SUMMARY_OUT = MOTIF_DIR / "mixed_dfa_rnn_motif_homogenization_summary.png"
 ALL_RUNS_DYAD_SUMMARY_OUT = MOTIF_DIR / "mixed_dfa_rnn_dyad_homogenization_summary.png"
+R43_RNN_ISO_OUT = MOTIF_DIR / "r43_rnn_motif_iso_counts_over_learning.png"
 MODEL = "rnn"
 COLORING = "edge_sign"
 SEED = 1
@@ -1038,6 +1039,7 @@ def main() -> None:
             "r43-rnn-unsigned",
             "r43-rnn-lollipop",
             "r43-rnn-dyad-lollipop",
+            "r43-rnn-iso-over-learning",
         ),
         default="raw-over-learning",
         help="figure to generate",
@@ -1252,6 +1254,15 @@ def main() -> None:
             max_snaps_per_run=MAX_SNAPS_PER_RUN,
             coloring=args.coloring,
             motif_prefix="D|",
+        )
+    elif args.only == "r43-rnn-iso-over-learning":
+        mar.plot_iso_counts_over_learning(
+            args.json if args.json != DEFAULT_JSON else R43_RNN_JSON,
+            args.out or R43_RNN_ISO_OUT,
+            run_id=SINGLE_RUN_ID,
+            model="rnn",
+            seed=SEED,
+            rebuild=args.rebuild_cache,
         )
 
 

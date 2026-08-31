@@ -1124,10 +1124,21 @@ def draw_unsigned_hl_motif(
     )
 
 
+EMPTY_EDGE_SIGNED_TRIAD_KEY = "T||"
+_TRIAD_DIR_EDGES: tuple[tuple[int, int], ...] = (
+    (0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1),
+)
+
+
 def parse_edge_signed_hl_motif(key: str) -> tuple[tuple[int, int, int], ...] | None:
-    """Parse ``D|01,10|+-`` / ``T|01,12,20|++-`` into signed directed edges."""
+    """Parse ``D|01,10|+-`` / ``T|01,12,20|++-`` into signed directed edges.
+
+    The empty triad iso class is ``T||`` and returns ``()``.
+    """
     if not (key.startswith("T|") or key.startswith("D|")):
         return None
+    if key == EMPTY_EDGE_SIGNED_TRIAD_KEY:
+        return ()
     parts = str(key).split("|")
     if len(parts) != 3 or not parts[1] or not parts[2]:
         return None
@@ -1143,12 +1154,153 @@ def parse_edge_signed_hl_motif(key: str) -> tuple[tuple[int, int, int], ...] | N
     return tuple(edges) if edges else None
 
 
+def edge_signed_key_from_signed_edges(
+    signed: tuple[tuple[int, int, int], ...],
+    *,
+    prefix: str = "T",
+) -> str:
+    """Build a ``T|01,12|+-`` key from ``(src, dst, sign)`` triples."""
+    coded = sorted(
+        (f"{int(a)}{int(b)}", "+" if int(s) > 0 else "-")
+        for a, b, s in signed
+    )
+    if not coded:
+        return EMPTY_EDGE_SIGNED_TRIAD_KEY if prefix == "T" else "D||"
+    ek = ",".join(c for c, _ in coded)
+    col = "".join(p for _, p in coded)
+    return f"{prefix}|{ek}|{col}"
+
+
+def canonical_edge_signed_iso_key(key: str) -> str:
+    """Lexicographically smallest node-relabeling of an edge-sign HL key."""
+    if key == EMPTY_EDGE_SIGNED_TRIAD_KEY:
+        return EMPTY_EDGE_SIGNED_TRIAD_KEY
+    edges = parse_edge_signed_hl_motif(key)
+    if edges is None:
+        return key
+    prefix = "D" if key.startswith("D|") else "T"
+    n_nodes = 2 if prefix == "D" else 3
+    best: str | None = None
+    from itertools import permutations
+
+    for perm in permutations(range(n_nodes)):
+        remapped = tuple((perm[a], perm[b], s) for a, b, s in edges)
+        cand = edge_signed_key_from_signed_edges(remapped, prefix=prefix)
+        if best is None or cand < best:
+            best = cand
+    return best if best is not None else key
+
+
+def enumerate_edge_signed_triad_iso_keys() -> tuple[str, ...]:
+    """All signed 3-node digraphs up to isomorphism, including the empty graph."""
+    from itertools import product
+
+    keys: set[str] = set()
+    for vals in product(".+-", repeat=6):
+        signed = tuple(
+            (a, b, 1 if v == "+" else -1)
+            for v, (a, b) in zip(vals, _TRIAD_DIR_EDGES)
+            if v != "."
+        )
+        raw = edge_signed_key_from_signed_edges(signed)
+        keys.add(canonical_edge_signed_iso_key(raw))
+    return tuple(sorted(keys, key=lambda k: (_iso_n_edges(k), k)))
+
+
+def _iso_n_edges(key: str) -> int:
+    if key == EMPTY_EDGE_SIGNED_TRIAD_KEY:
+        return 0
+    parts = str(key).split("|")
+    if len(parts) < 2 or not parts[1]:
+        return 0
+    return len([e for e in parts[1].split(",") if e])
+
+
+def collapse_edge_signed_counts_to_iso(cnt: dict[str, float | int]) -> dict[str, float]:
+    """Sum labeled census keys that are the same signed graph up to relabeling."""
+    out: dict[str, float] = {}
+    for key, val in cnt.items():
+        if not str(key).startswith("T|"):
+            continue
+        iso = canonical_edge_signed_iso_key(str(key))
+        out[iso] = out.get(iso, 0.0) + float(val)
+    return out
+
+
+def compute_sparse_edge_signed_triad_iso_counts(
+    w_rec: np.ndarray,
+    *,
+    mode: str = "mean",
+    q: float = 0.75,
+    triples_conn: float | int | None = None,
+) -> dict[str, float]:
+    """Iso-class counts for HL ``003`` / ``012`` / ``102`` (skipped by the main census).
+
+    ``012`` and ``102`` are counted in ``O(m n)``. Empty ``003`` is
+    ``C(n,3) - triples_conn - n_012 - n_102`` when ``triples_conn`` is the
+    connected-triple total from the non-sparse census.
+    """
+    from collections import Counter
+
+    w = np.asarray(w_rec, dtype=float)
+    g, _thr = _thresholded_digraph(w, mode=mode, q=q)
+    n = int(w.shape[0])
+    E = np.zeros((n, n), dtype=bool)
+    for u, v in g.edges():
+        E[int(u), int(v)] = True
+
+    def pol(i: int, j: int) -> int:
+        return 1 if float(w[i, j]) > 0 else -1
+
+    n012 = Counter()
+    n102 = Counter()
+    for i in range(n):
+        for j in range(n):
+            if i == j or not E[i, j] or E[j, i]:
+                continue
+            iso = canonical_edge_signed_iso_key(
+                edge_signed_key_from_signed_edges(((0, 1, pol(i, j)),)),
+            )
+            for k in range(n):
+                if k == i or k == j:
+                    continue
+                if E[i, k] or E[k, i] or E[j, k] or E[k, j]:
+                    continue
+                n012[iso] += 1
+    for i in range(n):
+        for j in range(i + 1, n):
+            if not (E[i, j] and E[j, i]):
+                continue
+            iso = canonical_edge_signed_iso_key(
+                edge_signed_key_from_signed_edges(
+                    ((0, 1, pol(i, j)), (1, 0, pol(j, i))),
+                ),
+            )
+            for k in range(n):
+                if k == i or k == j:
+                    continue
+                if E[i, k] or E[k, i] or E[j, k] or E[k, j]:
+                    continue
+                n102[iso] += 1
+
+    out = {k: float(v) for k, v in list(n012.items()) + list(n102.items())}
+    n_sparse = float(sum(out.values()))
+    n_tri = n * (n - 1) * (n - 2) / 6.0
+    if triples_conn is None:
+        out[EMPTY_EDGE_SIGNED_TRIAD_KEY] = float("nan")
+    else:
+        out[EMPTY_EDGE_SIGNED_TRIAD_KEY] = float(n_tri - float(triples_conn) - n_sparse)
+    return out
+
+
 def edge_signed_hl_schema_pseudo(key: str) -> str:
     """Schema base key for ``motif_schema_box`` sizing of edge-sign HL keys."""
+    if str(key).startswith("T|"):
+        return "motif_feedforward_rate"
     edges = parse_edge_signed_hl_motif(key)
     if edges is None:
         return "dyad_asym_frac"
-    max_node = max(i for e in edges for i in e[:2])
+    max_node = max(i for e in edges for i in e[:2]) if edges else 0
     if max_node <= 1:
         return "dyad_mutual_frac" if len(edges) > 1 else "dyad_asym_frac"
     return "motif_feedforward_rate"
@@ -1191,18 +1343,22 @@ def draw_edge_signed_hl_motif(
 
     active = sorted({i for e in edges for i in e[:2]})
     tri_pos = _triangle_node_xy()
-    if len(active) == 3:
+    if str(key).startswith("T|"):
+        # Always show the third node (012 / 102 / 003 are 3-node motifs).
+        pos = tri_pos
+    elif len(active) == 3:
         pos = tri_pos
     elif len(active) == 2:
         # Dyad or 2-node induced subgraph — two nodes only (1-edge dyads are legit).
         pos = {active[0]: (0.20, 0.50), active[1]: (0.80, 0.50)}
     else:
         pos = {0: (0.50, 0.50)}
+    is_tri = str(key).startswith("T|") or len(active) == 3
     _draw_signed_motif_edges(
         ax, fit(pos), edges,
-        node_r=(0.10 if len(active) <= 2 else 0.095) * sn,
-        rad=0.24 if len(active) <= 2 else 0.0,
-        mutual_rad=0.24 if len(active) <= 2 else 0.14,
+        node_r=(0.095 if is_tri else 0.10) * sn,
+        rad=0.0 if is_tri else 0.24,
+        mutual_rad=0.14 if is_tri else 0.24,
     )
     return True
 

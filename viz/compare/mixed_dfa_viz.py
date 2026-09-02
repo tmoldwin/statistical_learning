@@ -1981,6 +1981,158 @@ def plot_weight_metrics_over_learning(
     return out
 
 
+_INIT_STEP_COLOR = "#3182bd"
+_FINAL_STEP_COLOR = "#e6550d"
+
+
+def _first_last_metric(run: dict[str, Any], bag: str, key: str) -> tuple[float, float] | None:
+    v0 = v1 = float("nan")
+    for pt in run.get("series", []):
+        y = _lookup_weight_metric(pt, bag, key)
+        if not np.isfinite(y):
+            continue
+        if not np.isfinite(v0):
+            v0 = y
+        v1 = y
+    if np.isfinite(v0) and np.isfinite(v1):
+        return float(v0), float(v1)
+    return None
+
+
+def _kde_line(
+    ax,
+    vals: np.ndarray,
+    xs: np.ndarray,
+    *,
+    color: str,
+    ls: str,
+    lw: float,
+    label: str,
+    z: int,
+) -> float:
+    """Draw a fine gaussian KDE as an unfilled line. Returns peak density."""
+    from scipy.stats import gaussian_kde
+
+    vals = np.asarray(vals, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    if vals.size < 2:
+        return 0.0
+    if float(np.std(vals)) < 1e-12:
+        ax.axvline(float(np.mean(vals)), color=color, lw=lw, ls=ls, label=label, zorder=z)
+        return 0.0
+    kde = gaussian_kde(
+        vals, bw_method=lambda k: max(float(k.scotts_factor()) * 0.40, 0.035),
+    )
+    ys = np.clip(np.asarray(kde(xs), dtype=float), 0.0, None)
+    ax.plot(xs, ys, color=color, lw=lw, ls=ls, label=label, zorder=z)
+    return float(np.nanmax(ys)) if ys.size else 0.0
+
+
+def plot_weight_metrics_before_after(
+    *,
+    json_path: Path | None = None,
+    outfile: str = "weight_metrics_before_after.png",
+    seed: int = 1,
+    recompute: bool = False,
+    max_snaps: int = 10,
+    run_ids: tuple[int, ...] | None = None,
+    metric_specs: tuple[tuple[str, str, str], ...] | None = None,
+    n_cols: int = 4,
+) -> Path:
+    """KDE overlay of first vs last snap, one panel per metric (across runs)."""
+    path = json_path or collect_weight_metrics_over_learning(
+        seed=seed,
+        recompute=recompute,
+        max_snaps=max_snaps,
+        run_ids=run_ids,
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    runs = [r for r in payload.get("runs", []) if r.get("series")]
+    if not runs:
+        raise FileNotFoundError(f"no runs in {path}")
+
+    specs = metric_specs or _OVER_LEARNING_METRIC_SPECS
+    n_metrics = len(specs)
+    n_rows = int(np.ceil(n_metrics / n_cols))
+
+    fig = plt.figure(figsize=(2.35 * n_cols + 0.15, 2.05 * n_rows + 0.75))
+    outer = fig.add_gridspec(n_rows, n_cols, hspace=0.55, wspace=0.38)
+    first_ax = None
+
+    for idx, (bag, key, title) in enumerate(specs):
+        ri, ci = divmod(idx, n_cols)
+        ax = fig.add_subplot(outer[ri, ci])
+        if first_ax is None:
+            first_ax = ax
+        pairs = [_first_last_metric(run, bag, key) for run in runs]
+        v0 = np.asarray([p[0] for p in pairs if p is not None], dtype=float)
+        v1 = np.asarray([p[1] for p in pairs if p is not None], dtype=float)
+        ax.set_title(title, fontsize=7.2, pad=3.0)
+        if v0.size < 2 and v1.size < 2:
+            ax.text(0.5, 0.5, "no data", ha="center", va="center", transform=ax.transAxes)
+            continue
+        both = np.concatenate([v for v in (v0, v1) if v.size])
+        span = max(float(both.max() - both.min()), 1e-9)
+        pad = 0.08 * span
+        x_lo = float(both.min()) - pad
+        x_hi = float(both.max()) + pad
+        xs = np.linspace(x_lo, x_hi, 320)
+        y_max = 0.0
+        y_max = max(y_max, _kde_line(
+            ax, v0, xs, color=_INIT_STEP_COLOR, ls="-", lw=1.55,
+            label="initial", z=3,
+        ))
+        y_max = max(y_max, _kde_line(
+            ax, v1, xs, color=_FINAL_STEP_COLOR, ls="--", lw=1.70,
+            label="final", z=4,
+        ))
+        ax.set_xlim(x_lo, x_hi)
+        ax.set_ylim(0.0, y_max * 1.18 if y_max > 0 else 1.0)
+        ax.set_xlabel("value", fontsize=6.4)
+        if ci == 0:
+            ax.set_ylabel("density", fontsize=6.4)
+        ax.tick_params(labelsize=6.0)
+        ax.grid(True, alpha=0.22)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        if v0.size >= 2 and v1.size >= 2:
+            ax.text(
+                0.97, 0.97,
+                rf"med {float(np.median(v0)):.3g}$\rightarrow${float(np.median(v1)):.3g}",
+                transform=ax.transAxes, ha="right", va="top", fontsize=5.8, color="0.25",
+                bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.5),
+                zorder=5,
+            )
+
+    if first_ax is not None:
+        handles, labels = first_ax.get_legend_handles_labels()
+        if handles:
+            first_ax.legend(
+                handles, labels, fontsize=6.2, frameon=False, loc="upper left",
+                handlelength=1.6,
+            )
+
+    finalize_grid_figure(
+        fig,
+        suptitle=(
+            f"Weight graph metrics before vs after "
+            f"({payload.get('n_runs', len(runs))} runs, first/last snap)"
+        ),
+        suptitle_fontsize=10,
+        top=0.94,
+        bottom=0.07,
+        left=0.07,
+        right=0.98,
+        hspace=0.55,
+        wspace=0.38,
+    )
+    out = sweep_figures_dir(COMPARISON_NAME) / outfile
+    save_figure(fig, out, dpi=150)
+    plt.close(fig)
+    print(f"wrote {out}", flush=True)
+    return out
+
+
 def refresh_mixed_dfa_ei_motifs(
     *,
     seed: int = 1,

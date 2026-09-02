@@ -4,5 +4,6 @@
   },
   "markdown.styles": [
     "paper/markdown-preview.css"
-  ]
+  ],
+  "python.languageServer": "None"
 }

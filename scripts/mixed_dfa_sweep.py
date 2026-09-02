@@ -347,17 +347,18 @@ def main() -> None:
         )
         print(f"wrote {out_paper}", flush=True)
     elif args.command == "weight-metrics-over-learning":
-        from viz.compare.mixed_dfa_viz import plot_weight_metrics_over_learning
+        from viz.compare.mixed_dfa_viz import (
+            plot_weight_metrics_before_after,
+            plot_weight_metrics_over_learning,
+        )
 
         seed = args.seeds[0] if args.seeds else 1
         run_ids = tuple(args.runs) if args.runs else None
-        out = plot_weight_metrics_over_learning(
-            seed=seed,
-            recompute=not args.replot_only,
-            max_snaps=10,
-            run_ids=run_ids,
-        )
+        kwargs = dict(seed=seed, recompute=not args.replot_only, max_snaps=10, run_ids=run_ids)
+        out = plot_weight_metrics_over_learning(**kwargs)
         print(f"wrote {out}", flush=True)
+        out_hist = plot_weight_metrics_before_after(**kwargs)
+        print(f"wrote {out_hist}", flush=True)
     elif args.command == "motif-folds":
         import subprocess
         import sys

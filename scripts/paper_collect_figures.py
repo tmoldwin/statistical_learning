@@ -32,7 +32,7 @@ class FigureRef:
     paper_name: str
     source: Path
     as_jpg: bool = True
-    max_w: int = 1000
+    max_w: int = 1193
 
 
 def _anchor(subpath: str) -> Path:
@@ -72,11 +72,11 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("demo", "fig03_learning_with_samples.jpg",
                   _demo("training/learning_curve_with_samples.png")),
         FigureRef("demo", "fig_dfa_examples.jpg",
-                  _demo_shared("vocabulary_dfa_examples.png"), max_w=1200),
+                  _demo_shared("vocabulary_dfa_examples.png"), max_w=1432),
         FigureRef("demo", "fig_mixed_vocab_dfa_examples.jpg",
-                  _demo_shared("mixed_vocabulary_dfa_examples.png"), max_w=1400),
+                  _demo_shared("mixed_vocabulary_dfa_examples.png"), max_w=1671),
         FigureRef("demo", "fig04_corpus_stream.jpg",
-                  _demo_shared("corpus_stream_overview.png"), max_w=1200),
+                  _demo_shared("corpus_stream_overview.png"), max_w=1432),
         FigureRef("demo", "fig04_samples.svg",
                   ROOT / "paper" / "figures" / "demo" / "fig04_samples.svg", as_jpg=False),
         FigureRef("demo", "fig04_samples.jpg",
@@ -84,7 +84,7 @@ def paper_manifest() -> list[FigureRef]:
         # Demo narrative figs (eight-word -ate/-at demo through trajectories).
         FigureRef("demo", "fig_next_char_probs.jpg",
                   _demo("activations/8_next_char_prob_sequence_condensed.png"),
-                  max_w=2800),
+                  max_w=3341),
         FigureRef("demo", "fig_activation_heatmap.jpg", _demo("activations/7_activation_heatmap.png")),
         FigureRef("demo", "fig_activation_clustered.jpg",
                   _demo("activations/10_activation_clustered_heatmap.png")),
@@ -92,24 +92,24 @@ def paper_manifest() -> list[FigureRef]:
                   _demo("correlation/17_state_correlation_clustered_condensed.png")),
         FigureRef("demo", "fig_dfa_pca_geometry.jpg",
                   _demo("separation/dfa_pca_geometry_and_separation.png"),
-                  max_w=1200),
+                  max_w=1432),
         FigureRef("demo", "fig_example_units.jpg",
                   _demo("unit_selectivity/example_units_combined.png")),
         FigureRef("demo", "fig_decoding_seed_mean.jpg",
                   _demo("decoding/decoding_curves_seed_mean.png")),
         FigureRef("demo", "fig_decoding_with_word.jpg",
                   _demo("decoding/decoding_with_word_seed_mean.png"),
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("demo", "fig_decoding_by_position_word_length.jpg",
                   _demo("decoding/decoding_by_position_word_length.png"),
-                  max_w=1100),
+                  max_w=1313),
         FigureRef("demo", "fig_word_trajectories.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "prefix_traj_by_vocab_seed_grid.png",
-                  max_w=1600),
+                  max_w=1909),
         FigureRef("demo", "fig_word_trajectories_by_seed.jpg",
                   _demo("trajectories/dfa_and_trajectory_by_seed.png"),
-                  max_w=1600),
+                  max_w=1909),
         # Leftovers / alt copies still useful for supplements.
         FigureRef("main", "fig11_embedding_panels.jpg",
                   _demo("embeddings/11_embedding_panels_context_condensed.png")),
@@ -126,41 +126,41 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("compare", "fig_mixed_traj_by_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "closed_loop_by_dfa_vocab_grid.png",
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("compare", "fig_activation_heatmaps_by_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "activation_heatmaps_by_dfa.png",
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("compare", "fig_mixed_scaling_overview.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "scaling_overview.png",
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("compare", "fig_mixed_decoding_curves.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_and_learning_combined.png",
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("compare", "fig_mixed_cosine_within.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "fig15_geometry_and_selectivity.png",
-                  max_w=1200),
+                  max_w=1432),
         FigureRef("compare", "fig_mixed_decoding_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_vs_dfa_pc_scatters.png",
-                  max_w=1200),
+                  max_w=1432),
         FigureRef("compare", "fig_mixed_decoding_by_position_word_length.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "decoding_by_position_word_length.png",
-                  max_w=1100),
+                  max_w=1313),
         # Standalone leftovers (also produced by sweep; not required by draft order).
         FigureRef("compare", "fig_mixed_learning_decode.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "decoding" / "learning_decode_by_dfa.png",
-                  max_w=1400),
+                  max_w=1671),
         # Leftover metrics board (not in draft; weight scatters live on fig_weight_matrices).
         FigureRef("compare", "fig_mixed_metrics_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "metrics_vs_dfa.png",
-                  max_w=1200),
+                  max_w=1432),
         # Standalone leftovers (sources still produced; not in main draft).
         FigureRef("compare", "fig_mixed_pc_spectra.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
@@ -180,15 +180,15 @@ def paper_manifest() -> list[FigureRef]:
         FigureRef("main", "fig_weight_matrices_by_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "weight_matrices_by_dfa.png",
-                  max_w=1400),
+                  max_w=1671),
         FigureRef("main", "fig_weight_graph_motifs_vs_dfa.jpg",
                   ROOT / "experiments" / COMPARE / "mixed_vocab_dfa_ns"
                   / "trajectories" / "weight_graph_metrics_vs_dfa_paper.png",
-                  max_w=1400),
+                  max_w=1671),
     ]
 
 
-def _to_jpg(src: Path, dest: Path, *, max_w: int = 1000, quality: int = 90) -> None:
+def _to_jpg(src: Path, dest: Path, *, max_w: int = 1193, quality: int = 90) -> None:
     im = Image.open(src)
     if im.mode in ("RGBA", "P"):
         im = im.convert("RGB")

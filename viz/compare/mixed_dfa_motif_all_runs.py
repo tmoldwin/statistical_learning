@@ -3728,22 +3728,22 @@ def _plot_metric_vs_dfa(
     x_pad = max(1.0, 0.04 * (float(x_arr.max()) - float(x_arr.min()) + 1.0))
     ax.set_xlim(float(x_arr.min()) - x_pad, float(x_arr.max()) + x_pad)
     if show_legend:
-        handles = [
-            Line2D(
-                [0], [0], marker="o", color="w",
-                markerfacecolor="0.35", markeredgecolor="0.15", markersize=7,
-                label=rf"solved (best WE $\leq$ {100 * target_we:.0f}%)",
-            ),
-            Line2D(
-                [0], [0], marker="o", color="w",
-                markerfacecolor="none", markeredgecolor="0.35",
-                markeredgewidth=1.4, markersize=7,
-                label="unsolved",
-            ),
-        ]
-        ax.legend(
-            handles=handles, loc="upper left", fontsize=6.5, frameon=True,
-            fancybox=False, edgecolor="0.8", framealpha=0.92,
+    handles = [
+        Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor="0.35", markeredgecolor="0.15", markersize=7,
+            label=rf"solved (best WE $\leq$ {100 * target_we:.0f}%)",
+        ),
+        Line2D(
+            [0], [0], marker="o", color="w",
+            markerfacecolor="none", markeredgecolor="0.35",
+            markeredgewidth=1.4, markersize=7,
+            label="unsolved",
+        ),
+    ]
+    ax.legend(
+        handles=handles, loc="upper left", fontsize=6.5, frameon=True,
+        fancybox=False, edgecolor="0.8", framealpha=0.92,
         )
 
 

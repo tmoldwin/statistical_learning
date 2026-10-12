@@ -313,7 +313,12 @@ def main() -> None:
         experiment_input_path(exp_name).parent.mkdir(parents=True, exist_ok=True)
 
     words = REGIMES[regime]
-    text = generate_sequence(words, args.chars, seed=args.seed, word_space=word_space)
+    if regime == "pyramid_letters":
+        from vocab_pyramid import generate_markov_sequence
+
+        text = generate_markov_sequence(args.chars, seed=args.seed)
+    else:
+        text = generate_sequence(words, args.chars, seed=args.seed, word_space=word_space)
     with open(out_path, "w") as f:
         f.write(text)
 
@@ -332,6 +337,7 @@ from vocab_sweep_pow2_h100 import register_pow2_h100_sweep_regimes
 from vocab_mixed_dfa import register_mixed_dfa_regimes
 from vocab_fixed_letters_dfa import register_fixed_letters_dfa_regimes
 from vocab_long_run import register_long_run_regimes
+from vocab_pyramid import register_pyramid_regimes
 
 register_sweep_regimes(REGIMES)
 register_pow2_sweep_regimes(REGIMES)
@@ -339,6 +345,7 @@ register_pow2_h100_sweep_regimes(REGIMES)
 register_mixed_dfa_regimes(REGIMES)
 register_fixed_letters_dfa_regimes(REGIMES)
 register_long_run_regimes(REGIMES)
+register_pyramid_regimes(REGIMES)
 REGIMES["thirty_two_word_mixed_345"] = build_mixed_vocab(32, (3, 4, 5))
 REGIMES["sixteen_word_mixed_345"] = build_mixed_vocab(16, (3, 4, 5))
 

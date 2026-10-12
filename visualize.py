@@ -85,6 +85,7 @@ from scipy import ndimage
 
 from experiment import (
     ensure_experiment_dirs,
+    experiment_regime,
     experiment_uses_word_space,
     input_path,
     learning_dynamics_dir,
@@ -1883,6 +1884,432 @@ def original_vocabulary_title(chars, text: str | None = None) -> str:
             parts.append(f"vocabulary: {', '.join(words)}")
     parts.append(f"chars: {''.join(chars)}")
     return " · ".join(parts)
+
+
+def condense_hidden_states_by_prev_letter(
+    text: str,
+    hidden_states: np.ndarray,
+    output_probs: np.ndarray | None = None,
+    *,
+    letters: str = "abcdef",
+) -> CondensedView:
+    """Average hidden states over timesteps sharing the same previous letter."""
+    from collections import defaultdict
+
+    groups: dict[str, list[int]] = defaultdict(list)
+    for t in range(1, len(text)):
+        prev = text[t - 1]
+        if prev in letters:
+            groups[prev].append(t)
+    order = [ch for ch in letters if ch in groups]
+    labels: list[str] = []
+    hs_rows: list[np.ndarray] = []
+    prob_rows: list[np.ndarray] = []
+    input_chars: list[str] = []
+    repr_indices: list[int] = []
+    counts: list[int] = []
+    next_chars: list[str] = []
+    n_text = len(text)
+
+    for label in order:
+        idxs = groups[label]
+        labels.append(label)
+        hs_rows.append(hidden_states[idxs].mean(axis=0))
+        if output_probs is not None:
+            prob_rows.append(output_probs[idxs].mean(axis=0))
+        input_chars.append(label)
+        repr_indices.append(idxs[0])
+        counts.append(len(idxs))
+        targets = [text[(t + 1) % n_text] for t in idxs]
+        next_chars.append(max(set(targets), key=targets.count))
+
+    return CondensedView(
+        hidden_states=np.vstack(hs_rows) if hs_rows else hidden_states[:0],
+        labels=labels,
+        input_chars=input_chars,
+        timestep_indices=repr_indices,
+        spaced=False,
+        words=None,
+        output_probs=np.vstack(prob_rows) if prob_rows else None,
+        counts=counts,
+        next_chars=next_chars,
+    )
+
+
+def plot_neuron_sequence_clustermap_by_prev_letter(
+    text: str,
+    hidden_states: np.ndarray,
+    save_path: str,
+) -> None:
+    """Cluster neurons on mean h when the previous input letter was a–f (Markov context)."""
+    hidden_states = np.asarray(hidden_states, dtype=float)
+    n = min(len(text), hidden_states.shape[0])
+    if n < 3:
+        return
+    text = text[:n]
+    activity = hidden_states[:n]
+    n_units = activity.shape[1]
+
+    condensed = condense_hidden_states_by_prev_letter(text, activity, None)
+    n_cols = condensed.hidden_states.shape[0]
+    if n_cols < 1:
+        return
+    unit_labels = [f"h{i}" for i in range(n_units)]
+    data = pd.DataFrame(
+        condensed.hidden_states,
+        index=list(condensed.labels),
+        columns=unit_labels,
+    ).T
+    heat_w = float(max(6.5, n_cols * 0.55))
+    heat_h = float(max(7.2, n_units * 0.16))
+    grid = sns.clustermap(
+        data,
+        row_cluster=True,
+        col_cluster=False,
+        method="average",
+        metric="euclidean",
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        center=0,
+        figsize=(heat_w, heat_h),
+        dendrogram_ratio=(0.07, 0.0),
+        cbar=False,
+        cbar_pos=None,
+        xticklabels=True,
+        yticklabels=True,
+    )
+    ax = grid.ax_heatmap
+    letter_cmap = plt.get_cmap("tab10", 6)
+    for i, tick in enumerate(ax.get_xticklabels()):
+        tick.set_color(letter_cmap(i))
+        tick.set_fontweight("bold")
+        tick.set_fontsize(12)
+        tick.set_fontfamily("monospace")
+    ax.tick_params(axis="x", pad=1)
+    for tick in ax.get_yticklabels():
+        tick.set_fontsize(8)
+        tick.set_visible(True)
+    ax.set_xlabel("previous input letter (pairwise context)")
+    ax.set_ylabel("")
+    mappable = ax.collections[0]
+    cbar = grid.fig.colorbar(
+        mappable, ax=ax, fraction=0.02, pad=0.01, shrink=0.55,
+    )
+    cbar.set_label("mean activation (tanh)", fontsize=10)
+    cbar.ax.tick_params(labelsize=9)
+    grid.fig.suptitle(
+        "Neurons clustered · mean h after each previous letter (a–f)",
+        y=1.02,
+        fontsize=13,
+    )
+    grid.fig.text(
+        0.5, 0.01,
+        f"Previous-letter averages from {n - 1} transitions; "
+        "average-linkage on unit × context matrix.",
+        ha="center", fontsize=8, color="#444444",
+    )
+    grid.savefig(save_path, dpi=140, bbox_inches="tight", facecolor="white")
+    plt.close(grid.fig)
+    print(f"wrote {save_path}")
+
+
+def plot_neuron_sequence_clustermap(
+    text: str,
+    hidden_states: np.ndarray,
+    save_path: str,
+    *,
+    automaton: MinimizedVocabAutomaton | None = None,
+    spaced: bool = False,
+    words: list[str] | None = None,
+    walk_len: int = 4,
+) -> None:
+    """Cluster neurons on mean activation when the current input letter is a–f."""
+    del automaton, spaced, words, walk_len
+    hidden_states = np.asarray(hidden_states, dtype=float)
+    n = min(len(text), hidden_states.shape[0])
+    if n < 2:
+        return
+    text = text[:n]
+    activity = hidden_states[:n]
+    n_units = activity.shape[1]
+    letters = "abcdef"
+    mean_act = _mean_activation_by_current_letter(text, activity, letters)
+    unit_labels = [f"h{i}" for i in range(n_units)]
+    data = pd.DataFrame(
+        mean_act,
+        index=unit_labels,
+        columns=list(letters),
+    )
+    heat_w = 6.5
+    heat_h = float(max(7.2, n_units * 0.16))
+    grid = sns.clustermap(
+        data,
+        row_cluster=True,
+        col_cluster=False,
+        method="average",
+        metric="euclidean",
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        center=0,
+        figsize=(heat_w, heat_h),
+        dendrogram_ratio=(0.07, 0.0),
+        cbar=False,
+        cbar_pos=None,
+        xticklabels=True,
+        yticklabels=True,
+    )
+    ax = grid.ax_heatmap
+    letter_cmap = plt.get_cmap("tab10", 6)
+    for i, tick in enumerate(ax.get_xticklabels()):
+        tick.set_color(letter_cmap(i))
+        tick.set_fontweight("bold")
+        tick.set_fontsize(12)
+        tick.set_fontfamily("monospace")
+    ax.tick_params(axis="x", pad=1)
+    for tick in ax.get_yticklabels():
+        tick.set_fontsize(8)
+        tick.set_visible(True)
+    ax.set_xlabel("current input letter")
+    ax.set_ylabel("")
+    mappable = ax.collections[0]
+    cbar = grid.fig.colorbar(
+        mappable, ax=ax, fraction=0.02, pad=0.01, shrink=0.55,
+    )
+    cbar.set_label("mean activation (tanh)", fontsize=10)
+    cbar.ax.tick_params(labelsize=9)
+    grid.fig.suptitle(
+        "Neurons clustered · mean h for each current letter (a–f)",
+        y=1.02,
+        fontsize=13,
+    )
+    grid.fig.text(
+        0.5, 0.01,
+        f"Letter averages from {n} timesteps; average-linkage on the 6-letter tuning vectors.",
+        ha="center", fontsize=8, color="#444444",
+    )
+    grid.savefig(save_path, dpi=140, bbox_inches="tight", facecolor="white")
+    plt.close(grid.fig)
+    print(f"wrote {save_path}")
+
+
+def plot_neuron_sequence_clustermap_by_prefix(
+    text: str,
+    hidden_states: np.ndarray,
+    save_path: str,
+    *,
+    automaton: MinimizedVocabAutomaton | None = None,
+    spaced: bool = False,
+    words: list[str] | None = None,
+    walk_len: int = 4,
+) -> None:
+    """Cluster neurons on mean activation for each in-word prefix (parent context)."""
+    hidden_states = np.asarray(hidden_states, dtype=float)
+    n = min(len(text), hidden_states.shape[0])
+    if walk_len > 1:
+        n = n - (n % walk_len)
+    if n < 2:
+        return
+    text = text[:n]
+    activity = hidden_states[:n]
+    n_units = activity.shape[1]
+
+    condensed = condense_hidden_states_by_prefix(
+        text, activity, None, spaced=spaced, words=words,
+    )
+    n_prefix = condensed.hidden_states.shape[0]
+    if n_prefix < 1:
+        return
+    prefix_labels = [_display_prefix_label(l) for l in condensed.labels]
+    unit_labels = [f"h{i}" for i in range(n_units)]
+    data = pd.DataFrame(
+        condensed.hidden_states,
+        index=prefix_labels,
+        columns=unit_labels,
+    ).T
+    heat_w = float(max(10.0, n_prefix * 0.22))
+    heat_h = float(max(7.2, n_units * 0.16))
+    grid = sns.clustermap(
+        data,
+        row_cluster=True,
+        col_cluster=False,
+        method="average",
+        metric="euclidean",
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        center=0,
+        figsize=(heat_w, heat_h),
+        dendrogram_ratio=(0.07, 0.0),
+        cbar=False,
+        cbar_pos=None,
+        xticklabels=True,
+        yticklabels=True,
+    )
+    ax = grid.ax_heatmap
+    if automaton is not None:
+        state_ids = [
+            dfa_state_for_prefix(l, automaton, spaced=spaced) for l in condensed.labels
+        ]
+        _color_tick_labels_by_state_ids(ax.get_xticklabels(), state_ids)
+    else:
+        for tick in ax.get_xticklabels():
+            tick.set_color("#222222")
+    for tick in ax.get_xticklabels():
+        tick.set_fontweight("bold")
+        tick.set_fontsize(10)
+        tick.set_fontfamily("monospace")
+    ax.tick_params(axis="x", pad=1)
+    for tick in ax.get_yticklabels():
+        tick.set_fontsize(8)
+        tick.set_visible(True)
+    ax.set_xlabel("in-word prefix (parent context ending at current letter)")
+    ax.set_ylabel("")
+    mappable = ax.collections[0]
+    cbar = grid.fig.colorbar(
+        mappable, ax=ax, fraction=0.02, pad=0.01, shrink=0.55,
+    )
+    cbar.set_label("mean activation (tanh)", fontsize=10)
+    cbar.ax.tick_params(labelsize=9)
+    grid.fig.suptitle(
+        "Neurons clustered · mean h over each prefix parent context",
+        y=1.02,
+        fontsize=13,
+    )
+    grid.fig.text(
+        0.5, 0.01,
+        f"Prefix averages from {n} timesteps ({sum(condensed.counts)} grouped); "
+        "average-linkage on unit × prefix matrix.",
+        ha="center", fontsize=8, color="#444444",
+    )
+    grid.savefig(save_path, dpi=140, bbox_inches="tight", facecolor="white")
+    plt.close(grid.fig)
+    print(f"wrote {save_path}")
+
+
+def _draw_letter_pyramid_on_axes(
+    ax,
+    *,
+    edges: tuple[tuple[str, str], ...],
+    pos: dict[str, tuple[float, float]],
+    node_face_rgba: dict[str, tuple[float, float, float, float]],
+    node_radius: float = 0.062,
+) -> None:
+    from matplotlib.patches import Circle
+
+    for u, v in edges:
+        x1, y1 = pos[u]
+        x2, y2 = pos[v]
+        ax.plot([x1, x2], [y1, y2], color="#666666", linewidth=1.0, zorder=1, solid_capstyle="round")
+    for ch, (x, y) in pos.items():
+        face = node_face_rgba[ch]
+        ax.add_patch(
+            Circle(
+                (x, y),
+                node_radius,
+                facecolor=face,
+                edgecolor="#111111",
+                linewidth=2.0,
+                zorder=3,
+                clip_on=False,
+            )
+        )
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+
+def _mean_activation_by_current_letter(
+    text: str,
+    activity: np.ndarray,
+    letters: str,
+) -> np.ndarray:
+    """Shape (n_units, len(letters)): mean h when the input character is each letter."""
+    n_units = activity.shape[1]
+    letter_list = list(letters)
+    out = np.zeros((n_units, len(letter_list)), dtype=float)
+    chars = np.array(list(text))
+    for j, ch in enumerate(letter_list):
+        mask = chars == ch
+        if not np.any(mask):
+            continue
+        out[:, j] = activity[mask].mean(axis=0)
+    return out
+
+
+def plot_neuron_pyramid_panels(
+    text: str,
+    hidden_states: np.ndarray,
+    save_path: str,
+    *,
+    letters: str = "abcdef",
+    edges: tuple[tuple[str, str], ...] | None = None,
+    pos: dict[str, tuple[float, float]] | None = None,
+    ncols: int = 10,
+    vmin: float = -1.0,
+    vmax: float = 1.0,
+) -> None:
+    """One letter-pyramid per hidden unit; node color = mean activation for that letter."""
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+    from vocab_pyramid import EDGES, PYRAMID_NODE_XY
+
+    hidden_states = np.asarray(hidden_states, dtype=float)
+    n = min(len(text), hidden_states.shape[0])
+    if n < 1:
+        return
+    text = text[:n]
+    activity = hidden_states[:n]
+    n_units = activity.shape[1]
+    edges = edges or EDGES
+    pos = pos or PYRAMID_NODE_XY
+    letter_list = list(letters)
+    mean_act = _mean_activation_by_current_letter(text, activity, letters)
+    unit_order = average_linkage_cluster_order(mean_act)
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    cmap = cm.get_cmap("RdBu_r")
+
+    nrows = int(np.ceil(n_units / ncols))
+    fig_w = ncols * 1.35 + 0.45
+    fig_h = nrows * 1.45 + 0.35
+    fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h))
+    axes_flat = np.atleast_1d(axes).ravel()
+
+    for slot, u in enumerate(unit_order):
+        ax = axes_flat[slot]
+        node_rgba: dict[str, tuple[float, float, float, float]] = {}
+        for j, ch in enumerate(letter_list):
+            if ch not in pos:
+                continue
+            rgba = cmap(norm(float(mean_act[u, j])))
+            node_rgba[ch] = (float(rgba[0]), float(rgba[1]), float(rgba[2]), 1.0)
+        _draw_letter_pyramid_on_axes(ax, edges=edges, pos=pos, node_face_rgba=node_rgba)
+        ax.set_title(f"h{u}", fontsize=8, pad=2)
+
+    for ax in axes_flat[n_units:]:
+        ax.axis("off")
+
+    sm = cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=axes_flat[:n_units], fraction=0.012, pad=0.02, shrink=0.55)
+    cbar.set_label("mean activation (tanh) when current letter = node", fontsize=9)
+
+    fig.suptitle(
+        "Pyramid tuning per neuron · panels in hierarchical cluster order",
+        fontsize=12,
+        y=0.995,
+    )
+    fig.text(
+        0.5, 0.01,
+        f"Average-linkage on activations over {n} timesteps; "
+        "node color = mean h when current letter matches that node.",
+        ha="center", fontsize=8, color="#444444",
+    )
+    fig.savefig(save_path, dpi=150, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"wrote {save_path}")
 
 
 def plot_hidden_states_clustermap(
@@ -9669,6 +10096,35 @@ def main() -> None:
                     words=words,
                     cluster_units=True,
                 )
+                plot_neuron_sequence_clustermap(
+                    text, hidden_states,
+                    save_path=str(numbered_plot_path(out_dir, "neuron_cluster_sequence.png")),
+                    automaton=automaton,
+                    spaced=spaced,
+                    words=words,
+                )
+                if args.exp and experiment_regime(args.exp) == "pyramid_letters":
+                    plot_neuron_sequence_clustermap_by_prev_letter(
+                        text, hidden_states,
+                        save_path=str(
+                            numbered_plot_path(out_dir, "neuron_cluster_sequence_by_prefix.png")
+                        ),
+                    )
+                else:
+                    plot_neuron_sequence_clustermap_by_prefix(
+                        text, hidden_states,
+                        save_path=str(
+                            numbered_plot_path(out_dir, "neuron_cluster_sequence_by_prefix.png")
+                        ),
+                        automaton=automaton,
+                        spaced=spaced,
+                        words=words,
+                    )
+                if args.exp and experiment_regime(args.exp) == "pyramid_letters":
+                    plot_neuron_pyramid_panels(
+                        text, hidden_states,
+                        save_path=str(numbered_plot_path(out_dir, "neuron_pyramid_panels.png")),
+                    )
 
                 plot_output_probs(
                     text, output_probs, model["chars"],

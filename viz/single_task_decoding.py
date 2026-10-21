@@ -699,21 +699,33 @@ def plot_aggregated_seed_decode_curves(
     features: tuple[str, ...] = DECODING_FEATURES,
     n_neuron_trials: int = _DEFAULT_NEURON_RANDOM_TRIALS,
     model_type: str = "rnn",
+    si_by_feat: dict[str, np.ndarray] | None = None,
+    si_learn: dict[str, Any] | None = None,
+    load_summaries: bool = True,
 ) -> Path:
-    """Mean ± std decoding curves, SI over training (exemplar), pooled SI density."""
+    """Mean ± std decoding curves, SI over training (exemplar), pooled SI density.
+
+    ``load_summaries=False`` keeps the passed SI arrays and learning curve
+    (including ``None``, which drops that panel).
+    """
     save_path = Path(save_path)
     seeds = tuple(sorted(panels))
     if not seeds:
         raise ValueError("need at least one seed panel")
 
-    si_by_feat = _pooled_si_arrays_across_seeds(
-        task, seeds, model_type=model_type, features=features,
-    )
-    if si_by_feat is None:
-        si_by_feat = _load_task_si_arrays(task, model_type=model_type, features=features)
-    si_learn = _load_si_over_learning(
-        task, seeds, model_type=model_type, features=features,
-    )
+    if load_summaries:
+        if si_by_feat is None:
+            si_by_feat = _pooled_si_arrays_across_seeds(
+                task, seeds, model_type=model_type, features=features,
+            )
+            if si_by_feat is None:
+                si_by_feat = _load_task_si_arrays(
+                    task, model_type=model_type, features=features,
+                )
+        if si_learn is None:
+            si_learn = _load_si_over_learning(
+                task, seeds, model_type=model_type, features=features,
+            )
     n_cols = 2 + int(si_learn is not None) + int(si_by_feat is not None)
     fig, axes = plt.subplots(
         1, n_cols,

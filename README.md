@@ -20,6 +20,32 @@ experiments/<regime>/
     plots/
 ```
 
+## Figures
+
+These figures come from the main condition: 16 four-letter words, RNN with 50 hidden units. Captions follow `paper_figures/manifest.json`. The draft write-up is in [`paper/draft.md`](paper/draft.md).
+
+**Vocabulary structure.** The minimized deterministic finite automaton (DFA) for the vocabulary. Each state lists the words still consistent with the prefix read since the last space.
+![Minimal DFA](paper_figures/demo/fig02_dfa.svg)
+
+**Learning.** Training loss, and word-error rate in sampled text.
+![Learning curve](paper_figures/demo/fig03_learning_curve.png)
+
+**Hidden states embed the DFA.** PCA of RNN hidden states. Color is the DFA state; the text label is the in-word prefix.
+![DFA embedding](paper_figures/main/fig12_dfa_embedding.png)
+
+**Word trajectories** in PCA space, from one space to the next.
+![Word trajectories](paper_figures/main/fig16_word_trajectories.png)
+
+**Linear decoding** of DFA state, character and position from hidden states.
+![Decoding curves](paper_figures/main/fig_decoding_curves.png)
+
+**Learned weights.** Input weights W_xh and recurrent weights W_hh.
+![Weights](paper_figures/main/fig05_weights.png)
+
+**Across word lengths.** Learning curves and feature separation.
+![Compare learning](paper_figures/compare/fig_compare_learning.png)
+![Compare separation](paper_figures/compare/fig_compare_separation.png)
+
 ## Quick start
 
 ```bash

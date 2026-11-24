@@ -1,4 +1,98 @@
-# Statistical Word Learning: RNN vs Transformer
+# Emergent lexical features and network structural remodeling in an RNN trained on next-token prediction for a statistical learning task
+
+**Toviah Moldwin, Raneem Mahajne, and Idan Segev**
+Edmond and Lily Safra Center for Brain Sciences, The Hebrew University of Jerusalem
+
+Poster presented at the ELSC Annual Retreat, 2026. [PDF](poster/poster.pdf) · [HTML source](poster/index.html)
+
+## Inspiration · Statistical learning
+
+![Speech has no silences between words](poster/schematics/saffran/no_silences.png)
+
+`bupadokutabakutababupadokutababupado`
+
+**bupado** (word) ? **padoku** (non-word)
+
+## Aims
+
+- Is an RNN trained on next-token prediction able to learn words from an unsegmented stream?
+- How is lexical information (word position, character, etc.) represented in a recurrent network that learns to produce words?
+- How does the network’s representation of information change with vocabulary complexity?
+- How do the network’s weights differ as a function of the complexity of the learned vocabulary (function → structure)?
+
+## Fig 1 · Mixed vocabularies & minimal DFAs
+
+![Fig 1](paper/figures/demo/fig_mixed_vocab_dfa_examples.jpg)
+
+## Fig 2 · Training the RNN
+
+![Fig 2](plots/training_diagram/02_bptt_and_rnn.svg)
+
+## Fig 3 · Learning & generation
+
+![Fig 3](paper/figures/demo/fig03_learning_with_samples.jpg)
+
+## Fig 4 · Next-character probabilities
+
+![Fig 4](paper/figures/demo/fig_next_char_probs.jpg)
+
+## Fig 5 · Activation heatmap
+
+![Fig 5](paper/figures/demo/fig_activation_heatmap.jpg)
+
+## Fig 6 · Activations by prefix
+
+![Fig 6](paper/figures/demo/fig_activation_clustered.jpg)
+
+## Fig 7 · Hidden-state correlation
+
+![Fig 7](paper/figures/demo/fig_state_correlation.jpg)
+
+## Fig 8 · DFA geometry & separation
+
+![Fig 8](paper/figures/demo/fig_dfa_pca_geometry.jpg)
+
+## Fig 9 · Example selective units
+
+![Fig 9](paper/figures/demo/fig_example_units.jpg)
+
+## Fig 10 · Linear decoding
+
+![Fig 10](paper/figures/demo/fig_decoding_with_word.jpg)
+
+## Fig 11 · Word trajectories
+
+![Fig 11](paper/figures/demo/fig_word_trajectories.jpg)
+
+## Fig 12 · Activations & scaling vs DFA size
+
+![Fig 12](paper/figures/compare/fig_mixed_scaling_overview.jpg)
+
+## Fig 13 · Readouts vs DFA size
+
+![Fig 13](paper/figures/compare/fig_mixed_decoding_curves.jpg)
+
+## Fig 14 · Geometry & unit selectivity
+
+![Fig 14](paper/figures/compare/fig_mixed_cosine_within.jpg)
+
+## Fig 15 · Weight matrices vs DFA
+
+![Fig 15](paper/figures/main/fig_weight_matrices_by_dfa.jpg)
+
+## Fig 16 · Weight graph motifs vs DFA
+
+![Fig 16](paper/figures/main/fig_weight_graph_motifs_vs_dfa.jpg)
+
+## Key references
+
+Saffran, Aslin & Newport (1996); Elman (1990); Aslin, Saffran & Newport (1998); Goldwater et al. (2009); Perruchet & Vinter (1998).
+
+Contact: Toviah Moldwin
+
+---
+
+# Code
 
 Unified repository for **statistical learning** experiments on synthetic word vocabularies.
 The same corpora and analysis pipeline are run with:
@@ -19,32 +113,6 @@ experiments/<regime>/
     model.pt
     plots/
 ```
-
-## Figures
-
-These figures come from the main condition: 16 four-letter words, RNN with 50 hidden units. Captions follow `paper_figures/manifest.json`. The draft write-up is in [`paper/draft.md`](paper/draft.md).
-
-**Vocabulary structure.** The minimized deterministic finite automaton (DFA) for the vocabulary. Each state lists the words still consistent with the prefix read since the last space.
-![Minimal DFA](paper_figures/demo/fig02_dfa.svg)
-
-**Learning.** Training loss, and word-error rate in sampled text.
-![Learning curve](paper_figures/demo/fig03_learning_curve.png)
-
-**Hidden states embed the DFA.** PCA of RNN hidden states. Color is the DFA state; the text label is the in-word prefix.
-![DFA embedding](paper_figures/main/fig12_dfa_embedding.png)
-
-**Word trajectories** in PCA space, from one space to the next.
-![Word trajectories](paper_figures/main/fig16_word_trajectories.png)
-
-**Linear decoding** of DFA state, character and position from hidden states.
-![Decoding curves](paper_figures/main/fig_decoding_curves.png)
-
-**Learned weights.** Input weights W_xh and recurrent weights W_hh.
-![Weights](paper_figures/main/fig05_weights.png)
-
-**Across word lengths.** Learning curves and feature separation.
-![Compare learning](paper_figures/compare/fig_compare_learning.png)
-![Compare separation](paper_figures/compare/fig_compare_separation.png)
 
 ## Quick start
 
